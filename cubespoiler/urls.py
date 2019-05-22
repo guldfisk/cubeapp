@@ -1,0 +1,13 @@
+
+
+from django.urls import path
+
+
+from cubespoiler import views
+
+
+urlpatterns = [
+	path('', views.index, name='index'),
+	path('<int:cube_id>/', views.cube_view, name='cube detail'),
+	path('images/<int:printing_id>/', views.image_view, name='image'),
+]
