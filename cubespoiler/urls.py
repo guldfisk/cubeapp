@@ -9,5 +9,5 @@ from cubespoiler import views
 urlpatterns = [
 	path('', views.index, name='index'),
 	path('<int:cube_id>/', views.cube_view, name='cube detail'),
-	path('images/<int:printing_id>/', views.image_view, name='image'),
+	path('images/<slug:pictured_id>/', views.image_view, name='image'),
 ]

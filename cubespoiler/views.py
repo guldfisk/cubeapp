@@ -6,9 +6,9 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
 
-from magiccube.collections.cube import Cube
+from mtgorp.models.persistent.printing import Printing
 
-from mtgimg.interface import ImageRequest
+from magiccube.laps.traps.trap import Trap
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
@@ -35,9 +35,27 @@ def cube_view(request: Request, cube_id: int) -> Response:
 		return Response(serializer.data)
 
 
-def image_view(request: HttpRequest, printing_id: int) -> HttpResponse:
-	# image_request = ImageRequest(printing_id)
-	image = image_loader.get_image(db.printings[printing_id])
+_IMAGE_TYPES_MAP = {
+	'printing': Printing,
+	'trap': Trap,
+}
+
+def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
+	if not request.method == 'GET':
+		return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+	pictured_type = _IMAGE_TYPES_MAP.get(request.GET.get('type', 'printing'), Printing)
+
+	if pictured_type == Trap:
+		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type)
+	else:
+		try:
+			_id = int(pictured_id)
+		except ValueError:
+			return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+		image = image_loader.get_image(db.printings[_id])
+
+
 	response = HttpResponse(content_type='image/png')
 	image.get().save(response, 'PNG')
 	return response

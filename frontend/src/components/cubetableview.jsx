@@ -5,32 +5,15 @@ import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 
 import {get_cubes} from './utils.jsx';
-import CubeList from './cubeslist.jsx';
 
 
-class App extends React.Component {
+class CubeTableView extends React.Component {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      cubes: [],
-    };
-  }
-
-  componentDidMount() {
-
-    get_cubes().then(
-      response => {
-        console.log(response);
-        this.setState(
-          {
-            cubes: response.data
-          }
-        );
-      }
+  green_cards = () => {
+    return this.state.cube.printings.filter(
+      printing => printing.colors.include('G')
     )
-
-  }
+  };
 
   render() {
     const columns = [
@@ -52,6 +35,3 @@ class App extends React.Component {
   }
 
 }
-
-const dom = document.getElementById("app");
-dom ? ReactDOM.render(<App/>, dom) : null;
