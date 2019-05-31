@@ -37,6 +37,18 @@ class App extends React.Component {
         {
           Header: 'Name',
           accessor: 'name',
+          Cell: props =>
+          {
+            return <span
+              className='number'
+            >
+              <a
+                href={window.location.pathname + 'cubeview/' + props.original.id}
+              >
+                {props.value}
+              </a>
+            </span>;
+          },
         },
         {
           Header: 'Created At',

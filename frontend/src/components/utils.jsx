@@ -7,7 +7,6 @@ const get_images_path = () => get_api_path() + 'images/';
 
 
 export const get_cubes = () => {
-  console.log(get_api_path());
   return axios.get(get_api_path());
 };
 
@@ -16,10 +15,6 @@ export const get_cube = (id) => {
   return axios.get(path);
 };
 
-export const get_printing_image_url = (printing) => {
-  return get_images_path() + printing.id;
+export const get_cubeable_images_url = (id, type) => {
+  return get_images_path() + id + '?type=' + type
 };
-
-export const get_trap_image_url = trap => {
-  return get_images_path() + trap.hash + '?type=trap'
-}

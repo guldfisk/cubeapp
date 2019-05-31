@@ -41,6 +41,7 @@ class ExpansionSerializer(_Serializer[Expansion]):
 			'name': expansion.name,
 			'block': None if expansion.block is None else expansion.block.name,
 			'release_date': expansion.release_date,
+			'type': 'expansion',
 		}
 
 
@@ -62,6 +63,7 @@ class PrintingSerializer(_Serializer[Printing]):
 				for _type in
 				printing.cardboard.front_card.type_line.types
 			],
+			'type': 'printing',
 		}
 
 
@@ -80,7 +82,7 @@ class NodeSerializer(_Serializer):
 				)
 				for child in
 				printing_node.children
-			]
+			],
 		}
 
 
@@ -89,9 +91,11 @@ class TrapSerializer(_Serializer[Trap]):
 	@classmethod
 	def serialize(cls, trap: Trap) -> compacted_model:
 		return {
-			'hash': trap.persistent_hash(),
+			'id': trap.persistent_hash(),
 			'node': NodeSerializer.serialize(trap.node),
 			'intention_type': trap.intention_type.name,
+			'type': 'trap',
+			'string_representation': trap.node.get_minimal_string(identified_by_id=False),
 		}
 
 
@@ -107,7 +111,8 @@ class TicketSerializer(_Serializer[Ticket]):
 				ticket.options
 			],
 			'name': ticket.name,
-			'hash': ticket.persistent_hash(),
+			'id': ticket.persistent_hash(),
+			'type': 'ticket',
 		}
 
 
@@ -117,8 +122,9 @@ class PurpleSerializer(_Serializer[Purple]):
 	def serialize(cls, purple: Purple) -> compacted_model:
 		return {
 			'name': purple.name,
-			'hash': purple.persistent_hash(),
+			'id': purple.persistent_hash(),
 			'description': purple.description,
+			'type': 'purple',
 		}
 
 

@@ -10,7 +10,7 @@ import {get_cubes} from './utils.jsx';
 class CubeTableView extends React.Component {
 
   green_cards = () => {
-    return this.state.cube.printings.filter(
+    return this.state._cube.printings.filter(
       printing => printing.colors.include('G')
     )
   };

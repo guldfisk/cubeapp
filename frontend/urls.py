@@ -5,5 +5,5 @@ from frontend import views
 
 urlpatterns = [
     path('', views.index),
-    path('cubeview/', views.cube_view),
+    path('cubeview/<int:cube_id>', views.cube_view),
 ]

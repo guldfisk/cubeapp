@@ -9,6 +9,8 @@ from rest_framework import status
 from mtgorp.models.persistent.printing import Printing
 
 from magiccube.laps.traps.trap import Trap
+from magiccube.laps.tickets.ticket import Ticket
+from magiccube.laps.purples.purple import Purple
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
@@ -38,6 +40,8 @@ def cube_view(request: Request, cube_id: int) -> Response:
 _IMAGE_TYPES_MAP = {
 	'printing': Printing,
 	'trap': Trap,
+	'ticket': Ticket,
+	'purple': Purple,
 }
 
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
@@ -46,15 +50,14 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 	pictured_type = _IMAGE_TYPES_MAP.get(request.GET.get('type', 'printing'), Printing)
 
-	if pictured_type == Trap:
-		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type)
-	else:
+	if pictured_type == Printing:
 		try:
 			_id = int(pictured_id)
 		except ValueError:
 			return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 		image = image_loader.get_image(db.printings[_id])
-
+	else:
+		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type)
 
 	response = HttpResponse(content_type='image/png')
 	image.get().save(response, 'PNG')

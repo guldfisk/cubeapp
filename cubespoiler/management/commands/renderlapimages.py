@@ -18,26 +18,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        traps = set(
+        laps = set(
             itertools.chain(
                 *(
-                    cube_container.cube.traps
+                    cube_container.cube.laps
                     for cube_container in
                     CubeContainer.objects.all()
                 )
             )
         )
-
-        # print(traps)
-
-        # printings = Multiset(
-        #     itertools.chain(
-        #         *traps
-        #     )
-        # )
-        #
-        # for item, multiplicity in sorted(printings.items(), key=lambda vs: vs[1]):
-        #     print(item, multiplicity)
 
         st = time.time()
 
@@ -45,7 +34,7 @@ class Command(BaseCommand):
             [
                 image_loader.get_image(trap, save=True)
                 for trap in
-                traps
+                laps
             ]
         ).get()
 
