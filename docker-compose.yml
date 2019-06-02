@@ -1,0 +1,37 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'cubespoiler'
+      MYSQL_USER: 'phdk'
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - db:/var/lib/docker_mysql
+#    secrets:
+#      - db_password
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    entrypoint: ./entrypoint.sh
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  db:
+
+#secrets:
+#  db_password:
+#    file: secrets/db_password.txt
