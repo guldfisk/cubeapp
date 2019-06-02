@@ -18,4 +18,6 @@ apt install nodejs
 npm install dev
 npm run dev
 
+python3 manage.py collectstatic --noinput
+
 exec "$@"

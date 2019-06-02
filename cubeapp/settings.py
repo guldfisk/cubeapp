@@ -15,7 +15,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
 
-DEBUG = _config_parser['default']['debug']
+# DEBUG = _config_parser['default']['debug']
+DEBUG = False
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts'])
 
@@ -25,6 +26,7 @@ ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts'])
 INSTALLED_APPS = [
     'rest_framework',
     'cubespoiler.apps.CubespoilerConfig',
+    'statics.apps.StaticsConfig',
     'frontend.apps.FrontendConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -122,3 +124,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = 'media/'

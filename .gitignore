@@ -11,5 +11,5 @@ frontend/migrations/__pycache__/
 frontend/static/
 resources/__pycache__/
 src/
-/secrets/
 /.env
+media/
