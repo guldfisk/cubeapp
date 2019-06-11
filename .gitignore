@@ -13,3 +13,6 @@ resources/__pycache__/
 src/
 /.env
 media/
+cubeapp/frontend/
+statics/__pycache__/
+statics/migrations/__pycache__/

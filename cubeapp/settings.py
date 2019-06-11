@@ -1,6 +1,8 @@
 import os
 import json
 
+from distutils.util import strtobool
+
 import configparser
 from secretresources.paths import project_name_to_secret_dir
 
@@ -15,8 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
 
-# DEBUG = _config_parser['default']['debug']
-DEBUG = False
+DEBUG = strtobool(_config_parser['default']['debug'])
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts'])
 
