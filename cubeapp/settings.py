@@ -77,13 +77,13 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cubespoiler',
         'USER': 'phdk',
-		'PASSWORD': DATABASE_PASSWORD,
-		'HOST': 'db',
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': 'db',
         'PORT': '3306',
-		'OPTIONS': {
-			'charset': 'utf8',
-			'use_unicode': True,
-		},
+        'OPTIONS': {
+            'charset': 'utf8',
+            'use_unicode': True,
+        },
     }
 }
 
