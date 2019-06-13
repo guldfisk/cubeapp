@@ -8,6 +8,8 @@ from rest_framework import status
 
 from mtgorp.models.persistent.printing import Printing
 
+from mtgimg.interface import SizeSlug
+
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
@@ -44,17 +46,37 @@ _IMAGE_TYPES_MAP = {
 	'purple': Purple,
 }
 
+_IMAGE_SIZE_MAP = {
+	size_slug.name.lower(): size_slug
+	for size_slug in
+	SizeSlug
+}
+
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 	if not request.method == 'GET':
 		return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-	pictured_type = _IMAGE_TYPES_MAP.get(request.GET.get('type', 'printing'), Printing)
+	pictured_type = _IMAGE_TYPES_MAP.get(
+		request.GET.get(
+			'type',
+			'printing',
+		),
+		Printing,
+	)
+	size_slug = _IMAGE_TYPES_MAP.get(
+		request.GET.get(
+			'size_slug',
+			'original',
+		),
+		SizeSlug.ORIGINAL,
+	)
 
 	if pictured_type == Printing:
 		try:
 			_id = int(pictured_id)
 		except ValueError:
 			return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+
 		image = image_loader.get_image(db.printings[_id])
 	else:
 		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type)

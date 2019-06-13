@@ -16,3 +16,4 @@ media/
 cubeapp/frontend/
 statics/__pycache__/
 statics/migrations/__pycache__/
+!/frontend/src/

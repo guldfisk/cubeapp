@@ -58,9 +58,7 @@ class CubeListView extends React.Component {
           )
         }
       </Row>
-
     </div>
-
   }
 }
 
