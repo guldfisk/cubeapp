@@ -20,6 +20,20 @@ from cubespoiler.serializers import CubeContainerSerializer, FullCubeContainerSe
 from cubespoiler import models
 
 
+_IMAGE_TYPES_MAP = {
+	'printing': Printing,
+	'trap': Trap,
+	'ticket': Ticket,
+	'purple': Purple,
+}
+
+_IMAGE_SIZE_MAP = {
+	size_slug.name.lower(): size_slug
+	for size_slug in
+	SizeSlug
+}
+
+
 @api_view(['GET',])
 def index(request: Request) -> Response:
 	cubes = models.CubeContainer.objects.all()
@@ -36,21 +50,8 @@ def cube_view(request: Request, cube_id: int) -> Response:
 
 	if request.method == 'GET':
 		serializer = FullCubeContainerSerializer(cube_container)
-		return Response(serializer.data)
+		return Response(serializer.data, content_type='application/json')
 
-
-_IMAGE_TYPES_MAP = {
-	'printing': Printing,
-	'trap': Trap,
-	'ticket': Ticket,
-	'purple': Purple,
-}
-
-_IMAGE_SIZE_MAP = {
-	size_slug.name.lower(): size_slug
-	for size_slug in
-	SizeSlug
-}
 
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 	if not request.method == 'GET':
@@ -63,7 +64,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 		),
 		Printing,
 	)
-	size_slug = _IMAGE_TYPES_MAP.get(
+	size_slug = _IMAGE_SIZE_MAP.get(
 		request.GET.get(
 			'size_slug',
 			'original',
@@ -77,9 +78,9 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 		except ValueError:
 			return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
-		image = image_loader.get_image(db.printings[_id])
+		image = image_loader.get_image(db.printings[_id], size_slug=size_slug)
 	else:
-		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type)
+		image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug)
 
 	response = HttpResponse(content_type='image/png')
 	image.get().save(response, 'PNG')

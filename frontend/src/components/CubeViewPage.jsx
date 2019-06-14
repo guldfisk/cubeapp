@@ -1,23 +1,25 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 
-import {get_cubes, get_cube} from './utils.jsx';
+import {get_cube} from './utils.jsx';
 import CubeModel from './cubemodel.js'
 import CubeMultiView from './CubeMultiView.jsx'
 
 
-class App extends React.Component {
+class CubeViewPage extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
       cube: null,
     };
+    console.log(this.props);
+    console.log(this.props.match.params.cubeId);
   }
 
   componentDidMount() {
-    get_cube(this.props.cubeId).then(
+    get_cube(this.props.match.params.cubeId).then(
       response => {
+        console.log(response.data);
         this.setState(
           {
             cube: new CubeModel(response.data),
@@ -31,10 +33,10 @@ class App extends React.Component {
 
     return <CubeMultiView
       cube={this.state.cube}
+      fluid={true}
     />
   }
 
 }
 
-const dom = document.getElementById("app");
-dom ? ReactDOM.render(<App cubeId={dom.dataset["key"]}/>, dom) : null;
+export default CubeViewPage;

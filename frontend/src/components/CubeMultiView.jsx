@@ -3,8 +3,8 @@ import React from 'react';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
-import CubeListView from "./cubelistview";
-import CubeSpoilerView from "./cubespoilerview";
+import CubeListView from "./cubelistview.jsx";
+import CubeSpoilerView from "./cubespoilerview.jsx";
 import Container from "react-bootstrap/Container";
 
 

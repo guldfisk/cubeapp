@@ -12,6 +12,7 @@ SECRETS_PATH = os.path.join(project_name_to_secret_dir('cubeapp'), 'settings.cfg
 _config_parser = configparser.ConfigParser()
 _config_parser.read(SECRETS_PATH)
 DATABASE_PASSWORD = _config_parser['client']['password']
+DATABASE_HOST = _config_parser['client']['host']
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -78,7 +79,7 @@ DATABASES = {
         'NAME': 'cubespoiler',
         'USER': 'phdk',
         'PASSWORD': DATABASE_PASSWORD,
-        'HOST': 'db',
+        'HOST': DATABASE_HOST,
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8',
@@ -126,3 +127,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = 'media/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
