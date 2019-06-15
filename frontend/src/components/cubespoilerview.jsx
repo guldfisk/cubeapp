@@ -6,8 +6,14 @@ import {get_cubeable_images_url} from './utils.jsx';
 class CubeableImage extends React.Component {
   render() {
     return <img
-      src={get_cubeable_images_url(this.props.cubeable.id, this.props.cubeable.type)}
-      width="370px"
+      src={
+        get_cubeable_images_url(
+          this.props.cubeable.id,
+          this.props.cubeable.type,
+          'medium',
+          )
+      }
+      width="372px"
       alt={this.props.cubeable.id}
     />
   }

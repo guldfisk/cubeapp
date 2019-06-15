@@ -12,14 +12,16 @@ SECRETS_PATH = os.path.join(project_name_to_secret_dir('cubeapp'), 'settings.cfg
 _config_parser = configparser.ConfigParser()
 _config_parser.read(SECRETS_PATH)
 DATABASE_PASSWORD = _config_parser['client']['password']
+DATABASE_HOST = _config_parser['client']['host']
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
 _production = strtobool(_config_parser['default']['production'])
 
+DEBUG = strtobool(_config_parser['default']['debug'])
 # DEBUG = not _production
-DEBUG = False
+# DEBUG = False
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if _production else []
 
@@ -78,14 +80,13 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cubespoiler',
         'USER': 'phdk',
-		'PASSWORD': DATABASE_PASSWORD,
-		# 'HOST': 'db',
-		'HOST': 'db' if _production else '',
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': DATABASE_HOST,
         'PORT': '3306',
-		'OPTIONS': {
-			'charset': 'utf8',
-			'use_unicode': True,
-		},
+        'OPTIONS': {
+            'charset': 'utf8',
+            'use_unicode': True,
+        },
     }
 }
 
@@ -131,3 +132,10 @@ STATIC_ROOT = 'media/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}

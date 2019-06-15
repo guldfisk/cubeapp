@@ -7,6 +7,8 @@ from multiset import Multiset
 
 from django.core.management.base import BaseCommand, CommandError
 
+from mtgimg import interface
+
 from resources.staticimageloader import image_loader
 from resources.staticdb import db
 
@@ -32,9 +34,11 @@ class Command(BaseCommand):
 
         images = promise.Promise.all(
             [
-                image_loader.get_image(trap, save=True)
+                image_loader.get_image(trap, size_slug=size_slug, save=True)
                 for trap in
                 laps
+                for size_slug in
+                interface.SizeSlug
             ]
         ).get()
 

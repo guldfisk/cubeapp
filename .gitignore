@@ -10,9 +10,13 @@ frontend/__pycache__/
 frontend/migrations/__pycache__/
 frontend/static/
 resources/__pycache__/
-/src/
+src/
 /.env
 media/
 !/frontend/src/
 statics/__pycache__/
 statics/migrations/__pycache__/
+cubeapp/frontend/
+statics/__pycache__/
+statics/migrations/__pycache__/
+!/frontend/src/

@@ -1,7 +1,4 @@
-
-
 from django.urls import path
-
 
 from cubespoiler import views
 
