@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>woof :)</title>
+    {% load static %}
+</head>
+<body>
+<section class="section">
+    <h1>Hello, welcome to my site hahA :)</h1>
+    <p>This is a website dedicated to hunting and dog keeping. No amateurs please, this is a resource for <b>PROFFESIONALS</b> only! 😠😠😠</p>
+    <img src="{% static "me_and_my_boi_in_the_woods.jpeg" %}" onclick="var audio = new Audio('{% static "dog_bark.wav" %}'); audio.play();">
+    <p>Useful links for the swell, swoll hunter man:</p>
+    <ul>
+        <li>
+            <a href="http://www.ondfisk.dk/">For sea hunting</a> <small>rip in peace</small>
+        </li>
+        <li>
+            <a href="/app">Cardboard</a>
+        </li>
+    </ul>
+</section>
+</body>
+
+</html>

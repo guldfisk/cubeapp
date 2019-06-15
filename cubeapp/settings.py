@@ -1,6 +1,8 @@
 import os
 import json
 
+from distutils.util import strtobool
+
 import configparser
 from secretresources.paths import project_name_to_secret_dir
 
@@ -14,11 +16,12 @@ DATABASE_PASSWORD = _config_parser['client']['password']
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
+_production = strtobool(_config_parser['default']['production'])
 
-# DEBUG = _config_parser['default']['debug']
+# DEBUG = not _production
 DEBUG = False
 
-ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts'])
+ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if _production else []
 
 
 # Application definition
@@ -51,8 +54,7 @@ ROOT_URLCONF = 'cubeapp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -77,7 +79,8 @@ DATABASES = {
         'NAME': 'cubespoiler',
         'USER': 'phdk',
 		'PASSWORD': DATABASE_PASSWORD,
-		'HOST': 'db',
+		# 'HOST': 'db',
+		'HOST': 'db' if _production else '',
         'PORT': '3306',
 		'OPTIONS': {
 			'charset': 'utf8',
@@ -125,3 +128,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = 'media/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
