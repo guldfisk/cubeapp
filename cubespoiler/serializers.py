@@ -10,6 +10,8 @@ from rest_framework import serializers
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.persistent.cardboard import Cardboard
+from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.expansion import Expansion
 
 from magiccube.collections.cube import Cube
@@ -45,6 +47,16 @@ class ExpansionSerializer(_Serializer[Expansion]):
 		}
 
 
+class MinimalPrintingSerializer(_Serializer[Printing]):
+
+	@classmethod
+	def serialize(cls, printing: Printing) -> compacted_model:
+		return {
+			'name': printing.cardboard.name,
+			'id': printing.id,
+		}
+
+
 class PrintingSerializer(_Serializer[Printing]):
 
 	@classmethod
@@ -64,6 +76,83 @@ class PrintingSerializer(_Serializer[Printing]):
 				printing.cardboard.front_card.type_line.types
 			],
 			'type': 'printing',
+		}
+
+
+class CardSerializer(_Serializer[Card]):
+
+	@classmethod
+	def serialize(cls, card: Card) -> compacted_model:
+		return {
+			'name': card.name,
+			'oracle_text': card.oracle_text,
+			'mana_cost': (
+				None
+				if card.mana_cost is None else
+				{
+					'str': str(card.mana_cost),
+					'atoms': [
+						atom.code
+						for atom in
+						card.mana_cost
+					],
+				}
+			),
+			'cmc': card.cmc,
+			'color': [
+				color.letter_code
+				for color in
+				card.color
+			],
+			'type_line': {
+				'types': [
+					_type.name
+					for _type in
+					card.type_line.types
+				],
+				'line': str(card.type_line),
+			},
+			'power_toughness': (
+				None
+				if card.power_toughness is None else
+				{
+					'power': str(card.power_toughness.power),
+					'toughness': str(card.power_toughness.toughness),
+					'str': str(card.power_toughness)
+				}
+			),
+			'loyalty': str(card.loyalty),
+		}
+
+
+class CardboardSerializer(_Serializer[Cardboard]):
+
+	@classmethod
+	def serialize(cls, cardboard: Cardboard) -> compacted_model:
+		return {
+			'name': cardboard.name,
+			'front_cards': [
+				CardSerializer.serialize(card)
+				for card in
+				cardboard.front_cards
+			],
+			'back_cards': [
+				CardSerializer.serialize(card)
+				for card in
+				cardboard.back_cards
+			],
+			'layout': cardboard.layout.name,
+		}
+
+
+class FullPrintingSerializer(_Serializer[Printing]):
+
+	@classmethod
+	def serialize(cls, printing: Printing) -> compacted_model:
+		return {
+			'id': printing.id,
+			'expansion': ExpansionSerializer.serialize(printing.expansion),
+			'cardboard': CardboardSerializer.serialize(printing.cardboard),
 		}
 
 
@@ -164,8 +253,6 @@ class JsonField(serializers.Field):
 
 	def to_internal_value(self, data):
 		return json.loads(data)
-		# print(data)
-		# return data
 
 	def to_representation(self, value):
 		return CubeSerializer.serialize(

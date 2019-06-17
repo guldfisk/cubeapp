@@ -5,6 +5,7 @@ import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
 import CubesPage from './CubesPage.jsx';
 import CubeViewPage from './CubeViewPage.jsx';
+import SearchPage from './SearchPage.jsx';
 
 import Bootstrap from 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -19,11 +20,15 @@ const AppRouter = () => {
             <li>
               <Link to="/">Home</Link>
             </li>
+            <li>
+              <Link to="/search/">Search</Link>
+            </li>
           </ul>
         </nav>
 
-        <Route path="/" exact component={CubesPage}/>
-        <Route path="/cubeview/:cubeId(\d+)" component={CubeViewPage}/>
+        <Route path="/" exact component={CubesPage} />
+        <Route path="/cubeview/:cubeId(\d+)" component={CubeViewPage} />
+        <Route path='/search/:initialSearch?' component={SearchPage} />
       </div>
     </Router>
   )

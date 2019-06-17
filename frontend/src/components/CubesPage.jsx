@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 
@@ -19,9 +21,10 @@ class CubesPage extends React.Component {
 
     get_cubes().then(
       response => {
+        console.log(response.data);
         this.setState(
           {
-            cubes: response.data
+            cubes: response.data.results
           }
         );
       }
@@ -39,11 +42,11 @@ class CubesPage extends React.Component {
             return <span
               className='number'
             >
-              <a
-                href={window.location.pathname + 'cubeview/' + props.original.id}
+              <Link
+                to={'/cubeview/' + props.original.id}
               >
                 {props.value}
-              </a>
+              </Link>
             </span>;
           },
         },
