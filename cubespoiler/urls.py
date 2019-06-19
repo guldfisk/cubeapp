@@ -8,4 +8,5 @@ urlpatterns = [
 	path('<int:cube_id>/', views.cube_view, name='_cube detail'),
 	path('images/<slug:pictured_id>/', views.image_view, name='image'),
 	path('search/', views.SearchView.as_view(), name='search'),
+	path('printing/', views.printing_view, name='printing_view'),
 ]

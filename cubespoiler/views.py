@@ -5,7 +5,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from cubespoiler import models
-from cubespoiler.serializers import CubeContainerSerializer, FullCubeContainerSerializer, PrintingSerializer, FullPrintingSerializer
+from cubespoiler import serializers
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -15,6 +15,7 @@ from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
+
 
 _IMAGE_TYPES_MAP = {
     'printing': Printing,
@@ -32,7 +33,7 @@ _IMAGE_SIZE_MAP = {
 
 class CubesView(generics.ListAPIView):
     queryset = models.CubeContainer.objects.all()
-    serializer_class = CubeContainerSerializer
+    serializer_class = serializers.CubeContainerSerializer
 
 
 @api_view(['GET', ])
@@ -43,7 +44,7 @@ def cube_view(request: Request, cube_id: int) -> Response:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = FullCubeContainerSerializer(cube_container)
+        serializer = serializers.FullCubeContainerSerializer(cube_container)
         return Response(serializer.data, content_type='application/json')
 
 
@@ -83,9 +84,18 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 class SearchView(generics.ListAPIView):
 
+    _search_target_map = {
+        'printings': (PrintingStrategy, serializers.MinimalPrintingSerializer),
+        'cardboards': (CardboardStrategy, serializers.CardboardSerializer),
+    }
+
     def list(self, request, *args, **kwargs):
         try:
             query = self.request.query_params['query']
+            search_target = self._search_target_map.get(
+                self.request.query_params.get('search_target', 'printings'),
+                PrintingStrategy,
+            )
         except KeyError:
             return Response('No query', status=status.HTTP_400_BAD_REQUEST)
 
@@ -98,7 +108,7 @@ class SearchView(generics.ListAPIView):
 
         return self.get_paginated_response(
             [
-                FullPrintingSerializer.serialize(printing)
+                serializers.MinimalPrintingSerializer.serialize(printing)
                 for printing in
                 self.paginate_queryset(
                     list(
@@ -110,3 +120,13 @@ class SearchView(generics.ListAPIView):
             ]
         )
 
+
+def printing_view(request: Request, printing_id: int):
+    try:
+        printing = db.printings[printing_id]
+    except KeyError:
+        return Response('No printing with that id', status=status.HTTP_404_NOT_FOUND)
+
+    return Response(
+        serializers.FullPrintingSerializer.serialize(printing)
+    )

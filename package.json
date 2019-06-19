@@ -37,6 +37,7 @@
     "react-router": "^5.0.1",
     "react-router-dom": "^5.0.1",
     "react-table": "^6.10.0",
+    "reactjs-mappletooltip": "^1.4.63",
     "style-loader": "^0.23.1",
     "webpack": "^4.32.2",
     "webpack-cli": "^3.3.2"
