@@ -1,9 +1,9 @@
-import axios from 'axios';
+import axios from 'axios/index';
 import React from 'react';
 
 import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
-import {get_api_path, get_cubeable_images_url} from './utils.jsx';
+import {get_api_path, get_cubeable_images_url} from '../utils.jsx';
 
 
 class SearchPage extends React.Component {
@@ -11,7 +11,7 @@ class SearchPage extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      searchResults: [],
+      searchResults: null,
       inputValue: '',
     }
   }
@@ -29,7 +29,7 @@ class SearchPage extends React.Component {
       this.setState(
         {
           inputValue: '',
-          searchResults: [],
+          searchResults: null,
         }
       )
     }
@@ -45,9 +45,9 @@ class SearchPage extends React.Component {
 
   performSearch = (query) => {
     this.setState(
-          {
-            searchResults: [],
-          }
+      {
+        searchResults: null,
+      }
     );
     axios.get(
       get_api_path() + 'search/',
@@ -58,17 +58,10 @@ class SearchPage extends React.Component {
       }
     ).then(
       response => {
-        this.setState(
-        {
-          searchResults: response.data.results,
-        }
-      )
-      }
-    ).catch(
-      () => {
+        console.log(response.data);
         this.setState(
           {
-            searchResults: [],
+            searchResults: response.data,
           }
         )
       }
@@ -77,7 +70,7 @@ class SearchPage extends React.Component {
 
   userSubmit = (event) => {
     if (!event) event = window.location;
-    const keyCode = event.keyCode || event.which ;
+    const keyCode = event.keyCode || event.which;
     if (keyCode === 13) {
       this.props.history.push('/search/' + this.state.inputValue);
       return false;
@@ -93,17 +86,18 @@ class SearchPage extends React.Component {
   };
 
   render() {
+    console.log(this.state.searchResults);
     return (
       <div>
         <input type="text" value={this.state.inputValue} onKeyPress={this.userSubmit} onChange={this.inputChanged}/>
         <br/>
         {
-          this.state.searchResults.map(
+          this.state.searchResults !== null ? this.state.searchResults.results.map(
             result => <img
               src={get_cubeable_images_url(result.id, 'printing', 'medium')}
-              alt={result.cardboard.name}
+              alt={result.name}
             />
-          )
+          ) : <div/>
         }
       </div>
     )

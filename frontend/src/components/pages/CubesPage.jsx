@@ -5,7 +5,7 @@ import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 
-import {get_cubes} from './utils.jsx';
+import {get_cubes} from '../utils.jsx';
 
 
 class CubesPage extends React.Component {

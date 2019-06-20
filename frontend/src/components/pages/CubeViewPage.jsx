@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {get_cube} from './utils.jsx';
-import CubeModel from './cubemodel.js'
-import CubeMultiView from './CubeMultiView.jsx'
+import {get_cube} from '../utils.jsx';
+import CubeModel from '../cubemodel.js'
+import CubeMultiView from '../CubeMultiView.jsx'
 
 
 class CubeViewPage extends React.Component {
