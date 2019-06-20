@@ -106,6 +106,7 @@ class SearchView(generics.ListAPIView):
         except ParseException as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
+        # TODO printings aren't really ordered
         return self.get_paginated_response(
             [
                 serializers.MinimalPrintingSerializer.serialize(printing)

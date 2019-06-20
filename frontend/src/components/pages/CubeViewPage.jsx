@@ -12,14 +12,11 @@ class CubeViewPage extends React.Component {
     this.state = {
       cube: null,
     };
-    console.log(this.props);
-    console.log(this.props.match.params.cubeId);
   }
 
   componentDidMount() {
     get_cube(this.props.match.params.cubeId).then(
       response => {
-        console.log(response.data);
         this.setState(
           {
             cube: new CubeModel(response.data),
@@ -33,7 +30,6 @@ class CubeViewPage extends React.Component {
 
     return <CubeMultiView
       cube={this.state.cube}
-      fluid={true}
     />
   }
 

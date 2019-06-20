@@ -21,7 +21,6 @@ class CubesPage extends React.Component {
 
     get_cubes().then(
       response => {
-        console.log(response.data);
         this.setState(
           {
             cubes: response.data.results

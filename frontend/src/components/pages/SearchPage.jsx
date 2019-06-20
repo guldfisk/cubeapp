@@ -58,7 +58,6 @@ class SearchPage extends React.Component {
       }
     ).then(
       response => {
-        console.log(response.data);
         this.setState(
           {
             searchResults: response.data,
@@ -86,7 +85,6 @@ class SearchPage extends React.Component {
   };
 
   render() {
-    console.log(this.state.searchResults);
     return (
       <div>
         <input type="text" value={this.state.inputValue} onKeyPress={this.userSubmit} onChange={this.inputChanged}/>
