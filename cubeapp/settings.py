@@ -19,9 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = _config_parser['default']['secret_key']
 _production = strtobool(_config_parser['default']['production'])
 
-DEBUG = strtobool(_config_parser['default']['debug'])
-# DEBUG = not _production
-# DEBUG = False
+DEBUG = not _production
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if _production else []
 

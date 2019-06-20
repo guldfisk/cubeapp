@@ -5,7 +5,7 @@ from cubeapp import views
 
 
 urlpatterns = [
-    path('', views.index),
+    # path('', views.index),
     path('admin/', admin.site.urls),
     path('spoiler/', include('cubespoiler.urls')),
     path('static/', include('statics.urls')),

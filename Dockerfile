@@ -14,7 +14,7 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x -o /tmp/nodesource_setup.sh
 RUN bash /tmp/nodesource_setup.sh
 RUN apt-get update && apt-get install nodejs
 
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --ignore-installed --no-cache-dir
 
 RUN python3 -m mtgorp.db.init
 

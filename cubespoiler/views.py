@@ -9,6 +9,7 @@ from cubespoiler import serializers
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
+from mtgimg import interface
 from mtgimg.interface import SizeSlug
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
