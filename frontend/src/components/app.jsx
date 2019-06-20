@@ -1,32 +1,41 @@
+import Bootstrap from 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-table/react-table.css'
+
 import React from 'react';
 import ReactDOM from 'react-dom';
-import 'react-table/react-table.css'
 import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
-import CubesPage from './CubesPage.jsx';
-import CubeViewPage from './CubeViewPage.jsx';
+import Container from 'react-bootstrap/Container';
+import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
+import NavItem from 'react-bootstrap/NavItem';
 
-import Bootstrap from 'bootstrap/dist/css/bootstrap.min.css';
+import {LinkContainer} from 'react-router-bootstrap';
+
+import Routes from './Routes.jsx';
 
 
 const AppRouter = () => {
-  return (
-    <Router>
+  return <Router>
+    <Navbar bg='light' expand='lg' fluid='true' collapseOnSelect>
+      <Navbar.Collapse id='basic-navbar nav'>
+        <Nav className='mr-auto'>
+          <LinkContainer to='/'>
+            <Nav.Link>Home</Nav.Link>
+          </LinkContainer>
 
-      <div>
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-          </ul>
-        </nav>
-
-        <Route path="/" exact component={CubesPage}/>
-        <Route path="/cubeview/:cubeId(\d+)" component={CubeViewPage}/>
-      </div>
-    </Router>
-  )
+          <LinkContainer to='/search/'>
+            <Nav.Link>Search</Nav.Link>
+          </LinkContainer>
+        </Nav>
+      </Navbar.Collapse>
+    </Navbar>
+    <Container
+      fluid={true}
+    >
+      <Routes/>
+    </Container>
+  </Router>
 };
 
 
