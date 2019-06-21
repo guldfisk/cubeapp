@@ -3,8 +3,9 @@ ENV PYTHONUNBUFFERED 1
 ENV cube_app_debug 0
 
 RUN mkdir -p /code
+COPY . /code
+RUN pip3 install -r /code/requirements.txt
 WORKDIR /code
-COPY . .
 
 COPY ./appdirs/ /root/.local/share/
 
@@ -13,8 +14,6 @@ RUN apt-get update && apt-get install curl git
 RUN curl -sL https://deb.nodesource.com/setup_10.x -o /tmp/nodesource_setup.sh
 RUN bash /tmp/nodesource_setup.sh
 RUN apt-get update && apt-get install nodejs
-
-RUN pip3 install -r requirements.txt --ignore-installed --no-cache-dir
 
 RUN python3 -m mtgorp.db.init
 

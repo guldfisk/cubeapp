@@ -4,6 +4,7 @@ import json
 from distutils.util import strtobool
 
 import configparser
+
 from secretresources.paths import project_name_to_secret_dir
 
 
