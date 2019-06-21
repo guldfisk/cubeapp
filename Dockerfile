@@ -23,5 +23,6 @@ RUN npm run dev
 #RUN python3 manage.py migrate
 #RUN python3 manage.py populatecubes
 #RUN python3 manage.py collectstatic --noinput
+# :)
 
 CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
