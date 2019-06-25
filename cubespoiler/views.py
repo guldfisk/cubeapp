@@ -92,9 +92,9 @@ class SearchView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         try:
             query = self.request.query_params['query']
-            search_target = self._search_target_map.get(
+            strategy, serializer = self._search_target_map.get(
                 self.request.query_params.get('search_target', 'printings'),
-                PrintingStrategy,
+                self._search_target_map['printings'],
             )
         except KeyError:
             return Response('No query', status=status.HTTP_400_BAD_REQUEST)
