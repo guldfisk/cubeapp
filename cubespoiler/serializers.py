@@ -26,7 +26,7 @@ from resources.staticdb import db
 T = t.TypeVar('T')
 
 
-class _Serializer(t.Generic[T]):
+class ModelSerializer(t.Generic[T]):
 
 	@classmethod
 	@abstractmethod
@@ -34,7 +34,7 @@ class _Serializer(t.Generic[T]):
 		pass
 
 
-class ExpansionSerializer(_Serializer[Expansion]):
+class ExpansionSerializer(ModelSerializer[Expansion]):
 
 	@classmethod
 	def serialize(cls, expansion: Expansion) -> compacted_model:
@@ -47,7 +47,7 @@ class ExpansionSerializer(_Serializer[Expansion]):
 		}
 
 
-class MinimalPrintingSerializer(_Serializer[Printing]):
+class MinimalPrintingSerializer(ModelSerializer[Printing]):
 
 	@classmethod
 	def serialize(cls, printing: Printing) -> compacted_model:
@@ -57,7 +57,7 @@ class MinimalPrintingSerializer(_Serializer[Printing]):
 		}
 
 
-class PrintingSerializer(_Serializer[Printing]):
+class PrintingSerializer(ModelSerializer[Printing]):
 
 	@classmethod
 	def serialize(cls, printing: Printing) -> compacted_model:
@@ -79,7 +79,7 @@ class PrintingSerializer(_Serializer[Printing]):
 		}
 
 
-class CardSerializer(_Serializer[Card]):
+class CardSerializer(ModelSerializer[Card]):
 
 	@classmethod
 	def serialize(cls, card: Card) -> compacted_model:
@@ -125,7 +125,7 @@ class CardSerializer(_Serializer[Card]):
 		}
 
 
-class CardboardSerializer(_Serializer[Cardboard]):
+class CardboardSerializer(ModelSerializer[Cardboard]):
 
 	@classmethod
 	def serialize(cls, cardboard: Cardboard) -> compacted_model:
@@ -145,7 +145,7 @@ class CardboardSerializer(_Serializer[Cardboard]):
 		}
 
 
-class FullPrintingSerializer(_Serializer[Printing]):
+class FullPrintingSerializer(ModelSerializer[Printing]):
 
 	@classmethod
 	def serialize(cls, printing: Printing) -> compacted_model:
@@ -156,7 +156,7 @@ class FullPrintingSerializer(_Serializer[Printing]):
 		}
 
 
-class NodeSerializer(_Serializer):
+class NodeSerializer(ModelSerializer):
 
 	@classmethod
 	def serialize(cls, printing_node: PrintingNode) -> compacted_model:
@@ -175,7 +175,7 @@ class NodeSerializer(_Serializer):
 		}
 
 
-class TrapSerializer(_Serializer[Trap]):
+class TrapSerializer(ModelSerializer[Trap]):
 
 	@classmethod
 	def serialize(cls, trap: Trap) -> compacted_model:
@@ -188,7 +188,7 @@ class TrapSerializer(_Serializer[Trap]):
 		}
 
 
-class TicketSerializer(_Serializer[Ticket]):
+class TicketSerializer(ModelSerializer[Ticket]):
 
 	@classmethod
 	def serialize(cls, ticket: Ticket) -> compacted_model:
@@ -205,7 +205,7 @@ class TicketSerializer(_Serializer[Ticket]):
 		}
 
 
-class PurpleSerializer(_Serializer[Purple]):
+class PurpleSerializer(ModelSerializer[Purple]):
 
 	@classmethod
 	def serialize(cls, purple: Purple) -> compacted_model:
@@ -217,7 +217,7 @@ class PurpleSerializer(_Serializer[Purple]):
 		}
 
 
-class CubeSerializer(_Serializer[Cube]):
+class CubeSerializer(ModelSerializer[Cube]):
 
 	@classmethod
 	def serialize(cls, cube: Cube) -> compacted_model:

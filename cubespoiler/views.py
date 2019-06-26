@@ -1,3 +1,5 @@
+import typing as t
+
 from django.http import HttpResponse, HttpRequest
 from rest_framework import status, generics
 from rest_framework.decorators import api_view
@@ -6,13 +8,17 @@ from rest_framework.response import Response
 
 from cubespoiler import models
 from cubespoiler import serializers
+
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
+
 from mtgimg.interface import SizeSlug
+from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
-from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy
+from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
+
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 
@@ -87,7 +93,17 @@ class SearchView(generics.ListAPIView):
     _search_target_map = {
         'printings': (PrintingStrategy, serializers.MinimalPrintingSerializer),
         'cardboards': (CardboardStrategy, serializers.CardboardSerializer),
-    }
+    } #type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], serializers.ModelSerializer]]
+
+    _sort_keys = {
+        'name': lambda strategy, model: tuple( strategy.extract_name(model) ),
+        'cmc': lambda strategy, model: tuple( strategy.extract_cmc(model) ),
+        'power': lambda strategy, model: tuple( strategy.extract_power(model) ),
+        'toughness': lambda strategy, model: tuple( strategy.extract_toughness(model) ),
+        'loyalty': lambda strategy, model: tuple( strategy.extract_loyalty(model) ),
+        'artist': lambda strategy, model: tuple( strategy.extract_artist(model) ),
+        # 'release_date': lambda strategy, model: tuple( strategy.extract_expansion(model) ),
+    } #type: t.Dict[str, t.Callable[[ExtractionStrategy, t.Union[Printing, Cardboard]], t.Any]]
 
     def list(self, request, *args, **kwargs):
         try:
@@ -102,14 +118,14 @@ class SearchView(generics.ListAPIView):
         search_parser = SearchParser(db)
 
         try:
-            pattern = search_parser.parse(query, PrintingStrategy)
+            pattern = search_parser.parse(query, strategy)
         except ParseException as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
         # TODO printings aren't really ordered
         return self.get_paginated_response(
             [
-                serializers.MinimalPrintingSerializer.serialize(printing)
+                serializer.serialize(printing)
                 for printing in
                 self.paginate_queryset(
                     list(
