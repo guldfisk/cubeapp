@@ -1,5 +1,7 @@
 import typing as t
 
+from distutils.util import strtobool
+
 from django.http import HttpResponse, HttpRequest
 from rest_framework import status, generics
 from rest_framework.decorators import api_view
@@ -92,28 +94,38 @@ class SearchView(generics.ListAPIView):
 
     _search_target_map = {
         'printings': (PrintingStrategy, serializers.MinimalPrintingSerializer),
-        'cardboards': (CardboardStrategy, serializers.CardboardSerializer),
+        'cardboards': (CardboardStrategy, serializers.MinimalCardboardSerializer),
     } #type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], serializers.ModelSerializer]]
-
-    _sort_keys = {
-        'name': lambda strategy, model: tuple( strategy.extract_name(model) ),
-        'cmc': lambda strategy, model: tuple( strategy.extract_cmc(model) ),
-        'power': lambda strategy, model: tuple( strategy.extract_power(model) ),
-        'toughness': lambda strategy, model: tuple( strategy.extract_toughness(model) ),
-        'loyalty': lambda strategy, model: tuple( strategy.extract_loyalty(model) ),
-        'artist': lambda strategy, model: tuple( strategy.extract_artist(model) ),
-        # 'release_date': lambda strategy, model: tuple( strategy.extract_expansion(model) ),
-    } #type: t.Dict[str, t.Callable[[ExtractionStrategy, t.Union[Printing, Cardboard]], t.Any]]
 
     def list(self, request, *args, **kwargs):
         try:
             query = self.request.query_params['query']
-            strategy, serializer = self._search_target_map.get(
-                self.request.query_params.get('search_target', 'printings'),
-                self._search_target_map['printings'],
-            )
-        except KeyError:
-            return Response('No query', status=status.HTTP_400_BAD_REQUEST)
+            strategy, serializer = self._search_target_map[
+                self.request.query_params.get('search_target', 'printings')
+            ]
+
+            _sort_keys = {
+                'name': lambda model: tuple(strategy.extract_name(model)),
+                'cmc': lambda model: tuple(strategy.extract_cmc(model)),
+                'power': lambda model: tuple(strategy.extract_power(model)),
+                'toughness': lambda model: tuple(strategy.extract_toughness(model)),
+                'loyalty': lambda model: tuple(strategy.extract_loyalty(model)),
+                'artist': lambda model: tuple(strategy.extract_artist(model)),
+                'release_date': lambda model: tuple(
+                    expansion.release_date
+                    for expansion in
+                    strategy.extract_expansion(model)
+                ),
+            }  # type: t.Dict[str, t.Callable[[t.Union[Printing, Cardboard]], t.Any]]
+
+            order_by = _sort_keys[
+                self.request.query_params.get('order_by', 'name')
+            ]
+            descending = strtobool(self.request.query_params.get('descending', 'false'))
+
+        except (KeyError, ValueError) as e:
+            print('error', e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         search_parser = SearchParser(db)
 
@@ -122,16 +134,19 @@ class SearchView(generics.ListAPIView):
         except ParseException as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
-        # TODO printings aren't really ordered
         return self.get_paginated_response(
             [
                 serializer.serialize(printing)
                 for printing in
                 self.paginate_queryset(
-                    list(
+                    sorted(
                         pattern.matches(
                             db.printings.values()
-                        )
+                            if strategy == PrintingStrategy else
+                            db.cardboards.values()
+                        ),
+                        key=order_by,
+                        reverse=descending,
                     )
                 )
             ]

@@ -145,6 +145,15 @@ class CardboardSerializer(ModelSerializer[Cardboard]):
 		}
 
 
+class MinimalCardboardSerializer(ModelSerializer[Cardboard]):
+
+	@classmethod
+	def serialize(cls, cardboard: Cardboard) -> compacted_model:
+		return {
+			'name': cardboard.name,
+		}
+
+
 class FullPrintingSerializer(ModelSerializer[Printing]):
 
 	@classmethod
