@@ -1,1 +1,3 @@
-import App from './components/app.jsx';
+import './styling/bootstrap.css'
+
+import './components/app.jsx';

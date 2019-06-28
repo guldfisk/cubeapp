@@ -1,13 +1,14 @@
-import "../styling/CubeListView.css";
+import "../../styling/CubeListView.css";
 
 import React from 'react';
 
 import Row from 'react-bootstrap/Row';
 
 import MapleToolTip from 'reactjs-mappletooltip';
-import ReactTooltip from 'react-tooltip';
 
-import {get_cubeable_images_url} from "./utils.jsx";
+import { LazyImage } from "react-lazy-images";
+
+import {get_cubeable_images_url} from "../utils.jsx";
 
 
 const TrapItem = (props) => {
@@ -19,7 +20,8 @@ const TrapItem = (props) => {
         {props.name}
       </div>
       <div>
-        <img
+
+        <LazyImage
           src={
             get_cubeable_images_url(
               props.id,
@@ -27,7 +29,12 @@ const TrapItem = (props) => {
               'medium',
             )
           }
+          placeholder={({imageProps, ref}) => (
+            <img ref={ref} src="https://img.scryfall.com/cards/large/en/c16/119.jpg?1530716039" alt={imageProps.alt}/>
+          )}
+          actual={({imageProps }) => <img {...imageProps} />}
         />
+
       </div>
     </MapleToolTip>
   } else if (props.type === 'AllNode') {
@@ -61,13 +68,11 @@ const CubeableListItem = (props) => {
 
   if (props.cubeable.type === 'printing') {
     content = <MapleToolTip>
-      <div>
-        {props.cubeable.name}
-      </div>
-      <span>
-        <img
-          // width='372px'
-          // height='520px'
+        <div>
+          {props.cubeable.name}
+        </div>
+        <span>
+        <LazyImage
           src={
             get_cubeable_images_url(
               props.cubeable.id,
@@ -75,9 +80,13 @@ const CubeableListItem = (props) => {
               'medium',
             )
           }
+          placeholder={({imageProps, ref}) => (
+            <img ref={ref} src="https://img.scryfall.com/cards/large/en/c16/119.jpg?1530716039" alt={imageProps.alt}/>
+          )}
+          actual={({imageProps }) => <img {...imageProps} />}
         />
       </span>
-    </MapleToolTip>
+      </MapleToolTip>
 
   } else if (props.cubeable.type === 'trap') {
     content = <TrapItem {...props.cubeable.node}/>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {get_cubeable_images_url} from './utils.jsx';
+import {get_cubeable_images_url} from '../utils.jsx';
 
 
 class CubeableImage extends React.Component {

@@ -51,6 +51,10 @@ class CubeModel {
     this._cube = cube;
   };
 
+  name = () => {
+    return this._cube.name
+  };
+
   printings = () => {
     return this._cube.cube_content.printings
   };

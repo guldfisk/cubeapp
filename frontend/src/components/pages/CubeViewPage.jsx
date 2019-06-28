@@ -1,8 +1,15 @@
 import React from 'react';
 
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Card from "react-bootstrap/Card"
+import Container from "react-bootstrap/Container"
+
+import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+
 import {get_cube} from '../utils.jsx';
 import CubeModel from '../cubemodel.js'
-import CubeMultiView from '../CubeMultiView.jsx'
+import CubeMultiView from '../cubeview/CubeMultiView.jsx'
 
 
 class CubeViewPage extends React.Component {
@@ -27,10 +34,30 @@ class CubeViewPage extends React.Component {
   }
 
   render() {
-
-    return <CubeMultiView
+    let cube = <h2>Loading...</h2>
+    if (this.state.cube !== null) {
+      cube = <CubeMultiView
       cube={this.state.cube}
     />
+    }
+
+    return <Container fluid>
+      <Row>
+        <Col sm={2}>
+          <Card>
+            <Card.Header>
+              Actions
+            </Card.Header>
+            <Card.Body>
+              <p><Link to={"#"}>Search</Link></p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col>
+          {cube}
+        </Col>
+      </Row>
+    </Container>
   }
 
 }
