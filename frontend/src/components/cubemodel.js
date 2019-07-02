@@ -55,6 +55,10 @@ class CubeModel {
     return this._cube.name
   };
 
+  created_at = () => {
+    return this._cube.created_at
+  };
+
   printings = () => {
     return this._cube.cube_content.printings
   };

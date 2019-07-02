@@ -12,7 +12,7 @@ from mtgimg import interface
 from resources.staticimageloader import image_loader
 from resources.staticdb import db
 
-from cubespoiler.models import CubeContainer
+from api.models import CubeContainer
 
 
 class Command(BaseCommand):

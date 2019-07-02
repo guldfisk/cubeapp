@@ -29,7 +29,8 @@ ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if _produ
 
 INSTALLED_APPS = [
     'rest_framework',
-    'cubespoiler.apps.CubespoilerConfig',
+    'knox',
+    'api.apps.ApiConfig',
     'statics.apps.StaticsConfig',
     'frontend.apps.FrontendConfig',
     'django.contrib.admin',
@@ -139,4 +140,5 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
+    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
 }

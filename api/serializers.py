@@ -1,11 +1,13 @@
-
 import typing as t
-
 from abc import abstractmethod
-
 import json
 
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+
 from rest_framework import serializers
+
+from knox.models import AuthToken
 
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
@@ -287,3 +289,26 @@ class CubeContainerSerializer(serializers.Serializer):
 
 class FullCubeContainerSerializer(CubeContainerSerializer):
 	cube_content = JsonField()
+
+
+class UserSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = User
+		fields = ('id', 'username')
+
+
+class LoginSerializer(serializers.Serializer):
+	username = serializers.CharField()
+	password = serializers.CharField()
+
+	def validate(self, data):
+		user = authenticate(**data)
+		if user and user.is_active:
+			return user
+		raise serializers.ValidationError('Unable to login')
+
+	def update(self, instance, validated_data):
+		raise NotImplemented()
+
+	def create(self, validated_data):
+		raise NotImplemented()

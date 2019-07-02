@@ -1,23 +1,7 @@
 import React from 'react';
 
-import {get_cubeable_images_url} from '../utils.jsx';
+import {CubeableImage} from '../images.jsx';
 
-
-class CubeableImage extends React.Component {
-  render() {
-    return <img
-      src={
-        get_cubeable_images_url(
-          this.props.cubeable.id,
-          this.props.cubeable.type,
-          'medium',
-          )
-      }
-      width="372px"
-      alt={this.props.cubeable.id}
-    />
-  }
-}
 
 class CubeSpoilerView extends React.Component {
 
@@ -34,7 +18,9 @@ class CubeSpoilerView extends React.Component {
         this.props.cube.cubeables().map(
           cubeable => {
             return <CubeableImage
-              cubeable={cubeable}
+              id={cubeable.id}
+              type={cubeable.type}
+              sizeSlug="medium"
             />
           }
         )

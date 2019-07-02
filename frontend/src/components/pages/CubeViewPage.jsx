@@ -7,7 +7,7 @@ import Container from "react-bootstrap/Container"
 
 import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
-import {get_cube} from '../utils.jsx';
+import {get_cube, Loading} from '../utils.jsx';
 import CubeModel from '../cubemodel.js'
 import CubeMultiView from '../cubeview/CubeMultiView.jsx'
 
@@ -34,7 +34,7 @@ class CubeViewPage extends React.Component {
   }
 
   render() {
-    let cube = <h2>Loading...</h2>
+    let cube = <Loading/>;
     if (this.state.cube !== null) {
       cube = <CubeMultiView
       cube={this.state.cube}

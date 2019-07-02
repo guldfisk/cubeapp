@@ -5,10 +5,12 @@ from distutils.util import strtobool
 
 from django.http import HttpResponse, HttpRequest
 
-from rest_framework import status, generics
+from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
+
+from knox.models import AuthToken
 
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
@@ -23,8 +25,8 @@ from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 
-from cubespoiler import models
-from cubespoiler import serializers
+from api import models
+from api import serializers
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
@@ -79,18 +81,21 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
         SizeSlug.ORIGINAL,
     )
 
-    if pictured_type == Printing:
+    if pictured_id == 'back':
+        image = image_loader.get_default_image(size_slug=size_slug)
+
+    elif pictured_type == Printing:
         try:
             _id = int(pictured_id)
         except ValueError:
             return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
 
-        image = image_loader.get_image(db.printings[_id], size_slug=size_slug)
+        image = image_loader.get_image(db.printings[_id], size_slug=size_slug).get()
     else:
-        image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug)
+        image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug).get()
 
     response = HttpResponse(content_type='image/png')
-    image.get().save(response, 'PNG')
+    image.save(response, 'PNG')
     return response
 
 
@@ -205,3 +210,32 @@ def printing_view(request: Request, printing_id: int):
     return Response(
         serializers.FullPrintingSerializer.serialize(printing)
     )
+
+
+class LoginEndpoint(generics.GenericAPIView):
+    serializer_class = serializers.LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+
+        _, token = AuthToken.objects.create(user)
+
+        return Response(
+            {
+                "user": serializers.UserSerializer(
+                    user,
+                    context=self.get_serializer_context(),
+                ).data,
+                "token": token,
+            }
+        )
+
+
+class UserEndpoint(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+    serializer_class = serializers.UserSerializer
+
+    def get_object(self):
+        return self.request.user

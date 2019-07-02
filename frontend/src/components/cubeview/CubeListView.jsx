@@ -8,6 +8,7 @@ import MapleToolTip from 'reactjs-mappletooltip';
 
 import { LazyImage } from "react-lazy-images";
 
+import {CubeableImage} from '../images.jsx';
 import {get_cubeable_images_url} from "../utils.jsx";
 
 
@@ -20,21 +21,9 @@ const TrapItem = (props) => {
         {props.name}
       </div>
       <div>
-
-        <LazyImage
-          src={
-            get_cubeable_images_url(
-              props.id,
-              'printing',
-              'medium',
-            )
-          }
-          placeholder={({imageProps, ref}) => (
-            <img ref={ref} src="https://img.scryfall.com/cards/large/en/c16/119.jpg?1530716039" alt={imageProps.alt}/>
-          )}
-          actual={({imageProps }) => <img {...imageProps} />}
+        <CubeableImage
+         id={props.id}
         />
-
       </div>
     </MapleToolTip>
   } else if (props.type === 'AllNode') {
@@ -72,19 +61,9 @@ const CubeableListItem = (props) => {
           {props.cubeable.name}
         </div>
         <span>
-        <LazyImage
-          src={
-            get_cubeable_images_url(
-              props.cubeable.id,
-              'printing',
-              'medium',
-            )
-          }
-          placeholder={({imageProps, ref}) => (
-            <img ref={ref} src="https://img.scryfall.com/cards/large/en/c16/119.jpg?1530716039" alt={imageProps.alt}/>
-          )}
-          actual={({imageProps }) => <img {...imageProps} />}
-        />
+          <CubeableImage
+            id={props.cubeable.id}
+          />
       </span>
       </MapleToolTip>
 

@@ -34,20 +34,19 @@ class CubeMultiView extends React.Component {
     return <Card>
       <Card.Header className="panel-heading">
         <Row>
-          <Col>
-            {this.props.cube.name()}
-          </Col>
-          <Col>
-            <select
-
-              onChange={
-                event => this.setState({viewType: event.target.value})
-              }
-            >
-              <option>List</option>
-              <option>Images</option>
-            </select>
-          </Col>
+          <h4>
+            <span className="badge badge-secondary">{this.props.cube.name()}</span>
+            <span className="badge badge-secondary">{this.props.cube.created_at()}</span>
+          </h4>
+          <select
+            className="ml-auto"
+            onChange={
+              event => this.setState({viewType: event.target.value})
+            }
+          >
+            <option>List</option>
+            <option>Images</option>
+          </select>
         </Row>
       </Card.Header>
       <Card.Body className="panel-body">

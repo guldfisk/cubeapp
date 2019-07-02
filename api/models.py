@@ -13,6 +13,7 @@ class CubeContainer(models.Model):
 	created_at = models.DateTimeField(default=now)
 	checksum = models.CharField(max_length=256)
 	name = models.CharField(max_length=64)
+	# intended_size = models.PositiveIntegerField()
 	cube_content = models.TextField()
 
 	class Meta:
@@ -21,3 +22,8 @@ class CubeContainer(models.Model):
 	@property
 	def cube(self) -> Cube:
 		return JsonId(db).deserialize(Cube, self.cube_content)
+
+
+class VersionedCube(models.Model):
+	created_at = models.DateTimeField(default=now)
+	name = models.CharField(max_length=128)
