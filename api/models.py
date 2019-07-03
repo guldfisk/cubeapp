@@ -1,6 +1,6 @@
 from django.db import models
-
 from django.utils.timezone import now
+from django.contrib.auth import get_user_model
 
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
@@ -27,3 +27,7 @@ class CubeContainer(models.Model):
 class VersionedCube(models.Model):
 	created_at = models.DateTimeField(default=now)
 	name = models.CharField(max_length=128)
+	# author = models.ForeignKey(
+	# 	get_user_model(),
+	# 	on_delete=models.CASCADE,
+	# )

@@ -1,9 +1,7 @@
-// import 'react-table/react-table.css'
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
 
 import {applyMiddleware, createStore} from "redux";
 
@@ -11,14 +9,16 @@ import {connect, Provider} from 'react-redux';
 
 import thunk from "redux-thunk";
 
-import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 
 import {LinkContainer} from 'react-router-bootstrap';
 
-import Routes from './Routes.jsx';
+import {routes} from './Routes.jsx';
 import authReducer from './state/reducers';
+import {loadUser} from "./auth/controller";
+import {Loading} from "./utils.jsx";
+import SignInPage from './pages/SignInPage.jsx';
 
 
 const store = createStore(authReducer, applyMiddleware(thunk));
@@ -29,6 +29,45 @@ class RootComponent extends React.Component {
   componentDidMount() {
     this.props.loadUser()
   }
+
+  PrivateRoute = ({component: ChildComponent, ...rest}) => {
+    return <Route {...rest} render={
+      props => {
+        if (this.props.auth.loading) {
+          return <Loading/>;
+        } else if (!this.props.auth.authenticated) {
+          return <SignInPage/>;
+        } else {
+          return <ChildComponent {...props} />
+        }
+      }
+    }/>
+  };
+
+  createRoutes = (routes) => {
+    return <Switch>
+      {
+        routes.map(
+          ([path, component, isPrivate, args]) => {
+            return (
+              isPrivate ?
+                <this.PrivateRoute
+                  path={path}
+                  component={component}
+                  {...args}
+                /> :
+                <Route
+                  path={path}
+                  component={component}
+                  {...args}
+                />
+            )
+          }
+        )
+      }
+    </Switch>
+  };
+
 
   render() {
     return <Router>
@@ -45,32 +84,34 @@ class RootComponent extends React.Component {
             <Nav.Link>Search</Nav.Link>
           </LinkContainer>
 
-          <LinkContainer to='/create_cube/'>
+          <LinkContainer to='/create-cube/'>
             <Nav.Link>Create Cube</Nav.Link>
           </LinkContainer>
 
         </Nav>
         <Nav className="justify-content-end">
-
-          <LinkContainer to='/login/'>
-            <Nav.Link>Sign In</Nav.Link>
-          </LinkContainer>
+          {
+            this.props.auth.authenticated ?
+              <LinkContainer to='/logout/'>
+                <Nav.Link>Sign Out</Nav.Link>
+              </LinkContainer>
+              : <LinkContainer to='/login/'>
+                <Nav.Link>Sign In</Nav.Link>
+              </LinkContainer>
+          }
 
         </Nav>
       </Navbar.Collapse>
 
     </Navbar>
 
-    <Container
-      fluid={true}
-    >
-      <Routes/>
-    </Container>
+    {
+      this.createRoutes(routes)
+    }
 
   </Router>
   }
 }
-
 
 const mapStateToProps = (state) => {
   return {
@@ -86,7 +127,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    loadUser: () => dispatch(auth.loadUser())
+    loadUser: () => dispatch(loadUser())
   }
 };
 

@@ -5,9 +5,6 @@ import axios from 'axios';
 import '../styling/utils.css';
 
 
-// axios.defaults.headers.common['Accept'] = 'application/json';
-
-
 export const get_api_path = () => '/api/';
 const get_images_path = () => get_api_path() + 'images/';
 

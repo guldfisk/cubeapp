@@ -1,4 +1,4 @@
-import {signingIn, authFailed, signInSuccess} from "./actions";
+import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess} from "./actions";
 
 
 const initialState = {
@@ -14,17 +14,21 @@ export default function authReducer(state=initialState, action) {
   switch (action.type) {
 
     case signingIn:
-      return {...state, isLoading: true};
+      return {...state, loading: true};
 
     case signInSuccess:
       localStorage.setItem("token", action.data.token);
-      return {...state, ...action.data, isAuthenticated: true, isLoading: false};
+      return {...state, ...action.data, authenticated: true, loading: false};
+
+    case reSignInSuccess:
+      return {...state, user: action.data, authenticated: true, loading: false};
+
+    case signOutSuccess:
+      localStorage.removeItem("token");
+      return {...state, authenticated: false, loading: false, user: null, token: null};
 
     case authFailed:
-    // case 'LOGOUT_SUCCESSFUL':
-    //   localStorage.removeItem("token");
-    //   return {...state, errors: action.data, token: null, user: null,
-    //     isAuthenticated: false, isLoading: false};
+      return {...state, loading: false};
 
     default:
       return state;

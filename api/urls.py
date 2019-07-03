@@ -12,4 +12,6 @@ urlpatterns = [
 	path('printing/', views.printing_view, name='printing_view'),
 	path('auth/login/', views.LoginEndpoint.as_view(), name='login_endpoint'),
 	path('auth/user/', views.UserEndpoint.as_view(), name='user_endpoint'),
+	path('versioned-cubes/', views.VersionedCubesList.as_view()),
+	path('versioned-cubes/<int:pk>/', views.VersionedCubeDetail.as_view()),
 ]

@@ -1,12 +1,15 @@
 import axios from 'axios';
 
-import {signingIn, authFailed, signInSuccess} from '../state/actions.js';
+import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess} from '../state/actions.js';
 
 
 export const loadUser = () => {
   return (dispatch, getState) => {
-    const token = getState().auth.token;
-    if (!token) {return}
+    const token = getState().token;
+    if (!token) {
+      dispatch({type: authFailed});
+      return;
+    }
 
     dispatch({type: signingIn});
 
@@ -19,13 +22,8 @@ export const loadUser = () => {
         }
       },
     ).then(
-      result => {
-        dispatch({type: signInSuccess, user: result.data });
-        // if (result.status === 200) {
-        //  dispatch({type: signInSuccess, user: result.data });
-        // } else {
-        //   dispatch({type: authFailed, user: result.data });
-        // }
+      response => {
+        dispatch({type: reSignInSuccess, user: response.data});
       }
     ).catch(
       exception => {
@@ -38,22 +36,45 @@ export const loadUser = () => {
 
 export const signIn = (username, password) => {
   return (dispatch, getState) => {
-    let headers = {"Content-Type": "application/json"};
-    let body = JSON.stringify({username, password});
 
     return axios.post(
-      '/api/auth/login',
-      body,
-      {headers},
+      '/api/auth/login/',
+      {username, password},
     ).then(
       result => {
-        dispatch({type: 'LOGIN_SUCCESSFUL', data: result.data });
+        dispatch({type: signInSuccess, data: result.data});
       }
     ).catch(
       exception => {
         dispatch({type: authFailed});
       }
     )
+  }
+};
 
+
+export const signOut = (token) => {
+  return (dispatch, getState) => {
+
+    return axios.post(
+      '/api/auth/logout/',
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${token}`,
+        }
+      },
+    ).then(
+      result => {
+        console.log('signed out');
+        dispatch({type: signOutSuccess});
+      }
+    ).catch(
+      exception => {
+        console.log('oh noo');
+        dispatch({type: authFailed});
+      }
+    )
   }
 };

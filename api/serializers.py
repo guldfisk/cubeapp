@@ -7,8 +7,6 @@ from django.contrib.auth import authenticate
 
 from rest_framework import serializers
 
-from knox.models import AuthToken
-
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.persistent.printing import Printing
@@ -23,6 +21,7 @@ from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 
 from resources.staticdb import db
+from api import models
 
 
 T = t.TypeVar('T')
@@ -312,3 +311,9 @@ class LoginSerializer(serializers.Serializer):
 
 	def create(self, validated_data):
 		raise NotImplemented()
+
+
+class VersionedCubeSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = models.VersionedCube
+		fields = ('id', 'name', 'created_at')

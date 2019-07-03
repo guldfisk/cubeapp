@@ -1,17 +1,34 @@
 import React from 'react';
 
-import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card"
 import Container from "react-bootstrap/Container"
 
 import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+
+import {connect} from "react-redux";
+
+import {signIn} from '../auth/controller.js';
 
 
 class SignInForm extends React.Component {
 
+  handleSubmit = (event) => {
+    this.props.handleSubmit(
+      {
+        username: event.target.elements.username.value,
+        password: event.target.elements.password.value,
+      }
+    );
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   render() {
-    return <Form>
+    return <Form
+      onSubmit={this.handleSubmit}
+    >
       <Form.Group controlId="username">
         <Form.Label>Username</Form.Label>
         <Form.Control type="text"/>
@@ -20,6 +37,7 @@ class SignInForm extends React.Component {
         <Form.Label>Password</Form.Label>
         <Form.Control type="password"/>
       </Form.Group>
+      <Button type="submit">Sign In</Button>
     </Form>
   }
 
@@ -27,6 +45,10 @@ class SignInForm extends React.Component {
 
 
 class SignInPage extends React.Component {
+
+  handleSubmit = ({username, password}) => {
+    this.props.signIn(username, password);
+  };
 
   render() {
     return <Container>
@@ -36,7 +58,9 @@ class SignInPage extends React.Component {
               Sign in
             </Card.Header>
             <Card.Body>
-              <SignInForm/>
+              <SignInForm
+                handleSubmit={this.handleSubmit}
+              />
             </Card.Body>
           </Card>
         </Col>
@@ -45,5 +69,18 @@ class SignInPage extends React.Component {
 
 }
 
+const mapStateToProps = state => {
+  return {
+    authenticated: state.authenticated,
+  };
+};
 
-export default SignInPage;
+const mapDispatchToProps = dispatch => {
+  return {
+    signIn: (username, password) => {
+      return dispatch(signIn(username, password));
+    }
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(SignInPage);

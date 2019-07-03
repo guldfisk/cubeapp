@@ -239,3 +239,13 @@ class UserEndpoint(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class VersionedCubesList(generics.ListCreateAPIView):
+    queryset = models.VersionedCube.objects.all()
+    serializer_class = serializers.VersionedCubeSerializer
+
+
+class VersionedCubeDetail(generics.RetrieveDestroyAPIView):
+    queryset = models.VersionedCube.objects.all()
+    serializer_class = serializers.VersionedCubeSerializer
