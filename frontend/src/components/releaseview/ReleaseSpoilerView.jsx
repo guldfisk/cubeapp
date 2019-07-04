@@ -3,7 +3,7 @@ import React from 'react';
 import {CubeableImage} from '../images.jsx';
 
 
-class CubeSpoilerView extends React.Component {
+class ReleaseSpoilerView extends React.Component {
 
   render() {
     return <div
@@ -31,4 +31,4 @@ class CubeSpoilerView extends React.Component {
 
 }
 
-export default CubeSpoilerView;
+export default ReleaseSpoilerView;

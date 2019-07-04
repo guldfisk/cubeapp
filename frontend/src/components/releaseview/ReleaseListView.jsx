@@ -87,7 +87,7 @@ const CubeableListItem = (props) => {
 };
 
 
-class CubeListView extends React.Component {
+class ReleaseListView extends React.Component {
 
   render() {
     return <div
@@ -115,4 +115,4 @@ class CubeListView extends React.Component {
   }
 }
 
-export default CubeListView;
+export default ReleaseListView;

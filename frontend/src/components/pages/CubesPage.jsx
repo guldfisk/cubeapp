@@ -1,11 +1,10 @@
+import axios from 'axios';
 import React from 'react';
 
-import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+import {Cube} from '../models/models.js';
+import {get_api_path} from '../utils.jsx';
 
-import ReactTable from 'react-table'
-import 'react-table/react-table.css'
-
-import {get_cubes} from '../utils.jsx';
+import CubesView from '../cubeview/CubesView.jsx';
 
 
 class CubesPage extends React.Component {
@@ -19,11 +18,13 @@ class CubesPage extends React.Component {
 
   componentDidMount() {
 
-    get_cubes().then(
+    axios.get(get_api_path() + 'versioned-cubes/').then(
       response => {
         this.setState(
           {
-            cubes: response.data.results
+            cubes: response.data.results.map(
+              cube => new Cube(cube)
+            )
           }
         );
       }
@@ -32,36 +33,11 @@ class CubesPage extends React.Component {
   }
 
   render() {
-    const columns = [
-        {
-          Header: 'Name',
-          accessor: 'name',
-          Cell: props =>
-          {
-            return <span
-              className='number'
-            >
-              <Link
-                to={'/cubeview/' + props.original.id}
-              >
-                {props.value}
-              </Link>
-            </span>;
-          },
-        },
-        {
-          Header: 'Created At',
-          accessor: 'created_at',
-        },
-    ];
-
-    return <ReactTable
-      data={this.state.cubes}
-      columns={columns}
+    return <CubesView
+      cubes={this.state.cubes}
     />
-
   }
 
 }
 
-export default CubesPage
+export default CubesPage;

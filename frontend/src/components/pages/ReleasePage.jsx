@@ -5,14 +5,14 @@ import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card"
 import Container from "react-bootstrap/Container"
 
-import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+import {Link} from "react-router-dom";
 
-import {get_cube, Loading} from '../utils.jsx';
-import CubeModel from '../cubemodel.js'
-import CubeMultiView from '../cubeview/CubeMultiView.jsx'
+import {getCube, Loading} from '../utils.jsx';
+import {CubeRelease} from '../models/models.js';
+import ReleaseMultiView from '../releaseview/ReleaseMultiView.jsx'
 
 
-class CubeViewPage extends React.Component {
+class ReleasePage extends React.Component {
 
   constructor(props) {
     super(props);
@@ -22,11 +22,12 @@ class CubeViewPage extends React.Component {
   }
 
   componentDidMount() {
-    get_cube(this.props.match.params.cubeId).then(
+    console.log(this.props);
+    getCube(this.props.match.params.id).then(
       response => {
         this.setState(
           {
-            cube: new CubeModel(response.data),
+            cube: new CubeRelease(response.data),
           }
         )
       }
@@ -36,7 +37,7 @@ class CubeViewPage extends React.Component {
   render() {
     let cube = <Loading/>;
     if (this.state.cube !== null) {
-      cube = <CubeMultiView
+      cube = <ReleaseMultiView
       cube={this.state.cube}
     />
     }
@@ -62,4 +63,4 @@ class CubeViewPage extends React.Component {
 
 }
 
-export default CubeViewPage;
+export default ReleasePage;

@@ -1,30 +1,43 @@
+import axios from 'axios';
 import React from 'react';
 
-import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card"
 import Container from "react-bootstrap/Container"
 
-import {BrowserRouter as Router, Route, Link} from "react-router-dom";
+import {Redirect} from "react-router-dom";
 
-import {get_cube, Loading} from '../utils.jsx';
-import CubeModel from '../cubemodel.js'
-import CubeMultiView from '../cubeview/CubeMultiView.jsx'
 import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
+import {connect} from "react-redux";
 
 
 class CreateCubeForm extends React.Component {
 
+  handleSubmit = (event) => {
+    this.props.handleSubmit(
+      {
+        name: event.target.elements.name.value,
+        description: event.target.elements.description.value,
+      }
+    );
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
   render() {
-    return <Form>
+    return <Form
+      onSubmit={this.handleSubmit}
+    >
       <Form.Group controlId="name">
         <Form.Label>Name</Form.Label>
         <Form.Control type="text"/>
       </Form.Group>
-      <Form.Group controlId="target_size">
-        <Form.Label>Target Size</Form.Label>
-        <Form.Control type="number" placeholder={360}/>
+      <Form.Group controlId="description">
+        <Form.Label>Description</Form.Label>
+        <Form.Control type="text"/>
       </Form.Group>
+      <Button type="submit">Create Cube</Button>
     </Form>
   }
 
@@ -33,7 +46,36 @@ class CreateCubeForm extends React.Component {
 
 class CreateCubePage extends React.Component {
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      success: false,
+    }
+  };
+
+  handleSubmit = ({name, description }) => {
+    console.log(this.state.token);
+    axios.post(
+      "/api/versioned-cubes/",
+      {name, description},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${this.props.token}`,
+        }
+      },
+    ).then(
+      response => {
+        this.setState({success: true})
+      }
+    )
+  };
+
   render() {
+    if (this.state.success) {
+      return <Redirect to="/cubes/"/>
+    }
+
     return <Container>
         <Col>
           <Card>
@@ -41,7 +83,9 @@ class CreateCubePage extends React.Component {
               Create Cube
             </Card.Header>
             <Card.Body>
-              <CreateCubeForm/>
+              <CreateCubeForm
+                handleSubmit={this.handleSubmit}
+              />
             </Card.Body>
           </Card>
         </Col>
@@ -51,4 +95,11 @@ class CreateCubePage extends React.Component {
 }
 
 
-export default CreateCubePage;
+const mapStateToProps = state => {
+  return {
+    token: state.token,
+  };
+};
+
+
+export default connect(mapStateToProps, null)(CreateCubePage);

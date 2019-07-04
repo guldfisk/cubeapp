@@ -4,6 +4,7 @@ import json
 from distutils.util import strtobool
 
 from django.http import HttpResponse, HttpRequest
+from django.contrib.auth import get_user_model
 
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
@@ -47,15 +48,15 @@ _IMAGE_SIZE_MAP = {
 
 
 class CubesView(generics.ListAPIView):
-    queryset = models.CubeContainer.objects.all()
+    queryset = models.CubeRelease.objects.all()
     serializer_class = serializers.CubeContainerSerializer
 
 
 @api_view(['GET', ])
 def cube_view(request: Request, cube_id: int) -> Response:
     try:
-        cube_container = models.CubeContainer.objects.get(pk=cube_id)
-    except models.CubeContainer.DoesNotExist:
+        cube_container = models.CubeRelease.objects.get(pk=cube_id)
+    except models.CubeRelease.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     serializer = serializers.FullCubeContainerSerializer(cube_container)
@@ -176,11 +177,11 @@ def search_cube_view(request: Request, cube_id: int) -> Response:
         return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        cube_container = models.CubeContainer.objects.get(pk=cube_id)
-    except models.CubeContainer.DoesNotExist:
+        cube_container = models.CubeRelease.objects.get(pk=cube_id)
+    except models.CubeRelease.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    mock_container = models.CubeContainer(
+    mock_container = models.CubeRelease(
         id = cube_container.id,
         name = cube_container.name,
         created_at = cube_container.created_at,
@@ -244,8 +245,23 @@ class UserEndpoint(generics.RetrieveAPIView):
 class VersionedCubesList(generics.ListCreateAPIView):
     queryset = models.VersionedCube.objects.all()
     serializer_class = serializers.VersionedCubeSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class VersionedCubeDetail(generics.RetrieveDestroyAPIView):
     queryset = models.VersionedCube.objects.all()
     serializer_class = serializers.VersionedCubeSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+
+class UserList(generics.ListAPIView):
+    queryset = get_user_model().objects.all()
+    serializer_class = serializers.UserSerializer
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = get_user_model().objects.all()
+    serializer_class = serializers.UserSerializer

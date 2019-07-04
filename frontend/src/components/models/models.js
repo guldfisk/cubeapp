@@ -45,34 +45,101 @@ class TicketModel {
 }
 
 
-class CubeModel {
+export class MinimalCube {
 
   constructor(cube) {
-    this._cube = cube;
+    self._cube = cube;
+  }
+
+  name = () => {
+    return self._cube.name
+  };
+
+  id = () => {
+    return self._cube.id
+  };
+
+  description = () => {
+    return self._cube.description;
+  };
+
+  author = () => {
+    return self._cube.author
+  };
+
+  createdAt = () => {
+    return self._cube.created_at
+  };
+
+}
+
+
+export class Cube extends MinimalCube {
+
+  constructor(cube) {
+    super(cube);
+    self._cube.releases = self._cube.releases.map(
+      release => new CubeReleaseMeta(release)
+    );
+  }
+
+  releases = () => {
+    return self._cube.releases
+  };
+
+  latestRelease = () => {
+    return self._cube.releases[0]
+  };
+
+}
+
+
+export class CubeReleaseMeta {
+
+  constructor(release) {
+    this._release = release;
+  };
+
+  id = () => {
+    return this._release.id
   };
 
   name = () => {
-    return this._cube.name
+    return this._release.name
   };
 
-  created_at = () => {
-    return this._cube.created_at
+  createdAt = () => {
+    return this._release.created_at
+  };
+
+}
+
+
+export class CubeRelease extends CubeReleaseMeta {
+
+  constructor(release) {
+    super(release);
+    this._cube = new MinimalCube(release.versioned_cube);
+  }
+
+  cube = () => {
+    return this._cube
   };
 
   printings = () => {
-    return this._cube.cube_content.printings
+    return this._release.cube_content.printings
   };
 
   traps = () => {
-    return this._cube.cube_content.traps;
+    return this._release.cube_content.traps;
   };
 
   tickets = () => {
-    return this._cube.cube_content.tickets;
+    return this._release.cube_content.tickets;
   };
 
   purples = () => {
-    return this._cube.cube_content.purples;
+    return this._release.cube_content.purples;
   };
 
   laps = () => {
@@ -166,5 +233,3 @@ class CubeModel {
   };
 
 }
-
-export default CubeModel;

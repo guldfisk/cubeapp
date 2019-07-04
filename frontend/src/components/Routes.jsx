@@ -1,20 +1,22 @@
 import React from "react";
 
-import CubesPage from './pages/CubesPage.jsx';
-import CubeViewPage from './pages/CubeViewPage.jsx';
+import ReleasesPage from './pages/ReleasesPage.jsx';
+import ReleasePage from './pages/ReleasePage.jsx';
 import SearchPage from './pages/SearchPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 import CreateCubePage from './pages/CreateCubePage.jsx';
 import SignInPage from './pages/SignInPage.jsx';
 import SignOutPage from './pages/SignOutPage.jsx';
+import CubesPage from './pages/CubesPage.jsx';
 
 
 export const routes = [
-  ['/', CubesPage, false, {exact: true}],
-  ['/cubeview/:cubeId(\\d+)', CubeViewPage, false, {}],
+  ['/', ReleasesPage, false, {exact: true}],
+  ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
   ['/logout', SignOutPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],
+  ['/cubes', CubesPage, false, {}],
   [null, NotFoundPage, false, {}],
 ];
 

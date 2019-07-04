@@ -13,8 +13,8 @@ export const get_cubes = () => {
   return axios.get(get_api_path());
 };
 
-export const get_cube = (id) => {
-  const path = get_api_path() + id +'/';
+export const getCube = (id) => {
+  const path = get_api_path() + 'cube-releases/' + id +'/';
   return axios.get(path);
 };
 

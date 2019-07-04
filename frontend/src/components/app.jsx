@@ -88,6 +88,10 @@ class RootComponent extends React.Component {
             <Nav.Link>Create Cube</Nav.Link>
           </LinkContainer>
 
+          <LinkContainer to='/cubes/'>
+            <Nav.Link>Versioned Cubes</Nav.Link>
+          </LinkContainer>
+
         </Nav>
         <Nav className="justify-content-end">
           {

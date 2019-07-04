@@ -4,11 +4,13 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card"
 
-import CubeListView from "./CubeListView.jsx";
-import CubeSpoilerView from "./CubeSpoilerView.jsx";
+import {Link} from "react-router-dom";
+
+import ReleaseListView from "./ReleaseListView.jsx";
+import ReleaseSpoilerView from "./ReleaseSpoilerView.jsx";
 
 
-class CubeMultiView extends React.Component {
+class ReleaseMultiView extends React.Component {
 
   constructor(props) {
     super(props);
@@ -22,11 +24,11 @@ class CubeMultiView extends React.Component {
     let view = <div/>;
 
     if (this.state.viewType === 'List') {
-      view = <CubeListView
+      view = <ReleaseListView
         cube={this.props.cube}
       />
     } else {
-      view = <CubeSpoilerView
+      view = <ReleaseSpoilerView
         cube={this.props.cube}
       />
     }
@@ -35,8 +37,13 @@ class CubeMultiView extends React.Component {
       <Card.Header className="panel-heading">
         <Row>
           <h4>
+            <span className="badge badge-secondary">
+              <Link to='/cubes/'>
+                {this.props.cube.cube().name()}
+              </Link>
+            </span>
             <span className="badge badge-secondary">{this.props.cube.name()}</span>
-            <span className="badge badge-secondary">{this.props.cube.created_at()}</span>
+            <span className="badge badge-secondary">{this.props.cube.createdAt()}</span>
           </h4>
           <select
             className="ml-auto"
@@ -58,4 +65,4 @@ class CubeMultiView extends React.Component {
 }
 
 
-export default CubeMultiView;
+export default ReleaseMultiView;

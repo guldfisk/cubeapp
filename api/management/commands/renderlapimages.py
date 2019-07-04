@@ -12,7 +12,7 @@ from mtgimg import interface
 from resources.staticimageloader import image_loader
 from resources.staticdb import db
 
-from api.models import CubeContainer
+from api.models import CubeRelease
 
 
 class Command(BaseCommand):
@@ -25,7 +25,7 @@ class Command(BaseCommand):
                 *(
                     cube_container.cube.laps
                     for cube_container in
-                    CubeContainer.objects.all()
+                    CubeRelease.objects.all()
                 )
             )
         )

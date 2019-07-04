@@ -9,12 +9,13 @@ from magiccube.collections.cube import Cube
 from resources.staticdb import db
 
 
-class CubeContainer(models.Model):
+class CubeRelease(models.Model):
 	created_at = models.DateTimeField(default=now)
 	checksum = models.CharField(max_length=256)
 	name = models.CharField(max_length=64)
-	# intended_size = models.PositiveIntegerField()
+	intended_size = models.PositiveIntegerField()
 	cube_content = models.TextField()
+	versioned_cube = models.ForeignKey('VersionedCube', on_delete=models.CASCADE, related_name='releases')
 
 	class Meta:
 		ordering = ('-created_at',)
@@ -27,7 +28,8 @@ class CubeContainer(models.Model):
 class VersionedCube(models.Model):
 	created_at = models.DateTimeField(default=now)
 	name = models.CharField(max_length=128)
-	# author = models.ForeignKey(
-	# 	get_user_model(),
-	# 	on_delete=models.CASCADE,
-	# )
+	description = models.TextField()
+	author = models.ForeignKey(
+		get_user_model(),
+		on_delete=models.CASCADE,
+	)
