@@ -11,7 +11,6 @@ class CubesView extends React.Component {
     return <Table>
       <thead>
       <tr>
-        <th>ID</th>
         <th>Name</th>
         <th>Description</th>
         <th>Author</th>
@@ -26,16 +25,31 @@ class CubesView extends React.Component {
          this.props.cubes.map(
            cube => {
              return <tr>
-               <td>{cube.id()}</td>
-               <td>{cube.name()}</td>
+               <td>
+                 <Link to={"/cube/" + cube.id()}>
+                   {cube.name()}
+                 </Link>
+               </td>
                <td>{cube.description()}</td>
                <td>{cube.author().username}</td>
                <td>
-                 <Link to={'/release/' + cube.latestRelease().id()}>
-                   {cube.latestRelease().name()}
-                 </Link>
+                 {
+                   cube.releases().length > 0 ?
+                     <Link to={'/release/' + cube.latestRelease().id()}>
+                       {cube.latestRelease().name()}
+                     </Link>
+                     :
+                     "No releases"
+                 }
                </td>
-               <td>{cube.latestRelease().createdAt()}</td>
+               <td>
+                  {
+                    cube.releases().length > 0 ?
+                      cube.latestRelease().createdAt()
+                      :
+                      "No releases"
+                  }
+               </td>
                <td>{cube.releases().length}</td>
                <td>{cube.createdAt()}</td>
              </tr>

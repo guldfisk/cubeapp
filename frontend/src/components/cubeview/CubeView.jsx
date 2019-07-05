@@ -3,47 +3,52 @@ import React from 'react';
 import {Link} from "react-router-dom";
 
 import Table from "react-bootstrap/Table";
+import Card from "react-bootstrap/Card";
+import Row from "react-bootstrap/Row";
 
 
 class CubeView extends React.Component {
 
   render() {
-    return <Table>
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Author</th>
-        <th>Last Release</th>
-        <th>Last Update</th>
-        <th>Releases</th>
-        <th>Created At</th>
-      </tr>
-      </thead>
-      <tbody>
-        {
-         this.props.cubes.map(
-           cube => {
-             return <tr>
-               <td>{cube.id()}</td>
-               <td>{cube.name()}</td>
-               <td>{cube.description()}</td>
-               <td>{cube.author().username}</td>
-               <td>
-                 <Link to={'/release/' + cube.latestRelease().id()}>
-                   {cube.latestRelease().name()}
-                 </Link>
-               </td>
-               <td>{cube.latestRelease().createdAt()}</td>
-               <td>{cube.releases().length}</td>
-               <td>{cube.createdAt()}</td>
-             </tr>
-           }
-         )
-        }
-      </tbody>
-    </Table>
+
+    return <Card>
+      <Card.Header className="panel-heading">
+        <Row>
+          <h4>
+            <span className="badge badge-secondary">{this.props.cube.name()}</span>
+            <span className="badge badge-secondary">{this.props.cube.createdAt()}</span>
+          </h4>
+        </Row>
+      </Card.Header>
+      <Card.Body className="panel-body">
+        <Table>
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Created At</th>
+            <th>Intended Size</th>
+          </tr>
+          </thead>
+          <tbody>
+          {
+            this.props.cube.releases().map(
+              release => {
+                return <tr>
+                  <td>
+                    <Link to={"/release/" + release.id()}>
+                      {release.name()}
+                    </Link>
+                  </td>
+                  <td>{release.createdAt()}</td>
+                  <td>{release.intendedSize()}</td>
+                </tr>
+              }
+            )
+          }
+          </tbody>
+        </Table>
+      </Card.Body>
+    </Card>
 
   }
 

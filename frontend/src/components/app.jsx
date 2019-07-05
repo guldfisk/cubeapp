@@ -77,7 +77,7 @@ class RootComponent extends React.Component {
         <Nav className='mr-auto'>
 
           <LinkContainer to='/'>
-            <Nav.Link>Home</Nav.Link>
+            <Nav.Link>Cubes</Nav.Link>
           </LinkContainer>
 
           <LinkContainer to='/search/'>
@@ -88,8 +88,8 @@ class RootComponent extends React.Component {
             <Nav.Link>Create Cube</Nav.Link>
           </LinkContainer>
 
-          <LinkContainer to='/cubes/'>
-            <Nav.Link>Versioned Cubes</Nav.Link>
+          <LinkContainer to='/deltas/'>
+            <Nav.Link>Deltas</Nav.Link>
           </LinkContainer>
 
         </Nav>

@@ -18,11 +18,11 @@ class PrintingModel {
   };
 
   types = () => {
-    return self._printing.types;
+    return this._printing.types;
   };
 
   content_description = () => {
-    return self.name + '|' + self._printing.expansion.code;
+    return this.name + '|' + this._printing.expansion.code;
   };
 
 }
@@ -48,27 +48,27 @@ class TicketModel {
 export class MinimalCube {
 
   constructor(cube) {
-    self._cube = cube;
+    this._cube = cube;
   }
 
   name = () => {
-    return self._cube.name
+    return this._cube.name
   };
 
   id = () => {
-    return self._cube.id
+    return this._cube.id
   };
 
   description = () => {
-    return self._cube.description;
+    return this._cube.description;
   };
 
   author = () => {
-    return self._cube.author
+    return this._cube.author
   };
 
   createdAt = () => {
-    return self._cube.created_at
+    return this._cube.created_at
   };
 
 }
@@ -78,17 +78,17 @@ export class Cube extends MinimalCube {
 
   constructor(cube) {
     super(cube);
-    self._cube.releases = self._cube.releases.map(
+    this._cube.releases = this._cube.releases.map(
       release => new CubeReleaseMeta(release)
     );
   }
 
   releases = () => {
-    return self._cube.releases
+    return this._cube.releases
   };
 
   latestRelease = () => {
-    return self._cube.releases[0]
+    return this._cube.releases[0]
   };
 
 }
@@ -110,6 +110,10 @@ export class CubeReleaseMeta {
 
   createdAt = () => {
     return this._release.created_at
+  };
+
+  intendedSize = () => {
+    return this._release.intended_size
   };
 
 }
@@ -230,6 +234,27 @@ export class CubeRelease extends CubeReleaseMeta {
       this.grouped_printings(),
       this.grouped_laps(),
     )
+  };
+
+}
+
+
+export class Delta {
+
+  constructor(delta) {
+    this._delta = delta
+  }
+
+  description = () => {
+    return this._delta.description;
+  };
+
+  createdAt = () => {
+    return this._delta.created_at;
+  };
+
+  author = () => {
+    return this._delta.author;
   };
 
 }

@@ -265,3 +265,12 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveAPIView):
     queryset = get_user_model().objects.all()
     serializer_class = serializers.UserSerializer
+
+
+class DeltaList(generics.ListCreateAPIView):
+    queryset = models.CubeDelta.objects.all()
+    serializer_class = serializers.CubeDeltaSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

@@ -32,18 +32,20 @@ class ReleaseMultiView extends React.Component {
         cube={this.props.cube}
       />
     }
-
     return <Card>
       <Card.Header className="panel-heading">
         <Row>
           <h4>
             <span className="badge badge-secondary">
-              <Link to='/cubes/'>
+              <Link to={'/cube/' + this.props.cube.cube().id()}>
                 {this.props.cube.cube().name()}
               </Link>
             </span>
             <span className="badge badge-secondary">{this.props.cube.name()}</span>
             <span className="badge badge-secondary">{this.props.cube.createdAt()}</span>
+            <span className="badge badge-secondary">
+              {this.props.cube.cubeables().length + '/' + this.props.cube.intendedSize()}
+            </span>
           </h4>
           <select
             className="ml-auto"

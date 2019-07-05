@@ -13,9 +13,12 @@ export const get_cubes = () => {
   return axios.get(get_api_path());
 };
 
+export const getRelease = (id) => {
+  return axios.get(get_api_path() + 'cube-releases/' + id +'/');
+};
+
 export const getCube = (id) => {
-  const path = get_api_path() + 'cube-releases/' + id +'/';
-  return axios.get(path);
+  return axios.get(get_api_path() + 'versioned-cubes/' + id +'/');
 };
 
 export const get_cubeable_images_url = (id, type='printing', size_slug='original') => {

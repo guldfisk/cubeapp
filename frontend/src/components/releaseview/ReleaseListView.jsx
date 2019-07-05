@@ -6,10 +6,7 @@ import Row from 'react-bootstrap/Row';
 
 import MapleToolTip from 'reactjs-mappletooltip';
 
-import { LazyImage } from "react-lazy-images";
-
 import {CubeableImage} from '../images.jsx';
-import {get_cubeable_images_url} from "../utils.jsx";
 
 
 const TrapItem = (props) => {
@@ -57,7 +54,9 @@ const CubeableListItem = (props) => {
 
   if (props.cubeable.type === 'printing') {
     content = <MapleToolTip>
-        <div>
+        <div
+          onClick={() => console.log(props.cubeable.name)}
+        >
           {props.cubeable.name}
         </div>
         <span>
@@ -102,6 +101,7 @@ class ReleaseListView extends React.Component {
                     group.map(
                       cubeable => <CubeableListItem
                         cubeable={cubeable}
+                        // onClick={() => console.log(cubeable)}
                       />
                     )
                   }

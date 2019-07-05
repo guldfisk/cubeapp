@@ -7,9 +7,10 @@ import Container from "react-bootstrap/Container"
 
 import {Link} from "react-router-dom";
 
-import {getCube, Loading} from '../utils.jsx';
+import {getRelease, Loading} from '../utils.jsx';
 import {CubeRelease} from '../models/models.js';
 import ReleaseMultiView from '../releaseview/ReleaseMultiView.jsx'
+import Button from "react-bootstrap/Button";
 
 
 class ReleasePage extends React.Component {
@@ -22,8 +23,7 @@ class ReleasePage extends React.Component {
   }
 
   componentDidMount() {
-    console.log(this.props);
-    getCube(this.props.match.params.id).then(
+    getRelease(this.props.match.params.id).then(
       response => {
         this.setState(
           {
