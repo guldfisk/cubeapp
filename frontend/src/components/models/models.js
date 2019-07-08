@@ -45,6 +45,22 @@ class TicketModel {
 }
 
 
+class User {
+
+  constructor(user) {
+    this._user = user;
+  }
+
+  id = () => {
+    return this._user.id
+  };
+
+  username = () => {
+    return this._user.username
+  };
+}
+
+
 export class MinimalCube {
 
   constructor(cube) {
@@ -88,7 +104,10 @@ export class Cube extends MinimalCube {
   };
 
   latestRelease = () => {
-    return this._cube.releases[0]
+    if (this._cube.releases.length < 1) {
+      return null;
+    }
+    return this._cube.releases[0];
   };
 
 }
@@ -242,8 +261,14 @@ export class CubeRelease extends CubeReleaseMeta {
 export class Delta {
 
   constructor(delta) {
-    this._delta = delta
+    this._delta = delta;
+    this._author = new User(delta.author);
+    this._cube = new MinimalCube(delta.versioned_cube);
   }
+
+  id = () => {
+    return this._delta.id
+  };
 
   description = () => {
     return this._delta.description;
@@ -254,7 +279,11 @@ export class Delta {
   };
 
   author = () => {
-    return this._delta.author;
+    return this._author;
+  };
+
+  cube = () => {
+    return this._cube
   };
 
 }

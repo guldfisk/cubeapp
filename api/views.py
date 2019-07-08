@@ -274,3 +274,9 @@ class DeltaList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+
+class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.CubeDelta.objects.all()
+    serializer_class = serializers.CubeDeltaSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]

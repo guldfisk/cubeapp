@@ -9,6 +9,7 @@ import SignOutPage from './pages/SignOutPage.jsx';
 import CubesPage from './pages/CubesPage.jsx';
 import CubePage from './pages/CubePage.jsx';
 import DeltasPage from './pages/DeltasPage.jsx';
+import DeltaPage from './pages/DeltaPage.jsx';
 
 
 export const routes = [
@@ -19,6 +20,7 @@ export const routes = [
   ['/logout', SignOutPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],
   ['/deltas', DeltasPage, false, {}],
+  ['/delta/:id(\\d+)', DeltaPage, false, {}],
   [null, NotFoundPage, false, {}],
 ];
 

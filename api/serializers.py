@@ -302,11 +302,16 @@ class MinimalCubeContainerSerializer(serializers.Serializer):
 
 class CubeDeltaSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    versioned_cube = serializers.PrimaryKeyRelatedField(queryset=models.VersionedCube.objects.all())
+    versioned_cube_id = serializers.PrimaryKeyRelatedField(
+        write_only=True,
+        source='versioned_cube',
+        queryset=models.VersionedCube.objects.all(),
+    )
+    versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
     class Meta:
         model = models.CubeDelta
-        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube')
+        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube')
 
 
 class CubeContainerSerializer(MinimalCubeContainerSerializer):

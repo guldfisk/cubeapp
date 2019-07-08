@@ -21,6 +21,10 @@ export const getCube = (id) => {
   return axios.get(get_api_path() + 'versioned-cubes/' + id +'/');
 };
 
+export const getDelta = (id) => {
+  return axios.get(get_api_path() + 'deltas/' + id +'/');
+};
+
 export const get_cubeable_images_url = (id, type='printing', size_slug='original') => {
   return get_images_path() + id + '/?type=' + type + '&size_slug=' + size_slug
 };

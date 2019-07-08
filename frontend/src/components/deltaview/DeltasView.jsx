@@ -1,9 +1,10 @@
 import React from 'react';
 
 import Table from "react-bootstrap/Table";
+import {Link} from "react-router-dom";
 
 
-class DeltaView extends React.Component {
+class DeltasView extends React.Component {
 
   render() {
 
@@ -21,7 +22,11 @@ class DeltaView extends React.Component {
           delta => {
             return <tr>
               <td>{delta.description()}</td>
-              <td>{delta.author().username}</td>
+              <td>
+                 <Link to={"/delta/" + delta.id()}>
+                   {delta.author().username()}
+                 </Link>
+              </td>
               <td>{delta.createdAt()}</td>
             </tr>
           }
@@ -34,4 +39,4 @@ class DeltaView extends React.Component {
 
 }
 
-export default DeltaView;
+export default DeltasView;

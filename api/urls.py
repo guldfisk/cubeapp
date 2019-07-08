@@ -23,5 +23,6 @@ urlpatterns = [
 	path('users/<int:pk>/', views.UserDetail.as_view()),
 
 	path('deltas/', views.DeltaList.as_view()),
+	path('deltas/<int:pk>/', views.DeltaDetail.as_view()),
 
 ]
