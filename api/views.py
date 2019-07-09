@@ -47,26 +47,29 @@ _IMAGE_SIZE_MAP = {
 }
 
 
-class CubesView(generics.ListAPIView):
+class CubeReleasesList(generics.ListAPIView):
     queryset = models.CubeRelease.objects.all()
-    serializer_class = serializers.CubeContainerSerializer
+    serializer_class = serializers.CubeReleaseSerializer
+
+
+# @api_view(['GET', ])
+# def cube_view(request: Request, cube_id: int) -> Response:
+#     try:
+#         cube_container = models.CubeRelease.objects.get(pk=cube_id)
+#     except models.CubeRelease.DoesNotExist:
+#         return Response(status=status.HTTP_404_NOT_FOUND)
+#
+#     serializer = serializers.FullCubeContainerSerializer(cube_container)
+#     return Response(serializer.data, content_type='application/json')
+
+
+class CubeReleaseView(generics.RetrieveAPIView):
+    queryset = models.CubeRelease.objects.all()
+    serializer_class = serializers.FullCubeReleaseSerializer
 
 
 @api_view(['GET', ])
-def cube_view(request: Request, cube_id: int) -> Response:
-    try:
-        cube_container = models.CubeRelease.objects.get(pk=cube_id)
-    except models.CubeRelease.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    serializer = serializers.FullCubeContainerSerializer(cube_container)
-    return Response(serializer.data, content_type='application/json')
-
-
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
-    if not request.method == 'GET':
-        return HttpResponse(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
     pictured_type = _IMAGE_TYPES_MAP.get(
         request.GET.get(
             'type',
@@ -198,7 +201,7 @@ def search_cube_view(request: Request, cube_id: int) -> Response:
         )
     )
 
-    serializer = serializers.FullCubeContainerSerializer(mock_container)
+    serializer = serializers.FullCubeReleaseSerializer(mock_container)
     return Response(serializer.data)
 
 
@@ -280,3 +283,8 @@ class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CubeDelta.objects.all()
     serializer_class = serializers.CubeDeltaSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+
+class ConstrainedNodesList(generics.ListAPIView):
+    queryset = models.ConstrainedNodes.objects.all()
+    serializer_class = serializers.ConstrainedNodesSerializer

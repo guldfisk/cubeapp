@@ -2,8 +2,8 @@ import React from 'react';
 
 import Card from "react-bootstrap/Card";
 
-import {getCube, getRelease, Loading} from "../utils.jsx";
-import {Cube, CubeRelease} from '../models/models.js';
+import {Loading} from "../../utils.jsx";
+import {Cube, CubeRelease} from '../../models/models.js';
 import CubeView from "../cubeview/CubeView.jsx";
 import ReleaseListView from "../releaseview/ReleaseListView.jsx";
 import Row from "react-bootstrap/Row";
@@ -20,30 +20,26 @@ class DeltaView extends React.Component {
   }
 
   componentDidMount() {
-    getCube(this.props.delta.cube().id()).then(
-      response => {
-        this.setState(
-          {
-            cube: new Cube(response.data)
-          }
-        )
+    Cube.get(
+      this.props.delta.cube().id()
+    ).then(
+      cube => {
+        this.setState({cube})
       }
     ).then(
       () => {
         if (this.state.cube.latestRelease() === null) {
           return;
         }
-        getRelease(this.state.cube.latestRelease().id()).then(
-          response => {
-            this.setState(
-              {
-                release: new CubeRelease(response.data)
-              }
-            )
+        CubeRelease.get(
+          this.state.cube.latestRelease().id()
+        ).then(
+          release => {
+            this.setState({release})
           }
         )
       }
-    )
+    );
   }
 
   render() {

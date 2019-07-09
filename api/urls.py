@@ -4,10 +4,10 @@ from api import views
 
 
 urlpatterns = [
-	path('', views.CubesView.as_view(), name='index'),
+	path('', views.CubeReleasesList.as_view(), name='index'),
 	# path('<int:cube_id>/search/', views.search_cube_view, name='cube search'),
-	path('cube-releases/', views.CubesView.as_view()),
-	path('cube-releases/<int:cube_id>/', views.cube_view),
+	path('cube-releases/', views.CubeReleasesList.as_view()),
+	path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
 
 	path('images/<slug:pictured_id>/', views.image_view, name='image'),
 	path('search/', views.SearchView.as_view(), name='search'),
@@ -24,5 +24,7 @@ urlpatterns = [
 
 	path('deltas/', views.DeltaList.as_view()),
 	path('deltas/<int:pk>/', views.DeltaDetail.as_view()),
+
+	path('constrained-nodes/', views.ConstrainedNodesList.as_view()),
 
 ]

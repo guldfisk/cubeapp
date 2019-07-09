@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {CubeableImage} from '../images.jsx';
+import {CubeableImage} from '../../images.jsx';
 
 
 class ReleaseSpoilerView extends React.Component {

@@ -6,7 +6,8 @@ from django.contrib.auth import authenticate, get_user_model
 
 from rest_framework import serializers
 
-from mtgorp.models.serilization.serializeable import compacted_model
+from mtgorp.models.serilization.serializeable import compacted_model, Serializeable
+from mtgorp.models.serilization.strategies.strategy import Strategy
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -18,6 +19,8 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
+
+from misccube.trapification.algorithm import ConstrainedNodes, ConstrainedNode
 
 from resources.staticdb import db
 from api import models
@@ -258,15 +261,56 @@ class CubeSerializer(ModelSerializer[Cube]):
         }
 
 
-class JsonField(serializers.Field):
+class ConstrainedNodeOrpSerializer(ModelSerializer[ConstrainedNode]):
+
+    @classmethod
+    def serialize(cls, constrained_node: ConstrainedNode) -> compacted_model:
+        return {
+            'value': constrained_node.value,
+            'groups': constrained_node.groups,
+            'node': NodeSerializer.serialize(
+                constrained_node.node
+            )
+        }
+
+
+class ConstrainedNodesOrpSerializer(ModelSerializer[ConstrainedNodes]):
+
+    @classmethod
+    def serialize(cls, constrained_nodes: ConstrainedNodes) -> compacted_model:
+        return {
+            'nodes': [
+                ConstrainedNodeOrpSerializer.serialize(
+                    node
+                ) for node in
+                constrained_nodes
+            ]
+        }
+
+
+class OrpModelField(serializers.Field):
+
+    def __init__(
+        self,
+        *args,
+        model_serializer: t.Type[ModelSerializer],
+        serializeable_type: t.Type[Serializeable],
+        strategy: Strategy,
+        **kwargs,
+    ):
+        kwargs['read_only'] = True
+        self._model_serializer = model_serializer
+        self._serializeable_type = serializeable_type
+        self._strategy = strategy
+        super().__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
         return json.loads(data)
 
     def to_representation(self, value):
-        return CubeSerializer.serialize(
-            JsonId(db).deserialize(
-                Cube,
+        return self._model_serializer.serialize(
+            self._strategy.deserialize(
+                self._serializeable_type,
                 value
             )
         )
@@ -286,7 +330,7 @@ class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'created_at', 'author', 'description')
 
 
-class MinimalCubeContainerSerializer(serializers.Serializer):
+class MinimalCubeReleaseSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     name = serializers.CharField(read_only=True)
@@ -298,6 +342,19 @@ class MinimalCubeContainerSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         raise NotImplemented()
+
+
+class ConstrainedNodesSerializer(serializers.ModelSerializer):
+    release = MinimalCubeReleaseSerializer(read_only=True)
+    constrained_nodes_content = OrpModelField(
+        model_serializer=ConstrainedNodesOrpSerializer,
+        serializeable_type = ConstrainedNodes,
+        strategy = JsonId(db),
+    )
+
+    class Meta:
+        model = models.ConstrainedNodes
+        fields = ('release', 'constrained_nodes_content')
 
 
 class CubeDeltaSerializer(serializers.ModelSerializer):
@@ -314,12 +371,17 @@ class CubeDeltaSerializer(serializers.ModelSerializer):
         fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube')
 
 
-class CubeContainerSerializer(MinimalCubeContainerSerializer):
+class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
     versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
 
-class FullCubeContainerSerializer(CubeContainerSerializer):
-    cube_content = JsonField()
+class FullCubeReleaseSerializer(CubeReleaseSerializer):
+    cube_content = OrpModelField(
+        model_serializer = CubeSerializer,
+        serializeable_type = Cube,
+        strategy = JsonId(db),
+    )
+    constrained_nodes = ConstrainedNodesSerializer(read_only=True)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -341,9 +403,10 @@ class LoginSerializer(serializers.Serializer):
 
 class VersionedCubeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
-    releases = MinimalCubeContainerSerializer(read_only=True, many=True)
+    releases = MinimalCubeReleaseSerializer(read_only=True, many=True)
 
     class Meta:
         model = models.VersionedCube
         fields = ('id', 'name', 'created_at', 'author', 'description', 'releases')
+
 

@@ -5,7 +5,7 @@ import queryString from 'query-string';
 
 import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
-import {get_api_path, get_cubeable_images_url} from '../utils.jsx';
+import {get_cubeable_images_url} from '../utils.jsx';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -59,27 +59,27 @@ class SearchPage extends React.Component {
   }
 
   performSearch = (query) => {
-    this.setState(
-      {
-        searchResults: null,
-      }
-    );
-    axios.get(
-      get_api_path() + 'search/',
-      {
-        params: {
-          query,
-        }
-      }
-    ).then(
-      response => {
-        this.setState(
-          {
-            searchResults: response.data,
-          }
-        )
-      }
-    )
+    // this.setState(
+    //   {
+    //     searchResults: null,
+    //   }
+    // );
+    // axios.get(
+    //   get_api_path() + 'search/',
+    //   {
+    //     params: {
+    //       query,
+    //     }
+    //   }
+    // ).then(
+    //   response => {
+    //     this.setState(
+    //       {
+    //         searchResults: response.data,
+    //       }
+    //     )
+    //   }
+    // )
   };
 
   userSubmit = (event) => {

@@ -1,10 +1,8 @@
-import axios from 'axios';
 import React from 'react';
 
 import {Delta} from '../models/models.js';
-import {get_api_path} from '../utils.jsx';
 
-import DeltasView from '../deltaview/DeltasView.jsx';
+import DeltasView from '../views/deltaview/DeltasView.jsx';
 
 
 class DeltasPage extends React.Component {
@@ -17,19 +15,11 @@ class DeltasPage extends React.Component {
   }
 
   componentDidMount() {
-
-    axios.get(get_api_path() + 'deltas/').then(
-      response => {
-        this.setState(
-          {
-            deltas: response.data.results.map(
-              delta => new Delta(delta)
-            )
-          }
-        );
+    Delta.all().then(
+      deltas => {
+        this.setState({deltas})
       }
-    )
-
+    );
   }
 
   render() {

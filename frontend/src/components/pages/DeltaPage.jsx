@@ -2,14 +2,14 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {getDelta, Loading} from '../utils.jsx';
+import {Loading} from '../utils.jsx';
 import {Delta} from '../models/models.js';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 
-import DeltaView from '../deltaview/DeltaView.jsx';
+import DeltaView from '../views/deltaview/DeltaView.jsx';
 
 
 class DeltaPage extends React.Component {
@@ -22,15 +22,13 @@ class DeltaPage extends React.Component {
   }
 
   componentDidMount() {
-    getDelta(this.props.match.params.id).then(
-      response => {
-        this.setState(
-          {
-            delta: new Delta(response.data)
-          }
-        );
+    Delta.get(
+      this.props.match.params.id
+    ).then(
+      delta => {
+        this.setState({delta})
       }
-    )
+    );
 
   }
 

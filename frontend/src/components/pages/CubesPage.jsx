@@ -4,7 +4,7 @@ import React from 'react';
 import {Cube} from '../models/models.js';
 import {get_api_path} from '../utils.jsx';
 
-import CubesView from '../cubeview/CubesView.jsx';
+import CubesView from '../views/cubeview/CubesView.jsx';
 
 
 class CubesPage extends React.Component {
@@ -18,17 +18,27 @@ class CubesPage extends React.Component {
 
   componentDidMount() {
 
-    axios.get(get_api_path() + 'versioned-cubes/').then(
-      response => {
+    Cube.all().then(
+      cubes => {
         this.setState(
           {
-            cubes: response.data.results.map(
-              cube => new Cube(cube)
-            )
+            cubes
           }
-        );
+        )
       }
-    )
+    );
+
+    // axios.get(get_api_path() + 'versioned-cubes/').then(
+    //   response => {
+    //     this.setState(
+    //       {
+    //         cubes: response.data.results.map(
+    //           cube => new Cube(cube)
+    //         )
+    //       }
+    //     );
+    //   }
+    // )
 
   }
 

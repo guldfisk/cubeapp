@@ -1,4 +1,4 @@
-import "../../styling/CubeListView.css";
+import "../../../styling/CubeListView.css";
 
 import React from 'react';
 
@@ -6,7 +6,7 @@ import Row from 'react-bootstrap/Row';
 
 import MapleToolTip from 'reactjs-mappletooltip';
 
-import {CubeableImage} from '../images.jsx';
+import {CubeableImage} from '../../images.jsx';
 
 
 const TrapItem = (props) => {

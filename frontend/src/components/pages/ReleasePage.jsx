@@ -7,9 +7,9 @@ import Container from "react-bootstrap/Container"
 
 import {Link} from "react-router-dom";
 
-import {getRelease, Loading} from '../utils.jsx';
+import {Loading} from '../utils.jsx';
 import {CubeRelease} from '../models/models.js';
-import ReleaseMultiView from '../releaseview/ReleaseMultiView.jsx'
+import ReleaseMultiView from '../views/releaseview/ReleaseMultiView.jsx'
 import Button from "react-bootstrap/Button";
 
 
@@ -18,27 +18,25 @@ class ReleasePage extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      cube: null,
+      release: null,
     };
   }
 
   componentDidMount() {
-    getRelease(this.props.match.params.id).then(
-      response => {
-        this.setState(
-          {
-            cube: new CubeRelease(response.data),
-          }
-        )
+    CubeRelease.get(
+      this.props.match.params.id
+    ).then(
+      release => {
+        this.setState({release})
       }
-    )
+    );
   }
 
   render() {
-    let cube = <Loading/>;
-    if (this.state.cube !== null) {
-      cube = <ReleaseMultiView
-      cube={this.state.cube}
+    let release = <Loading/>;
+    if (this.state.release !== null) {
+      release = <ReleaseMultiView
+      cube={this.state.release}
     />
     }
 
@@ -55,7 +53,7 @@ class ReleasePage extends React.Component {
           </Card>
         </Col>
         <Col>
-          {cube}
+          {release}
         </Col>
       </Row>
     </Container>

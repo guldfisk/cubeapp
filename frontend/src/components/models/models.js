@@ -1,41 +1,60 @@
+import axios from 'axios';
 
-class PrintingModel {
+
+export const apiPath = '/api/';
+
+
+export class Model {
+
+  constructor(wrapping) {
+    this._wrapping = wrapping
+  }
+
+  id = () => {
+    return this._wrapping._id
+  }
+
+}
+
+
+class Cubeable extends Model {
+
+  constructor(cubeable) {
+    super(cubeable);
+  }
+
+}
+
+
+class PrintingModel extends Cubeable {
 
   constructor(printing) {
-    this._printing = printing;
+    super(printing);
   }
 
   name = () => {
-    return this._printing.name;
-  };
-
-  id = () => {
-    return this._printing.id;
+    return this._wrapping.name;
   };
 
   color = () => {
-    return this._printing.color;
+    return this._wrapping.color;
   };
 
   types = () => {
-    return this._printing.types;
+    return this._wrapping.types;
   };
 
   content_description = () => {
-    return this.name + '|' + this._printing.expansion.code;
+    return this.name + '|' + this._wrapping.expansion.code;
   };
 
 }
 
 
-class TicketModel {
+class TicketModel extends Model {
 
   constructor(ticket) {
-    this._ticket = ticket;
-  };
-
-  id = () => {
-    return this._ticket.id;
+    super(ticket);
   };
 
   content_description = () => {
@@ -45,46 +64,63 @@ class TicketModel {
 }
 
 
-class User {
+class User extends Model {
 
   constructor(user) {
-    this._user = user;
+    super(user);
   }
 
-  id = () => {
-    return this._user.id
+  username = () => {
+    return this._wrapping.username
   };
 
-  username = () => {
-    return this._user.username
+  static all = () => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'users/'
+    ).then(
+      response => response.data.results.map(
+        user => new User(user)
+      )
+    )
   };
+
+  static get = (id) => {
+    return axios.get(
+      apiPath + 'users/' + id + '/'
+    ).then(
+      response => new User(response.data)
+    )
+  };
+
 }
 
 
-export class MinimalCube {
+export class MinimalCube extends Model {
 
   constructor(cube) {
-    this._cube = cube;
+    super(cube);
+    this._author = new User(cube._author);
   }
 
   name = () => {
-    return this._cube.name
+    return this._wrapping.name
   };
 
   id = () => {
-    return this._cube.id
+    return this._wrapping.id
   };
 
   description = () => {
-    return this._cube.description;
+    return this._wrapping.description;
   };
 
   author = () => {
-    return this._cube.author
+    return this._author
   };
 
   createdAt = () => {
-    return this._cube.created_at
+    return this._wrapping.created_at
   };
 
 }
@@ -94,45 +130,64 @@ export class Cube extends MinimalCube {
 
   constructor(cube) {
     super(cube);
-    this._cube.releases = this._cube.releases.map(
+    this._wrapping.releases = this._wrapping.releases.map(
       release => new CubeReleaseMeta(release)
     );
   }
 
   releases = () => {
-    return this._cube.releases
+    return this._wrapping.releases
   };
 
   latestRelease = () => {
-    if (this._cube.releases.length < 1) {
+    if (this._wrapping.releases.length < 1) {
       return null;
     }
-    return this._cube.releases[0];
+    return this._wrapping.releases[0];
+  };
+
+  static all = () => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'versioned-cubes/'
+    ).then(
+      response => response.data.results.map(
+        user => new Cube(user)
+      )
+    )
+  };
+
+  static get = (id) => {
+    return axios.get(
+      apiPath + 'versioned-cubes/' + id + '/'
+    ).then(
+      response => new Cube(response.data)
+    )
   };
 
 }
 
 
-export class CubeReleaseMeta {
+export class CubeReleaseMeta extends Model {
 
   constructor(release) {
-    this._release = release;
+    super(release);
   };
 
   id = () => {
-    return this._release.id
+    return this._wrapping.id
   };
 
   name = () => {
-    return this._release.name
+    return this._wrapping.name
   };
 
   createdAt = () => {
-    return this._release.created_at
+    return this._wrapping.created_at
   };
 
   intendedSize = () => {
-    return this._release.intended_size
+    return this._wrapping.intended_size
   };
 
 }
@@ -143,6 +198,7 @@ export class CubeRelease extends CubeReleaseMeta {
   constructor(release) {
     super(release);
     this._cube = new MinimalCube(release.versioned_cube);
+    
   }
 
   cube = () => {
@@ -150,19 +206,21 @@ export class CubeRelease extends CubeReleaseMeta {
   };
 
   printings = () => {
-    return this._release.cube_content.printings
+    console.log('get printings');
+    console.log(this._wrapping.cube_content.printings);
+    return this._wrapping.cube_content.printings
   };
 
   traps = () => {
-    return this._release.cube_content.traps;
+    return this._wrapping.cube_content.traps;
   };
 
   tickets = () => {
-    return this._release.cube_content.tickets;
+    return this._wrapping.cube_content.tickets;
   };
 
   purples = () => {
-    return this._release.cube_content.purples;
+    return this._wrapping.cube_content.purples;
   };
 
   laps = () => {
@@ -255,27 +313,46 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
+  static all = () => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'cube-releases/'
+    ).then(
+      response => response.data.results.map(
+        user => new CubeRelease(user)
+      )
+    )
+  };
+
+  static get = (id) => {
+    return axios.get(
+      apiPath + 'cube-releases/' + id + '/'
+    ).then(
+      response => new CubeRelease(response.data)
+    )
+  };
+
 }
 
 
-export class Delta {
+export class Delta extends Model {
 
   constructor(delta) {
-    this._delta = delta;
+    super(delta);
     this._author = new User(delta.author);
     this._cube = new MinimalCube(delta.versioned_cube);
   }
 
   id = () => {
-    return this._delta.id
+    return this._wrapping.id
   };
 
   description = () => {
-    return this._delta.description;
+    return this._wrapping.description;
   };
 
   createdAt = () => {
-    return this._delta.created_at;
+    return this._wrapping.created_at;
   };
 
   author = () => {
@@ -284,6 +361,82 @@ export class Delta {
 
   cube = () => {
     return this._cube
+  };
+
+  static all = () => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'deltas/'
+    ).then(
+      response => response.data.results.map(
+        user => new Delta(user)
+      )
+    )
+  };
+
+  static get = (id) => {
+    return axios.get(
+      apiPath + 'deltas/' + id + '/'
+    ).then(
+      response => new Delta(response.data)
+    )
+  };
+
+}
+
+
+export class ConstrainedNode extends Model {
+
+  constructor(node) {
+    super(node);
+    self._wrapping = node
+  }
+
+  value = () => {
+    return self._wrapping.value
+  };
+
+  groups = () => {
+    return self._wrapping.groups
+  };
+
+  node = () => {
+    return self._wrapping.node
+  }
+
+}
+
+
+export class ConstrainedNodes extends Model {
+
+  constructor(nodes) {
+    super(nodes);
+    self._nodes = self._wrapping.nodes.map(
+      node => new ConstrainedNode(node)
+    )
+  }
+
+  nodes = () => {
+    return self._nodes
+  };
+
+  static all = () => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'constrained-nodes/'
+    ).then(
+      response => response.data.results.map(
+        user => new ConstrainedNode(user)
+      )
+    )
+  };
+
+  static get = (id) => {
+    return axios.get(
+      apiPath + 'constrained-nodes/' + id + '/'
+    ).then(
+      response => new ConstrainedNode(response.data)
+    )
   };
 
 }

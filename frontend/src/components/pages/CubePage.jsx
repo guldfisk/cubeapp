@@ -2,8 +2,8 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {getCube, Loading} from '../utils.jsx';
-import CubeView from '../cubeview/CubeView.jsx';
+import {Loading} from '../utils.jsx';
+import CubeView from '../views/cubeview/CubeView.jsx';
 import {Cube} from '../models/models.js';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -21,16 +21,11 @@ class CubePage extends React.Component {
   }
 
   componentDidMount() {
-    getCube(this.props.match.params.id).then(
-      response => {
-        this.setState(
-          {
-            cube: new Cube(response.data)
-          }
-        );
+    Cube.get(this.props.match.params.id).then(
+      cube => {
+        this.setState({cube})
       }
-    )
-
+    );
   }
 
   render() {
