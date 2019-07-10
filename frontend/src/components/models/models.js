@@ -26,7 +26,7 @@ class Cubeable extends Model {
 }
 
 
-class PrintingModel extends Cubeable {
+class Printing extends Cubeable {
 
   constructor(printing) {
     super(printing);
@@ -51,7 +51,31 @@ class PrintingModel extends Cubeable {
 }
 
 
-class TicketModel extends Model {
+class PrintingNode extends Model {
+
+  constructor(node) {
+    super(node);
+    this._children = node.children.map(
+      child => child.type === 'printing' ? new Printing(child) : new PrintingNode(child)
+    );
+  }
+
+  type = () => {
+    return this._wrapping.type
+  };
+
+  representation = () => {
+    return '(' + this._children.map(
+      child => child instanceof Printing ? child.name() : child.representation()
+    ).join(
+      this.type() === 'AllNode' ? '; ' : ' || '
+    ) + ')'
+  };
+
+}
+
+
+class Ticket extends Model {
 
   constructor(ticket) {
     super(ticket);
@@ -100,7 +124,7 @@ export class MinimalCube extends Model {
 
   constructor(cube) {
     super(cube);
-    this._author = new User(cube._author);
+    this._author = new User(cube.author);
   }
 
   name = () => {
@@ -198,16 +222,22 @@ export class CubeRelease extends CubeReleaseMeta {
   constructor(release) {
     super(release);
     this._cube = new MinimalCube(release.versioned_cube);
-    
+    this._constrained_nodes = (
+      release.constrained_nodes === null ?
+        null :
+        new ConstrainedNodes(release.constrained_nodes)
+    );
   }
 
   cube = () => {
     return this._cube
   };
 
+  constrainedNodes = () => {
+    return this._constrained_nodes
+  };
+
   printings = () => {
-    console.log('get printings');
-    console.log(this._wrapping.cube_content.printings);
     return this._wrapping.cube_content.printings
   };
 
@@ -389,19 +419,19 @@ export class ConstrainedNode extends Model {
 
   constructor(node) {
     super(node);
-    self._wrapping = node
+    this._node = new PrintingNode(node.node);
   }
 
   value = () => {
-    return self._wrapping.value
+    return this._wrapping.value;
   };
 
   groups = () => {
-    return self._wrapping.groups
+    return this._wrapping.groups;
   };
 
   node = () => {
-    return self._wrapping.node
+    return this._node;
   }
 
 }
@@ -411,13 +441,13 @@ export class ConstrainedNodes extends Model {
 
   constructor(nodes) {
     super(nodes);
-    self._nodes = self._wrapping.nodes.map(
+    this._nodes = this._wrapping.constrained_nodes_content.nodes.map(
       node => new ConstrainedNode(node)
     )
   }
 
   nodes = () => {
-    return self._nodes
+    return this._nodes
   };
 
   static all = () => {

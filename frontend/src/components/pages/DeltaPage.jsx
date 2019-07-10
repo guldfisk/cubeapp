@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils.jsx';
+import {Loading} from '../utils';
 import {Delta} from '../models/models.js';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";

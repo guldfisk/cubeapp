@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils.jsx';
+import {Loading} from '../utils';
 import CubeView from '../views/cubeview/CubeView.jsx';
 import {Cube} from '../models/models.js';
 import Container from "react-bootstrap/Container";

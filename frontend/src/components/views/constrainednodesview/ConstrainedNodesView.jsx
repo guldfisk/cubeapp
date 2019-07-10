@@ -13,6 +13,7 @@ class ConstrainedNodesView extends React.Component {
     return <Table>
       <thead>
       <tr>
+        <th>Node</th>
         <th>Value</th>
         <th>Groups</th>
       </tr>
@@ -20,12 +21,13 @@ class ConstrainedNodesView extends React.Component {
       <tbody>
       {
         this.props.constrainedNodes.nodes().sort(
-          (a, b) => a.value() - b.value()
+          (a, b) => b.value() - a.value()
         ).map(
           constrainedNode => {
             return <tr>
+              <td>{constrainedNode.node().representation()}</td>
               <td>{constrainedNode.value()}</td>
-              <td>{constrainedNode.groups()}</td>
+              <td>{constrainedNode.groups().join(", ")}</td>
             </tr>
           }
         )

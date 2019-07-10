@@ -14,23 +14,33 @@ import Nav from 'react-bootstrap/Nav';
 
 import {LinkContainer} from 'react-router-bootstrap';
 
-import {routes} from './Routes.jsx';
+import {routes} from './Routes';
 import authReducer from './state/reducers';
 import {loadUser} from "./auth/controller";
-import {Loading} from "./utils.jsx";
-import SignInPage from './pages/SignInPage.jsx';
+import {Loading, NoProps, NoState} from "./utils";
+import SignInPage from './pages/SignInPage';
 
 
 const store = createStore(authReducer, applyMiddleware(thunk));
 
 
-class RootComponent extends React.Component {
+interface RootProps {
+  auth: {
+    token: string,
+    authenticated: boolean,
+    loading: symbol,
+    user: any,
+  }
+  loadUser: () => never
+}
+
+class RootComponent extends React.Component<RootProps, NoState> {
 
   componentDidMount() {
     this.props.loadUser()
   }
 
-  PrivateRoute = ({component: ChildComponent, ...rest}) => {
+  PrivateRoute = ({component: ChildComponent, ...rest}: {component: React.Component, rest: any}) => {
     return <Route {...rest} render={
       props => {
         if (this.props.auth.loading) {
@@ -44,11 +54,15 @@ class RootComponent extends React.Component {
     }/>
   };
 
-  createRoutes = (routes) => {
+  createRoutes = (
+    routes
+  ) => {
     return <Switch>
       {
         routes.map(
-          ([path, component, isPrivate, args]) => {
+          (
+            [path, component, isPrivate, args]
+          ) => {
             return (
               isPrivate ?
                 <this.PrivateRoute
@@ -116,6 +130,7 @@ class RootComponent extends React.Component {
   </Router>
   }
 }
+
 
 const mapStateToProps = (state) => {
   return {

@@ -14,7 +14,7 @@ from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.expansion import Expansion
 
-from magiccube.collections.cube import Cube
+from magiccube.collections.cube import Cube, cubeable
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.traps.trap import Trap
@@ -286,6 +286,21 @@ class ConstrainedNodesOrpSerializer(ModelSerializer[ConstrainedNodes]):
                 constrained_nodes
             ]
         }
+
+
+class MultiCubeSerializer(object):
+    _type_map = {
+        Printing: PrintingSerializer,
+        Trap: TrapSerializer,
+        Ticket: TicketSerializer,
+        Purple: PurpleSerializer,
+    }
+
+    @classmethod
+    def serialize_multi_cubeables(cls, cubeables: t.Iterable[cubeable]) -> t.Iterable[t.Dict]:
+        for _cubeable in cubeables:
+            yield cls._type_map[type(_cubeable)].serialize(_cubeable)
+
 
 
 class OrpModelField(serializers.Field):

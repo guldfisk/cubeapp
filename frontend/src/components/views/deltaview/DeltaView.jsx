@@ -2,7 +2,7 @@ import React from 'react';
 
 import Card from "react-bootstrap/Card";
 
-import {Loading} from "../../utils.jsx";
+import {Loading} from "../../utils";
 import {Cube, CubeRelease} from '../../models/models.js';
 import CubeView from "../cubeview/CubeView.jsx";
 import ReleaseListView from "../releaseview/ReleaseListView.jsx";

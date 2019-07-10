@@ -1,9 +1,7 @@
-// import path from 'path';
-
 module.exports = {
 
   entry: {
-    app: './frontend/src/index.js'
+    app: './frontend/src/index.ts'
   },
 
   mode: 'development',
@@ -17,7 +15,11 @@ module.exports = {
   module: {
 
     rules: [
-
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/
+      },
       {
         test: /\.jsx?$/,
         exclude: /node_modules/,
@@ -32,6 +34,9 @@ module.exports = {
       }
 
     ]
+  },
+  resolve: {
+    extensions: ['.js', '.jsx', '.ts', '.tsx'],
   }
 
 };

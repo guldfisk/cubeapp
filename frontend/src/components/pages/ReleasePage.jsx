@@ -7,10 +7,12 @@ import Container from "react-bootstrap/Container"
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils.jsx';
+import {Loading} from '../utils';
 import {CubeRelease} from '../models/models.js';
 import ReleaseMultiView from '../views/releaseview/ReleaseMultiView.jsx'
-import Button from "react-bootstrap/Button";
+import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView.jsx';
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
 
 
 class ReleasePage extends React.Component {
@@ -33,11 +35,24 @@ class ReleasePage extends React.Component {
   }
 
   render() {
-    let release = <Loading/>;
+    let element = <Loading/>;
     if (this.state.release !== null) {
-      release = <ReleaseMultiView
-      cube={this.state.release}
-    />
+      element = <Tabs defaultActiveKey="cards">
+        <Tab eventKey="cards" title="Cards">
+          <ReleaseMultiView
+            cube={this.state.release}
+          />
+        </Tab>
+        <Tab eventKey="nodes" title="Nodes" disabled={this.state.release.constrainedNodes() == null}>
+          {
+            this.state.release.constrainedNodes() == null ?
+              <div/> :
+              <ConstrainedNodesView
+                constrainedNodes={this.state.release.constrainedNodes()}
+              />
+          }
+        </Tab>
+      </Tabs>
     }
 
     return <Container fluid>
@@ -53,7 +68,7 @@ class ReleasePage extends React.Component {
           </Card>
         </Col>
         <Col>
-          {release}
+          {element}
         </Col>
       </Row>
     </Container>

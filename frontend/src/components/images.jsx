@@ -2,7 +2,7 @@ import React from 'react';
 
 import {LazyImage} from "react-lazy-images";
 
-import {get_cubeable_images_url, get_cardback_image_url} from "./utils.jsx";
+import {get_cubeable_images_url, get_cardback_image_url} from "./utils";
 
 
 export const CubeableImage = ({id, type='printing', sizeSlug='medium'}) => {

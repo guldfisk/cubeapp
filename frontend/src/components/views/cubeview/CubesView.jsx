@@ -31,7 +31,7 @@ class CubesView extends React.Component {
                  </Link>
                </td>
                <td>{cube.description()}</td>
-               <td>{cube.author().username}</td>
+               <td>{cube.author().username()}</td>
                <td>
                  {
                    cube.releases().length > 0 ?

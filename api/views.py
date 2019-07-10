@@ -166,7 +166,7 @@ class SearchView(generics.ListAPIView):
 
 
 @api_view(['GET'])
-def search_cube_view(request: Request, cube_id: int) -> Response:
+def search_release_view(request: Request, release_id: int) -> Response:
     try:
         query = request.query_params['query']
     except KeyError:
@@ -180,21 +180,28 @@ def search_cube_view(request: Request, cube_id: int) -> Response:
         return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        cube_container = models.CubeRelease.objects.get(pk=cube_id)
+        release = models.CubeRelease.objects.get(pk=release_id)
     except models.CubeRelease.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+    serializers.CubeSerializer
+
+    cube = JsonId(db).deserialize(
+        Cube,
+        release.cube_content
+    )
+
     mock_container = models.CubeRelease(
-        id = cube_container.id,
-        name = cube_container.name,
-        created_at = cube_container.created_at,
+        id = release.id,
+        name = release.name,
+        created_at = release.created_at,
         checksum = '',
         cube_content = JsonId.serialize(
             Cube(
                 printings=pattern.matches(
                     JsonId(db).deserialize(
                         Cube,
-                        cube_container.cube_content
+                        release.cube_content
                     ).all_printings
                 )
             )

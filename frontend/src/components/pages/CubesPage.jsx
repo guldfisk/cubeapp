@@ -2,7 +2,7 @@ import axios from 'axios';
 import React from 'react';
 
 import {Cube} from '../models/models.js';
-import {get_api_path} from '../utils.jsx';
+import {get_api_path} from '../utils';
 
 import CubesView from '../views/cubeview/CubesView.jsx';
 

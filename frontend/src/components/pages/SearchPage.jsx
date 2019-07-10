@@ -5,7 +5,7 @@ import queryString from 'query-string';
 
 import {BrowserRouter as Router, Route, Link} from "react-router-dom";
 
-import {get_cubeable_images_url} from '../utils.jsx';
+import {get_cubeable_images_url} from '../utils';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
