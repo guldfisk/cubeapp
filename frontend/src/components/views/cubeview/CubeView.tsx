@@ -5,9 +5,14 @@ import {Link} from "react-router-dom";
 import Table from "react-bootstrap/Table";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
+import {Cube} from "../../models/models";
 
 
-class CubeView extends React.Component {
+interface CubeViewProps {
+  cube: Cube
+}
+
+class CubeView extends React.Component<CubeViewProps> {
 
   render() {
 

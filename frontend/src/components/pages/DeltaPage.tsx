@@ -2,19 +2,27 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils';
-import {Delta} from '../models/models.js';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 
-import DeltaView from '../views/deltaview/DeltaView.jsx';
+import {Loading} from '../utils';
+import {Delta} from '../models/models';
+import DeltaView from '../views/deltaview/DeltaView';
 
 
-class DeltaPage extends React.Component {
+interface DeltaPageProps {
+  match: any
+}
 
-  constructor(props) {
+interface DeltaPageState {
+  delta: null | Delta
+}
+
+class DeltaPage extends React.Component<DeltaPageProps, DeltaPageState> {
+
+  constructor(props: DeltaPageProps) {
     super(props);
     this.state = {
       delta: null,

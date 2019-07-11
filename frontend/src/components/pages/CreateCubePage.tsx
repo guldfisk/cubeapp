@@ -12,9 +12,14 @@ import Button from "react-bootstrap/Button";
 import {connect} from "react-redux";
 
 
-class CreateCubeForm extends React.Component {
+interface CreateCubeFormProps {
+  handleSubmit: ({name, description}: {name: string, description: string}) => void
+}
 
-  handleSubmit = (event) => {
+
+class CreateCubeForm extends React.Component<CreateCubeFormProps> {
+
+  handleSubmit = (event: any) => {
     this.props.handleSubmit(
       {
         name: event.target.elements.name.value,
@@ -44,17 +49,24 @@ class CreateCubeForm extends React.Component {
 }
 
 
-class CreateCubePage extends React.Component {
+interface CreateCubePageProps {
+  token: string
+}
 
-  constructor(props) {
+interface CreateCubePageState {
+  success: boolean
+}
+
+class CreateCubePage extends React.Component<CreateCubePageProps, CreateCubePageState> {
+
+  constructor(props: CreateCubePageProps) {
     super(props);
     this.state = {
       success: false,
     }
   };
 
-  handleSubmit = ({name, description }) => {
-    console.log(this.state.token);
+  handleSubmit = ({name, description }: {name: string, description: string}): void => {
     axios.post(
       "/api/versioned-cubes/",
       {name, description},
@@ -95,7 +107,7 @@ class CreateCubePage extends React.Component {
 }
 
 
-const mapStateToProps = state => {
+const mapStateToProps = (state: any) => {
   return {
     token: state.token,
   };

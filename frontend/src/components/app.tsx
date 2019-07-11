@@ -31,16 +31,16 @@ interface RootProps {
     loading: symbol,
     user: any,
   }
-  loadUser: () => never
+  loadUser: () => any
 }
 
-class RootComponent extends React.Component<RootProps, NoState> {
+class RootComponent extends React.Component<RootProps> {
 
   componentDidMount() {
     this.props.loadUser()
   }
 
-  PrivateRoute = ({component: ChildComponent, ...rest}: {component: React.Component, rest: any}) => {
+  PrivateRoute = ({component: ChildComponent, ...rest}: any) => {
     return <Route {...rest} render={
       props => {
         if (this.props.auth.loading) {
@@ -55,13 +55,14 @@ class RootComponent extends React.Component<RootProps, NoState> {
   };
 
   createRoutes = (
-    routes
+    routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][]
   ) => {
     return <Switch>
       {
         routes.map(
           (
-            [path, component, isPrivate, args]
+            [path, component, isPrivate, args]:
+              [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object]
           ) => {
             return (
               isPrivate ?
@@ -85,7 +86,7 @@ class RootComponent extends React.Component<RootProps, NoState> {
 
   render() {
     return <Router>
-    <Navbar bg='light' expand='lg' fluid='true' collapseOnSelect>
+    <Navbar bg='light' expand='lg' collapseOnSelect>
 
       <Navbar.Collapse id='basic-navbar nav'>
         <Nav className='mr-auto'>
@@ -132,7 +133,7 @@ class RootComponent extends React.Component<RootProps, NoState> {
 }
 
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state: any) => {
   return {
     auth: {
       token: state.token,
@@ -144,7 +145,7 @@ const mapStateToProps = (state) => {
 };
 
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = (dispatch: any) => {
   return {
     loadUser: () => dispatch(loadUser())
   }

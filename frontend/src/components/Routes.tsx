@@ -12,7 +12,7 @@ import DeltasPage from './pages/DeltasPage';
 import DeltaPage from './pages/DeltaPage';
 
 
-export const routes: [string | null, (typeof React.Component) | React.FunctionComponent, boolean, object][] = [
+export const routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][] = [
   ['/', CubesPage, false, {exact: true}],
   ['/cube/:id(\\d+)', CubePage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
@@ -21,10 +21,5 @@ export const routes: [string | null, (typeof React.Component) | React.FunctionCo
   ['/create-cube', CreateCubePage, true, {}],
   ['/deltas', DeltasPage, false, {}],
   ['/delta/:id(\\d+)', DeltaPage, false, {}],
-  [null, NotFoundPage, false, {}],
+  [undefined, NotFoundPage, false, {}],
 ];
-
-function f(arg: object) {
-
-}
-f({exact: false});

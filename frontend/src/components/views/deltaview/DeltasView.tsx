@@ -2,9 +2,14 @@ import React from 'react';
 
 import Table from "react-bootstrap/Table";
 import {Link} from "react-router-dom";
+import {Delta} from "../../models/models";
 
 
-class DeltasView extends React.Component {
+interface DeltasViewProps {
+  deltas: Delta[]
+}
+
+class DeltasView extends React.Component<DeltasViewProps> {
 
   render() {
 

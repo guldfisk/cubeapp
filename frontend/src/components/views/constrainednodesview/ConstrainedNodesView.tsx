@@ -1,12 +1,15 @@
 import React from 'react';
 
 import Table from "react-bootstrap/Table";
-import {Link} from "react-router-dom";
 
-import {ConstrainedNodes} from '../../models/models.js';
+import {ConstrainedNodes} from '../../models/models';
 
 
-class ConstrainedNodesView extends React.Component {
+interface ConstrainedNodesViewProps {
+  constrainedNodes: ConstrainedNodes
+}
+
+export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
 
   render() {
 
@@ -36,7 +39,4 @@ class ConstrainedNodesView extends React.Component {
     </Table>
 
   }
-
 }
-
-export default ConstrainedNodesView;

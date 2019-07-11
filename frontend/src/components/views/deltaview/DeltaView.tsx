@@ -3,15 +3,25 @@ import React from 'react';
 import Card from "react-bootstrap/Card";
 
 import {Loading} from "../../utils";
-import {Cube, CubeRelease} from '../../models/models.js';
-import CubeView from "../cubeview/CubeView.jsx";
-import ReleaseListView from "../releaseview/ReleaseListView.jsx";
+import {Cube, CubeRelease, Delta} from '../../models/models';
+import CubeView from "../cubeview/CubeView";
+import ReleaseListView from "../releaseview/ReleaseListView";
 import Row from "react-bootstrap/Row";
 
 
-class DeltaView extends React.Component {
 
-  constructor(props) {
+interface DeltaViewProps {
+  delta: Delta
+}
+
+interface DeltaViewState {
+  cube: Cube
+  release: CubeRelease
+}
+
+class DeltaView extends React.Component<DeltaViewProps, DeltaViewState> {
+
+  constructor(props: DeltaViewProps) {
     super(props);
     this.state = {
       cube: null,
@@ -44,7 +54,7 @@ class DeltaView extends React.Component {
 
   render() {
     const cube = this.state.cube === null ? <Loading/> : <CubeView cube={this.state.cube}/>;
-    const release = this.state.release === null ? <Loading/> : <ReleaseListView cube={this.state.release}/>;
+    const release = this.state.release === null ? <Loading/> : <ReleaseListView release={this.state.release}/>;
 
     return <Card>
       <Card.Header className="panel-heading">

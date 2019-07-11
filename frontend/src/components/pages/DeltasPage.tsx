@@ -1,13 +1,17 @@
 import React from 'react';
 
-import {Delta} from '../models/models.js';
+import {Delta} from '../models/models';
 
-import DeltasView from '../views/deltaview/DeltasView.jsx';
+import DeltasView from '../views/deltaview/DeltasView';
 
 
-class DeltasPage extends React.Component {
+interface DeltasPageState {
+  deltas: Delta[]
+}
 
-  constructor(props) {
+class DeltasPage extends React.Component<null, DeltasPageState> {
+
+  constructor(props: null) {
     super(props);
     this.state = {
       deltas: [],

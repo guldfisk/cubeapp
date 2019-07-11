@@ -9,12 +9,16 @@ import Button from "react-bootstrap/Button";
 
 import {connect} from "react-redux";
 
-import {signIn} from '../auth/controller.js';
+import {signIn} from '../auth/controller';
 
 
-class SignInForm extends React.Component {
+interface SignInFormProps {
+  handleSubmit: ({username, password}: {username: string, password: string}) => void
+}
 
-  handleSubmit = (event) => {
+class SignInForm extends React.Component<SignInFormProps> {
+
+  handleSubmit = (event: any) => {
     this.props.handleSubmit(
       {
         username: event.target.elements.username.value,
@@ -44,9 +48,14 @@ class SignInForm extends React.Component {
 }
 
 
-class SignInPage extends React.Component {
+interface SignInPageProps {
+  authenticated: boolean
+  signIn: (username: string, password: string) => void
+}
 
-  handleSubmit = ({username, password}) => {
+class SignInPage extends React.Component<SignInPageProps> {
+
+  handleSubmit = ({username, password}: {username: string, password: string}) => {
     this.props.signIn(username, password);
   };
 
@@ -69,15 +78,15 @@ class SignInPage extends React.Component {
 
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state: any) => {
   return {
     authenticated: state.authenticated,
   };
 };
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch: any) => {
   return {
-    signIn: (username, password) => {
+    signIn: (username: string, password: string) => {
       return dispatch(signIn(username, password));
     }
   };

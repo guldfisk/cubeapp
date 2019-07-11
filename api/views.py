@@ -19,7 +19,7 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
 
-from mtgimg.interface import SizeSlug
+from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
 from magiccube.laps.purples.purple import Purple
@@ -96,7 +96,10 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
         image = image_loader.get_image(db.printings[_id], size_slug=size_slug).get()
     else:
-        image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug).get()
+        try:
+            image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug).get()
+        except ImageFetchException:
+            return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
     response = HttpResponse(content_type='image/png')
     image.save(response, 'PNG')

@@ -1,18 +1,26 @@
 import React from 'react';
 
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card"
 
 import {Link} from "react-router-dom";
 
-import ReleaseListView from "./ReleaseListView.jsx";
-import ReleaseSpoilerView from "./ReleaseSpoilerView.jsx";
+import ReleaseListView from "./ReleaseListView";
+import ReleaseSpoilerView from "./ReleaseSpoilerView";
+import {CubeRelease} from "../../models/models";
 
 
-class ReleaseMultiView extends React.Component {
+interface ReleaseMultiViewProps {
+  cube: CubeRelease
+}
 
-  constructor(props) {
+interface ReleaseMultiViewState {
+  viewType: string
+}
+
+class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMultiViewState> {
+
+  constructor(props: ReleaseMultiViewProps) {
     super(props);
     this.state = {
       viewType: 'List',
@@ -25,11 +33,11 @@ class ReleaseMultiView extends React.Component {
 
     if (this.state.viewType === 'List') {
       view = <ReleaseListView
-        cube={this.props.cube}
+        release={this.props.cube}
       />
     } else {
       view = <ReleaseSpoilerView
-        cube={this.props.cube}
+        release={this.props.cube}
       />
     }
     return <Card>

@@ -8,16 +8,24 @@ import Container from "react-bootstrap/Container"
 import {Link} from "react-router-dom";
 
 import {Loading} from '../utils';
-import {CubeRelease} from '../models/models.js';
-import ReleaseMultiView from '../views/releaseview/ReleaseMultiView.jsx'
-import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView.jsx';
+import {CubeRelease} from '../models/models';
+import ReleaseMultiView from '../views/releaseview/ReleaseMultiView'
+import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView';
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 
 
-class ReleasePage extends React.Component {
+interface ReleasePageProps {
+  match: any
+}
 
-  constructor(props) {
+interface ReleasePageState {
+  release: null | CubeRelease
+}
+
+class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
+
+  constructor(props: ReleasePageProps) {
     super(props);
     this.state = {
       release: null,
@@ -37,7 +45,10 @@ class ReleasePage extends React.Component {
   render() {
     let element = <Loading/>;
     if (this.state.release !== null) {
-      element = <Tabs defaultActiveKey="cards">
+      element = <Tabs
+        id="release-info-tabs"
+        defaultActiveKey="cards"
+      >
         <Tab eventKey="cards" title="Cards">
           <ReleaseMultiView
             cube={this.state.release}

@@ -3,10 +3,15 @@ import { Redirect } from 'react-router-dom'
 
 import {connect} from "react-redux";
 
-import {signOut} from '../auth/controller.js';
+import {signOut} from '../auth/controller';
 
+interface SignOutPageProps {
+  authenticated: boolean
+  token: string
+  signOut: (token: string) => void
+}
 
-class SignOutPage extends React.Component {
+class SignOutPage extends React.Component<SignOutPageProps> {
 
   componentDidMount() {
     if (this.props.authenticated) {
@@ -20,16 +25,16 @@ class SignOutPage extends React.Component {
 
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state: any) => {
   return {
     authenticated: state.authenticated,
     token: state.token,
   };
 };
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch: any) => {
   return {
-    signOut: (token) => {
+    signOut: (token: string) => {
       return dispatch(signOut(token));
     }
   };

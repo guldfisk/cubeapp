@@ -3,17 +3,25 @@ import React from 'react';
 import {Link} from "react-router-dom";
 
 import {Loading} from '../utils';
-import CubeView from '../views/cubeview/CubeView.jsx';
-import {Cube} from '../models/models.js';
+import CubeView from '../views/cubeview/CubeView';
+import {Cube} from '../models/models';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 
 
-class CubePage extends React.Component {
+interface CubePageProps {
+  match: any
+}
 
-  constructor(props) {
+interface CubepageState {
+  cube: null | Cube
+}
+
+class CubePage extends React.Component<CubePageProps, CubepageState> {
+
+  constructor(props: CubePageProps) {
     super(props);
     this.state = {
       cube: null,

@@ -3,9 +3,14 @@ import React from 'react';
 import {Link} from "react-router-dom";
 
 import Table from "react-bootstrap/Table";
+import {Cube} from "../../models/models";
 
 
-class CubesView extends React.Component {
+interface CubesViewProps {
+  cubes: Cube[]
+}
+
+class CubesView extends React.Component<CubesViewProps> {
 
   render() {
     return <Table>
@@ -23,7 +28,7 @@ class CubesView extends React.Component {
       <tbody>
         {
          this.props.cubes.map(
-           cube => {
+           (cube: Cube) => {
              return <tr>
                <td>
                  <Link to={"/cube/" + cube.id()}>
@@ -34,7 +39,7 @@ class CubesView extends React.Component {
                <td>{cube.author().username()}</td>
                <td>
                  {
-                   cube.releases().length > 0 ?
+                   cube.latestRelease() !== null ?
                      <Link to={'/release/' + cube.latestRelease().id()}>
                        {cube.latestRelease().name()}
                      </Link>
@@ -44,7 +49,7 @@ class CubesView extends React.Component {
                </td>
                <td>
                   {
-                    cube.releases().length > 0 ?
+                    cube.latestRelease() !== null ?
                       cube.latestRelease().createdAt()
                       :
                       "No releases"
