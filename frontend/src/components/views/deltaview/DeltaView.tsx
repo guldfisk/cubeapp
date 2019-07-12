@@ -5,9 +5,9 @@ import Card from "react-bootstrap/Card";
 import {Loading} from "../../utils";
 import {Cube, CubeRelease, Delta} from '../../models/models';
 import CubeView from "../cubeview/CubeView";
-import ReleaseListView from "../releaseview/ReleaseListView";
+import SearchView from '../search/SearchView';
+// import ReleaseListView from "../releaseview/ReleaseListView";
 import Row from "react-bootstrap/Row";
-
 
 
 interface DeltaViewProps {
@@ -54,7 +54,7 @@ class DeltaView extends React.Component<DeltaViewProps, DeltaViewState> {
 
   render() {
     const cube = this.state.cube === null ? <Loading/> : <CubeView cube={this.state.cube}/>;
-    const release = this.state.release === null ? <Loading/> : <ReleaseListView release={this.state.release}/>;
+    // const release = this.state.release === null ? <Loading/> : <ReleaseListView release={this.state.release}/>;
 
     return <Card>
       <Card.Header className="panel-heading">
@@ -64,8 +64,9 @@ class DeltaView extends React.Component<DeltaViewProps, DeltaViewState> {
       </Card.Header>
       <Card.Body className="panel-body">
         <Row>
-          {cube}
-          {release}
+          <SearchView/>
+          {/*{cube}*/}
+          {/*{release}*/}
         </Row>
       </Card.Body>
     </Card>

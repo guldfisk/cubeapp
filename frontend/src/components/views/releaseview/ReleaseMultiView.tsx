@@ -2,20 +2,23 @@ import React from 'react';
 
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card"
+import Form from "react-bootstrap/Form";
 
 import {Link} from "react-router-dom";
 
-import ReleaseListView from "./ReleaseListView";
-import ReleaseSpoilerView from "./ReleaseSpoilerView";
-import {CubeRelease} from "../../models/models";
+import RawCubeListView from '../rawcubeview/RawCubeListView';
+import RawCubeSpoilerView from '../rawcubeview/RawCubeSpoilerView';
+import {CubeRelease, RawCube} from "../../models/models";
 
 
 interface ReleaseMultiViewProps {
-  cube: CubeRelease
+  release: CubeRelease
 }
 
 interface ReleaseMultiViewState {
   viewType: string
+  cubeableType: string
+  rawCube: RawCube
 }
 
 class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMultiViewState> {
@@ -24,20 +27,38 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
     super(props);
     this.state = {
       viewType: 'List',
+      cubeableType: 'Cubeables',
+      rawCube: props.release.rawCube(),
     }
-
   }
+
+  handleFilterSubmit = (event: any) => {
+    const query = event.target.elements.query.value;
+    if (query === "") {
+      this.setState({rawCube: this.props.release.rawCube()});
+    } else {
+      this.props.release.filter(
+        encodeURIComponent(query)
+      ).then(
+        rawCube => this.setState({rawCube})
+      );
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
 
   render() {
     let view = <div/>;
 
     if (this.state.viewType === 'List') {
-      view = <ReleaseListView
-        release={this.props.cube}
+      view = <RawCubeListView
+        rawCube={this.state.rawCube}
+        cubeableType={this.state.cubeableType}
       />
     } else {
-      view = <ReleaseSpoilerView
-        release={this.props.cube}
+      view = <RawCubeSpoilerView
+        rawCube={this.state.rawCube}
+        cubeableType={this.state.cubeableType}
       />
     }
     return <Card>
@@ -45,16 +66,37 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
         <Row>
           <h4>
             <span className="badge badge-secondary">
-              <Link to={'/cube/' + this.props.cube.cube().id()}>
-                {this.props.cube.cube().name()}
+              <Link to={'/cube/' + this.props.release.cube().id()}>
+                {this.props.release.cube().name()}
               </Link>
             </span>
-            <span className="badge badge-secondary">{this.props.cube.name()}</span>
-            <span className="badge badge-secondary">{this.props.cube.createdAt()}</span>
+            <span className="badge badge-secondary">{this.props.release.name()}</span>
+            <span className="badge badge-secondary">{this.props.release.createdAt()}</span>
             <span className="badge badge-secondary">
-              {this.props.cube.cubeables().length + '/' + this.props.cube.intendedSize()}
+              {this.props.release.rawCube().cubeables().length + '/' + this.props.release.intendedSize()}
             </span>
           </h4>
+
+          <Form
+            onSubmit={this.handleFilterSubmit}
+          >
+            <Form.Group
+              controlId="query"
+            >
+              <Form.Control type="text"/>
+            </Form.Group>
+          </Form>
+
+          <select
+            className="ml-auto"
+            onChange={
+              event => this.setState({cubeableType: event.target.value})
+            }
+          >
+            <option>Cubeables</option>
+            <option>Printings</option>
+          </select>
+
           <select
             className="ml-auto"
             onChange={
@@ -64,6 +106,7 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
             <option>List</option>
             <option>Images</option>
           </select>
+
         </Row>
       </Card.Header>
       <Card.Body className="panel-body">

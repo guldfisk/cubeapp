@@ -30,6 +30,9 @@ export class Cubeable extends Model {
 }
 
 
+export class Expansion extends Model {
+}
+
 export class Printing extends Cubeable {
 
   constructor(printing: any) {
@@ -38,6 +41,10 @@ export class Printing extends Cubeable {
 
   name = (): string => {
     return this._wrapping.name;
+  };
+
+  expansion = (): any => {
+    return this._wrapping.expansion
   };
 
   color = (): string => {
@@ -64,6 +71,16 @@ export class PrintingNode extends Cubeable {
       (child: any) => child.type === 'printing' ? new Printing(child) : new PrintingNode(child)
     );
   }
+
+  * printings(): IterableIterator<Printing> {
+    for (const child of this._children) {
+      if (child instanceof Printing) {
+        yield child
+      } else {
+        yield* (child as PrintingNode).printings()
+      }
+    }
+  };
 
   children = (): (Printing | PrintingNode)[] => {
     return this._children
@@ -245,84 +262,15 @@ export class CubeReleaseMeta extends Model {
 }
 
 
-export class CubeRelease extends CubeReleaseMeta {
-  _cube: MinimalCube;
-  _constrained_nodes: ConstrainedNodes | null;
+export class PrintingCollection {
   _printings: Printing[];
-  _traps: Trap[];
-  _tickets: Ticket[];
-  _purples: Purple[];
 
-  constructor(release: any) {
-    super(release);
-
-    this._printings = release.cube_content.printings.map(
-      (printing: any) => new Printing(printing)
-    );
-    this._traps = release.cube_content.traps.map(
-      (trap: any) => new Trap(trap)
-    );
-    this._tickets = release.cube_content.tickets.map(
-      (ticket: any) => new Ticket(ticket)
-    );
-    this._purples = release.cube_content.purples.map(
-      (purple: any) => new Purple(purple)
-    );
-
-    this._cube = new MinimalCube(release.versioned_cube);
-
-    this._constrained_nodes = (
-      release.constrained_nodes === null ?
-        null :
-        new ConstrainedNodes(release.constrained_nodes)
-    );
+  constructor(printings: Printing[]) {
+    this._printings = printings;
   }
-
-  cube = (): MinimalCube => {
-    return this._cube
-  };
-
-  constrainedNodes = (): ConstrainedNodes | null => {
-    return this._constrained_nodes
-  };
 
   printings = (): Printing[] => {
     return this._printings
-  };
-
-  traps = (): Trap[] => {
-    return this._traps;
-  };
-
-  tickets = (): Ticket[] => {
-    return this._tickets;
-  };
-
-  purples = (): Purple[] => {
-    return this._purples;
-  };
-
-  laps = (): ConcatArray<any> => {
-    let _array: any[] = [];
-    return _array.concat(
-      this.traps(),
-      this.tickets(),
-      this.purples(),
-    );
-  };
-
-  cubeables = (): any[] => {
-    let _array: any[] = [];
-    return _array.concat(
-      this.printings(),
-      this.laps(),
-    );
-  };
-
-  traps_of_intention_type = (intention_type: string): Trap[] => {
-    return this.traps().filter(
-      trap => trap.intentionType() === intention_type
-    )
   };
 
   printings_of_color = (color: string): Printing[] => {
@@ -378,6 +326,79 @@ export class CubeRelease extends CubeReleaseMeta {
     ]
   };
 
+}
+
+
+export class RawCube {
+  _printings: PrintingCollection;
+  _traps: Trap[];
+  _tickets: Ticket[];
+  _purples: Purple[];
+
+  constructor(cube: any) {
+    this._printings = new PrintingCollection(
+      cube.printings.map(
+        (printing: any) => new Printing(printing)
+      )
+    );
+    this._traps = cube.traps.map(
+      (trap: any) => new Trap(trap)
+    );
+    this._tickets = cube.tickets.map(
+      (ticket: any) => new Ticket(ticket)
+    );
+    this._purples = cube.purples.map(
+      (purple: any) => new Purple(purple)
+    );
+
+  }
+
+  printings = (): PrintingCollection => {
+    return this._printings
+  };
+
+  traps = (): Trap[] => {
+    return this._traps;
+  };
+
+  tickets = (): Ticket[] => {
+    return this._tickets;
+  };
+
+  purples = (): Purple[] => {
+    return this._purples;
+  };
+
+  * allPrintings(): IterableIterator<Printing> {
+    yield* this._printings.printings();
+    for (const trap of this._traps) {
+      yield* trap.node().printings()
+    }
+  };
+
+  laps = (): ConcatArray<any> => {
+    let _array: any[] = [];
+    return _array.concat(
+      this.traps(),
+      this.tickets(),
+      this.purples(),
+    );
+  };
+
+  cubeables = (): any[] => {
+    let _array: any[] = [];
+    return _array.concat(
+      this._printings.printings(),
+      this.laps(),
+    );
+  };
+
+  traps_of_intention_type = (intention_type: string): Trap[] => {
+    return this.traps().filter(
+      trap => trap.intentionType() === intention_type
+    )
+  };
+
   grouped_laps = (): any[][] => {
     return [
       this.traps_of_intention_type('GARBAGE'),
@@ -390,10 +411,45 @@ export class CubeRelease extends CubeReleaseMeta {
   grouped_cubeables = (): any[][] => {
     let _array: any[] = [];
     return _array.concat(
-      this.grouped_printings(),
+      this._printings.grouped_printings(),
       this.grouped_laps(),
     )
   };
+
+}
+
+
+export class CubeRelease extends CubeReleaseMeta {
+  _cube: MinimalCube;
+  _constrained_nodes: ConstrainedNodes | null;
+  _rawCube: RawCube;
+
+  constructor(release: any) {
+    super(release);
+
+    this._cube = new MinimalCube(release.versioned_cube);
+
+    this._rawCube = new RawCube(release.cube_content);
+
+    this._constrained_nodes = (
+      release.constrained_nodes === null ?
+        null :
+        new ConstrainedNodes(release.constrained_nodes)
+    );
+  }
+
+  cube = (): MinimalCube => {
+    return this._cube
+  };
+
+  rawCube = (): RawCube => {
+    return this._rawCube
+  };
+
+  constrainedNodes = (): ConstrainedNodes | null => {
+    return this._constrained_nodes
+  };
+
 
   static all = () => {
     // TODO pagination lol
@@ -413,6 +469,14 @@ export class CubeRelease extends CubeReleaseMeta {
       response => new CubeRelease(response.data)
     )
   };
+
+  filter = (query: string) => {
+    return axios.get(
+      apiPath + 'cube-releases/' + this.id() + '/filter/?query=' + query
+    ).then(
+      response => new RawCube(response.data)
+    )
+  }
 
 }
 

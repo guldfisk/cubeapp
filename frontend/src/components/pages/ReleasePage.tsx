@@ -51,7 +51,7 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
       >
         <Tab eventKey="cards" title="Cards">
           <ReleaseMultiView
-            cube={this.state.release}
+            release={this.state.release}
           />
         </Tab>
         <Tab eventKey="nodes" title="Nodes" disabled={this.state.release.constrainedNodes() == null}>

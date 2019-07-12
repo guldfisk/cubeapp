@@ -1,5 +1,3 @@
-import "../../../styling/CubeListView.css";
-
 import React, {ComponentElement} from 'react';
 
 import Row from 'react-bootstrap/Row';
@@ -7,7 +5,7 @@ import Row from 'react-bootstrap/Row';
 import MapleToolTip from 'reactjs-mappletooltip';
 
 import {CubeableImage} from '../../images';
-import {Trap, Ticket, Purple, Printing, CubeRelease, Cubeable} from "../../models/models";
+import {Trap, Ticket, Purple, Printing, Cubeable, RawCube, PrintingCollection} from "../../models/models";
 
 
 interface TrapItemProps {
@@ -67,7 +65,6 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
   let content: string | ComponentElement<any, any> = "";
 
   if (props.cubeable.type() === 'printing') {
-    console.log(props.cubeable.id());
     content = <MapleToolTip>
         <div>
           {(props.cubeable as Printing).name()}
@@ -99,18 +96,27 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
 };
 
 
-interface ReleaseListViewProps {
-  release: CubeRelease
+interface RawCubeListViewProps {
+  rawCube: RawCube
+  cubeableType: string
 }
 
-class ReleaseListView extends React.Component<ReleaseListViewProps> {
+class RawCubeListView extends React.Component<RawCubeListViewProps> {
 
   render() {
+    const groups = (
+      this.props.cubeableType === 'Cubeables' ?
+        this.props.rawCube.grouped_cubeables() :
+        new PrintingCollection(
+          [...this.props.rawCube.allPrintings()]
+        ).grouped_printings()
+    );
+
     return <div
     >
       <Row>
         {
-          this.props.release.grouped_cubeables().map(
+          groups.map(
             group => {
               return <div>
                 <ul>
@@ -131,4 +137,4 @@ class ReleaseListView extends React.Component<ReleaseListViewProps> {
   }
 }
 
-export default ReleaseListView;
+export default RawCubeListView;
