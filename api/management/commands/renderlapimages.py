@@ -3,14 +3,11 @@ import time
 
 import promise
 
-from multiset import Multiset
-
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from mtgimg import interface
 
 from resources.staticimageloader import image_loader
-from resources.staticdb import db
 
 from api.models import CubeRelease
 

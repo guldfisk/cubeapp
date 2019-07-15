@@ -7,7 +7,7 @@ import Container from "react-bootstrap/Container"
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils';
+import {Loading} from '../utils/utils';
 import {CubeRelease} from '../models/models';
 import ReleaseMultiView from '../views/releaseview/ReleaseMultiView'
 import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView';

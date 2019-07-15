@@ -6,8 +6,8 @@ import Form from "react-bootstrap/Form";
 
 import {Link} from "react-router-dom";
 
-import RawCubeListView from '../rawcubeview/RawCubeListView';
-import RawCubeSpoilerView from '../rawcubeview/RawCubeSpoilerView';
+import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCollectionListView';
+import CubeablesCollectionSpoilerView from '../cubeablescollectionview/CubeablesCollectionSpoilerView';
 import {CubeRelease, RawCube} from "../../models/models";
 
 
@@ -51,12 +51,12 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
     let view = <div/>;
 
     if (this.state.viewType === 'List') {
-      view = <RawCubeListView
+      view = <CubeablesCollectionListView
         rawCube={this.state.rawCube}
         cubeableType={this.state.cubeableType}
       />
     } else {
-      view = <RawCubeSpoilerView
+      view = <CubeablesCollectionSpoilerView
         rawCube={this.state.rawCube}
         cubeableType={this.state.cubeableType}
       />

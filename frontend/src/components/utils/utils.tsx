@@ -1,6 +1,6 @@
 import React from "react";
 
-import '../styling/utils.css';
+import '../../styling/utils.css';
 
 const imagesPath = '/api/images/';
 

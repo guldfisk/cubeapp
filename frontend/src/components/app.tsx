@@ -17,7 +17,7 @@ import {LinkContainer} from 'react-router-bootstrap';
 import {routes} from './Routes';
 import authReducer from './state/reducers';
 import {loadUser} from "./auth/controller";
-import {Loading, NoProps, NoState} from "./utils";
+import {Loading, NoProps, NoState} from "./utils/utils";
 import SignInPage from './pages/SignInPage';
 
 

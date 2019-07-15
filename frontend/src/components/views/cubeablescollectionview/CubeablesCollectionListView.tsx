@@ -22,7 +22,7 @@ const TrapItem: React.FunctionComponent<TrapItemProps> = (props) => {
       </div>
       <div>
         <CubeableImage
-         id={props.cubeable.id()}
+          cubeable={props.cubeable}
         />
       </div>
     </MapleToolTip>
@@ -41,16 +41,16 @@ const TrapItem: React.FunctionComponent<TrapItemProps> = (props) => {
     //     )
     //   })
     // </div>
-  // } else if (props.type === 'AnyNode') {
-  //   return <div
-  //     className='TrapItem'
-  //   >
-  //     [{
-  //       props.children.map(
-  //         child => <TrapItem {...child}/>
-  //       )
-  //     }]
-  //   </div>
+    // } else if (props.type === 'AnyNode') {
+    //   return <div
+    //     className='TrapItem'
+    //   >
+    //     [{
+    //       props.children.map(
+    //         child => <TrapItem {...child}/>
+    //       )
+    //     }]
+    //   </div>
   } else {
     throw 'Invalid trap item type: ' + props.cubeable.type();
   }
@@ -66,15 +66,15 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
 
   if (props.cubeable.type() === 'printing') {
     content = <MapleToolTip>
-        <div>
-          {(props.cubeable as Printing).name()}
-        </div>
-        <span>
+      <div>
+        {(props.cubeable as Printing).name()}
+      </div>
+      <span>
           <CubeableImage
-            id={props.cubeable.id()}
+            cubeable={props.cubeable}
           />
       </span>
-      </MapleToolTip>
+    </MapleToolTip>
 
   } else if (props.cubeable.type() === 'trap') {
     content = <TrapItem cubeable={props.cubeable}/>
@@ -101,7 +101,7 @@ interface RawCubeListViewProps {
   cubeableType: string
 }
 
-class RawCubeListView extends React.Component<RawCubeListViewProps> {
+class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> {
 
   render() {
     const groups = (
@@ -137,4 +137,4 @@ class RawCubeListView extends React.Component<RawCubeListViewProps> {
   }
 }
 
-export default RawCubeListView;
+export default CubeablesCollectionListView;

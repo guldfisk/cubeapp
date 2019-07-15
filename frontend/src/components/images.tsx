@@ -2,23 +2,25 @@ import React from 'react';
 
 import {LazyImage} from "react-lazy-images";
 
-import {get_cubeable_images_url, get_cardback_image_url} from "./utils";
+import {get_cardback_image_url, get_cubeable_images_url} from "./utils/utils";
+import {Cubeable} from "./models/models";
 
 
 interface CubeableImageProps {
-  id: string
-  type?: string
+  cubeable: Cubeable
   sizeSlug?: string
+  onClick?: null | ((cubeable: Cubeable) => void)
 }
 
 export const CubeableImage: React.FunctionComponent<CubeableImageProps> = (
-  {id, type = 'printing', sizeSlug = 'medium'}: CubeableImageProps
+  {cubeable, sizeSlug = 'medium', onClick = null}: CubeableImageProps
 ) => {
+
   return <LazyImage
     src={
       get_cubeable_images_url(
-        id,
-        type,
+        cubeable.id(),
+        cubeable.type(),
         sizeSlug,
       )
     }
@@ -31,5 +33,7 @@ export const CubeableImage: React.FunctionComponent<CubeableImageProps> = (
       />
     )}
     actual={({imageProps}) => <img {...imageProps} />}
-  />
+    {...(onClick === null ? {} : {onClick: () => onClick(cubeable)})}
+  />;
+
 };

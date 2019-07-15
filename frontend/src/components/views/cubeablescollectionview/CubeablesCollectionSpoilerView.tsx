@@ -9,7 +9,7 @@ interface RawCubeSpoilerViewProps {
   cubeableType: string
 }
 
-export default class RawCubeSpoilerView extends React.Component<RawCubeSpoilerViewProps> {
+export default class CubeablesCollectionSpoilerView extends React.Component<RawCubeSpoilerViewProps> {
 
   render() {
     const pictured = (
@@ -29,9 +29,8 @@ export default class RawCubeSpoilerView extends React.Component<RawCubeSpoilerVi
         pictured.map(
           (cubeable: Cubeable) => {
             return <CubeableImage
-              id={cubeable.id()}
-              type={cubeable.type()}
-              sizeSlug="medium"
+              cubeable={cubeable}
+              sizeSlug="thumbnail"
             />
           }
         )
