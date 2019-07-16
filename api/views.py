@@ -307,6 +307,9 @@ class UpdateCubeDelta(views.APIView):
                 delta.content,
             ) + update
         )
+        delta.save()
+        import json
+        return Response(json.loads(delta.content), content_type='application/json')
 
 
 class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
