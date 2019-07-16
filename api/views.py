@@ -1,12 +1,11 @@
 import typing as t
 
-import json
 from distutils.util import strtobool
 
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
 
-from rest_framework import status, generics, permissions
+from rest_framework import status, generics, permissions, views
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -22,6 +21,7 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
+from magiccube.collections.delta import CubeDeltaOperation
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -50,17 +50,6 @@ _IMAGE_SIZE_MAP = {
 class CubeReleasesList(generics.ListAPIView):
     queryset = models.CubeRelease.objects.all()
     serializer_class = serializers.CubeReleaseSerializer
-
-
-# @api_view(['GET', ])
-# def cube_view(request: Request, cube_id: int) -> Response:
-#     try:
-#         cube_container = models.CubeRelease.objects.get(pk=cube_id)
-#     except models.CubeRelease.DoesNotExist:
-#         return Response(status=status.HTTP_404_NOT_FOUND)
-#
-#     serializer = serializers.FullCubeContainerSerializer(cube_container)
-#     return Response(serializer.data, content_type='application/json')
 
 
 class CubeReleaseView(generics.RetrieveAPIView):
@@ -97,7 +86,8 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
         image = image_loader.get_image(db.printings[_id], size_slug=size_slug).get()
     else:
         try:
-            image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type, size_slug=size_slug).get()
+            image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type,
+                                           size_slug=size_slug).get()
         except ImageFetchException:
             return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
@@ -107,11 +97,10 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 
 class SearchView(generics.ListAPIView):
-
     _search_target_map = {
         'printings': (PrintingStrategy, serializers.MinimalPrintingSerializer),
         'cardboards': (CardboardStrategy, serializers.MinimalCardboardSerializer),
-    } #type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], serializers.ModelSerializer]]
+    }  # type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], serializers.ModelSerializer]]
 
     def list(self, request, *args, **kwargs):
         try:
@@ -175,6 +164,16 @@ def filter_release_view(request: Request, pk: int) -> Response:
     except KeyError:
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+    try:
+        flattened = strtobool(
+            request.query_params.get(
+                'flattened',
+                'False'
+            )
+        )
+    except ValueError:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
     search_parser = SearchParser(db)
 
     try:
@@ -187,34 +186,23 @@ def filter_release_view(request: Request, pk: int) -> Response:
     except models.CubeRelease.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+    cube = JsonId(db).deserialize(
+        Cube,
+        release.cube_content
+    )
+
+    if flattened:
+        cube = Cube(
+            printings=cube.all_printings,
+        )
+
     return Response(
         serializers.CubeSerializer.serialize(
-            JsonId(db).deserialize(
-                Cube,
-                release.cube_content
-            ).filter(
+            cube.filter(
                 pattern
             )
         )
     )
-
-    # mock_container = models.CubeRelease(
-    #     id = release.id,
-    #     name = release.name,
-    #     created_at = release.created_at,
-    #     checksum = '',
-    #     cube_content = JsonId.serialize(
-    #         JsonId(db).deserialize(
-    #             Cube,
-    #             release.cube_content
-    #         ).filter(
-    #             pattern
-    #         )
-    #     )
-    # )
-    #
-    # serializer = serializers.FullCubeReleaseSerializer(mock_container)
-    # return Response(serializer.data)
 
 
 def printing_view(request: Request, printing_id: int):
@@ -288,7 +276,37 @@ class DeltaList(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(
+            author = self.request.user,
+            content = JsonId.serialize(
+                CubeDeltaOperation()
+            ),
+        )
+
+
+class UpdateCubeDelta(views.APIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        try:
+            delta = models.CubeDelta.objects.get(pk=kwargs['pk'])
+        except models.CubeDelta.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            update = JsonId(db).deserialize(
+                CubeDeltaOperation,
+                request.data['update']
+            )
+        except (KeyError, AttributeError, Exception):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        delta.content = JsonId.serialize(
+            JsonId(db).deserialize(
+                CubeDeltaOperation,
+                delta.content,
+            ) + update
+        )
 
 
 class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):

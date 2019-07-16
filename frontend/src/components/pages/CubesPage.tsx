@@ -4,10 +4,20 @@ import {Cube} from '../models/models';
 
 import CubesView from '../views/cubeview/CubesView';
 
+import Paginationbar from '../utils/PaginationBar';
+import Col from "react-bootstrap/Col";
+import PaginationBar from "../utils/PaginationBar";
+
+
+const pageSize: number = 10;
+
 
 interface CubesPageState {
   cubes: Cube[]
+  offset: number
+  hits: number
 }
+
 
 class CubesPage extends React.Component<null, CubesPageState> {
 
@@ -15,27 +25,45 @@ class CubesPage extends React.Component<null, CubesPageState> {
     super(props);
     this.state = {
       cubes: [],
+      offset: 0,
+      hits: 0,
     };
   }
 
   componentDidMount() {
+    this.fetchCubes(0);
+  }
 
-    Cube.all().then(
-      cubes => {
+  fetchCubes = (offset: number) => {
+    Cube.all(
+      offset,
+      pageSize,
+    ).then(
+      ([cubes, hits]) => {
         this.setState(
           {
-            cubes
+            cubes,
+            hits,
           }
         )
       }
     );
-
-  }
+  };
 
   render() {
-    return <CubesView
-      cubes={this.state.cubes}
-    />
+
+    return <Col>
+      <PaginationBar
+        hits={this.state.hits}
+        offset={this.state.offset}
+        handleNewOffset={this.fetchCubes}
+        pageSize={pageSize}
+        maxPageDisplay={7}
+      />
+      <CubesView
+        cubes={this.state.cubes}
+      />
+    </Col>
   }
 
 }

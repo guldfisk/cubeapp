@@ -1,6 +1,7 @@
 import typing as t
 from abc import abstractmethod
 import json
+import itertools
 
 from django.contrib.auth import authenticate, get_user_model
 
@@ -15,6 +16,7 @@ from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.expansion import Expansion
 
 from magiccube.collections.cube import Cube, cubeable
+from magiccube.collections.delta import CubeDeltaOperation
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.traps.trap import Trap
@@ -288,6 +290,34 @@ class ConstrainedNodesOrpSerializer(ModelSerializer[ConstrainedNodes]):
         }
 
 
+class CubeDeltaOperationSerializer(ModelSerializer[CubeDeltaOperation]):
+
+    @classmethod
+    def serialize(cls, cube_delta_operation: CubeDeltaOperation) -> compacted_model:
+        return {
+            'printings': {
+                PrintingSerializer.serialize(printing): multiplicity
+                for printing, multiplicity in
+                cube_delta_operation.printings.items()
+            },
+            'traps': {
+                TrapSerializer.serialize(trap): multiplicity
+                for trap, multiplicity in
+                cube_delta_operation.traps.items()
+            },
+            'tickets': {
+                TicketSerializer.serialize(ticket): multiplicity
+                for ticket, multiplicity in
+                cube_delta_operation.tickets.items()
+            },
+            'purples': {
+                PurpleSerializer.serialize(purple): multiplicity
+                for purple, multiplicity in
+                cube_delta_operation.purples.items()
+            },
+        }
+
+
 class MultiCubeSerializer(object):
     _type_map = {
         Printing: PrintingSerializer,
@@ -381,9 +411,15 @@ class CubeDeltaSerializer(serializers.ModelSerializer):
     )
     versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
+    content = OrpModelField(
+        model_serializer = CubeDeltaOperationSerializer,
+        serializeable_type = CubeDeltaOperation,
+        strategy = JsonId(db),
+    )
+
     class Meta:
         model = models.CubeDelta
-        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube')
+        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'content')
 
 
 class CubeReleaseSerializer(MinimalCubeReleaseSerializer):

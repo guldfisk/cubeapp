@@ -16,6 +16,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
   createPage = (index: number, currentPage: number): React.ReactElement<any, string | React.JSXElementConstructor<any>> => {
     return <Pagination.Item
       disabled={index === currentPage}
+      active={index === currentPage}
       onClick={
         () =>
           this.props.handleNewOffset(
@@ -32,6 +33,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
     const currentPage: number = Math.ceil(this.props.offset / this.props.pageSize);
 
     let pages: any[] = [];
+
     if (pageAmount > this.props.maxPageDisplay) {
 
       let pageOffset = Math.max(0, currentPage - Math.floor(this.props.maxPageDisplay / 2));
@@ -72,9 +74,6 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
 
 
     return <Pagination>
-      {/*<Pagination.First*/}
-      {/*  onClick={() => this.props.handleNewOffset(0)}*/}
-      {/*/>*/}
       <Pagination.Prev
         onClick={
           () =>
@@ -85,30 +84,24 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
               )
             )
         }
+        disabled={this.props.offset === 0}
       />
       {pages}
       <Pagination.Next
         onClick={
           () =>
             this.props.handleNewOffset(
-              Math.min(
-                this.props.hits - this.props.pageSize,
-                this.props.offset + this.props.pageSize
+              Math.max(
+                Math.min(
+                  this.props.hits - this.props.pageSize,
+                  this.props.offset + this.props.pageSize,
+                ),
+                0,
               )
             )
         }
+        disabled={this.props.offset + this.props.pageSize >= this.props.hits}
       />
-      {/*<Pagination.Last*/}
-      {/*  onClick={*/}
-      {/*    () =>*/}
-      {/*      this.props.handleNewOffset(*/}
-      {/*        Math.max(*/}
-      {/*          0,*/}
-      {/*          this.props.hits - this.props.pageSize*/}
-      {/*        )*/}
-      {/*      )*/}
-      {/*  }*/}
-      {/*/>*/}
     </Pagination>
   }
 

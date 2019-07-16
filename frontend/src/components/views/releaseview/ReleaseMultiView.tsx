@@ -8,18 +8,20 @@ import {Link} from "react-router-dom";
 
 import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCollectionListView';
 import CubeablesCollectionSpoilerView from '../cubeablescollectionview/CubeablesCollectionSpoilerView';
-import {CubeRelease, RawCube} from "../../models/models";
+import {CubeRelease, CubeablesContainer} from "../../models/models";
 
 
 interface ReleaseMultiViewProps {
   release: CubeRelease
 }
 
+
 interface ReleaseMultiViewState {
   viewType: string
   cubeableType: string
-  rawCube: RawCube
+  cubeablesContainer: CubeablesContainer
 }
+
 
 class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMultiViewState> {
 
@@ -28,19 +30,21 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
     this.state = {
       viewType: 'List',
       cubeableType: 'Cubeables',
-      rawCube: props.release.rawCube(),
+      cubeablesContainer: props.release.cubeablesContainer(),
     }
   }
 
   handleFilterSubmit = (event: any) => {
     const query = event.target.elements.query.value;
     if (query === "") {
-      this.setState({rawCube: this.props.release.rawCube()});
+      this.setState({cubeablesContainer: this.props.release.cubeablesContainer()});
     } else {
       this.props.release.filter(
-        encodeURIComponent(query)
+        // encodeURIComponent(query),
+        query,
+        this.state.cubeableType !== 'Cubeables',
       ).then(
-        rawCube => this.setState({rawCube})
+        rawCube => this.setState({cubeablesContainer: rawCube})
       );
     }
     event.preventDefault();
@@ -52,12 +56,12 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
 
     if (this.state.viewType === 'List') {
       view = <CubeablesCollectionListView
-        rawCube={this.state.rawCube}
+        rawCube={this.state.cubeablesContainer}
         cubeableType={this.state.cubeableType}
       />
     } else {
       view = <CubeablesCollectionSpoilerView
-        rawCube={this.state.rawCube}
+        rawCube={this.state.cubeablesContainer}
         cubeableType={this.state.cubeableType}
       />
     }
@@ -73,7 +77,13 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
             <span className="badge badge-secondary">{this.props.release.name()}</span>
             <span className="badge badge-secondary">{this.props.release.createdAt()}</span>
             <span className="badge badge-secondary">
-              {this.props.release.rawCube().cubeables().length + '/' + this.props.release.intendedSize()}
+              {
+                `${
+                  this.props.release.cubeablesContainer().cubeables().length
+                  }/${
+                  this.props.release.intendedSize()
+                  }`
+              }
             </span>
           </h4>
 

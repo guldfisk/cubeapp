@@ -1,11 +1,11 @@
 import React from 'react';
 
 import {CubeableImage} from '../../images';
-import {Cubeable, RawCube} from "../../models/models";
+import {Cubeable, CubeablesContainer} from "../../models/models";
 
 
 interface RawCubeSpoilerViewProps {
-  rawCube: RawCube
+  rawCube: CubeablesContainer
   cubeableType: string
 }
 

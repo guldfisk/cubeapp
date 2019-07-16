@@ -42,13 +42,14 @@ class ConstrainedNodes(models.Model):
         CubeRelease,
         related_name = 'constrained_nodes',
         on_delete = models.CASCADE,
-        # primary_key = True,
     )
 
 
 class CubeDelta(models.Model):
     created_at = models.DateTimeField(default=now)
     description = models.TextField()
+    content = models.TextField()
+
     author = models.ForeignKey(
         get_user_model(),
         on_delete=models.CASCADE,

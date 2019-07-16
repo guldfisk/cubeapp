@@ -219,14 +219,22 @@ export class Cube extends MinimalCube {
     return this._releases[0];
   };
 
-  static all = () => {
-    // TODO pagination lol
+  static all = (offset: number = 0, limit: number = 50) => {
     return axios.get(
-      apiPath + 'versioned-cubes/'
+      apiPath + 'versioned-cubes/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
     ).then(
-      response => response.data.results.map(
-        (cube: any) => new Cube(cube)
-      )
+      response => [
+        response.data.results.map(
+          (cube: any) => new Cube(cube)
+        ),
+        response.data.count,
+      ]
     )
   };
 
@@ -329,7 +337,7 @@ export class PrintingCollection {
 }
 
 
-export class RawCube {
+export class CubeablesContainer {
   _printings: PrintingCollection;
   _traps: Trap[];
   _tickets: Ticket[];
@@ -376,20 +384,20 @@ export class RawCube {
     }
   };
 
-  laps = (): ConcatArray<any> => {
-    let _array: any[] = [];
-    return _array.concat(
-      this.traps(),
-      this.tickets(),
-      this.purples(),
+  laps = (): ConcatArray<Cubeable> => {
+    return (
+      this._traps as Cubeable[]
+    ).concat(
+      this._tickets as Cubeable[],
+      this._purples as Cubeable[],
     );
   };
 
-  cubeables = (): any[] => {
-    let _array: any[] = [];
-    return _array.concat(
-      this._printings.printings(),
-      this.laps(),
+  cubeables = (): Cubeable[] => {
+    return (
+      this._printings.printings() as Cubeable[]
+    ).concat(
+      this.laps() as Cubeable[]
     );
   };
 
@@ -399,7 +407,7 @@ export class RawCube {
     )
   };
 
-  grouped_laps = (): any[][] => {
+  grouped_laps = (): Cubeable[][] => {
     return [
       this.traps_of_intention_type('GARBAGE'),
       this.traps_of_intention_type('SYNERGY'),
@@ -408,10 +416,10 @@ export class RawCube {
     ]
   };
 
-  grouped_cubeables = (): any[][] => {
-    let _array: any[] = [];
-    return _array.concat(
-      this._printings.grouped_printings(),
+  grouped_cubeables = (): Cubeable[][] => {
+    return (
+      this._printings.grouped_printings() as Cubeable[][]
+    ).concat(
       this.grouped_laps(),
     )
   };
@@ -422,14 +430,14 @@ export class RawCube {
 export class CubeRelease extends CubeReleaseMeta {
   _cube: MinimalCube;
   _constrained_nodes: ConstrainedNodes | null;
-  _rawCube: RawCube;
+  _rawCube: CubeablesContainer;
 
   constructor(release: any) {
     super(release);
 
     this._cube = new MinimalCube(release.versioned_cube);
 
-    this._rawCube = new RawCube(release.cube_content);
+    this._rawCube = new CubeablesContainer(release.cube_content);
 
     this._constrained_nodes = (
       release.constrained_nodes === null ?
@@ -442,7 +450,7 @@ export class CubeRelease extends CubeReleaseMeta {
     return this._cube
   };
 
-  rawCube = (): RawCube => {
+  cubeablesContainer = (): CubeablesContainer => {
     return this._rawCube
   };
 
@@ -470,12 +478,75 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
-  filter = (query: string) => {
+  filter = (query: string, flattened: boolean = false) => {
     return axios.get(
-      apiPath + 'cube-releases/' + this.id() + '/filter/?query=' + query
+      apiPath + 'cube-releases/' + this.id() + '/filter/',
+      {
+        params: {
+          query,
+          flattened,
+        }
+      }
     ).then(
-      response => new RawCube(response.data)
+      response => new CubeablesContainer(response.data)
     )
+  }
+
+}
+
+
+class Counter {
+  _cubeable: Cubeable;
+  _count: number;
+
+  constructor(cubeable: Cubeable, count: number) {
+    this._cubeable = cubeable;
+    this._count = count;
+  }
+
+  cubeable = (): Cubeable => {
+    return this._cubeable
+  };
+
+  count = (): number => {
+    return this._count
+  };
+
+  add = (amount: number): Counter => {
+    this._count += amount;
+    return this;
+  };
+
+}
+
+
+class CubeablesCounter {
+
+  _counters: {[id: string]: Counter};
+
+  constructor(cubeables: Cubeable[] = []) {
+    this._counters = {};
+    cubeables.forEach(cubeable => this.add(cubeable));
+  }
+
+  add = (cubeable: Cubeable, amount: number = 1): void => {
+    if (amount === 0) {
+      return
+    }
+    let count = this._counters[cubeable.id()];
+    if (count === undefined) {
+      this._counters[cubeable.id()] = new Counter(cubeable, amount)
+    } else {
+      if (count.add(amount).count()) {
+        delete this._counters[cubeable.id()]
+      }
+    }
+  };
+
+  *items(): IterableIterator<[Cubeable, number]> {
+   for (const count of Object.values(this._counters)) {
+     yield [count.cubeable(), count.count()]
+   }
   }
 
 }

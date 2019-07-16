@@ -5,7 +5,7 @@ import Row from 'react-bootstrap/Row';
 import MapleToolTip from 'reactjs-mappletooltip';
 
 import {CubeableImage} from '../../images';
-import {Trap, Ticket, Purple, Printing, Cubeable, RawCube, PrintingCollection} from "../../models/models";
+import {Trap, Ticket, Purple, Printing, Cubeable, CubeablesContainer, PrintingCollection} from "../../models/models";
 
 
 interface TrapItemProps {
@@ -97,7 +97,7 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
 
 
 interface RawCubeListViewProps {
-  rawCube: RawCube
+  rawCube: CubeablesContainer
   cubeableType: string
 }
 
