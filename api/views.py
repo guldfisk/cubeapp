@@ -193,7 +193,7 @@ def filter_release_view(request: Request, pk: int) -> Response:
 
     if flattened:
         cube = Cube(
-            printings=cube.all_printings,
+            cubeables=cube.all_printings,
         )
 
     return Response(

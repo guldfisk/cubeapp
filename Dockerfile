@@ -4,6 +4,7 @@ ENV cube_app_debug 0
 
 RUN mkdir -p /code
 COPY . /code
+RUN pip3 install --upgrade pip
 RUN pip3 install -r /code/requirements.txt
 WORKDIR /code
 

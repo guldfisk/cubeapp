@@ -15,7 +15,7 @@ from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.expansion import Expansion
 
-from magiccube.collections.cube import Cube, cubeable
+from magiccube.collections.cube import Cube, Cubeable
 from magiccube.collections.delta import CubeDeltaOperation
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
@@ -327,7 +327,7 @@ class MultiCubeSerializer(object):
     }
 
     @classmethod
-    def serialize_multi_cubeables(cls, cubeables: t.Iterable[cubeable]) -> t.Iterable[t.Dict]:
+    def serialize_multi_cubeables(cls, cubeables: t.Iterable[Cubeable]) -> t.Iterable[t.Dict]:
         for _cubeable in cubeables:
             yield cls._type_map[type(_cubeable)].serialize(_cubeable)
 
@@ -353,6 +353,7 @@ class OrpModelField(serializers.Field):
         return json.loads(data)
 
     def to_representation(self, value):
+        print(value)
         return self._model_serializer.serialize(
             self._strategy.deserialize(
                 self._serializeable_type,
