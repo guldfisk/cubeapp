@@ -4,7 +4,6 @@ import {Cube} from '../models/models';
 
 import CubesView from '../views/cubeview/CubesView';
 
-import Paginationbar from '../utils/PaginationBar';
 import Col from "react-bootstrap/Col";
 import PaginationBar from "../utils/PaginationBar";
 

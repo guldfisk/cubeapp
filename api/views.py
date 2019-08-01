@@ -284,10 +284,21 @@ class DeltaList(generics.ListCreateAPIView):
         )
 
 
-class UpdateCubeDelta(views.APIView):
-    permission_classes = [permissions.IsAuthenticated, ]
+class VersionedCubesDeltasList(generics.ListAPIView):
+    serializer_class = serializers.CubeDeltaSerializer
 
-    def post(self, request: Request, *args, **kwargs) -> Response:
+    def get_queryset(self):
+        return models.CubeDelta.objects.filter(
+            versioned_cube_id=self.kwargs['pk']
+        )
+
+
+class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.CubeDelta.objects.all()
+    serializer_class = serializers.CubeDeltaSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def patch(self, request, *args, **kwargs):
         try:
             delta = models.CubeDelta.objects.get(pk=kwargs['pk'])
         except models.CubeDelta.DoesNotExist:
@@ -296,7 +307,7 @@ class UpdateCubeDelta(views.APIView):
         try:
             update = JsonId(db).deserialize(
                 CubeDeltaOperation,
-                request.data['update']
+                request.data['update'],
             )
         except (KeyError, AttributeError, Exception):
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -308,14 +319,11 @@ class UpdateCubeDelta(views.APIView):
             ) + update
         )
         delta.save()
-        import json
-        return Response(json.loads(delta.content), content_type='application/json')
 
-
-class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.CubeDelta.objects.all()
-    serializer_class = serializers.CubeDeltaSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+        return Response(
+            serializers.CubeDeltaSerializer(delta).data,
+            content_type='application/json',
+        )
 
 
 class ConstrainedNodesList(generics.ListAPIView):

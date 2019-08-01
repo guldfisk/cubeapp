@@ -1,9 +1,5 @@
-import './styling/bootstrap.css'
+import './styling/bootstrap.css';
+
+import 'react-bootstrap-table-next/dist/react-bootstrap-table2.min.css';
 
 import './components/app';
-
-// import axios from 'axios';
-// // import Axios from 'axios';
-//
-// axios.get('www.google.com');
-// // Axios.get('asdf');

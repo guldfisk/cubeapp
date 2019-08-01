@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {response} from "express";
 
 export const apiPath = '/api/';
 
@@ -555,11 +556,15 @@ class CubeablesCounter {
 export class Delta extends Model {
   _author: User;
   _cube: MinimalCube;
+  _printings: [Printing, number][];
 
   constructor(delta: any) {
     super(delta);
     this._author = new User(delta.author);
     this._cube = new MinimalCube(delta.versioned_cube);
+    this._printings = delta.content.printings.map(
+      ([printing, multiplicity]: [any, number]) => [new Printing(printing), multiplicity]
+    )
   }
 
   description = (): string => {
@@ -575,13 +580,28 @@ export class Delta extends Model {
   };
 
   cube = (): MinimalCube => {
-    return this._cube
+    return this._cube;
+  };
+
+  printings = (): [Printing, number][] => {
+    return this._printings;
   };
 
   static all = () => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'deltas/'
+    ).then(
+      response => response.data.results.map(
+        (delta: any) => new Delta(delta)
+      )
+    )
+  };
+
+  static forCube = (cubeId: number) => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'versioned-cubes/' + cubeId + '/deltas/'
     ).then(
       response => response.data.results.map(
         (delta: any) => new Delta(delta)

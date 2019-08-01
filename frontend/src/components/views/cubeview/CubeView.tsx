@@ -15,7 +15,6 @@ interface CubeViewProps {
 class CubeView extends React.Component<CubeViewProps> {
 
   render() {
-
     return <Card>
       <Card.Header className="panel-heading">
         <Row>

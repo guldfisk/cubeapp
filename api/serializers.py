@@ -295,26 +295,26 @@ class CubeDeltaOperationSerializer(ModelSerializer[CubeDeltaOperation]):
     @classmethod
     def serialize(cls, cube_delta_operation: CubeDeltaOperation) -> compacted_model:
         return {
-            'printings': {
-                PrintingSerializer.serialize(printing): multiplicity
+            'printings': [
+                (PrintingSerializer.serialize(printing), multiplicity)
                 for printing, multiplicity in
-                cube_delta_operation.printings.items()
-            },
-            'traps': {
-                TrapSerializer.serialize(trap): multiplicity
+                cube_delta_operation.printings
+            ],
+            'traps': [
+                (TrapSerializer.serialize(trap), multiplicity)
                 for trap, multiplicity in
-                cube_delta_operation.traps.items()
-            },
-            'tickets': {
-                TicketSerializer.serialize(ticket): multiplicity
+                cube_delta_operation.traps
+            ],
+            'tickets': [
+                (TicketSerializer.serialize(ticket), multiplicity)
                 for ticket, multiplicity in
-                cube_delta_operation.tickets.items()
-            },
-            'purples': {
-                PurpleSerializer.serialize(purple): multiplicity
+                cube_delta_operation.tickets
+            ],
+            'purples': [
+                (PurpleSerializer.serialize(purple), multiplicity)
                 for purple, multiplicity in
-                cube_delta_operation.purples.items()
-            },
+                cube_delta_operation.purples
+            ],
         }
 
 

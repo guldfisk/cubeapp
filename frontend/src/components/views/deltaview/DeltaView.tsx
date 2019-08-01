@@ -15,85 +15,92 @@ interface DeltaViewProps {
   delta: Delta
 }
 
-interface DeltaViewState {
-  cube: Cube
-  release: CubeRelease
-  printings: Printing[]
-
-}
-
-class DeltaView extends React.Component<DeltaViewProps, DeltaViewState> {
+class DeltaView extends React.Component<DeltaViewProps, null> {
 
   constructor(props: DeltaViewProps) {
     super(props);
-    this.state = {
-      cube: null,
-      release: null,
-      printings: [],
-    };
-  }
-
-  componentDidMount() {
-    // Cube.get(
-    //   this.props.delta.cube().id()
-    // ).then(
-    //   cube => {
-    //     this.setState({cube})
-    //   }
-    // ).then(
-    //   () => {
-    //     if (this.state.cube.latestRelease() === null) {
-    //       return;
-    //     }
-    //     CubeRelease.get(
-    //       this.state.cube.latestRelease().id()
-    //     ).then(
-    //       release => {
-    //         this.setState({release})
-    //       }
-    //     )
-    //   }
-    // );
   }
 
   render() {
-    console.log(this.state.printings);
-    // const cube = this.state.cube === null ? <Loading/> : <CubeView cube={this.state.cube}/>;
-    // const release = this.state.release === null ? <Loading/> : <ReleaseListView release={this.state.release}/>;
 
-    return <Card>
-      <Card.Header className="panel-heading">
-        <span className="badge badge-secondary">{this.props.delta.description()}</span>
-        <span className="badge badge-secondary">{this.props.delta.author().username()}</span>
-        <span className="badge badge-secondary">{this.props.delta.createdAt()}</span>
-      </Card.Header>
-      <Card.Body className="panel-body">
-        <Row>
-          <Col>
-          <SearchView
-            handleCardClicked={
-              (printing: Printing) => {
-                this.setState(
-                  {
-                    printings: this.state.printings.concat([printing,])
+    return <Row>
+      <Col>
+        <ul>
+          {
+            this.props.delta.printings().filter(
+              ([_, multiplicity]: [Printing, number]) => multiplicity > 0
+            ).map(
+              ([printing, multiplicity]: [Printing, number]) => <li>
+                <span
+                  style={
+                    {
+                      color: 'green',
+                    }
                   }
-                )
-              }
-            }
-          />
-        </Col>
-        <Col>
-          <ul>
-            {
-              this.state.printings.map(
-                (printing: Printing) => <li>{printing.name()}</li>
-              )
-            }
-          </ul>
-        </Col>
-        </Row>
-      </Card.Body>
-    </Card>
+                >
+                  {'+' + multiplicity.toString() + 'x ' + printing.name()}
+                </span>
+              </li>
+            )
+          }
+        </ul>
+      </Col>
+      <Col>
+        <ul>
+          {
+            this.props.delta.printings().filter(
+              ([_, multiplicity]: [Printing, number]) => multiplicity < 0
+            ).map(
+              ([printing, multiplicity]: [Printing, number]) => <li>
+                <span
+                  style={
+                    {
+                      color: 'red',
+                    }
+                  }
+                >
+                  {multiplicity.toString() + 'x ' + printing.name()}
+                </span>
+              </li>
+            )
+          }
+        </ul>
+      </Col>
+    </Row>
+
+    // return <Card>
+    //   <Card.Header className="panel-heading">
+    //     <span className="badge badge-secondary">{this.props.delta.description()}</span>
+    //     <span className="badge badge-secondary">{this.props.delta.author().username()}</span>
+    //     <span className="badge badge-secondary">{this.props.delta.createdAt()}</span>
+    //   </Card.Header>
+    //   <Card.Body className="panel-body">
+    //     <Row>
+    //       <Col>
+    //       <SearchView
+    //         handleCardClicked={
+    //           (printing: Printing) => {
+    //             this.setState(
+    //               {
+    //                 printings: this.state.printings.concat([printing,])
+    //               }
+    //             )
+    //           }
+    //         }
+    //       />
+    //     </Col>
+    //     <Col>
+    //       <ul>
+    //         {
+    //           this.state.printings.map(
+    //             (printing: Printing) => <li>{printing.name()}</li>
+    //           )
+    //         }
+    //       </ul>
+    //     </Col>
+    //     </Row>
+    //   </Card.Body>
+    // </Card>
 
   }
 

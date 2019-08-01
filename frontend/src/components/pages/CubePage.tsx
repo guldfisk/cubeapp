@@ -52,7 +52,7 @@ class CubePage extends React.Component<CubePageProps, CubepageState> {
               Actions
             </Card.Header>
             <Card.Body>
-              <p><Link to={"#"}>New Delta</Link></p>
+              <p><Link to={'/cube/' + this.props.match.params.id + '/deltas/'}>Deltas</Link></p>
             </Card.Body>
           </Card>
         </Col>
