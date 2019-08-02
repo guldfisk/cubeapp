@@ -1,3 +1,4 @@
+import os
 import hashlib
 
 from django.core.management.base import BaseCommand, CommandError
@@ -25,7 +26,7 @@ class Command(BaseCommand):
 
         root_user = get_user_model().objects.create_user(
             username='root',
-            password='1234',
+            password=os.environ['ROOT_USER_PASSWORD'],
             email='ceguldfisk@gmail.com',
             is_staff=True,
             is_superuser=True,
@@ -66,6 +67,5 @@ class Command(BaseCommand):
                 ConstrainedNodes(
                     ConstrainedNodeFetcher(db).fetch_garbage()
                 )
-
             )
         )

@@ -9,21 +9,47 @@ services:
       MYSQL_USER: 'phdk'
       MYSQL_PASSWORD: "${DB_PASSWORD}"
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
-    ports:
-      - '3306:3306'
-#    expose:
-#      - '3307'
     volumes:
       - db:/var/lib/docker_mysql
+    networks:
+      - database_network
 
   web:
     build: .
     volumes:
       - .:/code
-    ports:
-      - "7000:8000"
+      - ~/.local/share/mtgimg:/root/.local/share/mtgimg
+      - ~/.local/share/mtgorp:/root/.local/share/mtgorp
+      - static_volume:/opt/services/cubeapp/static
+      - media_volume:/opt/services/cubeapp/meda
     depends_on:
       - db
+    networks:
+      - nginx_network
+      - database_network
+    env_file:
+      - .env
+
+  nginx:
+    image: nginx:1.13
+    ports:
+      - "${PORT_OUT}:80"
+    volumes:
+      - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - static_volume:/opt/services/cubeapp/static
+      - media_volume:/opt/services/cubeapp/meda
+    depends_on:
+      - web
+    networks:
+      - nginx_network
+
+networks:
+  nginx_network:
+    driver: bridge
+  database_network:
+    driver: bridge
 
 volumes:
   db:
+  static_volume:
+  media_volume:

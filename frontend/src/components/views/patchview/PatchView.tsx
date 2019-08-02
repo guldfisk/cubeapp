@@ -3,19 +3,20 @@ import React from 'react';
 import Card from "react-bootstrap/Card";
 
 import {Loading} from "../../utils/utils";
-import {Cube, CubeRelease, Delta, Printing} from '../../models/models';
+import {Cube, CubeRelease, Patch, Printing} from '../../models/models';
 import CubeView from "../cubeview/CubeView";
 import SearchView from '../search/SearchView';
 // import ReleaseListView from "../releaseview/ReleaseListView";
 import Row from "react-bootstrap/Row";
 import {Col} from "react-bootstrap";
+import wu from 'wu';
 
 
 interface DeltaViewProps {
-  delta: Delta
+  delta: Patch
 }
 
-class DeltaView extends React.Component<DeltaViewProps, null> {
+class PatchView extends React.Component<DeltaViewProps, null> {
 
   constructor(props: DeltaViewProps) {
     super(props);
@@ -27,7 +28,7 @@ class DeltaView extends React.Component<DeltaViewProps, null> {
       <Col>
         <ul>
           {
-            this.props.delta.printings().filter(
+            wu(this.props.delta.printings().items()).filter(
               ([_, multiplicity]: [Printing, number]) => multiplicity > 0
             ).map(
               ([printing, multiplicity]: [Printing, number]) => <li>
@@ -48,7 +49,7 @@ class DeltaView extends React.Component<DeltaViewProps, null> {
       <Col>
         <ul>
           {
-            this.props.delta.printings().filter(
+            wu(this.props.delta.printings().items()).filter(
               ([_, multiplicity]: [Printing, number]) => multiplicity < 0
             ).map(
               ([printing, multiplicity]: [Printing, number]) => <li>
@@ -106,4 +107,4 @@ class DeltaView extends React.Component<DeltaViewProps, null> {
 
 }
 
-export default DeltaView;
+export default PatchView;

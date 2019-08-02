@@ -21,7 +21,7 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.delta import CubeDeltaOperation
+from magiccube.update.cubeupdate import CubePatch
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -270,58 +270,58 @@ class UserDetail(generics.RetrieveAPIView):
     serializer_class = serializers.UserSerializer
 
 
-class DeltaList(generics.ListCreateAPIView):
-    queryset = models.CubeDelta.objects.all()
-    serializer_class = serializers.CubeDeltaSerializer
+class PatchList(generics.ListCreateAPIView):
+    queryset = models.CubePatch.objects.all()
+    serializer_class = serializers.CubePatchSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     def perform_create(self, serializer):
         serializer.save(
             author = self.request.user,
             content = JsonId.serialize(
-                CubeDeltaOperation()
+                CubePatch()
             ),
         )
 
 
-class VersionedCubesDeltasList(generics.ListAPIView):
-    serializer_class = serializers.CubeDeltaSerializer
+class VersionedCubePatchList(generics.ListAPIView):
+    serializer_class = serializers.CubePatchSerializer
 
     def get_queryset(self):
-        return models.CubeDelta.objects.filter(
+        return models.CubePatch.objects.filter(
             versioned_cube_id=self.kwargs['pk']
         )
 
 
-class DeltaDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.CubeDelta.objects.all()
-    serializer_class = serializers.CubeDeltaSerializer
+class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.CubePatch.objects.all()
+    serializer_class = serializers.CubePatchSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     def patch(self, request, *args, **kwargs):
         try:
-            delta = models.CubeDelta.objects.get(pk=kwargs['pk'])
-        except models.CubeDelta.DoesNotExist:
+            patch = models.CubePatch.objects.get(pk=kwargs['pk'])
+        except models.CubePatch.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
             update = JsonId(db).deserialize(
-                CubeDeltaOperation,
+                CubePatch,
                 request.data['update'],
             )
         except (KeyError, AttributeError, Exception):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        delta.content = JsonId.serialize(
+        patch.content = JsonId.serialize(
             JsonId(db).deserialize(
-                CubeDeltaOperation,
-                delta.content,
+                CubePatch,
+                patch.content,
             ) + update
         )
-        delta.save()
+        patch.save()
 
         return Response(
-            serializers.CubeDeltaSerializer(delta).data,
+            serializers.CubePatchSerializer(patch).data,
             content_type='application/json',
         )
 

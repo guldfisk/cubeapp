@@ -1,6 +1,9 @@
 import axios from 'axios';
 import {response} from "express";
 
+import {Counter} from "./utils";
+
+
 export const apiPath = '/api/';
 
 
@@ -496,75 +499,20 @@ export class CubeRelease extends CubeReleaseMeta {
 }
 
 
-class Counter {
-  _cubeable: Cubeable;
-  _count: number;
-
-  constructor(cubeable: Cubeable, count: number) {
-    this._cubeable = cubeable;
-    this._count = count;
-  }
-
-  cubeable = (): Cubeable => {
-    return this._cubeable
-  };
-
-  count = (): number => {
-    return this._count
-  };
-
-  add = (amount: number): Counter => {
-    this._count += amount;
-    return this;
-  };
-
-}
-
-
-class CubeablesCounter {
-
-  _counters: {[id: string]: Counter};
-
-  constructor(cubeables: Cubeable[] = []) {
-    this._counters = {};
-    cubeables.forEach(cubeable => this.add(cubeable));
-  }
-
-  add = (cubeable: Cubeable, amount: number = 1): void => {
-    if (amount === 0) {
-      return
-    }
-    let count = this._counters[cubeable.id()];
-    if (count === undefined) {
-      this._counters[cubeable.id()] = new Counter(cubeable, amount)
-    } else {
-      if (count.add(amount).count()) {
-        delete this._counters[cubeable.id()]
-      }
-    }
-  };
-
-  *items(): IterableIterator<[Cubeable, number]> {
-   for (const count of Object.values(this._counters)) {
-     yield [count.cubeable(), count.count()]
-   }
-  }
-
-}
-
-
-export class Delta extends Model {
+export class Patch extends Model {
   _author: User;
   _cube: MinimalCube;
-  _printings: [Printing, number][];
+  _printings: Counter<Printing>;
 
-  constructor(delta: any) {
-    super(delta);
-    this._author = new User(delta.author);
-    this._cube = new MinimalCube(delta.versioned_cube);
-    this._printings = delta.content.printings.map(
-      ([printing, multiplicity]: [any, number]) => [new Printing(printing), multiplicity]
-    )
+  constructor(patch: any) {
+    super(patch);
+    this._author = new User(patch.author);
+    this._cube = new MinimalCube(patch.versioned_cube);
+    this._printings = new Counter(
+      patch.content.cube_delta.printings.map(
+        ([printing, multiplicity]: [any, number]) => [new Printing(printing), multiplicity]
+      )
+    );
   }
 
   description = (): string => {
@@ -583,17 +531,17 @@ export class Delta extends Model {
     return this._cube;
   };
 
-  printings = (): [Printing, number][] => {
+  printings = (): Counter<Printing> => {
     return this._printings;
   };
 
   static all = () => {
     // TODO pagination lol
     return axios.get(
-      apiPath + 'deltas/'
+      apiPath + 'patches/'
     ).then(
       response => response.data.results.map(
-        (delta: any) => new Delta(delta)
+        (delta: any) => new Patch(delta)
       )
     )
   };
@@ -601,19 +549,19 @@ export class Delta extends Model {
   static forCube = (cubeId: number) => {
     // TODO pagination lol
     return axios.get(
-      apiPath + 'versioned-cubes/' + cubeId + '/deltas/'
+      apiPath + 'versioned-cubes/' + cubeId + '/patches/'
     ).then(
       response => response.data.results.map(
-        (delta: any) => new Delta(delta)
+        (delta: any) => new Patch(delta)
       )
     )
   };
 
   static get = (id: string) => {
     return axios.get(
-      apiPath + 'deltas/' + id + '/'
+      apiPath + 'patches/' + id + '/'
     ).then(
-      response => new Delta(response.data)
+      response => new Patch(response.data)
     )
   };
 

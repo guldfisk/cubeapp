@@ -2,14 +2,14 @@ import React from 'react';
 
 import Table from "react-bootstrap/Table";
 import {Link} from "react-router-dom";
-import {Delta} from "../../models/models";
+import {Patch} from "../../models/models";
 
 
 interface DeltasViewProps {
-  deltas: Delta[]
+  deltas: Patch[]
 }
 
-class DeltasView extends React.Component<DeltasViewProps> {
+class PatchesView extends React.Component<DeltasViewProps> {
 
   render() {
 
@@ -44,4 +44,4 @@ class DeltasView extends React.Component<DeltasViewProps> {
 
 }
 
-export default DeltasView;
+export default PatchesView;

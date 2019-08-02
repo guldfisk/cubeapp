@@ -19,13 +19,13 @@ urlpatterns = [
 
 	path('versioned-cubes/', views.VersionedCubesList.as_view()),
 	path('versioned-cubes/<int:pk>/', views.VersionedCubeDetail.as_view()),
-	path('versioned-cubes/<int:pk>/deltas/', views.VersionedCubesDeltasList.as_view()),
+	path('versioned-cubes/<int:pk>/patches/', views.VersionedCubePatchList.as_view()),
 
 	path('users/', views.UserList.as_view()),
 	path('users/<int:pk>/', views.UserDetail.as_view()),
 
-	path('deltas/', views.DeltaList.as_view()),
-	path('deltas/<int:pk>/', views.DeltaDetail.as_view()),
+	path('patches/', views.PatchList.as_view()),
+	path('patches/<int:pk>/', views.PatchDetail.as_view()),
 	# path('deltas/<int:pk>/update/', views.UpdateCubeDelta.as_view()),
 
 	path('constrained-nodes/', views.ConstrainedNodesList.as_view()),

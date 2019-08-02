@@ -17,6 +17,7 @@ from mtgorp.models.persistent.expansion import Expansion
 
 from magiccube.collections.cube import Cube, Cubeable
 from magiccube.collections.delta import CubeDeltaOperation
+from magiccube.update.cubeupdate import CubePatch
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.traps.trap import Trap
@@ -290,47 +291,56 @@ class ConstrainedNodesOrpSerializer(ModelSerializer[ConstrainedNodes]):
         }
 
 
-class CubeDeltaOperationSerializer(ModelSerializer[CubeDeltaOperation]):
+class CubePatchOrpSerializer(ModelSerializer[CubePatch]):
 
     @classmethod
-    def serialize(cls, cube_delta_operation: CubeDeltaOperation) -> compacted_model:
+    def serialize(cls, cube_patch: CubePatch) -> compacted_model:
         return {
-            'printings': [
-                (PrintingSerializer.serialize(printing), multiplicity)
-                for printing, multiplicity in
-                cube_delta_operation.printings
-            ],
-            'traps': [
-                (TrapSerializer.serialize(trap), multiplicity)
-                for trap, multiplicity in
-                cube_delta_operation.traps
-            ],
-            'tickets': [
-                (TicketSerializer.serialize(ticket), multiplicity)
-                for ticket, multiplicity in
-                cube_delta_operation.tickets
-            ],
-            'purples': [
-                (PurpleSerializer.serialize(purple), multiplicity)
-                for purple, multiplicity in
-                cube_delta_operation.purples
-            ],
+            'cube_delta': {
+                'printings': [
+                    (PrintingSerializer.serialize(printing), multiplicity)
+                    for printing, multiplicity in
+                    cube_patch.cube_delta_operation.printings
+                ],
+                'traps': [
+                    (TrapSerializer.serialize(trap), multiplicity)
+                    for trap, multiplicity in
+                    cube_patch.cube_delta_operation.traps
+                ],
+                'tickets': [
+                    (TicketSerializer.serialize(ticket), multiplicity)
+                    for ticket, multiplicity in
+                    cube_patch.cube_delta_operation.tickets
+                ],
+                'purples': [
+                    (PurpleSerializer.serialize(purple), multiplicity)
+                    for purple, multiplicity in
+                    cube_patch.cube_delta_operation.purples
+                ],
+            },
+            'node_delta': {
+                (
+                    ConstrainedNodeOrpSerializer.serialize(node),
+                    multiplicity,
+                )
+                for node, multiplicity in
+                cube_patch.node_delta_operation.nodes.items()
+            }
         }
 
 
-class MultiCubeSerializer(object):
-    _type_map = {
-        Printing: PrintingSerializer,
-        Trap: TrapSerializer,
-        Ticket: TicketSerializer,
-        Purple: PurpleSerializer,
-    }
-
-    @classmethod
-    def serialize_multi_cubeables(cls, cubeables: t.Iterable[Cubeable]) -> t.Iterable[t.Dict]:
-        for _cubeable in cubeables:
-            yield cls._type_map[type(_cubeable)].serialize(_cubeable)
-
+# class MultiCubeSerializer(object):
+#     _type_map = {
+#         Printing: PrintingSerializer,
+#         Trap: TrapSerializer,
+#         Ticket: TicketSerializer,
+#         Purple: PurpleSerializer,
+#     }
+#
+#     @classmethod
+#     def serialize_multi_cubeables(cls, cubeables: t.Iterable[Cubeable]) -> t.Iterable[t.Dict]:
+#         for _cubeable in cubeables:
+#             yield cls._type_map[type(_cubeable)].serialize(_cubeable)
 
 
 class OrpModelField(serializers.Field):
@@ -403,7 +413,7 @@ class ConstrainedNodesSerializer(serializers.ModelSerializer):
         fields = ('release', 'constrained_nodes_content')
 
 
-class CubeDeltaSerializer(serializers.ModelSerializer):
+class CubePatchSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     versioned_cube_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
@@ -413,13 +423,13 @@ class CubeDeltaSerializer(serializers.ModelSerializer):
     versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
     content = OrpModelField(
-        model_serializer = CubeDeltaOperationSerializer,
-        serializeable_type = CubeDeltaOperation,
+        model_serializer = CubePatchOrpSerializer,
+        serializeable_type = CubePatch,
         strategy = JsonId(db),
     )
 
     class Meta:
-        model = models.CubeDelta
+        model = models.CubePatch
         fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'content')
 
 

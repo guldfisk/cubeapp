@@ -1,15 +1,15 @@
 import React from 'react';
 
-import {Delta} from '../models/models';
+import {Patch} from '../models/models';
 
-import DeltasView from '../views/deltaview/DeltasView';
+import PatchesView from '../views/patchview/PatchesView';
 
 
 interface DeltasPageState {
-  deltas: Delta[]
+  deltas: Patch[]
 }
 
-class DeltasPage extends React.Component<null, DeltasPageState> {
+class PatchesPage extends React.Component<null, DeltasPageState> {
 
   constructor(props: null) {
     super(props);
@@ -19,7 +19,7 @@ class DeltasPage extends React.Component<null, DeltasPageState> {
   }
 
   componentDidMount() {
-    Delta.all().then(
+    Patch.all().then(
       deltas => {
         this.setState({deltas})
       }
@@ -27,11 +27,11 @@ class DeltasPage extends React.Component<null, DeltasPageState> {
   }
 
   render() {
-    return <DeltasView
+    return <PatchesView
       deltas={this.state.deltas}
     />
   }
 
 }
 
-export default DeltasPage;
+export default PatchesPage;

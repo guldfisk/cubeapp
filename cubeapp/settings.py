@@ -18,11 +18,11 @@ DATABASE_HOST = _config_parser['client']['host']
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
-_production = strtobool(_config_parser['default']['production'])
+# _production = strtobool(_config_parser['default']['production'])
 
-DEBUG = not _production
+DEBUG = strtobool(os.environ['DEBUG'])
 
-ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if _production else []
+ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if not DEBUG else []
 
 
 # Application definition
@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'knox',
     'api.apps.ApiConfig',
-    'statics.apps.StaticsConfig',
+    # 'statics.apps.StaticsConfig',
     'frontend.apps.FrontendConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -128,7 +128,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = 'media/'
+STATIC_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'static')
+MEDIA_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'media')
+
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
@@ -140,5 +142,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
-    'DEFAULT_AUTHENTICATION_CLASSES': ('knox.auth.TokenAuthentication',),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'knox.auth.TokenAuthentication',
+    ),
 }

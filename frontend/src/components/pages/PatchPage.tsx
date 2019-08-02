@@ -8,8 +8,8 @@ import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 
 import {Loading} from '../utils/utils';
-import {Delta} from '../models/models';
-import DeltaView from '../views/deltaview/DeltaView';
+import {Patch} from '../models/models';
+import PatchView from '../views/patchview/PatchView';
 
 
 interface DeltaPageProps {
@@ -17,10 +17,10 @@ interface DeltaPageProps {
 }
 
 interface DeltaPageState {
-  delta: null | Delta
+  delta: null | Patch
 }
 
-class DeltaPage extends React.Component<DeltaPageProps, DeltaPageState> {
+class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
   constructor(props: DeltaPageProps) {
     super(props);
@@ -30,7 +30,7 @@ class DeltaPage extends React.Component<DeltaPageProps, DeltaPageState> {
   }
 
   componentDidMount() {
-    Delta.get(
+    Patch.get(
       this.props.match.params.id
     ).then(
       delta => {
@@ -43,7 +43,7 @@ class DeltaPage extends React.Component<DeltaPageProps, DeltaPageState> {
   render() {
     let delta = <Loading/>;
     if (this.state.delta !== null) {
-      delta = <DeltaView
+      delta = <PatchView
         delta={this.state.delta}
       />
     }
@@ -69,4 +69,4 @@ class DeltaPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
 }
 
-export default DeltaPage;
+export default PatchPage;

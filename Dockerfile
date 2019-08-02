@@ -18,12 +18,12 @@ RUN apt-get update && apt-get install nodejs
 
 RUN python3 -m mtgorp.db.init
 
-RUN npm install dev
-RUN npm run dev
+#RUN npm install dev
+#RUN npm run dev
 
 #RUN python3 manage.py migrate
 #RUN python3 manage.py populatecubes
 #RUN python3 manage.py collectstatic --noinput
 # :)
 
-CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["bash", "./entrypoint.sh"]

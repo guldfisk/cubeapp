@@ -45,7 +45,7 @@ class ConstrainedNodes(models.Model):
     )
 
 
-class CubeDelta(models.Model):
+class CubePatch(models.Model):
     created_at = models.DateTimeField(default=now)
     description = models.TextField()
     content = models.TextField()
