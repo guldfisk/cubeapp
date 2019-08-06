@@ -15,7 +15,6 @@ import {CubeableImage} from "../../images";
 
 interface SearchViewProps {
   handleCardClicked: (printing: Printing) => void
-  // handleCardClicked: any
 }
 
 

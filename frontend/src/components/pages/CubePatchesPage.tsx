@@ -53,7 +53,7 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
         </Col>
         <Col>
           <PatchesView
-            deltas={this.state.deltas}
+            patches={this.state.deltas}
           />
         </Col>
       </Row>

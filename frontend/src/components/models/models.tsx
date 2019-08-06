@@ -2,6 +2,8 @@ import axios from 'axios';
 import {response} from "express";
 
 import {Counter} from "./utils";
+import {number} from "prop-types";
+import wu from 'wu';
 
 
 export const apiPath = '/api/';
@@ -533,6 +535,33 @@ export class Patch extends Model {
 
   printings = (): Counter<Printing> => {
     return this._printings;
+  };
+
+  update = (printing: Printing, token: string): any => {
+    return axios.patch(
+      apiPath + 'patches/' + this.id() + '/',
+      {
+        update: JSON.stringify(
+          {
+            cube_delta: {
+              printings: [
+                [
+                  printing.id(), 1
+                ]
+              ]
+            }
+          }
+        )
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${token}`,
+        }
+      },
+    ).then(
+      response => new Patch(response.data)
+    )
   };
 
   static all = () => {

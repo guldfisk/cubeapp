@@ -14,13 +14,13 @@ import PatchPage from './pages/PatchPage';
 
 export const routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][] = [
   ['/', CubesPage, false, {exact: true}],
-  ['/cube/:id(\\d+)/deltas', CubePatchesPage, false, {}],
+  ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)', CubePage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
   ['/logout', SignOutPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],
-  ['/deltas', PatchesPage, false, {}],
-  ['/delta/:id(\\d+)', PatchPage, false, {}],
+  ['/patches', PatchesPage, false, {}],
+  ['/patch/:id(\\d+)', PatchPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

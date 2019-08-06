@@ -6,7 +6,7 @@ import PatchesView from '../views/patchview/PatchesView';
 
 
 interface DeltasPageState {
-  deltas: Patch[]
+  patches: Patch[]
 }
 
 class PatchesPage extends React.Component<null, DeltasPageState> {
@@ -14,21 +14,21 @@ class PatchesPage extends React.Component<null, DeltasPageState> {
   constructor(props: null) {
     super(props);
     this.state = {
-      deltas: [],
+      patches: [],
     };
   }
 
   componentDidMount() {
     Patch.all().then(
       deltas => {
-        this.setState({deltas})
+        this.setState({patches: deltas})
       }
     );
   }
 
   render() {
     return <PatchesView
-      deltas={this.state.deltas}
+      patches={this.state.patches}
     />
   }
 

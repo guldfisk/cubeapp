@@ -6,7 +6,7 @@ import {Patch} from "../../models/models";
 
 
 interface DeltasViewProps {
-  deltas: Patch[]
+  patches: Patch[]
 }
 
 class PatchesView extends React.Component<DeltasViewProps> {
@@ -23,12 +23,12 @@ class PatchesView extends React.Component<DeltasViewProps> {
       </thead>
       <tbody>
       {
-        this.props.deltas.map(
+        this.props.patches.map(
           delta => {
             return <tr>
               <td>{delta.description()}</td>
               <td>
-                 <Link to={"/delta/" + delta.id()}>
+                 <Link to={"/patch/" + delta.id()}>
                    {delta.author().username()}
                  </Link>
               </td>

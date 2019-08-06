@@ -6,6 +6,7 @@ import MapleToolTip from 'reactjs-mappletooltip';
 
 import {CubeableImage} from '../../images';
 import {Trap, Ticket, Purple, Printing, Cubeable, CubeablesContainer, PrintingCollection} from "../../models/models";
+import {PrintingListItem, TrapListItem} from "../../utils/utils";
 
 
 interface TrapItemProps {
@@ -14,24 +15,26 @@ interface TrapItemProps {
 
 const TrapItem: React.FunctionComponent<TrapItemProps> = (props) => {
   if (props.cubeable.type() === 'printing') {
-    return <MapleToolTip>
-      <div
-        className='TrapItem'
-      >
-        {(props.cubeable as Printing).name()}
-      </div>
-      <div>
-        <CubeableImage
-          cubeable={props.cubeable}
-        />
-      </div>
-    </MapleToolTip>
+    return <PrintingListItem printing={props.cubeable as Printing}/>
+    // return <MapleToolTip>
+    //   <div
+    //     className='TrapItem'
+    //   >
+    //     {(props.cubeable as Printing).name()}
+    //   </div>
+    //   <div>
+    //     <CubeableImage
+    //       cubeable={props.cubeable}
+    //     />
+    //   </div>
+    // </MapleToolTip>
   } else if (props.cubeable.type() === 'trap') {
-    return <span>
-      {
-        (props.cubeable as Trap).node().representation()
-      }
-    </span>
+    return <TrapListItem trap={props.cubeable as Trap}/>
+    // return <span>
+    //   {
+    //     (props.cubeable as Trap).node().representation()
+    //   }
+    // </span>
     // return <div
     //   className='TrapItem'
     // >
@@ -65,16 +68,7 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
   let content: string | ComponentElement<any, any> = "";
 
   if (props.cubeable.type() === 'printing') {
-    content = <MapleToolTip>
-      <div>
-        {(props.cubeable as Printing).name()}
-      </div>
-      <span>
-          <CubeableImage
-            cubeable={props.cubeable}
-          />
-      </span>
-    </MapleToolTip>
+    content = <PrintingListItem printing={props.cubeable as Printing}/>
 
   } else if (props.cubeable.type() === 'trap') {
     content = <TrapItem cubeable={props.cubeable}/>

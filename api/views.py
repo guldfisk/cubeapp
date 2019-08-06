@@ -304,6 +304,10 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
         except models.CubePatch.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+        print(request.data)
+        print(type(request.data))
+        print(request.data.get('update', 'no update'))
+
         try:
             update = JsonId(db).deserialize(
                 CubePatch,

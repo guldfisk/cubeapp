@@ -3,6 +3,7 @@ import React from 'react';
 import Table from "react-bootstrap/Table";
 
 import {ConstrainedNodes} from '../../models/models';
+import {NodeListItem} from "../../utils/utils";
 
 
 interface ConstrainedNodesViewProps {
@@ -28,7 +29,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         ).map(
           constrainedNode => {
             return <tr>
-              <td>{constrainedNode.node().representation()}</td>
+              <td><NodeListItem node={constrainedNode.node()}/></td>
               <td>{constrainedNode.value()}</td>
               <td>{constrainedNode.groups().join(", ")}</td>
             </tr>

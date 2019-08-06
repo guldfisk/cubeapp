@@ -8,16 +8,19 @@ import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
 
 import {Loading} from '../utils/utils';
-import {Patch} from '../models/models';
+import {Patch, Printing} from '../models/models';
 import PatchView from '../views/patchview/PatchView';
+import SearchView from "../views/search/SearchView";
+import {connect} from "react-redux";
 
 
 interface DeltaPageProps {
   match: any
+  token: string
 }
 
 interface DeltaPageState {
-  delta: null | Patch
+  patch: null | Patch
 }
 
 class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
@@ -25,7 +28,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   constructor(props: DeltaPageProps) {
     super(props);
     this.state = {
-      delta: null,
+      patch: null,
     };
   }
 
@@ -33,18 +36,26 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     Patch.get(
       this.props.match.params.id
     ).then(
-      delta => {
-        this.setState({delta})
+      patch => {
+        this.setState({patch})
       }
     );
-
   }
 
+  handleAddCard = (printing: Printing) => {
+    this.state.patch.update(printing, this.props.token).then(
+      (patch: Patch) => {
+        console.log(patch);
+        this.setState({patch});
+      }
+    )
+  };
+
   render() {
-    let delta = <Loading/>;
-    if (this.state.delta !== null) {
-      delta = <PatchView
-        delta={this.state.delta}
+    let patchView = <Loading/>;
+    if (this.state.patch !== null) {
+      patchView = <PatchView
+        patch={this.state.patch}
       />
     }
 
@@ -61,7 +72,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
           </Card>
         </Col>
         <Col>
-          {delta}
+          <SearchView
+            handleCardClicked={this.handleAddCard}
+          />
+        </Col>
+        <Col>
+          {patchView}
         </Col>
       </Row>
     </Container>
@@ -69,4 +85,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
 }
 
-export default PatchPage;
+const mapStateToProps = (state: any) => {
+  return {
+    token: state.token,
+  };
+};
+
+
+export default connect(mapStateToProps, null)(PatchPage);

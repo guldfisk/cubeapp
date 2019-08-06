@@ -103,8 +103,8 @@ class RootComponent extends React.Component<RootProps> {
             <Nav.Link>Create Cube</Nav.Link>
           </LinkContainer>
 
-          <LinkContainer to='/deltas/'>
-            <Nav.Link>Deltas</Nav.Link>
+          <LinkContainer to='/patches/'>
+            <Nav.Link>Patches</Nav.Link>
           </LinkContainer>
 
         </Nav>

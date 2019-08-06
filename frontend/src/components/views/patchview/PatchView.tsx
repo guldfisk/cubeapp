@@ -2,7 +2,7 @@ import React from 'react';
 
 import Card from "react-bootstrap/Card";
 
-import {Loading} from "../../utils/utils";
+import {Loading, PrintingListItem} from "../../utils/utils";
 import {Cube, CubeRelease, Patch, Printing} from '../../models/models';
 import CubeView from "../cubeview/CubeView";
 import SearchView from '../search/SearchView';
@@ -10,10 +10,11 @@ import SearchView from '../search/SearchView';
 import Row from "react-bootstrap/Row";
 import {Col} from "react-bootstrap";
 import wu from 'wu';
+import {number} from "prop-types";
 
 
 interface DeltaViewProps {
-  delta: Patch
+  patch: Patch
 }
 
 class PatchView extends React.Component<DeltaViewProps, null> {
@@ -28,7 +29,7 @@ class PatchView extends React.Component<DeltaViewProps, null> {
       <Col>
         <ul>
           {
-            wu(this.props.delta.printings().items()).filter(
+            Array.from(this.props.patch.printings().items()).filter(
               ([_, multiplicity]: [Printing, number]) => multiplicity > 0
             ).map(
               ([printing, multiplicity]: [Printing, number]) => <li>
@@ -39,7 +40,8 @@ class PatchView extends React.Component<DeltaViewProps, null> {
                     }
                   }
                 >
-                  {'+' + multiplicity.toString() + 'x ' + printing.name()}
+                  {'+' + multiplicity.toString() + 'x '}
+                  <PrintingListItem printing={printing}/>
                 </span>
               </li>
             )
@@ -49,7 +51,7 @@ class PatchView extends React.Component<DeltaViewProps, null> {
       <Col>
         <ul>
           {
-            wu(this.props.delta.printings().items()).filter(
+            Array.from(this.props.patch.printings().items()).filter(
               ([_, multiplicity]: [Printing, number]) => multiplicity < 0
             ).map(
               ([printing, multiplicity]: [Printing, number]) => <li>
@@ -60,7 +62,8 @@ class PatchView extends React.Component<DeltaViewProps, null> {
                     }
                   }
                 >
-                  {multiplicity.toString() + 'x ' + printing.name()}
+                  {multiplicity.toString() + 'x '}
+                  <PrintingListItem printing={printing}/>
                 </span>
               </li>
             )
