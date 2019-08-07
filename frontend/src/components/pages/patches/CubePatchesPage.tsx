@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {Patch} from '../models/models';
+import {Patch} from '../../models/models';
 
-import PatchesView from '../views/patchview/PatchesView';
+import PatchesView from '../../views/patchview/PatchesView';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -15,7 +15,7 @@ interface CubeDeltasPageProps {
 }
 
 interface CubeDeltasPageState {
-  deltas: Patch[]
+  patches: Patch[]
 }
 
 class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPageState> {
@@ -23,7 +23,7 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
   constructor(props: null) {
     super(props);
     this.state = {
-      deltas: [],
+      patches: [],
     };
   }
 
@@ -32,7 +32,7 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
       this.props.match.params.id
     ).then(
       deltas => {
-        this.setState({deltas})
+        this.setState({patches: deltas})
       }
     );
   }
@@ -47,13 +47,13 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
               Actions
             </Card.Header>
             <Card.Body>
-              <p><Link to={"#"}>New Delta</Link></p>
+              <p><Link to={"create"}>New Patch</Link></p>
             </Card.Body>
           </Card>
         </Col>
         <Col>
           <PatchesView
-            patches={this.state.deltas}
+            patches={this.state.patches}
           />
         </Col>
       </Row>

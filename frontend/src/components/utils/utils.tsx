@@ -2,12 +2,10 @@ import React from "react";
 
 import '../../styling/utils.css';
 
-// import MapleToolTip from 'reactjs-mappletooltip';
-import {Tooltip} from "react-lightweight-tooltip";
-
 import {Printing, Trap, PrintingNode} from "../models/models";
 import {CubeableImage} from "../images";
 import ReactTooltip from 'react-tooltip';
+
 
 const imagesPath = '/api/images/';
 
@@ -21,28 +19,45 @@ export const get_cardback_image_url = (size_slug = 'original') => {
 };
 
 
-export interface NoProps {
-}
-
-export interface NoState {
-}
-
-export const Loading: React.SFC<NoProps> = () => {
+export const Loading: React.SFC = () => {
   return <h3 className="loading">Loading...</h3>
 };
 
 
 interface PrintingListItemProps {
   printing: Printing
+  onClick?: (printing: Printing) => void
+  noHover?: boolean
 }
 
 export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: PrintingListItemProps) => {
+  if (props.noHover) {
+    return <a
+      onClick={
+        props.onClick && (
+          () => {
+            props.onClick(props.printing);
+          }
+        )
+      }
+    >
+      {props.printing.full_name()}
+    </a>
+  }
+
   return <span>
     <a
-      data-tip
+      data-tip=""
       data-for={props.printing.id().toString()}
+      onClick={
+        props.onClick && (
+          () => {
+            props.onClick(props.printing);
+          }
+        )
+      }
     >
-      {props.printing.name()}
+      {props.printing.full_name()}
     </a>
     <ReactTooltip
       place="top"
@@ -61,6 +76,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
 
 interface TrapListItemProps {
   trap: Trap
+  noHover?: boolean
 }
 
 const trap_representation = (item: Printing | PrintingNode, trap: Trap | undefined = undefined): any => {
@@ -72,10 +88,10 @@ const trap_representation = (item: Printing | PrintingNode, trap: Trap | undefin
     );
     return <span>
     <a
-      data-tip
+      data-tip=""
       data-for={tooltipId}
     >
-      {item.name()}
+      {item.full_name()}
     </a>
     <ReactTooltip
       place="top"
@@ -98,7 +114,6 @@ const trap_representation = (item: Printing | PrintingNode, trap: Trap | undefin
   }
 
   return <span>
-    (
     {
       item.children().map(
         child => trap_representation(child, trap)
@@ -106,11 +121,13 @@ const trap_representation = (item: Printing | PrintingNode, trap: Trap | undefin
         (previous, current) => [previous, item.type() === 'AllNode' ? '; ' : ' || ', current]
       )
     }
-    )
   </span>;
 };
 
 export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
+  if (props.noHover) {
+    return <a>trap</a>
+  }
   return trap_representation(props.trap.node(), props.trap)
 };
 

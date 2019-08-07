@@ -15,6 +15,7 @@ import {CubeableImage} from "../../images";
 
 interface SearchViewProps {
   handleCardClicked: (printing: Printing) => void
+  limit: number
 }
 
 
@@ -32,6 +33,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
 
   public static defaultProps = {
     handleCardClicked: () => {},
+    limit: 50,
   };
 
   constructor(props: any) {
@@ -67,6 +69,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
           order_by: orderBy,
           descending: sortDirection === "descending",
           offset,
+          limit: this.props.limit,
         }
       }
     ).then(
@@ -196,7 +199,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
               `Showing ${
                 this.state.offset
                 } - ${
-                Math.min(this.state.offset + 50, this.state.hits)
+                Math.min(this.state.offset + this.props.limit, this.state.hits)
                 } out of ${
                 this.state.hits
                 } results.`
@@ -212,7 +215,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
                 offset={this.state.offset}
                 handleNewOffset={this.handlePageChange}
                 maxPageDisplay={7}
-                pageSize={50}
+                pageSize={this.props.limit}
               />
           }
         </Row>

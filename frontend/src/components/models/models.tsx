@@ -1,9 +1,7 @@
 import axios from 'axios';
-import {response} from "express";
 
 import {Counter} from "./utils";
-import {number} from "prop-types";
-import wu from 'wu';
+import store from '../state/store';
 
 
 export const apiPath = '/api/';
@@ -61,8 +59,8 @@ export class Printing extends Cubeable {
     return this._wrapping.types;
   };
 
-  content_description = (): string => {
-    return this.name + '|' + this._wrapping.expansion.code;
+  full_name = (): string => {
+    return this.name() + '|' + this._wrapping.expansion.code;
   };
 
 }
@@ -537,7 +535,7 @@ export class Patch extends Model {
     return this._printings;
   };
 
-  update = (printing: Printing, token: string): any => {
+  update = (printing: Printing, amount: number = 1): any => {
     return axios.patch(
       apiPath + 'patches/' + this.id() + '/',
       {
@@ -546,7 +544,8 @@ export class Patch extends Model {
             cube_delta: {
               printings: [
                 [
-                  printing.id(), 1
+                  printing.id(),
+                  amount,
                 ]
               ]
             }
@@ -556,7 +555,45 @@ export class Patch extends Model {
       {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Token ${token}`,
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => new Patch(response.data)
+    )
+  };
+
+  delete = (): any => {
+    return axios.delete(
+      apiPath + 'patches/' + this.id() + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
+  preview = (): any => {
+    return axios.get(
+      apiPath + 'patches/' + this.id() + '/preview/',
+    ).then(
+      response => new CubeablesContainer(response.data)
+    )
+  };
+
+  static create = (cube_id: number, description: string) => {
+    return axios.post(
+      apiPath + 'patches/',
+      {
+        description,
+        versioned_cube_id: cube_id,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
         }
       },
     ).then(

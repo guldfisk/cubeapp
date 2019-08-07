@@ -7,20 +7,22 @@ import {Cubeable} from "./models/models";
 
 
 interface CubeableImageProps {
-  cubeable: Cubeable
+  cubeable?: Cubeable
   sizeSlug?: string
   onClick?: null | ((cubeable: Cubeable) => void)
+  id?: string | number
+  type?: string
 }
 
 export const CubeableImage: React.FunctionComponent<CubeableImageProps> = (
-  {cubeable, sizeSlug = 'medium', onClick = null}: CubeableImageProps
+  {cubeable = null, sizeSlug = 'medium', onClick = null, id=null, type=null}: CubeableImageProps
 ) => {
 
   return <LazyImage
     src={
       get_cubeable_images_url(
-        cubeable.id(),
-        cubeable.type(),
+        cubeable === null ? id.toString() : cubeable.id(),
+        cubeable === null ? type : cubeable.type(),
         sizeSlug,
       )
     }

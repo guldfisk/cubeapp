@@ -1,27 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import {BrowserRouter as Router, Route, Switch} from "react-router-dom";
-
-import {applyMiddleware, createStore} from "redux";
+import {Router, Route, Switch} from "react-router-dom";
 
 import {connect, Provider} from 'react-redux';
-
-import thunk from "redux-thunk";
 
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 
 import {LinkContainer} from 'react-router-bootstrap';
 
-import {routes} from './Routes';
-import authReducer from './state/reducers';
+import history from './routing/history';
+import {routes} from './routing/Routes';
 import {loadUser} from "./auth/controller";
-import {Loading, NoProps, NoState} from "./utils/utils";
+import {Loading} from "./utils/utils";
 import SignInPage from './pages/SignInPage';
-
-
-const store = createStore(authReducer, applyMiddleware(thunk));
+import store from './state/store';
+import Breadcrumb from "react-bootstrap/Breadcrumb";
 
 
 interface RootProps {
@@ -85,50 +80,58 @@ class RootComponent extends React.Component<RootProps> {
 
 
   render() {
-    return <Router>
-    <Navbar bg='light' expand='lg' collapseOnSelect>
+    return <Router
+      history={history}
+    >
+      <Navbar bg='light' expand='lg' collapseOnSelect>
 
-      <Navbar.Collapse id='basic-navbar nav'>
-        <Nav className='mr-auto'>
+        <Navbar.Collapse id='basic-navbar nav'>
+          <Nav className='mr-auto'>
 
-          <LinkContainer to='/'>
-            <Nav.Link>Cubes</Nav.Link>
-          </LinkContainer>
+            <LinkContainer to='/'>
+              <Nav.Link>Cubes</Nav.Link>
+            </LinkContainer>
 
-          <LinkContainer to='/search/'>
-            <Nav.Link>Search</Nav.Link>
-          </LinkContainer>
+            <LinkContainer to='/search/'>
+              <Nav.Link>Search</Nav.Link>
+            </LinkContainer>
 
-          <LinkContainer to='/create-cube/'>
-            <Nav.Link>Create Cube</Nav.Link>
-          </LinkContainer>
+            <LinkContainer to='/create-cube/'>
+              <Nav.Link>Create Cube</Nav.Link>
+            </LinkContainer>
 
-          <LinkContainer to='/patches/'>
-            <Nav.Link>Patches</Nav.Link>
-          </LinkContainer>
+            <LinkContainer to='/patches/'>
+              <Nav.Link>Patches</Nav.Link>
+            </LinkContainer>
 
-        </Nav>
-        <Nav className="justify-content-end">
-          {
-            this.props.auth.authenticated ?
-              <LinkContainer to='/logout/'>
-                <Nav.Link>Sign Out</Nav.Link>
+          </Nav>
+          <Nav className="justify-content-end">
+            {
+              !this.props.auth.authenticated &&
+              <LinkContainer to='/sign-up/'>
+                <Nav.Link>Sign up</Nav.Link>
               </LinkContainer>
-              : <LinkContainer to='/login/'>
-                <Nav.Link>Sign In</Nav.Link>
-              </LinkContainer>
-          }
+            }
+            {
+              this.props.auth.authenticated ?
+                <LinkContainer to='/logout/'>
+                  <Nav.Link>Sign Out</Nav.Link>
+                </LinkContainer>
+                : <LinkContainer to='/login/'>
+                  <Nav.Link>Sign In</Nav.Link>
+                </LinkContainer>
+            }
 
-        </Nav>
-      </Navbar.Collapse>
+          </Nav>
+        </Navbar.Collapse>
 
-    </Navbar>
+      </Navbar>
 
-    {
-      this.createRoutes(routes)
-    }
+      {
+        this.createRoutes(routes)
+      }
 
-  </Router>
+    </Router>
   }
 }
 
@@ -159,7 +162,7 @@ class App extends React.Component {
   render() {
     return (
       <Provider store={store}>
-        <RootContainer />
+        <RootContainer/>
       </Provider>
     )
   }

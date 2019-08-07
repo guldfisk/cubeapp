@@ -26,6 +26,7 @@ urlpatterns = [
 
 	path('patches/', views.PatchList.as_view()),
 	path('patches/<int:pk>/', views.PatchDetail.as_view()),
+	path('patches/<int:pk>/preview/', views.patch_preview),
 	# path('deltas/<int:pk>/update/', views.UpdateCubeDelta.as_view()),
 
 	path('constrained-nodes/', views.ConstrainedNodesList.as_view()),

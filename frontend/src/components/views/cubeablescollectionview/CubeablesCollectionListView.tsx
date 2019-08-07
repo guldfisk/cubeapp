@@ -2,81 +2,36 @@ import React, {ComponentElement} from 'react';
 
 import Row from 'react-bootstrap/Row';
 
-import MapleToolTip from 'reactjs-mappletooltip';
-
-import {CubeableImage} from '../../images';
 import {Trap, Ticket, Purple, Printing, Cubeable, CubeablesContainer, PrintingCollection} from "../../models/models";
 import {PrintingListItem, TrapListItem} from "../../utils/utils";
 
 
-interface TrapItemProps {
-  cubeable: Trap | Ticket | Purple
-}
-
-const TrapItem: React.FunctionComponent<TrapItemProps> = (props) => {
-  if (props.cubeable.type() === 'printing') {
-    return <PrintingListItem printing={props.cubeable as Printing}/>
-    // return <MapleToolTip>
-    //   <div
-    //     className='TrapItem'
-    //   >
-    //     {(props.cubeable as Printing).name()}
-    //   </div>
-    //   <div>
-    //     <CubeableImage
-    //       cubeable={props.cubeable}
-    //     />
-    //   </div>
-    // </MapleToolTip>
-  } else if (props.cubeable.type() === 'trap') {
-    return <TrapListItem trap={props.cubeable as Trap}/>
-    // return <span>
-    //   {
-    //     (props.cubeable as Trap).node().representation()
-    //   }
-    // </span>
-    // return <div
-    //   className='TrapItem'
-    // >
-    //   ({
-    //   (props.cubeable as Trap).node().children().map(
-    //       child => <TrapItem {...child}/>
-    //     )
-    //   })
-    // </div>
-    // } else if (props.type === 'AnyNode') {
-    //   return <div
-    //     className='TrapItem'
-    //   >
-    //     [{
-    //       props.children.map(
-    //         child => <TrapItem {...child}/>
-    //       )
-    //     }]
-    //   </div>
-  } else {
-    throw 'Invalid trap item type: ' + props.cubeable.type();
-  }
-};
-
-
 interface CubeListItemProps {
   cubeable: Cubeable
+  onClick?: (printing: Printing) => void
+  noHover?: boolean
 }
 
 const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => {
   let content: string | ComponentElement<any, any> = "";
 
-  if (props.cubeable.type() === 'printing') {
-    content = <PrintingListItem printing={props.cubeable as Printing}/>
+  if (props.cubeable instanceof Printing) {
+    content = <PrintingListItem
+      printing={props.cubeable}
+      onClick={props.onClick}
+      noHover={props.noHover}
+    />
 
-  } else if (props.cubeable.type() === 'trap') {
-    content = <TrapItem cubeable={props.cubeable}/>
+  } else if (props.cubeable instanceof Trap) {
+    content = <TrapListItem
+      trap={props.cubeable}
+      noHover={props.noHover}
+    />
 
-  } else if (props.cubeable.type() === 'ticket') {
+  } else if (props.cubeable instanceof Ticket) {
     content = 'ticket';
 
-  } else if (props.cubeable.type() === 'purple') {
+  } else if (props.cubeable instanceof Purple) {
     content = (props.cubeable as Purple).name();
 
   } else {
@@ -93,6 +48,8 @@ const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => 
 interface RawCubeListViewProps {
   rawCube: CubeablesContainer
   cubeableType: string
+  onPrintingClick?: (printing: Printing) => void
+  noHover?: boolean
 }
 
 class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> {
@@ -100,14 +57,13 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
   render() {
     const groups = (
       this.props.cubeableType === 'Cubeables' ?
-        this.props.rawCube.grouped_cubeables() :
-        new PrintingCollection(
+        this.props.rawCube.grouped_cubeables()
+        : new PrintingCollection(
           [...this.props.rawCube.allPrintings()]
         ).grouped_printings()
     );
 
-    return <div
-    >
+    return <div>
       <Row>
         {
           groups.map(
@@ -118,6 +74,8 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
                     group.map(
                       cubeable => <CubeableListItem
                         cubeable={cubeable}
+                        onClick={this.props.onPrintingClick}
+                        noHover={this.props.noHover}
                       />
                     )
                   }

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
@@ -17,6 +19,10 @@ class VersionedCube(models.Model):
         get_user_model(),
         on_delete=models.CASCADE,
     )
+
+    @property
+    def latest_release(self) -> CubeRelease:
+        return CubeRelease.objects.filter(versioned_cube=self).order_by('created_at').last()
 
 
 class CubeRelease(models.Model):
@@ -59,3 +65,9 @@ class CubePatch(models.Model):
         on_delete=models.CASCADE,
         related_name='deltas',
     )
+
+
+class Invite(models.Model):
+    key_hash = models.CharField(max_length=256)
+    email = models.CharField(max_length=256)
+    created_at = models.DateTimeField(default=now)

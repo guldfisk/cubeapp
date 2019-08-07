@@ -304,10 +304,6 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
         except models.CubePatch.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        print(request.data)
-        print(type(request.data))
-        print(request.data.get('update', 'no update'))
-
         try:
             update = JsonId(db).deserialize(
                 CubePatch,
@@ -328,6 +324,38 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
             serializers.CubePatchSerializer(patch).data,
             content_type='application/json',
         )
+
+
+@api_view(['GET'])
+def patch_preview(request: Request, pk: int) -> Response:
+    try:
+        patch_model = models.CubePatch.objects.get(pk=pk)
+    except models.CubePatch.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    latest_release = patch_model.versioned_cube.latest_release
+
+    # TODO handle no releases in a good way
+    current_cube = JsonId(db).deserialize(
+        Cube,
+        latest_release.cube_content,
+    )
+
+    cube_patch = JsonId(db).deserialize(
+        CubePatch,
+        patch_model.content,
+    )
+
+
+    return Response(
+        serializers.CubeSerializer.serialize(
+            current_cube + cube_patch.cube_delta_operation,
+        ),
+        content_type='application/json',
+    )
+
+
+
 
 
 class ConstrainedNodesList(generics.ListAPIView):

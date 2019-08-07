@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {Patch} from '../models/models';
+import {Patch} from '../../models/models';
 
-import PatchesView from '../views/patchview/PatchesView';
+import PatchesView from '../../views/patchview/PatchesView';
 
 
 interface DeltasPageState {
