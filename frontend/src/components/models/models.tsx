@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import {Counter} from "./utils";
+import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 
 
@@ -92,7 +92,7 @@ export class PrintingNode extends Cubeable {
 
   representation = (): string => {
     return '(' + this._children.map(
-      child => child instanceof Printing ? child.name() : child.representation()
+      child => child instanceof Printing ? child.full_name() : child.representation()
     ).join(
       this.type() === 'AllNode' ? '; ' : ' || '
     ) + ')'
@@ -274,20 +274,11 @@ export class CubeReleaseMeta extends Model {
 }
 
 
-export class PrintingCollection {
-  _printings: Printing[];
+export class PrintingCollection extends MultiplicityList<Printing> {
 
-  constructor(printings: Printing[]) {
-    this._printings = printings;
-  }
-
-  printings = (): Printing[] => {
-    return this._printings
-  };
-
-  printings_of_color = (color: string): Printing[] => {
-    return this.printings().filter(
-      printing => {
+  printings_of_color = (color: string): [Printing, number][] => {
+    return this.items.filter(
+      ([printing, multiplicity]: [Printing, number]) => {
         return (
           !printing.types().includes('Land')
           && printing.color().length === 1
@@ -297,9 +288,9 @@ export class PrintingCollection {
     )
   };
 
-  gold_printings = (): Printing[] => {
-    return this.printings().filter(
-      printing => {
+  gold_printings = (): [Printing, number][] => {
+    return this.items.filter(
+      ([printing, multiplicity]: [Printing, number]) => {
         return (
           !printing.types().includes('Land')
           && printing.color().length > 1
@@ -308,9 +299,9 @@ export class PrintingCollection {
     )
   };
 
-  colorless_printings = (): Printing[] => {
-    return this.printings().filter(
-      printing => {
+  colorless_printings = (): [Printing, number][] => {
+    return this.items.filter(
+      ([printing, multiplicity]: [Printing, number]) => {
         return (
           !printing.types().includes('Land')
           && printing.color().length === 0
@@ -319,13 +310,17 @@ export class PrintingCollection {
     )
   };
 
-  land_printings = (): Printing[] => {
-    return this.printings().filter(
-      printing => printing.types().includes('Land')
+  land_printings = (): [Printing, number][] => {
+    return this.items.filter(
+      ([printing, multiplicity]: [Printing, number]) => {
+        return (
+          printing.types().includes('Land')
+        );
+      }
     )
   };
 
-  grouped_printings = (): Printing[][] => {
+  grouped_printings = (): [Printing, number][][] => {
     return [
       this.printings_of_color('W'),
       this.printings_of_color('U'),
@@ -343,9 +338,9 @@ export class PrintingCollection {
 
 export class CubeablesContainer {
   _printings: PrintingCollection;
-  _traps: Trap[];
-  _tickets: Ticket[];
-  _purples: Purple[];
+  _traps: MultiplicityList<Trap>;
+  _tickets: MultiplicityList<Ticket>;
+  _purples: MultiplicityList<Purple>;
 
   constructor(cube: any) {
     this._printings = new PrintingCollection(
@@ -353,14 +348,20 @@ export class CubeablesContainer {
         (printing: any) => new Printing(printing)
       )
     );
-    this._traps = cube.traps.map(
-      (trap: any) => new Trap(trap)
+    this._traps = new MultiplicityList(
+      cube.traps.map(
+        ([trap, multiplicity]: [Trap, number]) => [new Trap(trap), multiplicity]
+      )
     );
-    this._tickets = cube.tickets.map(
-      (ticket: any) => new Ticket(ticket)
+    this._tickets = new MultiplicityList(
+      cube.tickets.map(
+        ([ticket, multiplicity]: [Trap, number]) => [new Trap(ticket), multiplicity]
+      )
     );
-    this._purples = cube.purples.map(
-      (purple: any) => new Purple(purple)
+    this._purples = new MultiplicityList(
+      cube.purples.map(
+        ([purple, multiplicity]: [Trap, number]) => [new Trap(purple), multiplicity]
+      )
     );
 
   }
@@ -369,60 +370,54 @@ export class CubeablesContainer {
     return this._printings
   };
 
-  traps = (): Trap[] => {
+  traps = (): MultiplicityList<Trap> => {
     return this._traps;
   };
 
-  tickets = (): Ticket[] => {
+  tickets = (): MultiplicityList<Ticket> => {
     return this._tickets;
   };
 
-  purples = (): Purple[] => {
+  purples = (): MultiplicityList<Purple> => {
     return this._purples;
   };
 
   * allPrintings(): IterableIterator<Printing> {
-    yield* this._printings.printings();
-    for (const trap of this._traps) {
+    yield* this._printings.iter();
+    for (const trap of this._traps.iter()) {
       yield* trap.node().printings()
     }
   };
 
-  laps = (): ConcatArray<Cubeable> => {
-    return (
-      this._traps as Cubeable[]
-    ).concat(
-      this._tickets as Cubeable[],
-      this._purples as Cubeable[],
-    );
+  * laps(): IterableIterator<[Cubeable, number]> {
+    yield* this._traps.items;
+    yield* this._tickets.items;
+    yield* this._purples.items;
   };
 
-  cubeables = (): Cubeable[] => {
-    return (
-      this._printings.printings() as Cubeable[]
-    ).concat(
-      this.laps() as Cubeable[]
-    );
+  * cubeables(): IterableIterator<[Cubeable, number]> {
+    yield* this._printings.items;
+    yield* this.laps();
   };
 
-  traps_of_intention_type = (intention_type: string): Trap[] => {
-    return this.traps().filter(
-      trap => trap.intentionType() === intention_type
+  traps_of_intention_type = (intention_type: string): [Trap, number][] => {
+    return this.traps().items.filter(
+      ([trap, multiplicity]: [Trap, number]) => trap.intentionType() === intention_type
     )
   };
 
-  grouped_laps = (): Cubeable[][] => {
+  grouped_laps = (): [Cubeable, number][][] => {
     return [
       this.traps_of_intention_type('GARBAGE'),
       this.traps_of_intention_type('SYNERGY'),
-      this.tickets(),
-      this.purples(),
+      this.tickets().items,
+      this.purples().items,
     ]
   };
 
-  grouped_cubeables = (): Cubeable[][] => {
+  grouped_cubeables = (): [Cubeable, number][][] => {
     return (
-      this._printings.grouped_printings() as Cubeable[][]
+      this._printings.grouped_printings() as [Cubeable, number][][]
     ).concat(
       this.grouped_laps(),
     )
@@ -434,14 +429,14 @@ export class CubeablesContainer {
 export class CubeRelease extends CubeReleaseMeta {
   _cube: MinimalCube;
   _constrained_nodes: ConstrainedNodes | null;
-  _rawCube: CubeablesContainer;
+  _cubeablesContainer: CubeablesContainer;
 
   constructor(release: any) {
     super(release);
 
     this._cube = new MinimalCube(release.versioned_cube);
 
-    this._rawCube = new CubeablesContainer(release.cube_content);
+    this._cubeablesContainer = new CubeablesContainer(release.cube_content);
 
     this._constrained_nodes = (
       release.constrained_nodes === null ?
@@ -455,7 +450,7 @@ export class CubeRelease extends CubeReleaseMeta {
   };
 
   cubeablesContainer = (): CubeablesContainer => {
-    return this._rawCube
+    return this._cubeablesContainer
   };
 
   constrainedNodes = (): ConstrainedNodes | null => {
@@ -502,17 +497,13 @@ export class CubeRelease extends CubeReleaseMeta {
 export class Patch extends Model {
   _author: User;
   _cube: MinimalCube;
-  _printings: Counter<Printing>;
+  cubeablesContainer: CubeablesContainer;
 
   constructor(patch: any) {
     super(patch);
     this._author = new User(patch.author);
     this._cube = new MinimalCube(patch.versioned_cube);
-    this._printings = new Counter(
-      patch.content.cube_delta.printings.map(
-        ([printing, multiplicity]: [any, number]) => [new Printing(printing), multiplicity]
-      )
-    );
+    this.cubeablesContainer = new CubeablesContainer(patch.content.cube_delta)
   }
 
   description = (): string => {
@@ -531,24 +522,34 @@ export class Patch extends Model {
     return this._cube;
   };
 
-  printings = (): Counter<Printing> => {
-    return this._printings;
-  };
+  update = (cubeable: Cubeable, amount: number = 1): any => {
+    let cubeDelta = {};
+    if (cubeable instanceof Printing) {
+      cubeDelta = {
+        printings: [
+          [
+            cubeable.id(),
+            amount,
+          ]
+        ]
+      }
+    } else if (cubeable instanceof Trap) {
+      cubeDelta = {
+        traps: [
+          [
+            cubeable._wrapping,
+            amount,
+          ]
+        ]
+      }
+    }
 
-  update = (printing: Printing, amount: number = 1): any => {
     return axios.patch(
       apiPath + 'patches/' + this.id() + '/',
       {
         update: JSON.stringify(
           {
-            cube_delta: {
-              printings: [
-                [
-                  printing.id(),
-                  amount,
-                ]
-              ]
-            }
+            cube_delta: cubeDelta
           }
         )
       },

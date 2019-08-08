@@ -9,7 +9,7 @@ import Card from "react-bootstrap/Card";
 
 import history from '../../routing/history';
 import {Loading} from '../../utils/utils';
-import {CubeablesContainer, CubeRelease, Patch, Printing} from '../../models/models';
+import {Cubeable, CubeablesContainer, CubeRelease, Patch, Printing} from '../../models/models';
 import PatchView from '../../views/patchview/PatchView';
 import SearchView from "../../views/search/SearchView";
 import ReleaseMultiView from "../../views/releaseview/ReleaseMultiView";
@@ -75,8 +75,8 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
     )
   };
 
-  handleModifyPrintingAmount = (printing: Printing, amount: number) => {
-    this.state.patch.update(printing, amount).then(
+  handleModifyCubeableAmount = (cubeable: Cubeable, amount: number) => {
+    this.state.patch.update(cubeable, amount).then(
       (patch: Patch) => {
         this.setPatch(patch);
       }
@@ -96,7 +96,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
     if (this.state.patch !== null) {
       patchView = <PatchView
         patch={this.state.patch}
-        onPrintingClicked={this.handleModifyPrintingAmount}
+        onPrintingClicked={this.handleModifyCubeableAmount}
       />
     }
 
@@ -105,7 +105,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
       preview = <CubeablesCollectionListView
         cubeableType="Cubeables"
         rawCube={this.state.preview}
-        onPrintingClick={printing => this.handleModifyPrintingAmount(printing, -1)}
+        onCubeableClicked={cubeable => this.handleModifyCubeableAmount(cubeable, -1)}
         noHover={true}
       />
     }

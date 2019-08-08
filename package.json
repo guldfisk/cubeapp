@@ -33,6 +33,7 @@
     "bootstrap": "^4.3.1",
     "css-loader": "^2.1.1",
     "jquery": "^3.4.1",
+    "jsclass": "^4.0.5",
     "prop-types": "^15.7.2",
     "query-string": "^6.8.1",
     "react": "^16.8.6",

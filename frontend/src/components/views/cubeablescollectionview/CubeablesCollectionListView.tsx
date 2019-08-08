@@ -1,54 +1,15 @@
-import React, {ComponentElement} from 'react';
+import React from 'react';
 
 import Row from 'react-bootstrap/Row';
 
-import {Trap, Ticket, Purple, Printing, Cubeable, CubeablesContainer, PrintingCollection} from "../../models/models";
-import {PrintingListItem, TrapListItem} from "../../utils/utils";
-
-
-interface CubeListItemProps {
-  cubeable: Cubeable
-  onClick?: (printing: Printing) => void
-  noHover?: boolean
-}
-
-const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => {
-  let content: string | ComponentElement<any, any> = "";
-
-  if (props.cubeable instanceof Printing) {
-    content = <PrintingListItem
-      printing={props.cubeable}
-      onClick={props.onClick}
-      noHover={props.noHover}
-    />
-
-  } else if (props.cubeable instanceof Trap) {
-    content = <TrapListItem
-      trap={props.cubeable}
-      noHover={props.noHover}
-    />
-
-  } else if (props.cubeable instanceof Ticket) {
-    content = 'ticket';
-
-  } else if (props.cubeable instanceof Purple) {
-    content = (props.cubeable as Purple).name();
-
-  } else {
-    content = 'Unknown cubeable type';
-  }
-
-  return <li>
-    {content}
-  </li>
-
-};
+import {CubeablesContainer, PrintingCollection, Cubeable} from "../../models/models";
+import {CubeableListItem} from "../../utils/listitems";
 
 
 interface RawCubeListViewProps {
   rawCube: CubeablesContainer
   cubeableType: string
-  onPrintingClick?: (printing: Printing) => void
+  onCubeableClicked?: (cubeable: Cubeable) => void
   noHover?: boolean
 }
 
@@ -74,7 +35,7 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
                     group.map(
                       cubeable => <CubeableListItem
                         cubeable={cubeable}
-                        onClick={this.props.onPrintingClick}
+                        onClick={this.props.onCubeableClicked}
                         noHover={this.props.noHover}
                       />
                     )

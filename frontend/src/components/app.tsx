@@ -14,7 +14,7 @@ import history from './routing/history';
 import {routes} from './routing/Routes';
 import {loadUser} from "./auth/controller";
 import {Loading} from "./utils/utils";
-import SignInPage from './pages/SignInPage';
+import SignInPage from './pages/authentication/SignInPage';
 import store from './state/store';
 import Breadcrumb from "react-bootstrap/Breadcrumb";
 
@@ -107,10 +107,13 @@ class RootComponent extends React.Component<RootProps> {
           </Nav>
           <Nav className="justify-content-end">
             {
-              !this.props.auth.authenticated &&
-              <LinkContainer to='/sign-up/'>
-                <Nav.Link>Sign up</Nav.Link>
-              </LinkContainer>
+              this.props.auth.authenticated ?
+                <LinkContainer to='/invite/'>
+                  <Nav.Link>Invite</Nav.Link>
+                </LinkContainer>
+                : <LinkContainer to='/sign-up/'>
+                  <Nav.Link>Sign up</Nav.Link>
+                </LinkContainer>
             }
             {
               this.props.auth.authenticated ?

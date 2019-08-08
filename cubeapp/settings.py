@@ -15,10 +15,12 @@ _config_parser.read(SECRETS_PATH)
 DATABASE_PASSWORD = _config_parser['client']['password']
 DATABASE_HOST = _config_parser['client']['host']
 
+MAILGUN_KEY = _config_parser['default']['mailgun_key']
+MAILGUN_DOMAIN = _config_parser['default']['mailgun_domain']
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = _config_parser['default']['secret_key']
-# _production = strtobool(_config_parser['default']['production'])
 
 DEBUG = strtobool(os.environ['DEBUG'])
 

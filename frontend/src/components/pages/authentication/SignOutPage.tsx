@@ -3,7 +3,7 @@ import { Redirect } from 'react-router-dom'
 
 import {connect} from "react-redux";
 
-import {signOut} from '../auth/controller';
+import {signOut} from '../../auth/controller';
 
 interface SignOutPageProps {
   authenticated: boolean

@@ -58,16 +58,27 @@ class CubePatch(models.Model):
 
     author = models.ForeignKey(
         get_user_model(),
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
-    versioned_cube = models.ForeignKey(
+    versioned_cube  =  models.ForeignKey(
         VersionedCube,
-        on_delete=models.CASCADE,
-        related_name='deltas',
+        on_delete = models.CASCADE,
+        related_name = 'deltas',
     )
 
 
 class Invite(models.Model):
-    key_hash = models.CharField(max_length=256)
-    email = models.CharField(max_length=256)
-    created_at = models.DateTimeField(default=now)
+    key_hash = models.CharField(max_length = 255, unique=True)
+    email = models.CharField(max_length = 255)
+    created_at = models.DateTimeField(default = now)
+    issued_by = models.ForeignKey(
+        get_user_model(),
+        on_delete = models.CASCADE,
+        related_name = 'issued_invitations',
+    )
+    claimed_by = models.ForeignKey(
+        get_user_model(),
+        on_delete = models.CASCADE,
+        null = True,
+        related_name = 'invite',
+    )

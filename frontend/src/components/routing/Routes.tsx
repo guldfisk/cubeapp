@@ -4,14 +4,15 @@ import ReleasePage from '../pages/ReleasePage';
 import NotFoundPage from '../pages/NotFoundPage';
 import CreateCubePage from '../pages/CreateCubePage';
 import CubePatchesPage from '../pages/patches/CubePatchesPage';
-import SignInPage from '../pages/SignInPage';
-import SignOutPage from '../pages/SignOutPage';
+import SignInPage from '../pages/authentication/SignInPage';
+import SignOutPage from '../pages/authentication/SignOutPage';
 import CubesPage from '../pages/CubesPage';
 import CubePage from '../pages/CubePage';
 import PatchesPage from '../pages/patches/PatchesPage';
 import PatchPage from '../pages/patches/PatchPage';
 import CreatePatchPage from '../pages/patches/CreatePatchPage';
-import SignUpPage from "../pages/SignUpPage";
+import SignUpPage from "../pages/authentication/SignUpPage";
+import InvitePage from "../pages/authentication/InvitePage";
 
 
 // class RouteModel {
@@ -102,6 +103,7 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/cube/:id(\\d+)', CubePage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
+  ['/invite', InvitePage, true, {}],
   ['/logout', SignOutPage, false, {}],
   ['/sign-up', SignUpPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],

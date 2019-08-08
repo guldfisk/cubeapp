@@ -1,9 +1,17 @@
 import typing as t
 
+import datetime
+import hashlib
+import random
+
 from distutils.util import strtobool
 
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
+from django.db.utils import IntegrityError
+# from django.core.mail import send_mail
+from django.template.loader import get_template
+from django.template.context import Context
 
 from rest_framework import status, generics, permissions, views
 from rest_framework.decorators import api_view
@@ -28,6 +36,7 @@ from magiccube.laps.traps.trap import Trap
 
 from api import models
 from api import serializers
+from api.mail import send_mail
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
@@ -216,6 +225,55 @@ def printing_view(request: Request, printing_id: int):
     )
 
 
+class SignupEndpoint(generics.GenericAPIView):
+    serializer_class = serializers.SignupSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data) #type: serializers.SignupSerializer
+        serializer.is_valid(raise_exception=True)
+
+        token_hash = hashlib.sha3_256()
+        token_hash.update(serializer.validated_data['invite_token'].encode('ASCII'))
+
+        try:
+            invite = models.Invite.objects.get(
+                key_hash = token_hash.hexdigest(),
+                claimed_by = None,
+                created_at__gt = datetime.datetime.now() - datetime.timedelta(days=10),
+            )
+        except models.Invite.DoesNotExist:
+            return Response('invalid token', status.HTTP_400_BAD_REQUEST)
+
+        try:
+            get_user_model().objects.create_user(
+                username=serializer.validated_data['username'],
+                password=serializer.validated_data['password'],
+                email=serializer.validated_data['email'],
+            )
+        except IntegrityError:
+            return Response('User with that username already exists', status=status.HTTP_409_CONFLICT)
+
+        new_user = get_user_model().objects.get(
+            username=serializer.validated_data['username']
+        )
+
+        invite.claimed_by = new_user
+        invite.save()
+
+        _, auth_token = AuthToken.objects.create(new_user)
+
+        return Response(
+            {
+                "user": serializers.UserSerializer(
+                    new_user,
+                    context=self.get_serializer_context(),
+                ).data,
+                "token": auth_token,
+            }
+        )
+
+
+
 class LoginEndpoint(generics.GenericAPIView):
     serializer_class = serializers.LoginSerializer
 
@@ -234,6 +292,81 @@ class LoginEndpoint(generics.GenericAPIView):
                 ).data,
                 "token": token,
             }
+        )
+
+
+class InviteUserEndpoint(generics.GenericAPIView):
+    serializer_class = serializers.InviteSerializer
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        issuer = request.user
+
+        ok = False
+
+        for _ in range(128):
+            key = ''.join(
+                random.choice('abcdefghijklmnopqrtuvwxyz')
+                for _ in
+                range(255)
+            )
+
+            hasher = hashlib.sha3_256()
+            hasher.update(key.encode('ASCII'))
+            try:
+                models.Invite.objects.create(
+                    key_hash = hasher.hexdigest(),
+                    email = serializer.validated_data['email'],
+                    issued_by = issuer,
+                )
+                ok = True
+                break
+            except IntegrityError:
+                pass
+
+        if not ok:
+            raise Exception('Could not generate unique invite key')
+
+        # send_mail(
+        #     subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
+        #     message = get_template('invite_mail.html').render(
+        #             {
+        #                 'inviter': 'a guy',
+        #                 'invite_link': 'localhost:7000',
+        #             }
+        #         ),
+        #     from_email = 'mail@mail.prohunterdogkeeper.dk',
+        #     recipient_list = ['ce.guldfisk@gmail.com', ]
+
+        send_mail(
+            subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
+            content = get_template('invite_mail.html').render(
+                    {
+                        'inviter': issuer.username,
+                        'invite_link': 'http://localhost:7000/sign-up/?invite_code={}&invite_email={}'.format(
+                            key,
+                            serializer.validated_data['email'],
+                        ),
+                        # 'invite_link': "http://prohunterdogkeeper.dk/sign-up"
+                    }
+                ),
+            recipients = ['ce.guldfisk@gmail.com', ]
+        )
+
+        return Response(
+            # {
+            #     'token': key,
+            #     'content': get_template('invite_mail.html').render(
+            #         {
+            #             'inviter': 'a guy',
+            #             'invite_link': 'localhost:7000',
+            #         }
+            #     )
+            # },
+            status=status.HTTP_200_OK,
         )
 
 

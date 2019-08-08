@@ -3,7 +3,7 @@ import React from 'react';
 import Table from "react-bootstrap/Table";
 
 import {ConstrainedNodes} from '../../models/models';
-import {NodeListItem} from "../../utils/utils";
+import {NodeListItem} from "../../utils/listitems";
 
 
 interface ConstrainedNodesViewProps {

@@ -6,6 +6,7 @@ const initialState = {
   authenticated: null,
   loading: true,
   user: null,
+  authenticationError: "",
 };
 
 

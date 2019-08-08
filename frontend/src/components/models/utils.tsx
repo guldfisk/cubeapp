@@ -1,4 +1,6 @@
 
+
+
 interface IDable {
   id: () => string
 }
@@ -31,7 +33,7 @@ class SingleCounter<T extends IDable> {
 
 export class Counter<T extends IDable> {
 
-  _counters: {[id: string]: SingleCounter<T>};
+  _counters: { [id: string]: SingleCounter<T> };
 
   constructor(items: [T, number][] = []) {
     this._counters = {};
@@ -52,11 +54,39 @@ export class Counter<T extends IDable> {
     }
   };
 
-  *items(): IterableIterator<[T, number]> {
-   for (const count of Object.values(this._counters)) {
-     yield [count.item(), count.count()]
-   }
+  * items(): IterableIterator<[T, number]> {
+    for (const count of Object.values(this._counters)) {
+      yield [count.item(), count.count()]
+    }
   }
 
 }
 
+export class MultiplicityList<T> {
+  items: [T, number][];
+
+  constructor(items: [T, number][] = []) {
+    this.items = items;
+  }
+
+  * iter(): IterableIterator<T> {
+    for (const [item, multiplicity] of this.items) {
+      for (let i = 0; i < multiplicity; i++) {
+        yield item
+      }
+    }
+  }
+
+  // public static collectFromIterable<T>(iterable: IterableIterator<T>): MultiplicityList<T> {
+  //   collection =
+  // }
+
+  // concat = (other: MultiplicityList<Partial<T>>): MultiplicityList<Partial<T>> => {
+  //   return new MultiplicityList<Partial<T>>(
+  //     this.items.concat(
+  //       other.items,
+  //     )
+  //   )
+  // };
+
+}

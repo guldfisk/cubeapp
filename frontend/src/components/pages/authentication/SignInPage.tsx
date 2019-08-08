@@ -9,7 +9,8 @@ import Button from "react-bootstrap/Button";
 
 import {connect} from "react-redux";
 
-import {signIn} from '../auth/controller';
+import {signIn} from '../../auth/controller';
+import {Redirect} from "react-router";
 
 
 interface SignInFormProps {
@@ -60,6 +61,10 @@ class SignInPage extends React.Component<SignInPageProps> {
   };
 
   render() {
+    if (this.props.authenticated) {
+      return <Redirect to="/"/>
+    }
+
     return <Container>
         <Col>
           <Card>

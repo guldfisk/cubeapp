@@ -3,6 +3,33 @@ import axios from 'axios';
 import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess} from '../state/actions.js';
 
 
+export const signUp = ({username, email, password, inviteToken}) => {
+  return (dispatch, getState) => {
+    return axios.post(
+      '/api/auth/signup/',
+      {
+        username,
+        email,
+        password,
+        invite_token: inviteToken,
+      }
+    ).then(
+      response => {
+        dispatch({type: signInSuccess, data: response.data});
+      }
+    ).catch(
+      exception => {
+        dispatch(
+          {
+            type: authFailed,
+          }
+        )
+      }
+    )
+  }
+};
+
+
 export const loadUser = () => {
   return (dispatch, getState) => {
     const token = getState().token;
@@ -67,12 +94,10 @@ export const signOut = (token) => {
       },
     ).then(
       result => {
-        console.log('signed out');
         dispatch({type: signOutSuccess});
       }
     ).catch(
       exception => {
-        console.log('oh noo');
         dispatch({type: authFailed});
       }
     )

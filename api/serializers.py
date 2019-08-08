@@ -238,28 +238,36 @@ class CubeSerializer(ModelSerializer[Cube]):
     def serialize(cls, cube: Cube) -> compacted_model:
         return {
             'printings': [
-                PrintingSerializer.serialize(
-                    printing
-                ) for printing in
-                cube.printings
+                (
+                    PrintingSerializer.serialize(printing),
+                    multiplicity,
+                )
+                for printing, multiplicity in
+                cube.printings.items()
             ],
             'traps': [
-                TrapSerializer.serialize(
-                    trap
-                ) for trap in
-                cube.traps
+                (
+                    TrapSerializer.serialize(trap),
+                    multiplicity,
+                )
+                for trap, multiplicity in
+                cube.traps.items()
             ],
             'tickets': [
-                TicketSerializer.serialize(
-                    ticket
-                ) for ticket in
-                cube.tickets
+                (
+                    TicketSerializer.serialize(ticket),
+                    multiplicity,
+                )
+                for ticket, multiplicity in
+                cube.tickets.items()
             ],
             'purples': [
-                PurpleSerializer.serialize(
-                    purple
-                ) for purple in
-                cube.purples
+                (
+                    PurpleSerializer.serialize(purple),
+                    multiplicity,
+                )
+                for purple, multiplicity in
+                cube.purples.items()
             ],
         }
 
@@ -461,6 +469,26 @@ class LoginSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         raise NotImplemented()
+
+
+class SignupSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    email = serializers.CharField()
+    invite_token = serializers.CharField()
+
+    def update(self, instance, validated_data):
+        raise NotImplemented()
+
+    def create(self, validated_data):
+        raise NotImplemented()
+
+
+class InviteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.Invite
+        fields = ('email', )
 
 
 class VersionedCubeSerializer(serializers.ModelSerializer):
