@@ -9,6 +9,7 @@ import {CubeableImage} from "../images";
 import ReactTooltip from 'react-tooltip';
 
 import store from '../state/store';
+import {number} from "prop-types";
 
 
 const imagesPath = '/api/images/';
@@ -33,10 +34,22 @@ export const inviteUser = (email: string) => {
     apiPath + 'auth/invite/',
     {email},
     {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${store.getState().token}`,
+      }
+    },
   )
 };
+
+
+export function alphabeticalPropertySortMethodFactory<T>(
+  extractor:
+    (extractable: T) => string
+): ((first: T, second: T) => number) {
+  return (first: T, second: T) => {
+    const f = extractor(first).toLowerCase();
+    const s = extractor(second).toLowerCase();
+    return (f < s) ? -1 : (s > f) ? 1 : 0;
+  }
+}

@@ -21,13 +21,13 @@ class PatchView extends React.Component<DeltaViewProps, null> {
   render() {
 
     return <Row>
-      <Col>
-        <CubeablesCollectionListView
-          rawCube={}
-          cubeableType={"Cubeables"}
-        />
-      </Col>
-      <Col></Col>
+      {/*<Col>*/}
+      {/*  <CubeablesCollectionListView*/}
+      {/*    rawCube={}*/}
+      {/*    cubeableType={"Cubeables"}*/}
+      {/*  />*/}
+      {/*</Col>*/}
+      {/*<Col></Col>*/}
     </Row>
   }
 

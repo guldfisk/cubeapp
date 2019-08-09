@@ -2,6 +2,7 @@ import axios from 'axios';
 
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
+import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
 
 
 export const apiPath = '/api/';
@@ -71,9 +72,11 @@ export class PrintingNode extends Cubeable {
 
   constructor(node: any) {
     super(node);
-    this._children = node.children.map(
-      (child: any) => child.type === 'printing' ? new Printing(child) : new PrintingNode(child)
-    );
+    console.log('printing node constructor', node);
+    this._children = []
+    // this._children = node.children.map(
+    //   (child: any) => child.type === 'printing' ? new Printing(child) : new PrintingNode(child)
+    // );
   }
 
   * printings(): IterableIterator<Printing> {
@@ -106,6 +109,7 @@ export class Trap extends Cubeable {
 
   constructor(trap: any) {
     super(trap);
+    console.log('in trap constructor', trap);
     this._node = new PrintingNode(trap.node)
   }
 
@@ -276,47 +280,60 @@ export class CubeReleaseMeta extends Model {
 
 export class PrintingCollection extends MultiplicityList<Printing> {
 
-  printings_of_color = (color: string): [Printing, number][] => {
-    return this.items.filter(
-      ([printing, multiplicity]: [Printing, number]) => {
-        return (
-          !printing.types().includes('Land')
-          && printing.color().length === 1
-          && printing.color()[0] === color
-        );
+  constructor(items: [Printing, number][] = []) {
+    super(items);
+    // this.items.sort(
+    //   alphabeticalPropertySortMethodFactory(
+    //     ([printing, _]: [Printing, number]) => printing.id().toString()
+    //   )
+    // )
+  }
+
+  public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
+    let collector: Record<string, [Printing, number]> = {};
+    for (const printing of printings) {
+      let key = printing.id().toString();
+      if (collector[key] === undefined) {
+        collector[key] = [printing, 1]
+      } else {
+        collector[key][1] += 1
       }
+    }
+    return new PrintingCollection(
+      Object.values(collector)
+    )
+  }
+
+  printings_of_color = (color: string): [Printing, number][] => {
+    console.log('printings of color', color, this.items);
+    return this.items.filter(
+      ([printing, _]: [Printing, number]) =>
+        !printing.types().includes('Land')
+        && printing.color().length === 1
+        && printing.color()[0] === color
     )
   };
 
   gold_printings = (): [Printing, number][] => {
     return this.items.filter(
-      ([printing, multiplicity]: [Printing, number]) => {
-        return (
-          !printing.types().includes('Land')
-          && printing.color().length > 1
-        );
-      }
+      ([printing, _]: [Printing, number]) =>
+        !printing.types().includes('Land')
+        && printing.color().length > 1
     )
   };
 
   colorless_printings = (): [Printing, number][] => {
     return this.items.filter(
-      ([printing, multiplicity]: [Printing, number]) => {
-        return (
-          !printing.types().includes('Land')
-          && printing.color().length === 0
-        );
-      }
+      ([printing, _]: [Printing, number]) =>
+        !printing.types().includes('Land')
+        && printing.color().length === 0
     )
   };
 
   land_printings = (): [Printing, number][] => {
     return this.items.filter(
-      ([printing, multiplicity]: [Printing, number]) => {
-        return (
-          printing.types().includes('Land')
-        );
-      }
+      ([printing, _]: [Printing, number]) =>
+        printing.types().includes('Land')
     )
   };
 
@@ -345,7 +362,7 @@ export class CubeablesContainer {
   constructor(cube: any) {
     this._printings = new PrintingCollection(
       cube.printings.map(
-        (printing: any) => new Printing(printing)
+        ([printing, multiplicity]: [Trap, number]) => [new Printing(printing), multiplicity]
       )
     );
     this._traps = new MultiplicityList(
@@ -385,6 +402,7 @@ export class CubeablesContainer {
   * allPrintings(): IterableIterator<Printing> {
     yield* this._printings.iter();
     for (const trap of this._traps.iter()) {
+      console.log('in all printings', trap);
       yield* trap.node().printings()
     }
   };
@@ -398,6 +416,13 @@ export class CubeablesContainer {
   * cubeables(): IterableIterator<[Cubeable, number]> {
     yield* this._printings.items;
     yield* this.laps();
+  };
+
+  * allCubeables(): IterableIterator<Cubeable> {
+    yield* this.printings().iter();
+    yield* this.traps().iter();
+    yield* this.tickets().iter();
+    yield* this.purples().iter();
   };
 
   traps_of_intention_type = (intention_type: string): [Trap, number][] => {
@@ -640,6 +665,7 @@ export class ConstrainedNode extends Model {
 
   constructor(node: any) {
     super(node);
+    console.log('in constrained node constructor', node);
     this._node = new PrintingNode(node.node);
   }
 
@@ -663,6 +689,7 @@ export class ConstrainedNodes extends Model {
 
   constructor(nodes: any) {
     super(nodes);
+    console.log('in constrained nodeS constructor', nodes);
     this._nodes = this._wrapping.constrained_nodes_content.nodes.map(
       (node: any) => new ConstrainedNode(node)
     )
@@ -687,7 +714,7 @@ export class ConstrainedNodes extends Model {
     return axios.get(
       apiPath + 'constrained-nodes/' + id + '/'
     ).then(
-      response => new ConstrainedNode(response.data)
+      response => new ConstrainedNodes(response.data)
     )
   };
 

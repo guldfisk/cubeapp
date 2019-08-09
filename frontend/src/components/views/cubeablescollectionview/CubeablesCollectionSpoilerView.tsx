@@ -1,11 +1,13 @@
+import wu from 'wu';
+
 import React from 'react';
 
 import {CubeableImage} from '../../images';
-import {Cubeable, CubeablesContainer} from "../../models/models";
+import {CubeablesContainer} from "../../models/models";
 
 
 interface RawCubeSpoilerViewProps {
-  rawCube: CubeablesContainer
+  cubeablesContainer: CubeablesContainer
   cubeableType: string
 }
 
@@ -14,20 +16,20 @@ export default class CubeablesCollectionSpoilerView extends React.Component<RawC
   render() {
     const pictured = (
       this.props.cubeableType === 'Cubeables' ?
-       this.props.rawCube.cubeables() :
-       [...this.props.rawCube.allPrintings()]
+       this.props.cubeablesContainer.allCubeables() :
+        this.props.cubeablesContainer.allPrintings()
     );
     return <div
-      style={
-        {
-          display: 'flex',
-          flexWrap: 'wrap',
-        }
-      }
+      // style={
+      //   {
+      //     display: 'flex',
+      //     flexWrap: 'wrap',
+      //   }
+      // }
     >
       {
-        pictured.map(
-          (cubeable: Cubeable) => {
+        wu(pictured).map(
+          (cubeable) => {
             return <CubeableImage
               cubeable={cubeable}
               sizeSlug="thumbnail"

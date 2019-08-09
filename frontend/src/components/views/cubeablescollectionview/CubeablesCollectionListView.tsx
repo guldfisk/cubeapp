@@ -19,8 +19,8 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
     const groups = (
       this.props.cubeableType === 'Cubeables' ?
         this.props.rawCube.grouped_cubeables()
-        : new PrintingCollection(
-          [...this.props.rawCube.allPrintings()]
+        : PrintingCollection.collectFromIterable(
+          this.props.rawCube.allPrintings()
         ).grouped_printings()
     );
 
@@ -33,8 +33,9 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
                 <ul>
                   {
                     group.map(
-                      cubeable => <CubeableListItem
+                      ([cubeable, multiplicity]) => <CubeableListItem
                         cubeable={cubeable}
+                        multiplicity={multiplicity}
                         onClick={this.props.onCubeableClicked}
                         noHover={this.props.noHover}
                       />

@@ -13,6 +13,7 @@ interface ConstrainedNodesViewProps {
 export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
 
   render() {
+    return <span>Constrained node view</span>
 
     return <Table>
       <thead>

@@ -7,11 +7,16 @@ import {CubeableImage} from "../images";
 
 interface PrintingListItemProps {
   printing: Printing
+  multiplicity: number
   onClick?: (printing: Printing) => void
   noHover?: boolean
 }
 
 export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: PrintingListItemProps) => {
+  const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
+    props.multiplicity.toString() + 'X '
+    : ''}${props.printing.full_name()}`;
+
   if (props.noHover) {
     return <a
       onClick={
@@ -22,7 +27,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
         )
       }
     >
-      {props.printing.full_name()}
+      {display_name}
     </a>
   }
 
@@ -38,7 +43,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
         )
       }
     >
-      {props.printing.full_name()}
+      {display_name}
     </a>
     <ReactTooltip
       place="top"
@@ -112,11 +117,13 @@ const trap_representation = (
 
 interface TrapListItemProps {
   trap: Trap
+  multiplicity: number
   noHover?: boolean
   onClick?: (printing: Trap) => void
 }
 
 export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
+  return <span>Trap</span>
   if (props.noHover) {
     return <a
       onClick={
@@ -136,12 +143,14 @@ interface NodeListItemProps {
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
+  return <span>Trap</span>
   return trap_representation(props.node)
 };
 
 
 interface CubeListItemProps {
   cubeable: Cubeable
+  multiplicity?: number
   onClick?: (cubeable: Cubeable) => void
   noHover?: boolean
 }
@@ -154,6 +163,7 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
       printing={props.cubeable}
       onClick={props.onClick}
       noHover={props.noHover}
+      multiplicity={props.multiplicity}
     />
 
   } else if (props.cubeable instanceof Trap) {
@@ -161,6 +171,7 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
       trap={props.cubeable}
       noHover={props.noHover}
       onClick={props.onClick}
+      multiplicity={props.multiplicity}
     />
 
   } else if (props.cubeable instanceof Ticket) {

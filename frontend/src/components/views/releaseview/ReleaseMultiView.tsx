@@ -61,7 +61,7 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
       />
     } else {
       view = <CubeablesCollectionSpoilerView
-        rawCube={this.state.cubeablesContainer}
+        cubeablesContainer={this.state.cubeablesContainer}
         cubeableType={this.state.cubeableType}
       />
     }
@@ -79,7 +79,9 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
             <span className="badge badge-secondary">
               {
                 `${
-                  this.props.release.cubeablesContainer().cubeables().length
+                  Array.from(
+                    this.props.release.cubeablesContainer().cubeables()
+                  ).length
                   }/${
                   this.props.release.intendedSize()
                   }`
