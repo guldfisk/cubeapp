@@ -104,13 +104,16 @@ const trap_representation = (
       (() => onClick(trap))
     }
   >
+    (
     {
       item.children().map(
         child => trap_representation(child, trap)
       ).reduce(
-        (previous, current) => [previous, item.type() === 'AllNode' ? '; ' : ' || ', current]
-      )
+        (previous, current) => previous.concat([current, item.type() === 'AllNode' ? '; ' : ' || ']),
+        [],
+      ).slice(0, -1)
     }
+    )
   </span>;
 };
 
@@ -123,7 +126,6 @@ interface TrapListItemProps {
 }
 
 export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
-  return <span>Trap</span>
   if (props.noHover) {
     return <a
       onClick={
@@ -143,7 +145,6 @@ interface NodeListItemProps {
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
-  return <span>Trap</span>
   return trap_representation(props.node)
 };
 

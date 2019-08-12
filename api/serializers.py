@@ -178,14 +178,19 @@ class NodeSerializer(ModelSerializer):
         return {
             'type': printing_node.__class__.__name__,
             'children': [
-                PrintingSerializer.serialize(
-                    child
-                ) if isinstance(child, Printing) else
-                NodeSerializer.serialize(
-                    child
+                (
+                    (
+                        PrintingSerializer.serialize(
+                            child
+                        ) if isinstance(child, Printing) else
+                        NodeSerializer.serialize(
+                            child
+                        )
+                    ),
+                    multiplicity,
                 )
-                for child in
-                printing_node.children
+                for child, multiplicity in
+                printing_node.children.items()
             ],
         }
 
@@ -335,20 +340,6 @@ class CubePatchOrpSerializer(ModelSerializer[CubePatch]):
                 cube_patch.node_delta_operation.nodes.items()
             }
         }
-
-
-# class MultiCubeSerializer(object):
-#     _type_map = {
-#         Printing: PrintingSerializer,
-#         Trap: TrapSerializer,
-#         Ticket: TicketSerializer,
-#         Purple: PurpleSerializer,
-#     }
-#
-#     @classmethod
-#     def serialize_multi_cubeables(cls, cubeables: t.Iterable[Cubeable]) -> t.Iterable[t.Dict]:
-#         for _cubeable in cubeables:
-#             yield cls._type_map[type(_cubeable)].serialize(_cubeable)
 
 
 class OrpModelField(serializers.Field):

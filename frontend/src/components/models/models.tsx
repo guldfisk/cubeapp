@@ -68,15 +68,17 @@ export class Printing extends Cubeable {
 
 
 export class PrintingNode extends Cubeable {
-  _children: (Printing | PrintingNode)[];
+  // _children: (Printing | PrintingNode)[];
+  _children: MultiplicityList<Printing | PrintingNode>;
 
   constructor(node: any) {
     super(node);
-    console.log('printing node constructor', node);
-    this._children = []
-    // this._children = node.children.map(
-    //   (child: any) => child.type === 'printing' ? new Printing(child) : new PrintingNode(child)
-    // );
+    this._children = node.children.map(
+      ([child, multiplicity]: [any, number]) => [
+        child.type === 'printing' ? new Printing(child) : new PrintingNode(child),
+        multiplicity,
+      ]
+    );
   }
 
   * printings(): IterableIterator<Printing> {
@@ -89,13 +91,15 @@ export class PrintingNode extends Cubeable {
     }
   };
 
-  children = (): (Printing | PrintingNode)[] => {
+  children = (): MultiplicityList<Printing | PrintingNode> => {
     return this._children
   };
 
   representation = (): string => {
     return '(' + this._children.map(
-      child => child instanceof Printing ? child.full_name() : child.representation()
+      ([child, multiplicity]: [Printing | PrintingNode, number]) =>
+        (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
+        + child instanceof Printing ? child.full_name() : child.representation()
     ).join(
       this.type() === 'AllNode' ? '; ' : ' || '
     ) + ')'
@@ -109,7 +113,6 @@ export class Trap extends Cubeable {
 
   constructor(trap: any) {
     super(trap);
-    console.log('in trap constructor', trap);
     this._node = new PrintingNode(trap.node)
   }
 
@@ -282,11 +285,11 @@ export class PrintingCollection extends MultiplicityList<Printing> {
 
   constructor(items: [Printing, number][] = []) {
     super(items);
-    // this.items.sort(
-    //   alphabeticalPropertySortMethodFactory(
-    //     ([printing, _]: [Printing, number]) => printing.id().toString()
-    //   )
-    // )
+    this.items.sort(
+      alphabeticalPropertySortMethodFactory(
+        ([printing, _]: [Printing, number]) => printing.id().toString()
+      )
+    )
   }
 
   public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
@@ -305,7 +308,6 @@ export class PrintingCollection extends MultiplicityList<Printing> {
   }
 
   printings_of_color = (color: string): [Printing, number][] => {
-    console.log('printings of color', color, this.items);
     return this.items.filter(
       ([printing, _]: [Printing, number]) =>
         !printing.types().includes('Land')
@@ -372,12 +374,12 @@ export class CubeablesContainer {
     );
     this._tickets = new MultiplicityList(
       cube.tickets.map(
-        ([ticket, multiplicity]: [Trap, number]) => [new Trap(ticket), multiplicity]
+        ([ticket, multiplicity]: [Trap, number]) => [new Ticket(ticket), multiplicity]
       )
     );
     this._purples = new MultiplicityList(
       cube.purples.map(
-        ([purple, multiplicity]: [Trap, number]) => [new Trap(purple), multiplicity]
+        ([purple, multiplicity]: [Trap, number]) => [new Purple(purple), multiplicity]
       )
     );
 
@@ -402,7 +404,6 @@ export class CubeablesContainer {
   * allPrintings(): IterableIterator<Printing> {
     yield* this._printings.iter();
     for (const trap of this._traps.iter()) {
-      console.log('in all printings', trap);
       yield* trap.node().printings()
     }
   };
@@ -665,7 +666,6 @@ export class ConstrainedNode extends Model {
 
   constructor(node: any) {
     super(node);
-    console.log('in constrained node constructor', node);
     this._node = new PrintingNode(node.node);
   }
 
@@ -689,7 +689,6 @@ export class ConstrainedNodes extends Model {
 
   constructor(nodes: any) {
     super(nodes);
-    console.log('in constrained nodeS constructor', nodes);
     this._nodes = this._wrapping.constrained_nodes_content.nodes.map(
       (node: any) => new ConstrainedNode(node)
     )
