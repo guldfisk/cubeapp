@@ -8,13 +8,13 @@ import {CubeableImage} from "../images";
 interface PrintingListItemProps {
   printing: Printing
   multiplicity: number
-  onClick?: (printing: Printing) => void
+  onClick?: (printing: Printing, multiplicity: number) => void
   noHover?: boolean
 }
 
 export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: PrintingListItemProps) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
-    props.multiplicity.toString() + 'X '
+    props.multiplicity.toString() + 'x '
     : ''}${props.printing.full_name()}`;
 
   if (props.noHover) {
@@ -22,7 +22,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
       onClick={
         props.onClick && (
           () => {
-            props.onClick(props.printing);
+            props.onClick(props.printing, props.multiplicity);
           }
         )
       }
@@ -38,7 +38,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
       onClick={
         props.onClick && (
           () => {
-            props.onClick(props.printing);
+            props.onClick(props.printing, props.multiplicity);
           }
         )
       }
@@ -61,9 +61,9 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
 
 
 const trap_representation = (
-  item: Printing | PrintingNode,
+  [item, multiplicity]: [Printing | PrintingNode, number],
   trap: Trap | undefined = undefined,
-  onClick: ((trap: Trap) => void) | undefined = undefined,
+  onClick: ((trap: Trap, multiplicity: number) => void) | undefined = undefined,
 ): any => {
   if (item instanceof Printing) {
     const tooltipId = (
@@ -76,7 +76,11 @@ const trap_representation = (
       data-tip=""
       data-for={tooltipId}
     >
-      {item.full_name()}
+      {
+        `${(multiplicity && multiplicity !== 1) ?
+          multiplicity.toString() + '# '
+          : ''}${item.full_name()}`
+      }
     </a>
     <ReactTooltip
       place="top"
@@ -101,13 +105,13 @@ const trap_representation = (
   return <span
     onClick={
       onClick &&
-      (() => onClick(trap))
+      (() => onClick(trap, multiplicity))
     }
   >
     (
     {
-      item.children().map(
-        child => trap_representation(child, trap)
+      item.children().items.map(
+        ([child, _multiplicity]) => trap_representation([child, _multiplicity], trap)
       ).reduce(
         (previous, current) => previous.concat([current, item.type() === 'AllNode' ? '; ' : ' || ']),
         [],
@@ -122,21 +126,31 @@ interface TrapListItemProps {
   trap: Trap
   multiplicity: number
   noHover?: boolean
-  onClick?: (printing: Trap) => void
+  onClick?: (trap: Trap, multiplicity: number) => void
 }
 
 export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
+  const multiplicityIndicator =
+    props.multiplicity && props.multiplicity !== 1 &&
+    props.multiplicity.toString() + 'x ';
+
   if (props.noHover) {
     return <a
       onClick={
         props.onClick &&
-        (() => {props.onClick(props.trap)})
+        (() => {
+          props.onClick(props.trap, props.multiplicity)
+        })
       }
     >
+      {multiplicityIndicator}
       {props.trap.node().representation()}
     </a>
   }
-  return trap_representation(props.trap.node(), props.trap)
+  return <span>
+    {multiplicityIndicator}
+    {trap_representation([props.trap.node(), props.multiplicity], props.trap, props.onClick)}
+  </span>
 };
 
 
@@ -145,14 +159,14 @@ interface NodeListItemProps {
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
-  return trap_representation(props.node)
+  return trap_representation([props.node, 1])
 };
 
 
 interface CubeListItemProps {
   cubeable: Cubeable
   multiplicity?: number
-  onClick?: (cubeable: Cubeable) => void
+  onClick?: (cubeable: Cubeable, multiplicity: number) => void
   noHover?: boolean
 }
 

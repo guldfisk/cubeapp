@@ -22,6 +22,7 @@ from knox.models import AuthToken
 
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.serilization.strategies.strategy import Strategy
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
@@ -29,10 +30,15 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
+from magiccube.collections.nodecollection import NodeCollection
 from magiccube.update.cubeupdate import CubePatch
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
-from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.tree.parse import PrintingTreeParser, PrintingTreeParserException
+from magiccube.update.cubeupdate import CubeUpdater
+
+from cubeapp import settings
 
 from api import models
 from api import serializers
@@ -305,7 +311,7 @@ class InviteUserEndpoint(generics.GenericAPIView):
 
         issuer = request.user
 
-        ok = False
+        key = None
 
         for _ in range(128):
             key = ''.join(
@@ -322,50 +328,28 @@ class InviteUserEndpoint(generics.GenericAPIView):
                     email = serializer.validated_data['email'],
                     issued_by = issuer,
                 )
-                ok = True
                 break
             except IntegrityError:
                 pass
 
-        if not ok:
+        if not key:
             raise Exception('Could not generate unique invite key')
-
-        # send_mail(
-        #     subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
-        #     message = get_template('invite_mail.html').render(
-        #             {
-        #                 'inviter': 'a guy',
-        #                 'invite_link': 'localhost:7000',
-        #             }
-        #         ),
-        #     from_email = 'mail@mail.prohunterdogkeeper.dk',
-        #     recipient_list = ['ce.guldfisk@gmail.com', ]
 
         send_mail(
             subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
             content = get_template('invite_mail.html').render(
                     {
                         'inviter': issuer.username,
-                        'invite_link': 'http://localhost:7000/sign-up/?invite_code={}&invite_email={}'.format(
-                            key,
-                            serializer.validated_data['email'],
+                        'invite_link': 'http://{host}/sign-up/?invite_code={key}'.format(
+                            host=settings.HOST,
+                            key=key,
                         ),
-                        # 'invite_link': "http://prohunterdogkeeper.dk/sign-up"
                     }
                 ),
             recipients = ['ce.guldfisk@gmail.com', ]
         )
 
         return Response(
-            # {
-            #     'token': key,
-            #     'content': get_template('invite_mail.html').render(
-            #         {
-            #             'inviter': 'a guy',
-            #             'invite_link': 'localhost:7000',
-            #         }
-            #     )
-            # },
             status=status.HTTP_200_OK,
         )
 
@@ -479,7 +463,6 @@ def patch_preview(request: Request, pk: int) -> Response:
         patch_model.content,
     )
 
-
     return Response(
         serializers.CubeSerializer.serialize(
             current_cube + cube_patch.cube_delta_operation,
@@ -488,7 +471,75 @@ def patch_preview(request: Request, pk: int) -> Response:
     )
 
 
+class ParseTrapEndpoint(generics.GenericAPIView):
+    serializer_class = serializers.ParseTrapSerializer
+    permission_classes = [permissions.IsAuthenticated, ]
 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data) #type: serializers.ParseTrapSerializer
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            intention_type = IntentionType[serializer.validated_data['intention_type']]
+        except KeyError:
+            intention_type = IntentionType.NO_INTENTION
+
+        try:
+            trap = Trap(
+                node=PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                intention_type=intention_type,
+            )
+        except PrintingTreeParserException as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            serializers.TrapSerializer.serialize(
+                trap
+            ),
+            status=status.HTTP_200_OK,
+            content_type='application/json'
+        )
+
+
+class ApplyPatchEndpoint(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def post(self, request, pk: int, *args, **kwargs):
+        try:
+            patch = models.CubePatch.objects.get(pk=pk)
+        except models.CubePatch.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        versioned_cube = patch.versioned_cube
+        latest_release = versioned_cube.latest_release
+
+        cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
+        cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
+
+        # cube_updater = CubeUpdater(
+        #     cube = cube,
+        #     node_collection = NodeCollection(()),
+        #     patch = cube_patch,
+        # ).update()
+
+        new_release = models.CubeRelease.create(
+            cube + cube_patch.cube_delta_operation,
+            versioned_cube,
+        )
+
+        patch.delete()
+
+        return Response(
+            serializers.FullCubeReleaseSerializer(new_release).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class CreateRevertPatchEndpoint(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def post(self, request, *args, **kwargs):
+        pass
 
 
 class ConstrainedNodesList(generics.ListAPIView):

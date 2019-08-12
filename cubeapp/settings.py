@@ -25,7 +25,7 @@ SECRET_KEY = _config_parser['default']['secret_key']
 DEBUG = strtobool(os.environ['DEBUG'])
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if not DEBUG else []
-
+HOST = _config_parser['default']['host']
 
 # Application definition
 

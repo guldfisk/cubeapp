@@ -50,6 +50,6 @@ export function alphabeticalPropertySortMethodFactory<T>(
   return (first: T, second: T) => {
     const f = extractor(first).toLowerCase();
     const s = extractor(second).toLowerCase();
-    return (f < s) ? -1 : (s > f) ? 1 : 0;
+    return (f < s) ? -1 : (f > s) ? 1 : 0;
   }
 }

@@ -13,6 +13,7 @@ import PatchPage from '../pages/patches/PatchPage';
 import CreatePatchPage from '../pages/patches/CreatePatchPage';
 import SignUpPage from "../pages/authentication/SignUpPage";
 import InvitePage from "../pages/authentication/InvitePage";
+import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
 
 
 // class RouteModel {
@@ -108,6 +109,7 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/sign-up', SignUpPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],
   ['/patches', PatchesPage, false, {}],
+  ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   ['/patch/:id(\\d+)', PatchPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

@@ -66,23 +66,8 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
       </Tabs>
     }
 
-    return <Container fluid>
-      <Row>
-        <Col sm={2}>
-          <Card>
-            <Card.Header>
-              Actions
-            </Card.Header>
-            <Card.Body>
-              <p><Link to={"#"}>Search</Link></p>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col>
-          {element}
-        </Col>
-      </Row>
-    </Container>
+    return element;
+
   }
 
 }

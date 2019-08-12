@@ -475,6 +475,17 @@ class SignupSerializer(serializers.Serializer):
         raise NotImplemented()
 
 
+class ParseTrapSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    intention_type = serializers.CharField(required=False)
+
+    def update(self, instance, validated_data):
+        raise NotImplemented
+
+    def create(self, validated_data):
+        raise NotImplemented
+
+
 class InviteSerializer(serializers.ModelSerializer):
 
     class Meta:

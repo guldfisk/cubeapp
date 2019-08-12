@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hashlib
+
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
+from mocknames.generate import NameGenerator
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from magiccube.collections.cube import Cube
@@ -40,6 +43,23 @@ class CubeRelease(models.Model):
     @property
     def cube(self) -> Cube:
         return JsonId(db).deserialize(Cube, self.cube_content)
+
+    @classmethod
+    def create(cls, cube: Cube, versioned_cube: VersionedCube) -> CubeRelease:
+        return cls.objects.create(
+            cube_content=JsonId.serialize(cube),
+            checksum=cube.persistent_hash(),
+            name=NameGenerator().get_name(
+                int(
+                    hashlib.sha1(
+                        cube.persistent_hash().encode('ASCII')
+                    ).hexdigest(),
+                    16,
+                )
+            ),
+            versioned_cube=versioned_cube,
+            intended_size=360,
+        )
 
 
 class ConstrainedNodes(models.Model):

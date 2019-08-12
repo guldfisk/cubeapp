@@ -80,6 +80,8 @@ class RootComponent extends React.Component<RootProps> {
 
 
   render() {
+    console.log(this.props.auth.user)
+
     return <Router
       history={history}
     >
@@ -106,6 +108,12 @@ class RootComponent extends React.Component<RootProps> {
 
           </Nav>
           <Nav className="justify-content-end">
+            {
+              this.props.auth.user ?
+                <Nav.Link>
+                  {this.props.auth.user.username}
+                </Nav.Link> : null
+            }
             {
               this.props.auth.authenticated ?
                 <LinkContainer to='/invite/'>

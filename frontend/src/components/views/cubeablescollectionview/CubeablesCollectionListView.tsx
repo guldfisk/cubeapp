@@ -9,7 +9,7 @@ import {CubeableListItem} from "../../utils/listitems";
 interface RawCubeListViewProps {
   rawCube: CubeablesContainer
   cubeableType: string
-  onCubeableClicked?: (cubeable: Cubeable) => void
+  onCubeableClicked?: (cubeable: Cubeable, amount: number) => void
   noHover?: boolean
 }
 
@@ -27,7 +27,9 @@ class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> 
     return <div>
       <Row>
         {
-          groups.map(
+          groups.filter(
+            group => group.length
+          ).map(
             group => {
               return <div>
                 <ul>

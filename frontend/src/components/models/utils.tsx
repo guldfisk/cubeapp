@@ -77,16 +77,4 @@ export class MultiplicityList<T> {
     }
   }
 
-  // public static collectFromIterable<T>(iterable: IterableIterator<T>): MultiplicityList<T> {
-  //   collection =
-  // }
-
-  // concat = (other: MultiplicityList<Partial<T>>): MultiplicityList<Partial<T>> => {
-  //   return new MultiplicityList<Partial<T>>(
-  //     this.items.concat(
-  //       other.items,
-  //     )
-  //   )
-  // };
-
 }

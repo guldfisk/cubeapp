@@ -80,7 +80,7 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
               {
                 `${
                   Array.from(
-                    this.props.release.cubeablesContainer().cubeables()
+                    this.props.release.cubeablesContainer().allCubeables()
                   ).length
                   }/${
                   this.props.release.intendedSize()

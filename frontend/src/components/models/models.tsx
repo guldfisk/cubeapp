@@ -3,6 +3,7 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
+import {instanceOf} from "prop-types";
 
 
 export const apiPath = '/api/';
@@ -68,25 +69,28 @@ export class Printing extends Cubeable {
 
 
 export class PrintingNode extends Cubeable {
-  // _children: (Printing | PrintingNode)[];
   _children: MultiplicityList<Printing | PrintingNode>;
 
   constructor(node: any) {
     super(node);
-    this._children = node.children.map(
-      ([child, multiplicity]: [any, number]) => [
-        child.type === 'printing' ? new Printing(child) : new PrintingNode(child),
-        multiplicity,
-      ]
-    );
+    this._children = new MultiplicityList(
+      node.children.map(
+        ([child, multiplicity]: [any, number]) => [
+          child.type === 'printing' ? new Printing(child) : new PrintingNode(child),
+          multiplicity,
+        ]
+      )
+    )
   }
 
   * printings(): IterableIterator<Printing> {
-    for (const child of this._children) {
-      if (child instanceof Printing) {
-        yield child
-      } else {
-        yield* (child as PrintingNode).printings()
+    for (const [child, multiplicity] of this._children.items) {
+      for (let i = 0; i < multiplicity; i++) {
+        if (child instanceof Printing) {
+          yield child
+        } else {
+          yield* (child as PrintingNode).printings()
+        }
       }
     }
   };
@@ -96,13 +100,25 @@ export class PrintingNode extends Cubeable {
   };
 
   representation = (): string => {
-    return '(' + this._children.map(
+    return '(' + this._children.items.map(
       ([child, multiplicity]: [Printing | PrintingNode, number]) =>
         (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
-        + child instanceof Printing ? child.full_name() : child.representation()
+        + (child instanceof Printing ? child.full_name() : child.representation())
     ).join(
       this.type() === 'AllNode' ? '; ' : ' || '
     ) + ')'
+  };
+
+  serialize = (): any => {
+    return {
+      type: this.type(),
+      options: this._children.items.map(
+        ([child, multiplicity]) => [
+          child instanceof Printing ? child.id() : child.serialize(),
+          multiplicity,
+        ]
+      )
+    }
   };
 
 }
@@ -123,6 +139,31 @@ export class Trap extends Cubeable {
   intentionType = (): string => {
     return this._wrapping.intention_type
   };
+
+  serialize = (): any => {
+    return {
+      node: this._node.serialize(),
+      intention_type: this.intentionType(),
+    }
+  };
+
+  public static parse(query: string): any {
+    return axios.post(
+      apiPath + 'service/parse-trap/',
+      {
+        query: query,
+        intention_type: 'SYNERGY'
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      trap => new Trap(trap.data)
+    )
+  }
 
 }
 
@@ -287,9 +328,9 @@ export class PrintingCollection extends MultiplicityList<Printing> {
     super(items);
     this.items.sort(
       alphabeticalPropertySortMethodFactory(
-        ([printing, _]: [Printing, number]) => printing.id().toString()
+        ([printing, _]: [Printing, number]) => printing.name().toString()
       )
-    )
+    );
   }
 
   public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
@@ -523,13 +564,45 @@ export class CubeRelease extends CubeReleaseMeta {
 export class Patch extends Model {
   _author: User;
   _cube: MinimalCube;
-  cubeablesContainer: CubeablesContainer;
+  positiveCubeablesContainer: CubeablesContainer;
+  negativeCubeablesContainer: CubeablesContainer;
 
   constructor(patch: any) {
     super(patch);
     this._author = new User(patch.author);
     this._cube = new MinimalCube(patch.versioned_cube);
-    this.cubeablesContainer = new CubeablesContainer(patch.content.cube_delta)
+    this.positiveCubeablesContainer = new CubeablesContainer(
+      {
+        printings: patch.content.cube_delta.printings.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+        ),
+        traps: patch.content.cube_delta.traps.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+        ),
+        tickets: patch.content.cube_delta.tickets.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+        ),
+        purples: patch.content.cube_delta.purples.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+        ),
+      }
+    );
+    this.negativeCubeablesContainer = new CubeablesContainer(
+      {
+        printings: patch.content.cube_delta.printings.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+        ),
+        traps: patch.content.cube_delta.traps.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+        ),
+        tickets: patch.content.cube_delta.tickets.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+        ),
+        purples: patch.content.cube_delta.purples.filter(
+          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+        ),
+      }
+    );
   }
 
   description = (): string => {
@@ -563,7 +636,7 @@ export class Patch extends Model {
       cubeDelta = {
         traps: [
           [
-            cubeable._wrapping,
+            cubeable.serialize(),
             amount,
           ]
         ]
@@ -607,6 +680,23 @@ export class Patch extends Model {
       apiPath + 'patches/' + this.id() + '/preview/',
     ).then(
       response => new CubeablesContainer(response.data)
+    )
+  };
+
+  apply = (): any => {
+    return axios.post(
+      apiPath + 'patches/' + this.id() + '/apply/',
+      {},
+      {
+        headers: {
+          "Content-Type":
+            "application/json",
+          "Authorization":
+            `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => new CubeRelease(response.data)
     )
   };
 

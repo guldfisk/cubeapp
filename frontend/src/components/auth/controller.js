@@ -50,7 +50,7 @@ export const loadUser = () => {
       },
     ).then(
       response => {
-        dispatch({type: reSignInSuccess, user: response.data});
+        dispatch({type: reSignInSuccess, data: response.data});
       }
     ).catch(
       exception => {
