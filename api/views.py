@@ -30,7 +30,7 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
 from magiccube.update.cubeupdate import CubePatch
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
@@ -235,7 +235,7 @@ class SignupEndpoint(generics.GenericAPIView):
     serializer_class = serializers.SignupSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data) #type: serializers.SignupSerializer
+        serializer = self.get_serializer(data=request.data)  # type: serializers.SignupSerializer
         serializer.is_valid(raise_exception=True)
 
         token_hash = hashlib.sha3_256()
@@ -243,9 +243,9 @@ class SignupEndpoint(generics.GenericAPIView):
 
         try:
             invite = models.Invite.objects.get(
-                key_hash = token_hash.hexdigest(),
-                claimed_by = None,
-                created_at__gt = datetime.datetime.now() - datetime.timedelta(days=10),
+                key_hash=token_hash.hexdigest(),
+                claimed_by=None,
+                created_at__gt=datetime.datetime.now() - datetime.timedelta(days=10),
             )
         except models.Invite.DoesNotExist:
             return Response('invalid token', status.HTTP_400_BAD_REQUEST)
@@ -277,7 +277,6 @@ class SignupEndpoint(generics.GenericAPIView):
                 "token": auth_token,
             }
         )
-
 
 
 class LoginEndpoint(generics.GenericAPIView):
@@ -324,9 +323,9 @@ class InviteUserEndpoint(generics.GenericAPIView):
             hasher.update(key.encode('ASCII'))
             try:
                 models.Invite.objects.create(
-                    key_hash = hasher.hexdigest(),
-                    email = serializer.validated_data['email'],
-                    issued_by = issuer,
+                    key_hash=hasher.hexdigest(),
+                    email=serializer.validated_data['email'],
+                    issued_by=issuer,
                 )
                 break
             except IntegrityError:
@@ -336,17 +335,17 @@ class InviteUserEndpoint(generics.GenericAPIView):
             raise Exception('Could not generate unique invite key')
 
         send_mail(
-            subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
-            content = get_template('invite_mail.html').render(
-                    {
-                        'inviter': issuer.username,
-                        'invite_link': 'http://{host}/sign-up/?invite_code={key}'.format(
-                            host=settings.HOST,
-                            key=key,
-                        ),
-                    }
-                ),
-            recipients = ['ce.guldfisk@gmail.com', ]
+            subject='YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
+            content=get_template('invite_mail.html').render(
+                {
+                    'inviter': issuer.username,
+                    'invite_link': 'http://{host}/sign-up/?invite_code={key}'.format(
+                        host=settings.HOST,
+                        key=key,
+                    ),
+                }
+            ),
+            recipients=['ce.guldfisk@gmail.com', ]
         )
 
         return Response(
@@ -394,8 +393,8 @@ class PatchList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(
-            author = self.request.user,
-            content = JsonId.serialize(
+            author=self.request.user,
+            content=JsonId.serialize(
                 CubePatch()
             ),
         )
@@ -464,11 +463,55 @@ def patch_preview(request: Request, pk: int) -> Response:
     )
 
     return Response(
-        serializers.CubeSerializer.serialize(
-            current_cube + cube_patch.cube_delta_operation,
-        ),
+        {
+            'cube': serializers.CubeSerializer.serialize(
+                current_cube + cube_patch.cube_delta_operation,
+            ),
+            'nodes': {
+                'constrained_nodes_content': serializers.ConstrainedNodesOrpSerializer.serialize(
+                    (
+                        JsonId(db).deserialize(
+                            NodeCollection,
+                            latest_release.constrained_nodes.constrained_nodes_content,
+                        ) + cube_patch.node_delta_operation
+                        if hasattr(latest_release, 'constrained_nodes') else
+                        NodeCollection(())
+                    )
+                )
+            },
+        },
         content_type='application/json',
     )
+
+
+class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
+    serializer_class = serializers.ParseConstrainedNodeSerializer
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)  # type: serializers.ParseTrapSerializer
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            constrained_node = ConstrainedNode(
+                node=PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                groups=[
+                    group.rstrip().lstrip()
+                    for group in
+                    serializer.validated_data['groups'].split(',')
+                ],
+                value=serializer.validated_data['weight'],
+            )
+        except PrintingTreeParserException as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            serializers.ConstrainedNodeOrpSerializer.serialize(
+                constrained_node
+            ),
+            status=status.HTTP_200_OK,
+            content_type='application/json'
+        )
 
 
 class ParseTrapEndpoint(generics.GenericAPIView):
@@ -498,7 +541,7 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             ),
             status=status.HTTP_200_OK,
             content_type='application/json'
-        )
+)
 
 
 class ApplyPatchEndpoint(generics.GenericAPIView):
@@ -526,6 +569,17 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
             cube + cube_patch.cube_delta_operation,
             versioned_cube,
         )
+
+        if hasattr(latest_release, 'constrained_nodes'):
+            models.ConstrainedNodes.objects.create(
+                constrained_nodes_content = JsonId.serialize(
+                    JsonId(db).deserialize(
+                        NodeCollection,
+                        latest_release.constrained_nodes.constrained_nodes_content,
+                    ) + cube_patch.node_delta_operation
+                ),
+                release = new_release,
+            )
 
         patch.delete()
 

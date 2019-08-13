@@ -1,5 +1,5 @@
 import React from 'react';
-import {CubeablesContainer, CubeRelease, Patch} from "../../models/models";
+import {CubeablesContainer, CubeRelease, Patch, Preview} from "../../models/models";
 import {Loading} from "../../utils/utils";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
@@ -15,7 +15,7 @@ interface DeltaPageProps {
 
 interface ApplyPatchPageState {
   patch: null | Patch
-  preview: null | CubeablesContainer
+  preview: null | Preview
   previewLoading: boolean
   resultingRelease: null | CubeRelease
 }
@@ -47,7 +47,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       }
     ).then(
       patch => patch.preview().then(
-        (preview: CubeablesContainer) => {
+        (preview) => {
           this.setState(
             {
               preview,
@@ -88,7 +88,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
               {
                 `${
                   Array.from(
-                    this.state.preview.allCubeables()
+                    this.state.preview.cubeables.allCubeables()
                   ).length
                   }/${
                   360
@@ -100,7 +100,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         <Card.Body>
           <CubeablesCollectionListView
             cubeableType="Cubeables"
-            rawCube={this.state.preview}
+            rawCube={this.state.preview.cubeables}
             noHover={true}
           />
         </Card.Body>

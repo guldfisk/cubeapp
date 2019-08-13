@@ -38,10 +38,10 @@ class CubesPage extends React.Component<null, CubesPageState> {
       offset,
       pageSize,
     ).then(
-      ([cubes, hits]) => {
+      ({objects, hits}) => {
         this.setState(
           {
-            cubes,
+            cubes: objects,
             hits,
           }
         )

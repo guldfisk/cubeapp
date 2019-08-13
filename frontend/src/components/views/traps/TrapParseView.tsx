@@ -7,7 +7,7 @@ import {Trap} from "../../models/models";
 
 
 interface TrapParseViewFormProps {
-  handleSubmit: ({query, intentionType}: { query: string, intentionType: string}) => void
+  handleSubmit: ({query, intentionType}: { query: string, intentionType: string }) => void
 }
 
 class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
@@ -52,7 +52,7 @@ export default class TrapParseView extends React.Component<CreatePatchPageProps>
     }
   };
 
-  handleSubmit = ({query, intentionType}: { query: string, intentionType: string}): void => {
+  handleSubmit = ({query, intentionType}: { query: string, intentionType: string }): void => {
     Trap.parse(query).then(
       this.props.onSubmit
     )

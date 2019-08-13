@@ -80,8 +80,6 @@ class RootComponent extends React.Component<RootProps> {
 
 
   render() {
-    console.log(this.props.auth.user)
-
     return <Router
       history={history}
     >

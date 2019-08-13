@@ -9,7 +9,16 @@ import Card from "react-bootstrap/Card";
 
 import history from '../../routing/history';
 import {Loading} from '../../utils/utils';
-import {Cubeable, CubeablesContainer, CubeRelease, Patch, Printing, Trap} from '../../models/models';
+import {
+  ConstrainedNode,
+  Cubeable,
+  CubeablesContainer,
+  CubeRelease,
+  Patch,
+  Preview,
+  Printing,
+  Trap
+} from '../../models/models';
 import PatchView from '../../views/patchview/PatchView';
 import SearchView from "../../views/search/SearchView";
 import ReleaseMultiView from "../../views/releaseview/ReleaseMultiView";
@@ -18,6 +27,8 @@ import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import TrapParseView from "../../views/traps/TrapParseView";
 import {ConfirmationDialog} from "../../utils/dialogs";
+import PatchPreview from "../../views/patchview/PatchPreview";
+import ConstrainedNodeParseView from "../../views/traps/ConstrainedNodeParseView";
 
 
 interface DeltaPageProps {
@@ -26,7 +37,7 @@ interface DeltaPageProps {
 
 interface DeltaPageState {
   patch: null | Patch
-  preview: null | CubeablesContainer
+  preview: null | Preview
   previewLoading: boolean
   confirmDelete: boolean
 }
@@ -51,7 +62,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
       }
     );
     patch.preview().then(
-      (preview: CubeablesContainer) => {
+      (preview) => {
         this.setState(
           {
             previewLoading: false,
@@ -72,13 +83,14 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
     );
   }
 
-  handleModifyCubeableAmount = (cubeable: Cubeable, amount: number) => {
-    this.state.patch.update(cubeable, amount).then(
+  handleUpdatePatch = (update: Cubeable | ConstrainedNode, amount: number) => {
+    this.state.patch.update(update, amount).then(
       (patch: Patch) => {
         this.setPatch(patch);
       }
     )
   };
+
 
   handleDeletePatch = () => {
     this.state.patch.delete().then(
@@ -93,41 +105,23 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
     if (this.state.patch !== null) {
       patchView = <PatchView
         patch={this.state.patch}
-        onCubeableClicked={this.handleModifyCubeableAmount}
+        onItemClicked={this.handleUpdatePatch}
       />
     }
 
     let preview = <Loading/>;
     if (this.state.preview) {
-      preview = <Card>
-        <Card.Header>
-          <Row>
-            Preview
-            <span className="badge badge-secondary ml-auto">
-              {
-                `${
-                  Array.from(
-                    this.state.preview.allCubeables()
-                  ).length
-                  }/${
-                  360
-                  }`
-              }
-            </span>
-          </Row>
-        </Card.Header>
-        <Card.Body>
-          <CubeablesCollectionListView
-            cubeableType="Cubeables"
-            rawCube={this.state.preview}
-            onCubeableClicked={
-              !this.state.previewLoading &&
-              (cubeable => this.handleModifyCubeableAmount(cubeable, -1))
-            }
-            noHover={true}
-          />
-        </Card.Body>
-      </Card>
+      preview = <PatchPreview
+        preview={this.state.preview}
+        onCubeablesClicked={
+          !this.state.previewLoading &&
+          (cubeable => this.handleUpdatePatch(cubeable, -1))
+        }
+        onNodeClicked={
+          !this.state.previewLoading &&
+          ((node, multiplicity) => this.handleUpdatePatch(node, -1))
+        }
+      />;
     }
 
     return <>
@@ -167,7 +161,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
               </Card.Body>
             </Card>
           </Col>
-          <Col>
+          <Col sm={3}>
             <Card>
               <Card.Header>
                 Add cubeables
@@ -181,7 +175,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
                     <Card>
                       <Card.Body>
                         <SearchView
-                          handleCardClicked={(printing: Printing) => this.handleModifyCubeableAmount(printing, 1)}
+                          handleCardClicked={(printing: Printing) => this.handleUpdatePatch(printing, 1)}
                           limit={3}
                         />
                       </Card.Body>
@@ -189,7 +183,12 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
                   </Tab>
                   <Tab eventKey='addTrap' title='Trap'>
                     <TrapParseView
-                      onSubmit={(trap: Trap) => this.handleModifyCubeableAmount(trap, 1)}
+                      onSubmit={trap => this.handleUpdatePatch(trap, 1)}
+                    />
+                  </Tab>
+                  <Tab eventKey='addNode' title='Node'>
+                    <ConstrainedNodeParseView
+                      onSubmit={node => this.handleUpdatePatch(node, 1)}
                     />
                   </Tab>
                 </Tabs>

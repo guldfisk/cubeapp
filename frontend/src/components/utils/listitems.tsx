@@ -156,10 +156,19 @@ export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemPr
 
 interface NodeListItemProps {
   node: PrintingNode
+  onClick?: (node: PrintingNode, multiplicity: number) => void
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
-  return trap_representation([props.node, 1])
+  return <span
+    onClick={() => props.onClick(props.node, 1)}
+  >
+    {
+      trap_representation(
+        [props.node, 1],
+      )
+    }
+  </span>
 };
 
 

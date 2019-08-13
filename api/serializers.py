@@ -22,8 +22,7 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
-
-from misccube.trapification.algorithm import ConstrainedNodes, ConstrainedNode
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
 
 from resources.staticdb import db
 from api import models
@@ -290,16 +289,20 @@ class ConstrainedNodeOrpSerializer(ModelSerializer[ConstrainedNode]):
         }
 
 
-class ConstrainedNodesOrpSerializer(ModelSerializer[ConstrainedNodes]):
+class ConstrainedNodesOrpSerializer(ModelSerializer[NodeCollection]):
 
     @classmethod
-    def serialize(cls, constrained_nodes: ConstrainedNodes) -> compacted_model:
+    def serialize(cls, constrained_nodes: NodeCollection) -> compacted_model:
         return {
             'nodes': [
-                ConstrainedNodeOrpSerializer.serialize(
-                    node
-                ) for node in
-                constrained_nodes
+                (
+                    ConstrainedNodeOrpSerializer.serialize(
+                        node
+                    ),
+                    multiplicity,
+                )
+                for node, multiplicity in
+                constrained_nodes.items()
             ]
         }
 
@@ -331,14 +334,14 @@ class CubePatchOrpSerializer(ModelSerializer[CubePatch]):
                     cube_patch.cube_delta_operation.purples
                 ],
             },
-            'node_delta': {
+            'node_delta': [
                 (
                     ConstrainedNodeOrpSerializer.serialize(node),
                     multiplicity,
                 )
                 for node, multiplicity in
                 cube_patch.node_delta_operation.nodes.items()
-            }
+            ]
         }
 
 
@@ -400,16 +403,15 @@ class MinimalCubeReleaseSerializer(serializers.Serializer):
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):
-    release = MinimalCubeReleaseSerializer(read_only=True)
     constrained_nodes_content = OrpModelField(
         model_serializer=ConstrainedNodesOrpSerializer,
-        serializeable_type = ConstrainedNodes,
+        serializeable_type = NodeCollection,
         strategy = JsonId(db),
     )
 
     class Meta:
         model = models.ConstrainedNodes
-        fields = ('release', 'constrained_nodes_content')
+        fields = ('constrained_nodes_content',)
 
 
 class CubePatchSerializer(serializers.ModelSerializer):
@@ -475,9 +477,21 @@ class SignupSerializer(serializers.Serializer):
         raise NotImplemented()
 
 
+class ParseConstrainedNodeSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    groups = serializers.CharField()
+    weight = serializers.IntegerField()
+
+    def update(self, instance, validated_data):
+        raise NotImplemented
+
+    def create(self, validated_data):
+        raise NotImplemented
+
+
 class ParseTrapSerializer(serializers.Serializer):
     query = serializers.CharField()
-    intention_type = serializers.CharField(required=False)
+    intention_type = serializers.CharField()
 
     def update(self, instance, validated_data):
         raise NotImplemented

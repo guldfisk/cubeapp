@@ -3,7 +3,7 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
-import {instanceOf} from "prop-types";
+import {instanceOf, node} from "prop-types";
 
 
 export const apiPath = '/api/';
@@ -167,7 +167,6 @@ export class Trap extends Cubeable {
 
 }
 
-
 export class Ticket extends Cubeable {
 
   constructor(ticket: any) {
@@ -201,7 +200,7 @@ export class User extends Model {
     return this._wrapping.username
   };
 
-  static all = () => {
+  static all = (): Promise<User[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'users/'
@@ -212,7 +211,7 @@ export class User extends Model {
     )
   };
 
-  static get = (id: string) => {
+  static get = (id: string): Promise<User> => {
     return axios.get(
       apiPath + 'users/' + id + '/'
     ).then(
@@ -250,6 +249,11 @@ export class MinimalCube extends Model {
 }
 
 
+interface PaginationResponse<T> {
+  objects: T[]
+  hits: number
+}
+
 export class Cube extends MinimalCube {
   _releases: CubeReleaseMeta[];
 
@@ -271,7 +275,7 @@ export class Cube extends MinimalCube {
     return this._releases[0];
   };
 
-  static all = (offset: number = 0, limit: number = 50) => {
+  static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<Cube>> => {
     return axios.get(
       apiPath + 'versioned-cubes/',
       {
@@ -281,16 +285,18 @@ export class Cube extends MinimalCube {
         }
       },
     ).then(
-      response => [
-        response.data.results.map(
-          (cube: any) => new Cube(cube)
-        ),
-        response.data.count,
-      ]
+      response => {
+        return {
+          objects: response.data.results.map(
+            (cube: any) => new Cube(cube)
+          ),
+          hits: response.data.count,
+        }
+      }
     )
   };
 
-  static get = (id: string) => {
+  static get = (id: string): Promise<Cube> => {
     return axios.get(
       apiPath + 'versioned-cubes/' + id + '/'
     ).then(
@@ -508,7 +514,7 @@ export class CubeRelease extends CubeReleaseMeta {
     this._constrained_nodes = (
       release.constrained_nodes === null ?
         null :
-        new ConstrainedNodes(release.constrained_nodes)
+        new ConstrainedNodes(release.constrained_nodes.constrained_nodes_content.nodes)
     );
   }
 
@@ -525,7 +531,7 @@ export class CubeRelease extends CubeReleaseMeta {
   };
 
 
-  static all = () => {
+  static all = (): Promise<CubeRelease[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'cube-releases/'
@@ -536,7 +542,7 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
-  static get = (id: string) => {
+  static get = (id: string): Promise<CubeRelease> => {
     return axios.get(
       apiPath + 'cube-releases/' + id + '/'
     ).then(
@@ -544,7 +550,7 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
-  filter = (query: string, flattened: boolean = false) => {
+  filter = (query: string, flattened: boolean = false): Promise<CubeablesContainer> => {
     return axios.get(
       apiPath + 'cube-releases/' + this.id() + '/filter/',
       {
@@ -561,11 +567,26 @@ export class CubeRelease extends CubeReleaseMeta {
 }
 
 
+export class Preview {
+  cubeables: CubeablesContainer;
+  constrainedNodes: ConstrainedNodes;
+
+  constructor(preview: any) {
+    this.cubeables = new CubeablesContainer(preview.cube);
+    this.constrainedNodes = new ConstrainedNodes(preview.nodes.constrained_nodes_content.nodes);
+  }
+
+}
+
+
 export class Patch extends Model {
   _author: User;
   _cube: MinimalCube;
   positiveCubeablesContainer: CubeablesContainer;
   negativeCubeablesContainer: CubeablesContainer;
+
+  positiveConstrainedNodes: ConstrainedNodes;
+  negativeConstrainedNodes: ConstrainedNodes;
 
   constructor(patch: any) {
     super(patch);
@@ -603,6 +624,18 @@ export class Patch extends Model {
         ),
       }
     );
+
+    this.positiveConstrainedNodes = new ConstrainedNodes(
+      patch.content.node_delta.filter(
+        ([node, multiplicity]: [any, number]) => multiplicity > 0
+      )
+    );
+    this.negativeConstrainedNodes = new ConstrainedNodes(
+      patch.content.node_delta.filter(
+        ([node, multiplicity]: [any, number]) => multiplicity < 0
+      )
+    );
+
   }
 
   description = (): string => {
@@ -621,22 +654,32 @@ export class Patch extends Model {
     return this._cube;
   };
 
-  update = (cubeable: Cubeable, amount: number = 1): any => {
+  update = (update: Cubeable | ConstrainedNode, amount: number = 1): Promise<Patch> => {
     let cubeDelta = {};
-    if (cubeable instanceof Printing) {
+    let nodeDelta: any = {nodes: []};
+    if (update instanceof Printing) {
       cubeDelta = {
         printings: [
           [
-            cubeable.id(),
+            update.id(),
             amount,
           ]
         ]
       }
-    } else if (cubeable instanceof Trap) {
+    } else if (update instanceof Trap) {
       cubeDelta = {
         traps: [
           [
-            cubeable.serialize(),
+            update.serialize(),
+            amount,
+          ]
+        ]
+      }
+    } else if (update instanceof ConstrainedNode) {
+      nodeDelta = {
+        nodes: [
+          [
+            update.serialize(),
             amount,
           ]
         ]
@@ -648,7 +691,8 @@ export class Patch extends Model {
       {
         update: JSON.stringify(
           {
-            cube_delta: cubeDelta
+            cube_delta: cubeDelta,
+            nodes_delta: nodeDelta,
           }
         )
       },
@@ -663,7 +707,7 @@ export class Patch extends Model {
     )
   };
 
-  delete = (): any => {
+  delete = (): Promise<any> => {
     return axios.delete(
       apiPath + 'patches/' + this.id() + '/',
       {
@@ -675,15 +719,15 @@ export class Patch extends Model {
     )
   };
 
-  preview = (): any => {
+  preview = (): Promise<Preview> => {
     return axios.get(
       apiPath + 'patches/' + this.id() + '/preview/',
     ).then(
-      response => new CubeablesContainer(response.data)
+      response => new Preview(response.data)
     )
   };
 
-  apply = (): any => {
+  apply = (): Promise<CubeRelease> => {
     return axios.post(
       apiPath + 'patches/' + this.id() + '/apply/',
       {},
@@ -700,7 +744,7 @@ export class Patch extends Model {
     )
   };
 
-  static create = (cube_id: number, description: string) => {
+  static create = (cube_id: number, description: string): Promise<Patch> => {
     return axios.post(
       apiPath + 'patches/',
       {
@@ -718,7 +762,7 @@ export class Patch extends Model {
     )
   };
 
-  static all = () => {
+  static all = (): Promise<Patch[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'patches/'
@@ -729,7 +773,7 @@ export class Patch extends Model {
     )
   };
 
-  static forCube = (cubeId: number) => {
+  static forCube = (cubeId: number): Promise<Patch[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'versioned-cubes/' + cubeId + '/patches/'
@@ -740,7 +784,7 @@ export class Patch extends Model {
     )
   };
 
-  static get = (id: string) => {
+  static get = (id: string): Promise<Patch> => {
     return axios.get(
       apiPath + 'patches/' + id + '/'
     ).then(
@@ -751,59 +795,82 @@ export class Patch extends Model {
 }
 
 
-export class ConstrainedNode extends Model {
+export class ConstrainedNode {
   _node: PrintingNode;
+  value: number;
+  groups: string[];
 
   constructor(node: any) {
-    super(node);
     this._node = new PrintingNode(node.node);
+    this.value = node.value;
+    this.groups = node.groups;
   }
-
-  value = (): number => {
-    return this._wrapping.value;
-  };
-
-  groups = (): string[] => {
-    return this._wrapping.groups;
-  };
 
   node = (): PrintingNode => {
     return this._node;
+  };
+
+  serialize = (): any => {
+    return {
+      node: this._node.serialize(),
+      value: this.value,
+      groups: this.groups,
+    }
+  };
+
+  public static parse(query: string, groups: string, weight: number): Promise<ConstrainedNode> {
+    return axios.post(
+      apiPath + 'service/parse-constrained-node/',
+      {
+        query,
+        groups,
+        weight,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => new ConstrainedNode(response.data)
+    )
   }
 
 }
 
 
-export class ConstrainedNodes extends Model {
-  _nodes: ConstrainedNode[];
+export class ConstrainedNodes {
+  _nodes: MultiplicityList<ConstrainedNode>;
 
-  constructor(nodes: any) {
-    super(nodes);
-    this._nodes = this._wrapping.constrained_nodes_content.nodes.map(
-      (node: any) => new ConstrainedNode(node)
+  constructor(nodes: [any, number][]) {
+    this._nodes = new MultiplicityList(
+      nodes.map(
+        ([node, multiplicity]: [any, number]) => [new ConstrainedNode(node), multiplicity]
+      )
     )
   }
 
-  nodes = (): ConstrainedNode[] => {
+  nodes = (): MultiplicityList<ConstrainedNode> => {
     return this._nodes
   };
 
-  static all = () => {
+  static all = (): Promise<ConstrainedNodes[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'constrained-nodes/'
     ).then(
       response => response.data.results.map(
-        (constrainedNode: any) => new ConstrainedNode(constrainedNode)
+        (constrainedNode: any) => new ConstrainedNode(constrainedNode.nodes.constrained_nodes_content)
       )
     )
   };
 
-  static get = (id: string) => {
+  static get = (id: string): Promise<ConstrainedNodes> => {
     return axios.get(
       apiPath + 'constrained-nodes/' + id + '/'
     ).then(
-      response => new ConstrainedNodes(response.data)
+      response => new ConstrainedNodes(response.data.nodes.constrained_nodes_content)
     )
   };
 
