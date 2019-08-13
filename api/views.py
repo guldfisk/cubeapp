@@ -345,7 +345,7 @@ class InviteUserEndpoint(generics.GenericAPIView):
                     ),
                 }
             ),
-            recipients=['ce.guldfisk@gmail.com', ]
+            recipients=[serializer.validated_data['email'], ]
         )
 
         return Response(
