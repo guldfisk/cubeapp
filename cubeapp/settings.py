@@ -16,7 +16,8 @@ DATABASE_PASSWORD = _config_parser['client']['password']
 DATABASE_HOST = _config_parser['client']['host']
 
 MAILGUN_KEY = _config_parser['default']['mailgun_key']
-MAILGUN_DOMAIN = _config_parser['default']['mailgun_domain']
+# MAILGUN_DOMAIN = _config_parser['default']['mailgun_domain']
+MAILGUN_DOMAIN = 'mail.prohunterdogkeeper.dk'
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

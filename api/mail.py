@@ -11,7 +11,7 @@ def send_mail(
     recipients: t.List[str],
 ):
     return requests.post(
-        "https://api.mailgun.net/v3/{}/messages".format(
+        "https://api.eu.mailgun.net/v3/{}/messages".format(
             settings.MAILGUN_DOMAIN
         ),
         auth=("api", settings.MAILGUN_KEY),
