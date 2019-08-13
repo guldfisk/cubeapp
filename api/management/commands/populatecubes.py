@@ -37,30 +37,26 @@ class Command(BaseCommand):
             author=root_user,
         )
 
-        # name_generator = NameGenerator()
+        name_generator = NameGenerator()
 
         cube_loader = CubeLoader(db)
 
         for cube, time in cube_loader.all_cubes():
-            models.CubeRelease.create(
-                cube,
-                versioned_cube,
+            models.CubeRelease.objects.create(
+                cube_content=JsonId.serialize(cube),
+                checksum=cube.persistent_hash(),
+                name=name_generator.get_name(
+                    int(
+                        hashlib.sha1(
+                            cube.persistent_hash().encode('ASCII')
+                        ).hexdigest(),
+                        16,
+                    )
+                ),
+                created_at=time,
+                versioned_cube=versioned_cube,
+                intended_size=360,
             )
-            # models.CubeRelease.objects.create(
-            #     cube_content=JsonId.serialize(cube),
-            #     checksum=cube.persistent_hash(),
-            #     name=name_generator.get_name(
-            #         int(
-            #             hashlib.sha1(
-            #                 cube.persistent_hash().encode('ASCII')
-            #             ).hexdigest(),
-            #             16,
-            #         )
-            #     ),
-            #     created_at=time,
-            #     versioned_cube=versioned_cube,
-            #     intended_size=360,
-            # )
 
         for cube in models.CubeRelease.objects.all():
             print(cube.name, cube.checksum)
