@@ -654,37 +654,46 @@ export class Patch extends Model {
     return this._cube;
   };
 
-  update = (update: Cubeable | ConstrainedNode, amount: number = 1): Promise<Patch> => {
-    let cubeDelta = {};
+  update = (updates: [Cubeable | ConstrainedNode, number][]): Promise<Patch> => {
+    console.log('update with', updates);
+    let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
+      printings: [],
+      traps: [],
+    };
     let nodeDelta: any = {nodes: []};
-    if (update instanceof Printing) {
-      cubeDelta = {
-        printings: [
+    for (const [update, multiplicity] of updates) {
+
+      if (update instanceof Printing) {
+        cubeDelta.printings.push(
           [
             update.id(),
-            amount,
+            multiplicity,
           ]
-        ]
-      }
-    } else if (update instanceof Trap) {
-      cubeDelta = {
-        traps: [
+        );
+      } else if (update instanceof Trap) {
+        cubeDelta.traps.push(
           [
             update.serialize(),
-            amount,
+            multiplicity,
           ]
-        ]
-      }
-    } else if (update instanceof ConstrainedNode) {
-      nodeDelta = {
-        nodes: [
+        );
+      } else if (update instanceof ConstrainedNode) {
+        nodeDelta.nodes.push(
           [
             update.serialize(),
-            amount,
+            multiplicity,
           ]
-        ]
+        );
       }
     }
+
+    console.log(
+      'update',
+      {
+        cube_delta: cubeDelta,
+        nodes_delta: nodeDelta,
+      }
+    );
 
     return axios.patch(
       apiPath + 'patches/' + this.id() + '/',
@@ -800,11 +809,19 @@ export class ConstrainedNode {
   value: number;
   groups: string[];
 
-  constructor(node: any) {
-    this._node = new PrintingNode(node.node);
-    this.value = node.value;
-    this.groups = node.groups;
+  constructor(printingNode: PrintingNode, value: number, groups: string[]) {
+    this._node = printingNode;
+    this.value = value;
+    this.groups = groups;
   }
+
+  public static fromRemote(constrainedNode: any): ConstrainedNode {
+    return new ConstrainedNode(
+      new PrintingNode(constrainedNode.node),
+      constrainedNode.value,
+      constrainedNode.groups,
+    )
+  };
 
   node = (): PrintingNode => {
     return this._node;
@@ -833,7 +850,7 @@ export class ConstrainedNode {
         }
       },
     ).then(
-      response => new ConstrainedNode(response.data)
+      response => ConstrainedNode.fromRemote(response.data)
     )
   }
 
@@ -846,7 +863,7 @@ export class ConstrainedNodes {
   constructor(nodes: [any, number][]) {
     this._nodes = new MultiplicityList(
       nodes.map(
-        ([node, multiplicity]: [any, number]) => [new ConstrainedNode(node), multiplicity]
+        ([node, multiplicity]: [any, number]) => [ConstrainedNode.fromRemote(node), multiplicity]
       )
     )
   }
@@ -861,7 +878,7 @@ export class ConstrainedNodes {
       apiPath + 'constrained-nodes/'
     ).then(
       response => response.data.results.map(
-        (constrainedNode: any) => new ConstrainedNode(constrainedNode.nodes.constrained_nodes_content)
+        (constrainedNode: any) => ConstrainedNode.fromRemote(constrainedNode.nodes.constrained_nodes_content)
       )
     )
   };

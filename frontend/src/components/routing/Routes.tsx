@@ -14,6 +14,7 @@ import CreatePatchPage from '../pages/patches/CreatePatchPage';
 import SignUpPage from "../pages/authentication/SignUpPage";
 import InvitePage from "../pages/authentication/InvitePage";
 import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
+import TestPage from "../pages/TestPage";
 
 
 // class RouteModel {
@@ -111,5 +112,6 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/patches', PatchesPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   ['/patch/:id(\\d+)', PatchPage, false, {}],
+  ['/test', TestPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

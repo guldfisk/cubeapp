@@ -84,7 +84,15 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
   }
 
   handleUpdatePatch = (update: Cubeable | ConstrainedNode, amount: number) => {
-    this.state.patch.update(update, amount).then(
+    this.state.patch.update([[update, amount]]).then(
+      (patch: Patch) => {
+        this.setPatch(patch);
+      }
+    )
+  };
+
+  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode, number][]) => {
+    this.state.patch.update(updates).then(
       (patch: Patch) => {
         this.setPatch(patch);
       }
@@ -114,12 +122,25 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
       preview = <PatchPreview
         preview={this.state.preview}
         onCubeablesClicked={
-          !this.state.previewLoading &&
+          this.state.previewLoading ? undefined :
           (cubeable => this.handleUpdatePatch(cubeable, -1))
         }
         onNodeClicked={
-          !this.state.previewLoading &&
+          this.state.previewLoading ? undefined :
           ((node, multiplicity) => this.handleUpdatePatch(node, -1))
+        }
+        onNodeEdit={
+          this.state.previewLoading ? undefined :
+          (
+            (oldNode, newNode, multiplicity) => {
+              this.handleMultipleUpdatePatch(
+                [
+                  [oldNode, -multiplicity],
+                  [newNode, multiplicity],
+                ]
+              )
+            }
+          )
         }
       />;
     }

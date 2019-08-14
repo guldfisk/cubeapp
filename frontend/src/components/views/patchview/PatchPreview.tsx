@@ -2,10 +2,8 @@ import React from 'react'
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
-import {ConstrainedNode, Cubeable, Preview, Printing, Trap} from "../../models/models";
+import {ConstrainedNode, Cubeable, Preview} from "../../models/models";
 import Tab from "react-bootstrap/Tab";
-import SearchView from "../search/SearchView";
-import TrapParseView from "../traps/TrapParseView";
 import Tabs from "react-bootstrap/Tabs";
 import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
 
@@ -14,6 +12,7 @@ interface PatchPreviewProps {
   preview: Preview
   onCubeablesClicked?: (cubeable: Cubeable, amount: number) => void
   onNodeClicked?: (node: ConstrainedNode, multiplicity: number) => void
+  onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
   hover: boolean
 }
 
@@ -24,6 +23,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
   };
 
   render() {
+    console.log('on node edit', this.props.onNodeEdit);
     return <Card>
       <Card.Header>
         <Row>
@@ -58,6 +58,8 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
             <ConstrainedNodesView
               constrainedNodes={this.props.preview.constrainedNodes}
               onNodeClick={this.props.onNodeClicked}
+              // onNodeEdit={this.props.onNodeEdit}
+              onNodeEdit={undefined}
             />
           </Tab>
         </Tabs>
