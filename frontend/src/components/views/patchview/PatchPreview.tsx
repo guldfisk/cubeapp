@@ -58,8 +58,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
             <ConstrainedNodesView
               constrainedNodes={this.props.preview.constrainedNodes}
               onNodeClick={this.props.onNodeClicked}
-              // onNodeEdit={this.props.onNodeEdit}
-              onNodeEdit={undefined}
+              onNodeEdit={this.props.onNodeEdit}
             />
           </Tab>
         </Tabs>

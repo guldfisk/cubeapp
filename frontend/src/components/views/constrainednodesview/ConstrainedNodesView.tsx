@@ -73,6 +73,12 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       },
     ];
 
+    if (!this.props.onNodeEdit) {
+      columns.forEach(
+        column => column.editable = false
+      )
+    }
+
     const data = this.props.constrainedNodes.nodes().items.sort(
       (a, b) => b[0].value - a[0].value
     ).map(
@@ -97,7 +103,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       condensed={true}
       bootstrap4={true}
       cellEdit={
-        !this.props.onNodeEdit ? undefined : cellEditFactory(
+        cellEditFactory(
           {
             mode: 'click',
             beforeSaveCell: (
