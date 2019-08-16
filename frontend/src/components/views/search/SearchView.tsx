@@ -77,7 +77,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
         this.setState(
           {
             searchResults: response.data.results.map(
-              (printing: any) => new Printing(printing)
+              (printing: any) => Printing.fromRemote(printing)
             ),
             hits: response.data.count,
             offset,
@@ -240,7 +240,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
                         onClick={this.props.handleCardClicked as (printing: Cubeable) => void}
                       />
                     </td>
-                    <td>{printing.name()}</td>
+                    <td>{printing.name}</td>
                   </tr>
                 }
               )

@@ -3,88 +3,110 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
-import {instanceOf, node} from "prop-types";
 
 
 export const apiPath = '/api/';
 
 
-export class Model {
-  _wrapping: any;
+export class Atomic {
+  id: string;
 
-  constructor(wrapping: any) {
-    this._wrapping = wrapping
+  constructor(id: string) {
+    this.id = id
   }
 
-  id = (): string => {
-    return this._wrapping.id
-  }
-
-}
-
-
-export class Cubeable extends Model {
-
-  constructor(cubeable: any) {
-    super(cubeable);
-  }
-
-  type = (): string => {
-    return this._wrapping.type
+  public static fromRemote(remote: any): Atomic {
+    return new Atomic('0')
   }
 
 }
 
 
-export class Expansion extends Model {
+export class Cubeable extends Atomic {
+  type: string;
+
+  constructor(id: string, type: string) {
+    super(id);
+    this.type = type;
+  }
+
+}
+
+
+export class Expansion extends Atomic {
+  code: string;
+  name: string;
+
+  constructor(id: string, code: string, name: string) {
+    super(id);
+    this.code = code;
+    this.name = name;
+  }
+
+  public static fromRemote(remote: any): Expansion {
+    return new Expansion(remote.id, remote.code, remote.name)
+  }
+
 }
 
 export class Printing extends Cubeable {
+  name: string;
+  expansion: Expansion;
+  color: string[];
+  types: string[];
 
-  constructor(printing: any) {
-    super(printing);
+  constructor(id: string, name: string, expansion: Expansion, color: string[], types: string[]) {
+    super(id, 'printing');
+    this.name = name;
+    this.expansion = expansion;
+    this.color = color;
+    this.types = types;
   }
 
-  name = (): string => {
-    return this._wrapping.name;
-  };
-
-  expansion = (): any => {
-    return this._wrapping.expansion
-  };
-
-  color = (): string => {
-    return this._wrapping.color;
-  };
-
-  types = (): string[] => {
-    return this._wrapping.types;
-  };
+  public static fromRemote(remote: any): Printing {
+    return new Printing(
+      remote.id,
+      remote.name,
+      Expansion.fromRemote(remote.expansion),
+      remote.color,
+      remote.types,
+    )
+  }
 
   full_name = (): string => {
-    return this.name() + '|' + this._wrapping.expansion.code;
+    return this.name + '|' + this.expansion.code;
   };
 
 }
 
 
-export class PrintingNode extends Cubeable {
-  _children: MultiplicityList<Printing | PrintingNode>;
+export class PrintingNode extends Atomic {
+  children: MultiplicityList<Printing | PrintingNode>;
+  type: string;
 
-  constructor(node: any) {
-    super(node);
-    this._children = new MultiplicityList(
-      node.children.map(
-        ([child, multiplicity]: [any, number]) => [
-          child.type === 'printing' ? new Printing(child) : new PrintingNode(child),
-          multiplicity,
-        ]
-      )
+  constructor(id: string, children: MultiplicityList<Printing | PrintingNode>, type: string) {
+    super(id);
+    this.children = children;
+    this.type = type;
+  }
+
+  public static fromRemote(remote: any): PrintingNode {
+    return new PrintingNode(
+      remote.id,
+      new MultiplicityList(
+        remote.children.map(
+          ([child, multiplicity]: [any, number]) => [
+            child.type === 'printing' ? Printing.fromRemote(child) : PrintingNode.fromRemote(child),
+            multiplicity,
+          ]
+        )
+      ),
+      remote.type
     )
   }
 
   * printings(): IterableIterator<Printing> {
-    for (const [child, multiplicity] of this._children.items) {
+    for (const [child, multiplicity] of this.children.items) {
       for (let i = 0; i < multiplicity; i++) {
         if (child instanceof Printing) {
           yield child
@@ -95,26 +117,22 @@ export class PrintingNode extends Cubeable {
     }
   };
 
-  children = (): MultiplicityList<Printing | PrintingNode> => {
-    return this._children
-  };
-
   representation = (): string => {
-    return '(' + this._children.items.map(
+    return '(' + this.children.items.map(
       ([child, multiplicity]: [Printing | PrintingNode, number]) =>
         (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
         + (child instanceof Printing ? child.full_name() : child.representation())
     ).join(
-      this.type() === 'AllNode' ? '; ' : ' || '
+      this.type === 'AllNode' ? '; ' : ' || '
     ) + ')'
   };
 
   serialize = (): any => {
     return {
-      type: this.type(),
-      options: this._children.items.map(
+      type: this.type,
+      options: this.children.items.map(
         ([child, multiplicity]) => [
-          child instanceof Printing ? child.id() : child.serialize(),
+          child instanceof Printing ? child.id : child.serialize(),
           multiplicity,
         ]
       )
@@ -125,25 +143,27 @@ export class PrintingNode extends Cubeable {
 
 
 export class Trap extends Cubeable {
-  _node: PrintingNode;
+  node: PrintingNode;
+  intentionType: string;
 
-  constructor(trap: any) {
-    super(trap);
-    this._node = new PrintingNode(trap.node)
+  constructor(id: string, node: PrintingNode, intentionType: string) {
+    super(id, 'trap');
+    this.node = node;
+    this.intentionType = intentionType;
   }
 
-  node = (): PrintingNode => {
-    return this._node
-  };
-
-  intentionType = (): string => {
-    return this._wrapping.intention_type
-  };
+  public static fromRemote(remote: any): Trap {
+    return new Trap(
+      remote.id,
+      PrintingNode.fromRemote(remote.node),
+      remote.intention_type,
+    )
+  }
 
   serialize = (): any => {
     return {
-      node: this._node.serialize(),
-      intention_type: this.intentionType(),
+      node: this.node.serialize(),
+      intention_type: this.intentionType,
     }
   };
 
@@ -161,44 +181,42 @@ export class Trap extends Cubeable {
         }
       },
     ).then(
-      trap => new Trap(trap.data)
+      response => Trap.fromRemote(response.data)
     )
   }
 
 }
 
 export class Ticket extends Cubeable {
-
-  constructor(ticket: any) {
-    super(ticket);
-
-  };
-
 }
 
 
 export class Purple extends Cubeable {
+  name: string;
 
-  constructor(purple: any) {
-    super(purple);
+  constructor(id: string, name: string) {
+    super(id, 'ticket');
+    this.name = name;
   }
 
-  name = (): string => {
-    return this._wrapping.name
-  };
+  public static fromRemote(remote: any): Purple {
+    return new Purple(remote.id, remote.name)
+  }
 
 }
 
 
-export class User extends Model {
+export class User extends Atomic {
+  username: string;
 
-  constructor(user: any) {
-    super(user);
+  constructor(id: string, username: string) {
+    super(id);
+    this.username = username;
   }
 
-  username = (): string => {
-    return this._wrapping.username
-  };
+  public static fromRemote(remote: any): User {
+    return new User(remote.id, remote.username)
+  }
 
   static all = (): Promise<User[]> => {
     // TODO pagination lol
@@ -206,7 +224,7 @@ export class User extends Model {
       apiPath + 'users/'
     ).then(
       response => response.data.results.map(
-        (user: any) => new User(user)
+        (user: any) => User.fromRemote(user)
       )
     )
   };
@@ -215,36 +233,36 @@ export class User extends Model {
     return axios.get(
       apiPath + 'users/' + id + '/'
     ).then(
-      response => new User(response.data)
+      response => User.fromRemote(response.data)
     )
   };
 
 }
 
 
-export class MinimalCube extends Model {
-  _author: User;
+export class MinimalCube extends Atomic {
+  name: string;
+  description: string;
+  author: User;
+  createdAt: string;
 
-  constructor(cube: any) {
-    super(cube);
-    this._author = new User(cube.author);
+  constructor(id: string, name: string, description: string, author: User, createdAt: string) {
+    super(id);
+    this.name = name;
+    this.description = description;
+    this.author = author;
+    this.createdAt = createdAt;
   }
 
-  name = (): string => {
-    return this._wrapping.name
-  };
-
-  description = (): string => {
-    return this._wrapping.description;
-  };
-
-  author = (): User => {
-    return this._author
-  };
-
-  createdAt = (): string => {
-    return this._wrapping.created_at
-  };
+  public static fromRemote(remote: any): MinimalCube {
+    return new MinimalCube(
+      remote.id,
+      remote.name,
+      remote.description,
+      User.fromRemote(remote.author),
+      remote.created_at,
+    )
+  }
 
 }
 
@@ -254,25 +272,40 @@ interface PaginationResponse<T> {
   hits: number
 }
 
-export class Cube extends MinimalCube {
-  _releases: CubeReleaseMeta[];
 
-  constructor(cube: any) {
-    super(cube);
-    this._releases = this._wrapping.releases.map(
-      (release: any) => new CubeReleaseMeta(release)
-    );
+export class Cube extends MinimalCube {
+  releases: CubeReleaseMeta[];
+
+  constructor(
+    id: string,
+    name: string,
+    description: string,
+    author: User,
+    createdAt: string,
+    releases: CubeReleaseMeta[],
+  ) {
+    super(id, name, description, author, createdAt);
+    this.releases = releases;
   }
 
-  releases = (): CubeReleaseMeta[] => {
-    return this._releases
-  };
+  public static fromRemote(remote: any) {
+    return new Cube(
+      remote.id,
+      remote.name,
+      remote.description,
+      User.fromRemote(remote.author),
+      remote.created_at,
+      remote.releases.map(
+        (release: any) => CubeReleaseMeta.fromRemote(release)
+      )
+    )
+  }
 
   latestRelease = (): (CubeReleaseMeta | null) => {
-    if (this._releases.length < 1) {
+    if (this.releases.length < 1) {
       return null;
     }
-    return this._releases[0];
+    return this.releases[0];
   };
 
   static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<Cube>> => {
@@ -288,7 +321,7 @@ export class Cube extends MinimalCube {
       response => {
         return {
           objects: response.data.results.map(
-            (cube: any) => new Cube(cube)
+            (cube: any) => Cube.fromRemote(cube)
           ),
           hits: response.data.count,
         }
@@ -300,29 +333,32 @@ export class Cube extends MinimalCube {
     return axios.get(
       apiPath + 'versioned-cubes/' + id + '/'
     ).then(
-      response => new Cube(response.data)
+      response => Cube.fromRemote(response.data)
     )
   };
 
 }
 
 
-export class CubeReleaseMeta extends Model {
+export class CubeReleaseMeta extends Atomic {
+  name: string;
+  createdAt: string;
+  intendedSize: string;
 
-  constructor(release: any) {
-    super(release);
+  constructor(id: string, name: string, createdAt: string, intendedSize: string) {
+    super(id);
+    this.name = name;
+    this.createdAt = createdAt;
+    this.intendedSize = intendedSize;
   };
 
-  name = (): string => {
-    return this._wrapping.name
-  };
-
-  createdAt = (): string => {
-    return this._wrapping.created_at
-  };
-
-  intendedSize = (): number => {
-    return this._wrapping.intended_size
+  public static fromRemote(remote: any): CubeReleaseMeta {
+    return new CubeReleaseMeta(
+      remote.id,
+      remote.name,
+      remote.created_at,
+      remote.intended_size,
+    )
   };
 
 }
@@ -334,7 +370,7 @@ export class PrintingCollection extends MultiplicityList<Printing> {
     super(items);
     this.items.sort(
       alphabeticalPropertySortMethodFactory(
-        ([printing, _]: [Printing, number]) => printing.name().toString()
+        ([printing, _]: [Printing, number]) => printing.name.toString()
       )
     );
   }
@@ -342,7 +378,7 @@ export class PrintingCollection extends MultiplicityList<Printing> {
   public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
     let collector: Record<string, [Printing, number]> = {};
     for (const printing of printings) {
-      let key = printing.id().toString();
+      let key = printing.id.toString();
       if (collector[key] === undefined) {
         collector[key] = [printing, 1]
       } else {
@@ -357,32 +393,32 @@ export class PrintingCollection extends MultiplicityList<Printing> {
   printings_of_color = (color: string): [Printing, number][] => {
     return this.items.filter(
       ([printing, _]: [Printing, number]) =>
-        !printing.types().includes('Land')
-        && printing.color().length === 1
-        && printing.color()[0] === color
+        !printing.types.includes('Land')
+        && printing.color.length === 1
+        && printing.color[0] === color
     )
   };
 
   gold_printings = (): [Printing, number][] => {
     return this.items.filter(
       ([printing, _]: [Printing, number]) =>
-        !printing.types().includes('Land')
-        && printing.color().length > 1
+        !printing.types.includes('Land')
+        && printing.color.length > 1
     )
   };
 
   colorless_printings = (): [Printing, number][] => {
     return this.items.filter(
       ([printing, _]: [Printing, number]) =>
-        !printing.types().includes('Land')
-        && printing.color().length === 0
+        !printing.types.includes('Land')
+        && printing.color.length === 0
     )
   };
 
   land_printings = (): [Printing, number][] => {
     return this.items.filter(
       ([printing, _]: [Printing, number]) =>
-        printing.types().includes('Land')
+        printing.types.includes('Land')
     )
   };
 
@@ -403,79 +439,76 @@ export class PrintingCollection extends MultiplicityList<Printing> {
 
 
 export class CubeablesContainer {
-  _printings: PrintingCollection;
-  _traps: MultiplicityList<Trap>;
-  _tickets: MultiplicityList<Ticket>;
-  _purples: MultiplicityList<Purple>;
+  printings: PrintingCollection;
+  traps: MultiplicityList<Trap>;
+  tickets: MultiplicityList<Ticket>;
+  purples: MultiplicityList<Purple>;
 
-  constructor(cube: any) {
-    this._printings = new PrintingCollection(
-      cube.printings.map(
-        ([printing, multiplicity]: [Trap, number]) => [new Printing(printing), multiplicity]
-      )
-    );
-    this._traps = new MultiplicityList(
-      cube.traps.map(
-        ([trap, multiplicity]: [Trap, number]) => [new Trap(trap), multiplicity]
-      )
-    );
-    this._tickets = new MultiplicityList(
-      cube.tickets.map(
-        ([ticket, multiplicity]: [Trap, number]) => [new Ticket(ticket), multiplicity]
-      )
-    );
-    this._purples = new MultiplicityList(
-      cube.purples.map(
-        ([purple, multiplicity]: [Trap, number]) => [new Purple(purple), multiplicity]
-      )
-    );
-
+  constructor(
+    printings: PrintingCollection,
+    traps: MultiplicityList<Trap>,
+    tickets: MultiplicityList<Ticket>,
+    purples: MultiplicityList<Purple>,
+  ) {
+    this.printings = printings;
+    this.traps = traps;
+    this.tickets = tickets;
+    this.purples = purples;
   }
 
-  printings = (): PrintingCollection => {
-    return this._printings
-  };
-
-  traps = (): MultiplicityList<Trap> => {
-    return this._traps;
-  };
-
-  tickets = (): MultiplicityList<Ticket> => {
-    return this._tickets;
-  };
-
-  purples = (): MultiplicityList<Purple> => {
-    return this._purples;
-  };
+  public static fromRemote(remote: any): CubeablesContainer {
+    return new CubeablesContainer(
+      new PrintingCollection(
+        remote.printings.map(
+          ([printing, multiplicity]: [Trap, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+      new MultiplicityList(
+        remote.traps.map(
+          ([trap, multiplicity]: [Trap, number]) => [Trap.fromRemote(trap), multiplicity]
+        )
+      ),
+      new MultiplicityList(
+        remote.tickets.map(
+          ([ticket, multiplicity]: [Trap, number]) => [Ticket.fromRemote(ticket), multiplicity]
+        )
+      ),
+      new MultiplicityList(
+        remote.purples.map(
+          ([purple, multiplicity]: [Trap, number]) => [Purple.fromRemote(purple), multiplicity]
+        )
+      ),
+    )
+  }
 
   * allPrintings(): IterableIterator<Printing> {
-    yield* this._printings.iter();
-    for (const trap of this._traps.iter()) {
-      yield* trap.node().printings()
+    yield* this.printings.iter();
+    for (const trap of this.traps.iter()) {
+      yield* trap.node.printings()
     }
   };
 
   * laps(): IterableIterator<[Cubeable, number]> {
-    yield* this._traps.items;
-    yield* this._tickets.items;
-    yield* this._purples.items;
+    yield* this.traps.items;
+    yield* this.tickets.items;
+    yield* this.purples.items;
   };
 
   * cubeables(): IterableIterator<[Cubeable, number]> {
-    yield* this._printings.items;
+    yield* this.printings.items;
     yield* this.laps();
   };
 
   * allCubeables(): IterableIterator<Cubeable> {
-    yield* this.printings().iter();
-    yield* this.traps().iter();
-    yield* this.tickets().iter();
-    yield* this.purples().iter();
+    yield* this.printings.iter();
+    yield* this.traps.iter();
+    yield* this.tickets.iter();
+    yield* this.purples.iter();
   };
 
   traps_of_intention_type = (intention_type: string): [Trap, number][] => {
-    return this.traps().items.filter(
-      ([trap, multiplicity]: [Trap, number]) => trap.intentionType() === intention_type
+    return this.traps.items.filter(
+      ([trap, multiplicity]: [Trap, number]) => trap.intentionType === intention_type
     )
   };
 
@@ -483,14 +516,14 @@ export class CubeablesContainer {
     return [
       this.traps_of_intention_type('GARBAGE'),
       this.traps_of_intention_type('SYNERGY'),
-      this.tickets().items,
-      this.purples().items,
+      this.tickets.items,
+      this.purples.items,
     ]
   };
 
   grouped_cubeables = (): [Cubeable, number][][] => {
     return (
-      this._printings.grouped_printings() as [Cubeable, number][][]
+      this.printings.grouped_printings() as [Cubeable, number][][]
     ).concat(
       this.grouped_laps(),
     )
@@ -500,36 +533,36 @@ export class CubeablesContainer {
 
 
 export class CubeRelease extends CubeReleaseMeta {
-  _cube: MinimalCube;
-  _constrained_nodes: ConstrainedNodes | null;
-  _cubeablesContainer: CubeablesContainer;
+  cube: MinimalCube;
+  cubeablesContainer: CubeablesContainer;
+  constrainedNodes: ConstrainedNodes | null;
 
-  constructor(release: any) {
-    super(release);
-
-    this._cube = new MinimalCube(release.versioned_cube);
-
-    this._cubeablesContainer = new CubeablesContainer(release.cube_content);
-
-    this._constrained_nodes = (
-      release.constrained_nodes === null ?
-        null :
-        new ConstrainedNodes(release.constrained_nodes.constrained_nodes_content.nodes)
-    );
+  constructor(
+    id: string,
+    name: string,
+    createdAt: string,
+    intendedSize: string,
+    cube: MinimalCube,
+    cubeablesContainer: CubeablesContainer,
+    constrainedNodes: ConstrainedNodes | null,
+  ) {
+    super(id, name, createdAt, intendedSize);
+    this.cube = cube;
+    this.constrainedNodes = constrainedNodes;
+    this.cubeablesContainer = cubeablesContainer;
   }
 
-  cube = (): MinimalCube => {
-    return this._cube
-  };
-
-  cubeablesContainer = (): CubeablesContainer => {
-    return this._cubeablesContainer
-  };
-
-  constrainedNodes = (): ConstrainedNodes | null => {
-    return this._constrained_nodes
-  };
-
+  public static fromRemote(remote: any) {
+    return new CubeRelease(
+      remote.id,
+      remote.name,
+      remote.created_at,
+      remote.intended_size,
+      MinimalCube.fromRemote(remote.versioned_cube),
+      CubeablesContainer.fromRemote(remote.cube_content),
+      new ConstrainedNodes(remote.constrained_nodes.constrained_nodes_content.nodes)
+    )
+  }
 
   static all = (): Promise<CubeRelease[]> => {
     // TODO pagination lol
@@ -537,7 +570,7 @@ export class CubeRelease extends CubeReleaseMeta {
       apiPath + 'cube-releases/'
     ).then(
       response => response.data.results.map(
-        (release: any) => new CubeRelease(release)
+        (release: any) => CubeRelease.fromRemote(release)
       )
     )
   };
@@ -546,13 +579,13 @@ export class CubeRelease extends CubeReleaseMeta {
     return axios.get(
       apiPath + 'cube-releases/' + id + '/'
     ).then(
-      response => new CubeRelease(response.data)
+      response => CubeRelease.fromRemote(response.data)
     )
   };
 
   filter = (query: string, flattened: boolean = false): Promise<CubeablesContainer> => {
     return axios.get(
-      apiPath + 'cube-releases/' + this.id() + '/filter/',
+      apiPath + 'cube-releases/' + this.id + '/filter/',
       {
         params: {
           query,
@@ -560,7 +593,7 @@ export class CubeRelease extends CubeReleaseMeta {
         }
       }
     ).then(
-      response => new CubeablesContainer(response.data)
+      response => CubeablesContainer.fromRemote(response.data)
     )
   }
 
@@ -571,91 +604,120 @@ export class Preview {
   cubeables: CubeablesContainer;
   constrainedNodes: ConstrainedNodes;
 
-  constructor(preview: any) {
-    this.cubeables = new CubeablesContainer(preview.cube);
-    this.constrainedNodes = new ConstrainedNodes(preview.nodes.constrained_nodes_content.nodes);
+  constructor(cubeables: CubeablesContainer, constrainedNodes: ConstrainedNodes) {
+    this.cubeables = cubeables;
+    this.constrainedNodes = constrainedNodes;
+  }
+
+  public static fromRemote(remote: any): Preview {
+    return new Preview(
+      CubeablesContainer.fromRemote(remote.cube),
+      new ConstrainedNodes(remote.nodes.constrained_nodes_content.nodes),
+    )
   }
 
 }
 
 
-export class Patch extends Model {
-  _author: User;
-  _cube: MinimalCube;
+export class Patch extends Atomic {
+  author: User;
+  cube: MinimalCube;
+  description: string;
+  createdAt: string;
   positiveCubeablesContainer: CubeablesContainer;
   negativeCubeablesContainer: CubeablesContainer;
 
   positiveConstrainedNodes: ConstrainedNodes;
   negativeConstrainedNodes: ConstrainedNodes;
 
-  constructor(patch: any) {
-    super(patch);
-    this._author = new User(patch.author);
-    this._cube = new MinimalCube(patch.versioned_cube);
-    this.positiveCubeablesContainer = new CubeablesContainer(
-      {
-        printings: patch.content.cube_delta.printings.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-        ),
-        traps: patch.content.cube_delta.traps.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-        ),
-        tickets: patch.content.cube_delta.tickets.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-        ),
-        purples: patch.content.cube_delta.purples.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-        ),
-      }
-    );
-    this.negativeCubeablesContainer = new CubeablesContainer(
-      {
-        printings: patch.content.cube_delta.printings.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-        ),
-        traps: patch.content.cube_delta.traps.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-        ),
-        tickets: patch.content.cube_delta.tickets.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-        ),
-        purples: patch.content.cube_delta.purples.filter(
-          ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-        ),
-      }
-    );
-
-    this.positiveConstrainedNodes = new ConstrainedNodes(
-      patch.content.node_delta.filter(
-        ([node, multiplicity]: [any, number]) => multiplicity > 0
-      )
-    );
-    this.negativeConstrainedNodes = new ConstrainedNodes(
-      patch.content.node_delta.filter(
-        ([node, multiplicity]: [any, number]) => multiplicity < 0
-      )
-    );
+  constructor(
+    id: string,
+    author: User,
+    cube: MinimalCube,
+    description: string,
+    createdAt: string,
+    positiveCubeablesContainer: CubeablesContainer,
+    negativeCubeablesContainer: CubeablesContainer,
+    positiveConstrainedNodes: ConstrainedNodes,
+    negativeConstrainedNodes: ConstrainedNodes,
+  ) {
+    super(id);
+    this.author = author;
+    this.cube = cube;
+    this.description = description;
+    this.createdAt = createdAt;
+    this.positiveCubeablesContainer = positiveCubeablesContainer;
+    this.negativeCubeablesContainer = negativeCubeablesContainer;
+    this.positiveConstrainedNodes = positiveConstrainedNodes;
+    this.negativeConstrainedNodes = negativeConstrainedNodes;
 
   }
 
-  description = (): string => {
-    return this._wrapping.description;
-  };
-
-  createdAt = (): string => {
-    return this._wrapping.created_at;
-  };
-
-  author = (): User => {
-    return this._author;
-  };
-
-  cube = (): MinimalCube => {
-    return this._cube;
-  };
+  public static fromRemote(remote: any): Patch {
+    return new Patch(
+      remote.id,
+      User.fromRemote(remote.author),
+      MinimalCube.fromRemote(remote.versioned_cube),
+      remote.description,
+      remote.created_at,
+      new CubeablesContainer(
+        new PrintingCollection(
+          remote.content.cube_delta.printings.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.traps.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.tickets.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.purples.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          )
+        ),
+      ),
+      new CubeablesContainer(
+        new PrintingCollection(
+          remote.content.cube_delta.printings.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.traps.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.tickets.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          )
+        ),
+        new MultiplicityList(
+          remote.content.cube_delta.purples.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          )
+        ),
+      ),
+      new ConstrainedNodes(
+        remote.content.node_delta.filter(
+          ([node, multiplicity]: [any, number]) => multiplicity > 0
+        )
+      ),
+      new ConstrainedNodes(
+        remote.content.node_delta.filter(
+          ([node, multiplicity]: [any, number]) => multiplicity < 0
+        )
+      ),
+    );
+  }
 
   update = (updates: [Cubeable | ConstrainedNode, number][]): Promise<Patch> => {
-    console.log('update with', updates);
     let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
       printings: [],
       traps: [],
@@ -666,7 +728,7 @@ export class Patch extends Model {
       if (update instanceof Printing) {
         cubeDelta.printings.push(
           [
-            update.id(),
+            update.id,
             multiplicity,
           ]
         );
@@ -687,16 +749,8 @@ export class Patch extends Model {
       }
     }
 
-    console.log(
-      'update',
-      {
-        cube_delta: cubeDelta,
-        nodes_delta: nodeDelta,
-      }
-    );
-
     return axios.patch(
-      apiPath + 'patches/' + this.id() + '/',
+      apiPath + 'patches/' + this.id + '/',
       {
         update: JSON.stringify(
           {
@@ -712,13 +766,13 @@ export class Patch extends Model {
         }
       },
     ).then(
-      response => new Patch(response.data)
+      response => Patch.fromRemote(response.data)
     )
   };
 
   delete = (): Promise<any> => {
     return axios.delete(
-      apiPath + 'patches/' + this.id() + '/',
+      apiPath + 'patches/' + this.id + '/',
       {
         headers: {
           "Content-Type": "application/json",
@@ -730,15 +784,15 @@ export class Patch extends Model {
 
   preview = (): Promise<Preview> => {
     return axios.get(
-      apiPath + 'patches/' + this.id() + '/preview/',
+      apiPath + 'patches/' + this.id + '/preview/',
     ).then(
-      response => new Preview(response.data)
+      response => Preview.fromRemote(response.data)
     )
   };
 
   apply = (): Promise<CubeRelease> => {
     return axios.post(
-      apiPath + 'patches/' + this.id() + '/apply/',
+      apiPath + 'patches/' + this.id + '/apply/',
       {},
       {
         headers: {
@@ -749,7 +803,7 @@ export class Patch extends Model {
         }
       },
     ).then(
-      response => new CubeRelease(response.data)
+      response => CubeRelease.fromRemote(response.data)
     )
   };
 
@@ -767,7 +821,7 @@ export class Patch extends Model {
         }
       },
     ).then(
-      response => new Patch(response.data)
+      response => Patch.fromRemote(response.data)
     )
   };
 
@@ -777,7 +831,7 @@ export class Patch extends Model {
       apiPath + 'patches/'
     ).then(
       response => response.data.results.map(
-        (delta: any) => new Patch(delta)
+        (patch: any) => Patch.fromRemote(patch)
       )
     )
   };
@@ -788,7 +842,7 @@ export class Patch extends Model {
       apiPath + 'versioned-cubes/' + cubeId + '/patches/'
     ).then(
       response => response.data.results.map(
-        (delta: any) => new Patch(delta)
+        (patch: any) => Patch.fromRemote(patch)
       )
     )
   };
@@ -797,39 +851,38 @@ export class Patch extends Model {
     return axios.get(
       apiPath + 'patches/' + id + '/'
     ).then(
-      response => new Patch(response.data)
+      response => Patch.fromRemote(response.data)
     )
   };
 
 }
 
 
-export class ConstrainedNode {
-  _node: PrintingNode;
+export class ConstrainedNode extends Atomic {
+  node: PrintingNode;
   value: number;
   groups: string[];
 
-  constructor(printingNode: PrintingNode, value: number, groups: string[]) {
-    this._node = printingNode;
+  constructor(id: string, printingNode: PrintingNode, value: number, groups: string[]) {
+    super(id);
+    this.node = printingNode;
     this.value = value;
     this.groups = groups;
   }
 
-  public static fromRemote(constrainedNode: any): ConstrainedNode {
+  public static fromRemote(remote: any): ConstrainedNode {
     return new ConstrainedNode(
-      new PrintingNode(constrainedNode.node),
-      constrainedNode.value,
-      constrainedNode.groups,
+      remote.id,
+      PrintingNode.fromRemote(remote.node),
+      remote.value,
+      remote.groups,
     )
   };
 
-  node = (): PrintingNode => {
-    return this._node;
-  };
 
   serialize = (): any => {
     return {
-      node: this._node.serialize(),
+      node: this.node.serialize(),
       value: this.value,
       groups: this.groups,
     }

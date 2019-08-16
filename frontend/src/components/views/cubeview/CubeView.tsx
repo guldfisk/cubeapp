@@ -19,8 +19,8 @@ class CubeView extends React.Component<CubeViewProps> {
       <Card.Header className="panel-heading">
         <Row>
           <h4>
-            <span className="badge badge-secondary">{this.props.cube.name()}</span>
-            <span className="badge badge-secondary">{this.props.cube.createdAt()}</span>
+            <span className="badge badge-secondary">{this.props.cube.name}</span>
+            <span className="badge badge-secondary">{this.props.cube.createdAt}</span>
           </h4>
         </Row>
       </Card.Header>
@@ -35,16 +35,16 @@ class CubeView extends React.Component<CubeViewProps> {
           </thead>
           <tbody>
           {
-            this.props.cube.releases().map(
+            this.props.cube.releases.map(
               release => {
                 return <tr>
                   <td>
-                    <Link to={"/release/" + release.id()}>
-                      {release.name()}
+                    <Link to={"/release/" + release.id}>
+                      {release.name}
                     </Link>
                   </td>
-                  <td>{release.createdAt()}</td>
-                  <td>{release.intendedSize()}</td>
+                  <td>{release.createdAt}</td>
+                  <td>{release.intendedSize}</td>
                 </tr>
               }
             )

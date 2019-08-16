@@ -12,6 +12,7 @@ interface DeltasViewProps {
 class PatchesView extends React.Component<DeltasViewProps> {
 
   render() {
+    console.log(this.props.patches);
 
     return <Table>
       <thead>
@@ -26,13 +27,13 @@ class PatchesView extends React.Component<DeltasViewProps> {
         this.props.patches.map(
           delta => {
             return <tr>
-              <td>{delta.description()}</td>
+              <td>{delta.description}</td>
               <td>
-                 <Link to={"/patch/" + delta.id()}>
-                   {delta.author().username()}
+                 <Link to={"/patch/" + delta.id}>
+                   {delta.author.username}
                  </Link>
               </td>
-              <td>{delta.createdAt()}</td>
+              <td>{delta.createdAt}</td>
             </tr>
           }
         )

@@ -54,12 +54,12 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
             release={this.state.release}
           />
         </Tab>
-        <Tab eventKey="nodes" title="Nodes" disabled={this.state.release.constrainedNodes() == null}>
+        <Tab eventKey="nodes" title="Nodes" disabled={this.state.release.constrainedNodes == null}>
           {
-            this.state.release.constrainedNodes() == null ?
+            this.state.release.constrainedNodes == null ?
               <div/> :
               <ConstrainedNodesView
-                constrainedNodes={this.state.release.constrainedNodes()}
+                constrainedNodes={this.state.release.constrainedNodes}
               />
           }
         </Tab>

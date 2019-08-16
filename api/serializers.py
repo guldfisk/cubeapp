@@ -49,6 +49,7 @@ class ExpansionSerializer(ModelSerializer[Expansion]):
             'block': None if expansion.block is None else expansion.block.name,
             'release_date': expansion.release_date,
             'type': 'expansion',
+            'id': expansion.code,
         }
 
 
@@ -90,6 +91,7 @@ class CardSerializer(ModelSerializer[Card]):
     def serialize(cls, card: Card) -> compacted_model:
         return {
             'name': card.name,
+            'id': card.name,
             'oracle_text': card.oracle_text,
             'mana_cost': (
                 None
@@ -136,6 +138,7 @@ class CardboardSerializer(ModelSerializer[Cardboard]):
     def serialize(cls, cardboard: Cardboard) -> compacted_model:
         return {
             'name': cardboard.name,
+            'id': cardboard.name,
             'front_cards': [
                 CardSerializer.serialize(card)
                 for card in
@@ -156,6 +159,7 @@ class MinimalCardboardSerializer(ModelSerializer[Cardboard]):
     def serialize(cls, cardboard: Cardboard) -> compacted_model:
         return {
             'name': cardboard.name,
+            'id': cardboard.name,
         }
 
 
@@ -191,6 +195,7 @@ class NodeSerializer(ModelSerializer):
                 for child, multiplicity in
                 printing_node.children.items()
             ],
+            'id': printing_node.persistent_hash(),
         }
 
 

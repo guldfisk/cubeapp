@@ -30,14 +30,14 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
     this.state = {
       viewType: 'List',
       cubeableType: 'Cubeables',
-      cubeablesContainer: props.release.cubeablesContainer(),
+      cubeablesContainer: props.release.cubeablesContainer,
     }
   }
 
   handleFilterSubmit = (event: any) => {
     const query = event.target.elements.query.value;
     if (query === "") {
-      this.setState({cubeablesContainer: this.props.release.cubeablesContainer()});
+      this.setState({cubeablesContainer: this.props.release.cubeablesContainer});
     } else {
       this.props.release.filter(
         // encodeURIComponent(query),
@@ -70,20 +70,20 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
         <Row>
           <h4>
             <span className="badge badge-secondary">
-              <Link to={'/cube/' + this.props.release.cube().id()}>
-                {this.props.release.cube().name()}
+              <Link to={'/cube/' + this.props.release.cube.id}>
+                {this.props.release.cube.name}
               </Link>
             </span>
-            <span className="badge badge-secondary">{this.props.release.name()}</span>
-            <span className="badge badge-secondary">{this.props.release.createdAt()}</span>
+            <span className="badge badge-secondary">{this.props.release.name}</span>
+            <span className="badge badge-secondary">{this.props.release.createdAt}</span>
             <span className="badge badge-secondary">
               {
                 `${
                   Array.from(
-                    this.props.release.cubeablesContainer().allCubeables()
+                    this.props.release.cubeablesContainer.allCubeables()
                   ).length
                   }/${
-                  this.props.release.intendedSize()
+                  this.props.release.intendedSize
                   }`
               }
             </span>

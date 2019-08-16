@@ -23,7 +23,6 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
   };
 
   render() {
-    console.log('on node edit', this.props.onNodeEdit);
     return <Card>
       <Card.Header>
         <Row>

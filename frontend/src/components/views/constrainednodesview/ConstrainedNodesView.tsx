@@ -80,18 +80,26 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
     }
 
     const data = this.props.constrainedNodes.nodes().items.sort(
-      (a, b) => b[0].value - a[0].value
+      (a, b) => {
+        const valueDifference = b[0].value - a[0].value;
+        if (valueDifference === 0) {
+          const aNode = a[0].node.representation().toLowerCase();
+          const bNode = b[0].node.representation().toLowerCase();
+          return aNode > bNode ? -1 : aNode < bNode ? 1 : 0;
+        }
+        return valueDifference;
+      }
     ).map(
       ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
         return {
           qty: multiplicity,
           node: <NodeListItem
-            node={constrainedNode.node()}
+            node={constrainedNode.node}
             onClick={(node, multiplicity) => this.props.onNodeClick(constrainedNode, multiplicity)}
           />,
           value: constrainedNode.value,
           groups: constrainedNode.groups.join(', '),
-          key: constrainedNode.node().representation()
+          key: constrainedNode.node.representation()
         }
       }
     );
@@ -112,13 +120,19 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                   return;
                 }
                 const oldNode = new ConstrainedNode(
+                  '0',
                   row.node.props.node,
                   row.value,
                   row.groups.split(',').map(
                     (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
                   )
                 );
-                const newNode = {...oldNode};
+                const newNode = new ConstrainedNode(
+                  '0',
+                  oldNode.node,
+                  oldNode.value,
+                  oldNode.groups,
+                );
                 if (column.dataField === 'value') {
                   newNode.value = newValue
                 } else if (column.dataField == 'groups') {

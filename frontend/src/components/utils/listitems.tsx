@@ -34,7 +34,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
   return <span>
     <a
       data-tip=""
-      data-for={props.printing.id().toString()}
+      data-for={props.printing.id.toString()}
       onClick={
         props.onClick && (
           () => {
@@ -49,7 +49,7 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
       place="top"
       type="dark"
       effect="float"
-      id={props.printing.id().toString()}
+      id={props.printing.id.toString()}
       className="printing-list-tooltip"
     >
       <CubeableImage
@@ -68,8 +68,8 @@ const trap_representation = (
   if (item instanceof Printing) {
     const tooltipId = (
       trap === undefined ?
-        item.id().toString()
-        : trap.id().toString() + item.id().toString()
+        item.id.toString()
+        : trap.id.toString() + item.id.toString()
     );
     return <span>
     <a
@@ -110,10 +110,10 @@ const trap_representation = (
   >
     (
     {
-      item.children().items.map(
+      item.children.items.map(
         ([child, _multiplicity]) => trap_representation([child, _multiplicity], trap)
       ).reduce(
-        (previous, current) => previous.concat([current, item.type() === 'AllNode' ? '; ' : ' || ']),
+        (previous, current) => previous.concat([current, item.type === 'AllNode' ? '; ' : ' || ']),
         [],
       ).slice(0, -1)
     }
@@ -144,12 +144,12 @@ export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemPr
       }
     >
       {multiplicityIndicator}
-      {props.trap.node().representation()}
+      {props.trap.node.representation()}
     </a>
   }
   return <span>
     {multiplicityIndicator}
-    {trap_representation([props.trap.node(), props.multiplicity], props.trap, props.onClick)}
+    {trap_representation([props.trap.node, props.multiplicity], props.trap, props.onClick)}
   </span>
 };
 
@@ -202,7 +202,7 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
     content = 'ticket';
 
   } else if (props.cubeable instanceof Purple) {
-    content = (props.cubeable as Purple).name();
+    content = props.cubeable.name;
 
   } else {
     content = 'Unknown cubeable type';

@@ -103,7 +103,7 @@ export default class PatchPage extends React.Component<DeltaPageProps, DeltaPage
   handleDeletePatch = () => {
     this.state.patch.delete().then(
       () => {
-        history.push('/cube/' + this.state.patch.cube().id() + '/patches/')
+        history.push('/cube/' + this.state.patch.cube.id + '/patches/')
       }
     )
   };

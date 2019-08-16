@@ -21,8 +21,8 @@ export const CubeableImage: React.FunctionComponent<CubeableImageProps> = (
   return <LazyImage
     src={
       get_cubeable_images_url(
-        cubeable === null ? id.toString() : cubeable.id(),
-        cubeable === null ? type : cubeable.type(),
+        cubeable === null ? id.toString() : cubeable.id,
+        cubeable === null ? type : cubeable.type,
         sizeSlug,
       )
     }

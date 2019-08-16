@@ -31,17 +31,17 @@ class CubesView extends React.Component<CubesViewProps> {
            (cube: Cube) => {
              return <tr>
                <td>
-                 <Link to={"/cube/" + cube.id()}>
-                   {cube.name()}
+                 <Link to={"/cube/" + cube.id}>
+                   {cube.name}
                  </Link>
                </td>
-               <td>{cube.description()}</td>
-               <td>{cube.author().username()}</td>
+               <td>{cube.description}</td>
+               <td>{cube.author.username}</td>
                <td>
                  {
                    cube.latestRelease() !== null ?
-                     <Link to={'/release/' + cube.latestRelease().id()}>
-                       {cube.latestRelease().name()}
+                     <Link to={'/release/' + cube.latestRelease().id}>
+                       {cube.latestRelease().name}
                      </Link>
                      :
                      "No releases"
@@ -50,13 +50,13 @@ class CubesView extends React.Component<CubesViewProps> {
                <td>
                   {
                     cube.latestRelease() !== null ?
-                      cube.latestRelease().createdAt()
+                      cube.latestRelease().createdAt
                       :
                       "No releases"
                   }
                </td>
-               <td>{cube.releases().length}</td>
-               <td>{cube.createdAt()}</td>
+               <td>{cube.releases.length}</td>
+               <td>{cube.createdAt}</td>
              </tr>
            }
          )

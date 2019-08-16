@@ -19,14 +19,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<RawC
        this.props.cubeablesContainer.allCubeables() :
         this.props.cubeablesContainer.allPrintings()
     );
-    return <div
-      // style={
-      //   {
-      //     display: 'flex',
-      //     flexWrap: 'wrap',
-      //   }
-      // }
-    >
+    return <div>
       {
         wu(pictured).map(
           (cubeable) => {

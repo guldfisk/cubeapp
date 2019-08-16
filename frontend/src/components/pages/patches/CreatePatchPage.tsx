@@ -81,7 +81,7 @@ export default class CreatePatchPage extends React.Component<CreatePatchPageProp
   render() {
     if (this.state.success) {
       return <Redirect
-        to={"/patch/" + this.state.patch.id()}
+        to={"/patch/" + this.state.patch.id}
       />
     }
 

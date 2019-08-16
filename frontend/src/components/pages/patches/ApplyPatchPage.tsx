@@ -74,7 +74,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
   render() {
     if (this.state.resultingRelease !== null) {
       return <Redirect
-        to={'/release/' + this.state.resultingRelease.id()}
+        to={'/release/' + this.state.resultingRelease.id}
       />
     }
 
