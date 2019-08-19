@@ -7,6 +7,7 @@ import CubeablesCollectionListView from "../../views/cubeablescollectionview/Cub
 import {Container} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {Redirect} from "react-router";
+import PatchPreview from "../../views/patchview/PatchPreview";
 
 
 interface DeltaPageProps {
@@ -72,7 +73,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
   };
 
   render() {
-    if (this.state.resultingRelease !== null) {
+    if (this.state.resultingRelease) {
       return <Redirect
         to={'/release/' + this.state.resultingRelease.id}
       />
@@ -80,31 +81,9 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
 
     let preview = <Loading/>;
     if (this.state.preview) {
-      preview = <Card>
-        <Card.Header>
-          <Row>
-            Preview
-            <span className="badge badge-secondary ml-auto">
-              {
-                `${
-                  Array.from(
-                    this.state.preview.cubeables.allCubeables()
-                  ).length
-                  }/${
-                  360
-                  }`
-              }
-            </span>
-          </Row>
-        </Card.Header>
-        <Card.Body>
-          <CubeablesCollectionListView
-            cubeableType="Cubeables"
-            rawCube={this.state.preview.cubeables}
-            noHover={true}
-          />
-        </Card.Body>
-      </Card>
+      preview = <PatchPreview
+        preview={this.state.preview}
+      />;
     }
 
     return <Container fluid>

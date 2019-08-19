@@ -16,7 +16,6 @@ import {loadUser} from "./auth/controller";
 import {Loading} from "./utils/utils";
 import SignInPage from './pages/authentication/SignInPage';
 import store from './state/store';
-import Breadcrumb from "react-bootstrap/Breadcrumb";
 
 
 interface RootProps {
@@ -28,6 +27,7 @@ interface RootProps {
   }
   loadUser: () => any
 }
+
 
 class RootComponent extends React.Component<RootProps> {
 
@@ -92,16 +92,16 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Cubes</Nav.Link>
             </LinkContainer>
 
-            <LinkContainer to='/search/'>
-              <Nav.Link>Search</Nav.Link>
-            </LinkContainer>
+            {/*<LinkContainer to='/search/'>*/}
+            {/*  <Nav.Link>Search</Nav.Link>*/}
+            {/*</LinkContainer>*/}
 
             <LinkContainer to='/create-cube/'>
               <Nav.Link>Create Cube</Nav.Link>
             </LinkContainer>
 
-            <LinkContainer to='/patches/'>
-              <Nav.Link>Patches</Nav.Link>
+            <LinkContainer to='/about/'>
+              <Nav.Link>About</Nav.Link>
             </LinkContainer>
 
           </Nav>

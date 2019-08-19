@@ -11,9 +11,8 @@ from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 # from django.core.mail import send_mail
 from django.template.loader import get_template
-from django.template.context import Context
 
-from rest_framework import status, generics, permissions, views
+from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -22,7 +21,6 @@ from knox.models import AuthToken
 
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.strategies.strategy import Strategy
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
@@ -36,12 +34,12 @@ from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.laps.traps.tree.parse import PrintingTreeParser, PrintingTreeParserException
-from magiccube.update.cubeupdate import CubeUpdater
 
 from cubeapp import settings
 
 from api import models
-from api import serializers
+from api.serialization import serializers
+from api.serialization import orpserialize
 from api.mail import send_mail
 
 from resources.staticdb import db
@@ -113,9 +111,9 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 class SearchView(generics.ListAPIView):
     _search_target_map = {
-        'printings': (PrintingStrategy, serializers.MinimalPrintingSerializer),
-        'cardboards': (CardboardStrategy, serializers.MinimalCardboardSerializer),
-    }  # type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], serializers.ModelSerializer]]
+        'printings': (PrintingStrategy, orpserialize.FullPrintingSerializer),
+        'cardboards': (CardboardStrategy, orpserialize.MinimalCardboardSerializer),
+    }  # type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], orpserialize.ModelSerializer]]
 
     def list(self, request, *args, **kwargs):
         try:
@@ -212,7 +210,7 @@ def filter_release_view(request: Request, pk: int) -> Response:
         )
 
     return Response(
-        serializers.CubeSerializer.serialize(
+        orpserialize.CubeSerializer.serialize(
             cube.filter(
                 pattern
             )
@@ -227,7 +225,7 @@ def printing_view(request: Request, printing_id: int):
         return Response('No printing with that id', status=status.HTTP_404_NOT_FOUND)
 
     return Response(
-        serializers.FullPrintingSerializer.serialize(printing)
+        orpserialize.FullPrintingSerializer.serialize(printing)
     )
 
 
@@ -443,6 +441,28 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(['GET'])
+def patch_verbose(request: Request, pk: int) -> Response:
+    try:
+        patch_model = models.CubePatch.objects.get(pk=pk)
+    except models.CubePatch.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    r = orpserialize.VerboseChangeSerializer.serialize(
+            JsonId(db).deserialize(
+                CubePatch,
+                patch_model.content,
+            ).as_verbose
+        )
+
+    print(r)
+
+    return Response(
+        r
+    )
+
+
+
+@api_view(['GET'])
 def patch_preview(request: Request, pk: int) -> Response:
     try:
         patch_model = models.CubePatch.objects.get(pk=pk)
@@ -464,11 +484,11 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     return Response(
         {
-            'cube': serializers.CubeSerializer.serialize(
+            'cube': orpserialize.CubeSerializer.serialize(
                 current_cube + cube_patch.cube_delta_operation,
             ),
             'nodes': {
-                'constrained_nodes_content': serializers.ConstrainedNodesOrpSerializer.serialize(
+                'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
                     (
                         JsonId(db).deserialize(
                             NodeCollection,
@@ -506,7 +526,7 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            serializers.ConstrainedNodeOrpSerializer.serialize(
+            orpserialize.ConstrainedNodeOrpSerializer.serialize(
                 constrained_node
             ),
             status=status.HTTP_200_OK,
@@ -536,7 +556,7 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            serializers.TrapSerializer.serialize(
+            orpserialize.TrapSerializer.serialize(
                 trap
             ),
             status=status.HTTP_200_OK,
@@ -589,6 +609,7 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
         )
 
 
+# TODO
 class CreateRevertPatchEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 

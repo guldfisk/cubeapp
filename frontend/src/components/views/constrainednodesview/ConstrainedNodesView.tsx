@@ -85,7 +85,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         if (valueDifference === 0) {
           const aNode = a[0].node.representation().toLowerCase();
           const bNode = b[0].node.representation().toLowerCase();
-          return aNode > bNode ? -1 : aNode < bNode ? 1 : 0;
+          return aNode > bNode ? -1 : aNode > bNode ? 1 : 0;
         }
         return valueDifference;
       }

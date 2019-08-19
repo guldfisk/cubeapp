@@ -22,6 +22,8 @@ class PatchView extends React.Component<DeltaViewProps, null> {
   }
 
   render() {
+    console.log(this.props.patch.positiveCubeablesContainer);
+    console.log(this.props.patch.negativeCubeablesContainer);
 
     return <Row>
       <Col>

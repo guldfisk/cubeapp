@@ -650,7 +650,6 @@ export class Patch extends Atomic {
     this.negativeCubeablesContainer = negativeCubeablesContainer;
     this.positiveConstrainedNodes = positiveConstrainedNodes;
     this.negativeConstrainedNodes = negativeConstrainedNodes;
-
   }
 
   public static fromRemote(remote: any): Patch {
@@ -664,21 +663,29 @@ export class Patch extends Atomic {
         new PrintingCollection(
           remote.content.cube_delta.printings.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.traps.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.tickets.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.purples.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
           )
         ),
       ),
@@ -686,21 +693,29 @@ export class Patch extends Atomic {
         new PrintingCollection(
           remote.content.cube_delta.printings.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.traps.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.tickets.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
           )
         ),
         new MultiplicityList(
           remote.content.cube_delta.purples.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
           )
         ),
       ),
