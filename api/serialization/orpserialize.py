@@ -348,14 +348,24 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
             isinstance(serializeable, klass)
             for klass in
             (
-                cubeupdate.NewPrinting,
-                cubeupdate.RemovedPrinting,
-                cubeupdate.PrintingToNode,
+                cubeupdate.NewCubeable,
+                cubeupdate.RemovedCubeable,
             )
         ):
+            if isinstance(serializeable.cubeable, Printing):
+                serializer = FullPrintingSerializer
+            elif isinstance(serializeable.cubeable, Trap):
+                serializer = TrapSerializer
+            elif isinstance(serializeable.cubeable, Ticket):
+                serializer = TicketSerializer
+            elif isinstance(serializeable.cubeable, Purple):
+                serializer = PurpleSerializer
+            else:
+                raise ValueError(serializeable)
+
             d = {
-                'printing': FullPrintingSerializer.serialize(
-                    serializeable.printing
+                'cubeable': serializer.serialize(
+                    serializeable.cubeable
                 ),
             }
 
@@ -365,12 +375,31 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
             (
                 cubeupdate.NewNode,
                 cubeupdate.RemovedNode,
-                cubeupdate.NodeToPrinting,
             )
         ):
             d = {
                 'node': ConstrainedNodeOrpSerializer.serialize(
                     serializeable.node
+                ),
+            }
+
+        elif isinstance(serializeable, cubeupdate.PrintingToNode):
+            d = {
+                'before': FullPrintingSerializer.serialize(
+                    serializeable.before
+                ),
+                'after': ConstrainedNodeOrpSerializer.serialize(
+                    serializeable.after
+                ),
+            }
+
+        elif isinstance(serializeable, cubeupdate.NodeToPrinting):
+            d = {
+                'before': ConstrainedNodeOrpSerializer.serialize(
+                    serializeable.before
+                ),
+                'after': FullPrintingSerializer.serialize(
+                    serializeable.after
                 ),
             }
 

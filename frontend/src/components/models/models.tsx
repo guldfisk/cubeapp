@@ -882,7 +882,9 @@ export class ConstrainedNode extends Atomic {
     super(id);
     this.node = printingNode;
     this.value = value;
-    this.groups = groups;
+    this.groups = groups.sort(
+      (a, b) => a.toLowerCase() > b.toLowerCase() ? 1 : a.toLowerCase() < b.toLowerCase() ? -1 : 0
+    );
   }
 
   public static fromRemote(remote: any): ConstrainedNode {
@@ -893,7 +895,6 @@ export class ConstrainedNode extends Atomic {
       remote.groups,
     )
   };
-
 
   serialize = (): any => {
     return {

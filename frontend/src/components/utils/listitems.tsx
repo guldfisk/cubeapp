@@ -157,9 +157,22 @@ export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemPr
 interface NodeListItemProps {
   node: PrintingNode
   onClick?: (node: PrintingNode, multiplicity: number) => void
+  noHover?: boolean
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
+  if (props.noHover) {
+    return <a
+      onClick={
+        props.onClick &&
+        (() => {
+          props.onClick(props.node, 1)
+        })
+      }
+    >
+      {props.node.representation()}
+    </a>
+  }
   return <span
     onClick={() => props.onClick(props.node, 1)}
   >

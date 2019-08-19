@@ -44,8 +44,9 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
         <Tabs
           id='preview-tabs'
           defaultActiveKey='cube'
+          mountOnEnter={true}
         >
-          <Tab eventKey='cube' title='Cube'>
+          <Tab eventKey='cube' title='Cube' transition={false}>
             <CubeablesCollectionListView
               cubeableType="Cubeables"
               rawCube={this.props.preview.cubeables}

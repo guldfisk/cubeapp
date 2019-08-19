@@ -12,8 +12,6 @@ interface DeltasViewProps {
 class PatchesView extends React.Component<DeltasViewProps> {
 
   render() {
-    console.log(this.props.patches);
-
     return <Table>
       <thead>
       <tr>

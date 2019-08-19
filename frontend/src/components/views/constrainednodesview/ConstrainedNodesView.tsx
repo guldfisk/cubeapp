@@ -1,8 +1,8 @@
 import React from 'react';
 
-import Table from "react-bootstrap/Table";
 import BootstrapTable from 'react-bootstrap-table-next';
 import cellEditFactory from 'react-bootstrap-table2-editor';
+import paginationFactory from 'react-bootstrap-table2-paginator';
 
 import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
 import {NodeListItem} from "../../utils/listitems";
@@ -14,6 +14,7 @@ interface ConstrainedNodesViewProps {
   constrainedNodes: ConstrainedNodes
   onNodeClick?: ((node: ConstrainedNode, multiplicity: number) => void) | null
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  noHover?: boolean
 }
 
 export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
@@ -57,6 +58,13 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
             message: 'Invalid number'
           }
         },
+        sort: true,
+        sortFunc: (a: number, b: number, order: string) => {
+          if (order === 'desc') {
+            return b - a;
+          }
+          return a - b;
+        }
       },
       {
         dataField: 'groups',
@@ -79,27 +87,18 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       )
     }
 
-    const data = this.props.constrainedNodes.nodes().items.sort(
-      (a, b) => {
-        const valueDifference = b[0].value - a[0].value;
-        if (valueDifference === 0) {
-          const aNode = a[0].node.representation().toLowerCase();
-          const bNode = b[0].node.representation().toLowerCase();
-          return aNode > bNode ? -1 : aNode > bNode ? 1 : 0;
-        }
-        return valueDifference;
-      }
-    ).map(
+    const data = this.props.constrainedNodes.nodes().items.map(
       ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
         return {
           qty: multiplicity,
           node: <NodeListItem
             node={constrainedNode.node}
             onClick={(node, multiplicity) => this.props.onNodeClick(constrainedNode, multiplicity)}
+            noHover={this.props.noHover}
           />,
           value: constrainedNode.value,
           groups: constrainedNode.groups.join(', '),
-          key: constrainedNode.node.representation()
+          key: constrainedNode.id,
         }
       }
     );
@@ -110,6 +109,23 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       columns={columns}
       condensed={true}
       bootstrap4={true}
+      defaultSorted={
+        [
+          {
+            dataField: 'value',
+            order: 'desc',
+          },
+        ]
+      }
+      pagination={
+        paginationFactory(
+          {
+            hidePageListOnlyOnePage: true,
+            showTotal: true,
+            sizePerPage: 30,
+          }
+        )
+      }
       cellEdit={
         cellEditFactory(
           {

@@ -2,8 +2,7 @@ import React from 'react';
 
 import '../../../styling/PatchView.css';
 
-import {PrintingListItem} from "../../utils/listitems";
-import {ConstrainedNode, Cubeable, Patch, Printing} from '../../models/models';
+import {ConstrainedNode, Cubeable, Patch} from '../../models/models';
 import Row from "react-bootstrap/Row";
 import {Col} from "react-bootstrap";
 import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
@@ -22,9 +21,6 @@ class PatchView extends React.Component<DeltaViewProps, null> {
   }
 
   render() {
-    console.log(this.props.patch.positiveCubeablesContainer);
-    console.log(this.props.patch.negativeCubeablesContainer);
-
     return <Row>
       <Col>
         <span className="add-view">
