@@ -3,6 +3,7 @@ import ReactTooltip from "react-tooltip";
 
 import {Cubeable, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
 import {CubeableImage} from "../images";
+import ListGroup from "react-bootstrap/ListGroup";
 
 
 interface PrintingListItemProps {
@@ -221,8 +222,11 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
     content = 'Unknown cubeable type';
   }
 
-  return <li>
+  return <ListGroup.Item
+    key={props.cubeable.id}
+    className="py-0"
+  >
     {content}
-  </li>
+  </ListGroup.Item>
 
 };

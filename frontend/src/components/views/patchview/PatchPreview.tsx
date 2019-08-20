@@ -13,6 +13,7 @@ interface PatchPreviewProps {
   onCubeablesClicked?: (cubeable: Cubeable, amount: number) => void
   onNodeClicked?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   hover: boolean
 }
 
@@ -45,6 +46,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
           id='preview-tabs'
           defaultActiveKey='cube'
           mountOnEnter={true}
+          unmountOnExit={false}
         >
           <Tab eventKey='cube' title='Cube' transition={false}>
             <CubeablesCollectionListView
@@ -52,6 +54,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               rawCube={this.props.preview.cubeables}
               onCubeableClicked={this.props.onCubeablesClicked}
               noHover={true}
+              noGarbage={true}
             />
           </Tab>
           <Tab eventKey='nodes' title='Nodes'>
@@ -59,6 +62,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               constrainedNodes={this.props.preview.constrainedNodes}
               onNodeClick={this.props.onNodeClicked}
               onNodeEdit={this.props.onNodeEdit}
+              onNodeQtyEdit={this.props.onNodeQtyEdit}
             />
           </Tab>
         </Tabs>

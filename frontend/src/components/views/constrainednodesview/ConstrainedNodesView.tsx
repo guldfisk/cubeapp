@@ -14,6 +14,7 @@ interface ConstrainedNodesViewProps {
   constrainedNodes: ConstrainedNodes
   onNodeClick?: ((node: ConstrainedNode, multiplicity: number) => void) | null
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   noHover?: boolean
 }
 
@@ -39,11 +40,28 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
             message: 'Invalid number'
           }
         },
+        sort: true,
+        sortFunc: (a: number, b: number, order: string) => {
+          if (order === 'desc') {
+            return b - a;
+          }
+          return a - b;
+        },
       },
       {
         dataField: 'node',
         text: 'Node',
         editable: false,
+        sort: true,
+        sortFunc: (a: any, b: any, order: string) => {
+          const aLow = a.props.node.representation().toLowerCase();
+          const bLow = b.props.node.representation().toLowerCase();
+
+          if (order === 'desc') {
+            return aLow > bLow ? 1 : aLow < bLow ? -1 : 0;
+          }
+          return aLow > bLow ? -1 : aLow < bLow ? 1 : 0;
+        }
       },
       {
         dataField: 'value',
@@ -107,12 +125,17 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       keyField='key'
       data={data}
       columns={columns}
-      condensed={true}
-      bootstrap4={true}
+      condensed
+      bootstrap4
+      striped
       defaultSorted={
         [
           {
             dataField: 'value',
+            order: 'desc',
+          },
+          {
+            dataField: 'node',
             order: 'desc',
           },
         ]
@@ -136,15 +159,21 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                   return;
                 }
                 const oldNode = new ConstrainedNode(
-                  '0',
+                  row.node.props.id,
                   row.node.props.node,
                   row.value,
                   row.groups.split(',').map(
                     (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
+                  ).filter(
+                    (s: string) => s.length > 0
                   )
                 );
+                if (column.dataField === 'qty') {
+                  this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
+                  return;
+                }
                 const newNode = new ConstrainedNode(
-                  '0',
+                  row.node.props.id,
                   oldNode.node,
                   oldNode.value,
                   oldNode.groups,

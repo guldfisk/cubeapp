@@ -103,7 +103,7 @@ export class PrintingNode extends Atomic {
       ),
       remote.type
     )
-  }
+  };
 
   * printings(): IterableIterator<Printing> {
     for (const [child, multiplicity] of this.children.items) {
@@ -506,16 +506,17 @@ export class CubeablesContainer {
     yield* this.purples.iter();
   };
 
-  traps_of_intention_type = (intention_type: string): [Trap, number][] => {
+  traps_of_intention_types = (intention_types: string[]): [Trap, number][] => {
     return this.traps.items.filter(
-      ([trap, multiplicity]: [Trap, number]) => trap.intentionType === intention_type
+      ([trap, multiplicity]: [Trap, number]) => intention_types.includes(trap.intentionType)
     )
   };
 
   grouped_laps = (): [Cubeable, number][][] => {
     return [
-      this.traps_of_intention_type('GARBAGE'),
-      this.traps_of_intention_type('SYNERGY'),
+      this.traps_of_intention_types(['GARBAGE']),
+      this.traps_of_intention_types(['SYNERGY', 'NO_INTENTION']),
+      this.traps_of_intention_types(['OR']),
       this.tickets.items,
       this.purples.items,
     ]
@@ -560,7 +561,9 @@ export class CubeRelease extends CubeReleaseMeta {
       remote.intended_size,
       MinimalCube.fromRemote(remote.versioned_cube),
       CubeablesContainer.fromRemote(remote.cube_content),
-      new ConstrainedNodes(remote.constrained_nodes.constrained_nodes_content.nodes)
+      remote.constrained_nodes ?
+        new ConstrainedNodes(remote.constrained_nodes.constrained_nodes_content.nodes)
+        : null,
     )
   }
 
@@ -763,6 +766,8 @@ export class Patch extends Atomic {
         );
       }
     }
+    console.log(cubeDelta);
+    console.log(nodeDelta);
 
     return axios.patch(
       apiPath + 'patches/' + this.id + '/',
@@ -802,6 +807,14 @@ export class Patch extends Atomic {
       apiPath + 'patches/' + this.id + '/preview/',
     ).then(
       response => Preview.fromRemote(response.data)
+    )
+  };
+
+  verbose = (): Promise<VerbosePatch> => {
+    return axios.get(
+      apiPath + 'patches/' + this.id + '/verbose/',
+    ).then(
+      response => VerbosePatch.fromRemote(response.data)
     )
   };
 
@@ -896,6 +909,19 @@ export class ConstrainedNode extends Atomic {
     )
   };
 
+  public static wrappingPrinting(printing: Printing): ConstrainedNode {
+    return new ConstrainedNode(
+      "",
+      new PrintingNode(
+        "",
+        new MultiplicityList([[printing, 1]]),
+        'AllNode',
+      ),
+      1,
+      [],
+    )
+  };
+
   serialize = (): any => {
     return {
       node: this.node.serialize(),
@@ -959,5 +985,59 @@ export class ConstrainedNodes {
       response => new ConstrainedNodes(response.data.nodes.constrained_nodes_content)
     )
   };
+
+}
+
+
+export class CubeChange extends Atomic {
+  explanation: string;
+
+  constructor(id: string, explanation: string) {
+    super(id);
+    this.explanation = explanation;
+  }
+
+  public static fromRemote(remote: any): CubeChange {
+    return new CubeChange(
+      remote.id,
+      remote.explanation,
+    )
+  }
+
+}
+
+
+export class AlteredNode extends CubeChange {
+  // before: ConstrainedNode;
+  // after: ConstrainedNode;
+
+  constructor(id: string, explanation: string) {
+    super(id, explanation);
+    // this.before = before;
+    // this.after = after;
+  }
+
+}
+
+
+export class VerbosePatch {
+  changes: MultiplicityList<CubeChange>;
+
+  constructor(changes: MultiplicityList<CubeChange>) {
+    this.changes = changes;
+  }
+
+  public static fromRemote(remote: any): VerbosePatch {
+    return new VerbosePatch(
+      new MultiplicityList(
+        remote.changes.map(
+          ([change, multiplicity]: [any, number]) => [
+            CubeChange.fromRemote(change),
+            multiplicity,
+          ]
+        )
+      )
+    )
+  }
 
 }

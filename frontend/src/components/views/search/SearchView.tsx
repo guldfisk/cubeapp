@@ -32,7 +32,8 @@ interface SearchViewState {
 class SearchView extends React.Component<SearchViewProps, SearchViewState> {
 
   public static defaultProps = {
-    handleCardClicked: () => {},
+    handleCardClicked: () => {
+    },
     limit: 50,
   };
 
@@ -219,35 +220,37 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
               />
           }
         </Row>
-
-        <Row>
-          <Table>
-            <thead>
-            <tr>
-              <th>Image</th>
-              <th>Name</th>
-            </tr>
-            </thead>
-            <tbody>
-            {
-              this.state.searchResults.map(
-                (printing: Printing) => {
-                  return <tr>
-                    <td>
-                      <CubeableImage
-                        cubeable={printing}
-                        sizeSlug="thumbnail"
-                        onClick={this.props.handleCardClicked as (printing: Cubeable) => void}
-                      />
-                    </td>
-                    <td>{printing.name}</td>
-                  </tr>
+        {
+          !this.state.searchResults.length ? undefined :
+            <Row>
+              <Table>
+                <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                </tr>
+                </thead>
+                <tbody>
+                {
+                  this.state.searchResults.map(
+                    (printing: Printing) => {
+                      return <tr>
+                        <td>
+                          <CubeableImage
+                            cubeable={printing}
+                            sizeSlug="thumbnail"
+                            onClick={this.props.handleCardClicked as (printing: Cubeable) => void}
+                          />
+                        </td>
+                        <td>{printing.name}</td>
+                      </tr>
+                    }
+                  )
                 }
-              )
-            }
-            </tbody>
-          </Table>
-        </Row>
+                </tbody>
+              </Table>
+            </Row>
+        }
       </Col>
     </Container>
 

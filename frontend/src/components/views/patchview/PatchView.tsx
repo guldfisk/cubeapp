@@ -12,6 +12,7 @@ import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
 interface DeltaViewProps {
   patch: Patch
   onItemClicked?: (item: Cubeable | ConstrainedNode, amount: number) => void
+  onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
 }
 
 class PatchView extends React.Component<DeltaViewProps, null> {
@@ -57,8 +58,9 @@ class PatchView extends React.Component<DeltaViewProps, null> {
         <ConstrainedNodesView
           constrainedNodes={this.props.patch.positiveConstrainedNodes}
           onNodeClick={
-              (node) => this.props.onItemClicked(node, -1)
+            (node) => this.props.onItemClicked(node, -1)
           }
+          onNodeEdit={this.props.onNodeEdit}
         />
         </span>
       </Col>
@@ -67,8 +69,9 @@ class PatchView extends React.Component<DeltaViewProps, null> {
         <ConstrainedNodesView
           constrainedNodes={this.props.patch.negativeConstrainedNodes}
           onNodeClick={
-              (node) => this.props.onItemClicked(node, 1)
+            (node) => this.props.onItemClicked(node, 1)
           }
+          onNodeEdit={this.props.onNodeEdit}
         />
         </span>
       </Col>

@@ -1,5 +1,3 @@
-import wu from 'wu';
-
 import React from 'react';
 
 import {CubeableImage} from '../../images';
@@ -21,7 +19,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<RawC
     );
     return <div>
       {
-        wu(pictured).map(
+        Array.from(pictured).map(
           (cubeable) => {
             return <CubeableImage
               cubeable={cubeable}

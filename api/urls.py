@@ -35,6 +35,6 @@ urlpatterns = [
 	path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),
 	path('service/parse-constrained-node/', views.ParseConstrainedNodeEndpoint.as_view()),
 
-	path('constrained-nodes/', views.ConstrainedNodesList.as_view()),
+	# path('constrained-nodes/', views.ConstrainedNodesList.as_view()),
 
 ]

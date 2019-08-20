@@ -48,6 +48,7 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
       element = <Tabs
         id="release-info-tabs"
         defaultActiveKey="cards"
+        mountOnEnter={true}
       >
         <Tab eventKey="cards" title="Cards">
           <ReleaseMultiView

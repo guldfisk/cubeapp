@@ -344,14 +344,7 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
     def serialize(cls, serializeable: cubeupdate.CubeChange) -> compacted_model:
         d = {}
 
-        if any(
-            isinstance(serializeable, klass)
-            for klass in
-            (
-                cubeupdate.NewCubeable,
-                cubeupdate.RemovedCubeable,
-            )
-        ):
+        if isinstance(serializeable, cubeupdate.CubeableCubeChange):
             if isinstance(serializeable.cubeable, Printing):
                 serializer = FullPrintingSerializer
             elif isinstance(serializeable.cubeable, Trap):
@@ -369,14 +362,7 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
                 ),
             }
 
-        elif any(
-            isinstance(serializeable, klass)
-            for klass in
-            (
-                cubeupdate.NewNode,
-                cubeupdate.RemovedNode,
-            )
-        ):
+        elif isinstance(serializeable, cubeupdate.NodeCubeChange):
             d = {
                 'node': ConstrainedNodeOrpSerializer.serialize(
                     serializeable.node
@@ -414,6 +400,8 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
             }
 
         d['type'] =  serializeable.__class__.__name__.lower()
+        d['id'] =  serializeable.persistent_hash()
+        d['explanation'] = serializeable.explain()
 
         return d
 

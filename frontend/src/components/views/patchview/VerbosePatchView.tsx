@@ -1,16 +1,15 @@
 import React from 'react';
 
-import '../../../styling/PatchView.css';
-
-import {ConstrainedNode, Cubeable, Patch} from '../../models/models';
+import {ConstrainedNode, Cubeable, Patch, VerbosePatch} from '../../models/models';
 import Row from "react-bootstrap/Row";
 import {Col} from "react-bootstrap";
 import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
 import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
+import ListGroup from "react-bootstrap/ListGroup";
 
 
 interface VerbosePatchViewProps {
-  patch: Patch
+  patch: VerbosePatch
   onItemClicked?: () => void
 }
 
@@ -21,7 +20,19 @@ export default class VerbosePatchView extends React.Component<VerbosePatchViewPr
   }
 
   render() {
-    return "VerbosePatchViewProps";
+    return <ListGroup
+      variant="flush"
+    >
+      {
+        this.props.patch.changes.items.map(
+          ([change, multiplicity]) => <ListGroup.Item
+            key={change.id}
+          >
+            {change.explanation}
+          </ListGroup.Item>
+        )
+      }
+    </ListGroup>
   }
 
 }
