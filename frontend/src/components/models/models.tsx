@@ -23,13 +23,6 @@ export class Atomic {
 
 
 export class Cubeable extends Atomic {
-  type: string;
-
-  constructor(id: string, type: string) {
-    super(id);
-    this.type = type;
-  }
-
 }
 
 
@@ -56,7 +49,7 @@ export class Printing extends Cubeable {
   types: string[];
 
   constructor(id: string, name: string, expansion: Expansion, color: string[], types: string[]) {
-    super(id, 'printing');
+    super(id);
     this.name = name;
     this.expansion = expansion;
     this.color = color;
@@ -147,7 +140,7 @@ export class Trap extends Cubeable {
   intentionType: string;
 
   constructor(id: string, node: PrintingNode, intentionType: string) {
-    super(id, 'trap');
+    super(id);
     this.node = node;
     this.intentionType = intentionType;
   }
@@ -188,6 +181,12 @@ export class Trap extends Cubeable {
 }
 
 export class Ticket extends Cubeable {
+  name: string;
+
+  public static fromRemote(remote: any): Ticket {
+    return new Purple(remote.id, remote.name)
+  }
+
 }
 
 
@@ -195,7 +194,7 @@ export class Purple extends Cubeable {
   name: string;
 
   constructor(id: string, name: string) {
-    super(id, 'ticket');
+    super(id);
     this.name = name;
   }
 
@@ -989,6 +988,22 @@ export class ConstrainedNodes {
 }
 
 
+const cubeableFromRemote = (remote: any): Cubeable => {
+  if (remote.type === 'Printing') {
+    return Printing.fromRemote(remote)
+  }
+  if (remote.type === 'Trap') {
+    return Trap.fromRemote(remote)
+  }
+  if (remote.type === 'Ticket') {
+    return Ticket.fromRemote(remote)
+  }
+  if (remote.type === 'Purple') {
+    return Purple.fromRemote(remote)
+  }
+};
+
+
 export class CubeChange extends Atomic {
   explanation: string;
 
@@ -1006,15 +1021,41 @@ export class CubeChange extends Atomic {
 
 }
 
+export class NewCubeable extends CubeChange {
+  cubeable: Cubeable;
+
+  constructor(id: string, explanation: string, cubeable: Cubeable) {
+    super(id, explanation);
+    this.cubeable = cubeable;
+  }
+
+  public static fromRemote(remote: any): NewCubeable {
+    return new NewCubeable(
+      remote.id,
+      remote.explanation,
+      cubeableFromRemote(remote.cubeable),
+    )
+  }
+
+}
 
 export class AlteredNode extends CubeChange {
-  // before: ConstrainedNode;
-  // after: ConstrainedNode;
+  before: ConstrainedNode;
+  after: ConstrainedNode;
 
-  constructor(id: string, explanation: string) {
+  constructor(id: string, explanation: string, before: ConstrainedNode, after: ConstrainedNode) {
     super(id, explanation);
-    // this.before = before;
-    // this.after = after;
+    this.before = before;
+    this.after = after;
+  }
+
+  public static fromRemote(remote: any): AlteredNode {
+    return new AlteredNode(
+      remote.id,
+      remote.explanation,
+      ConstrainedNode.fromRemote(remote.before),
+      ConstrainedNode.fromRemote(remote.after),
+    )
   }
 
 }
