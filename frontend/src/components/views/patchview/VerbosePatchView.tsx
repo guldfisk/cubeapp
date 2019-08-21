@@ -6,6 +6,7 @@ import {Col} from "react-bootstrap";
 import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
 import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
 import ListGroup from "react-bootstrap/ListGroup";
+import {CubeChangeListItem} from "../../utils/listitems";
 
 
 interface VerbosePatchViewProps {
@@ -25,11 +26,10 @@ export default class VerbosePatchView extends React.Component<VerbosePatchViewPr
     >
       {
         this.props.patch.changes.items.map(
-          ([change, multiplicity]) => <ListGroup.Item
-            key={change.id}
-          >
-            {change.explanation}
-          </ListGroup.Item>
+          ([change, multiplicity]) => <CubeChangeListItem
+            change={change}
+            multiplicity={multiplicity}
+          />
         )
       }
     </ListGroup>

@@ -30,6 +30,7 @@ export default class PatchMultiView extends React.Component<PatchMultiViewProps>
       mountOnEnter={true}
       unmountOnExit={false}
     >
+      <hr/>
       <Tab
         eventKey="raw"
         title="Raw"

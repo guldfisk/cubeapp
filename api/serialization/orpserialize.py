@@ -159,6 +159,7 @@ class FullPrintingSerializer(ModelSerializer[Printing]):
             'id': printing.id,
             'expansion': ExpansionSerializer.serialize(printing.expansion),
             'cardboard': CardboardSerializer.serialize(printing.cardboard),
+            'type': printing.__class__.__name__,
         }
 
 
@@ -399,7 +400,7 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
                 ),
             }
 
-        d['type'] =  serializeable.__class__.__name__.lower()
+        d['type'] =  serializeable.__class__.__name__
         d['id'] =  serializeable.persistent_hash()
         d['explanation'] = serializeable.explain()
 
