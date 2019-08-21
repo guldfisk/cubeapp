@@ -3,13 +3,13 @@ import typing as t
 import datetime
 import hashlib
 import random
+import json
 
 from distutils.util import strtobool
 
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
-# from django.core.mail import send_mail
 from django.template.loader import get_template
 
 from rest_framework import status, generics, permissions
@@ -19,6 +19,7 @@ from rest_framework.response import Response
 
 from knox.models import AuthToken
 
+from magiccube.update import cubeupdate
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.strategies.jsonid import JsonId
@@ -412,26 +413,79 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.CubePatchSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
+    _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {
+        klass.__name__: klass
+        for klass in
+        (
+            cubeupdate.NewCubeable,
+            cubeupdate.RemovedCubeable,
+            cubeupdate.NewNode,
+            cubeupdate.RemovedNode,
+            cubeupdate.PrintingsToNode,
+            cubeupdate.NodeToPrintings,
+            cubeupdate.TrapToNode,
+            cubeupdate.NodeToTrap,
+            cubeupdate.AlteredNode,
+        )
+    }
+
     def patch(self, request, *args, **kwargs):
         try:
             patch = models.CubePatch.objects.get(pk=kwargs['pk'])
         except models.CubePatch.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            update = JsonId(db).deserialize(
-                CubePatch,
-                request.data['update'],
-            )
-        except (KeyError, AttributeError, Exception):
+        update = request.data.get('update')
+        change_undoes = request.data.get('change_undoes')
+
+        if not update and not change_undoes:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        patch.content = JsonId.serialize(
-            JsonId(db).deserialize(
-                CubePatch,
-                patch.content,
-            ) + update
+        current_patch_content = JsonId(db).deserialize(
+            CubePatch,
+            patch.content,
         )
+
+        if update:
+            try:
+                update = JsonId(db).deserialize(
+                    CubePatch,
+                    request.data['update'],
+                )
+            except (KeyError, AttributeError, Exception):
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            current_patch_content += update
+
+        if change_undoes:
+            try:
+                change_undoes = json.loads(change_undoes)
+            except json.JSONDecodeError:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
+            strategy = JsonId(db)
+            try:
+                for undo, multiplicity in change_undoes:
+                    undoes.append(
+                        (
+                            strategy.deserialize(
+                                self._undo_map[undo['type']],
+                                undo['content'],
+                            ),
+                            multiplicity,
+                        )
+                    )
+            except (KeyError, TypeError, ValueError):
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            for undo, multiplicity in undoes:
+                current_patch_content -= (undo.as_patch() * multiplicity)
+
+        patch.content = JsonId.serialize(
+            current_patch_content,
+        )
+
         patch.save()
 
         return Response(
@@ -447,17 +501,13 @@ def patch_verbose(request: Request, pk: int) -> Response:
     except models.CubePatch.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    r = orpserialize.VerboseChangeSerializer.serialize(
+    return Response(
+        orpserialize.VerbosePatchSerializer.serialize(
             JsonId(db).deserialize(
                 CubePatch,
                 patch_model.content,
             ).as_verbose
         )
-
-    print(r)
-
-    return Response(
-        r
     )
 
 
@@ -518,9 +568,9 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
                 groups=[
                     group.rstrip().lstrip()
                     for group in
-                    serializer.validated_data['groups'].split(',')
+                    serializer.validated_data.get('groups', '').split(',')
                 ],
-                value=serializer.validated_data['weight'],
+                value=serializer.validated_data.get('weight', 1),
             )
         except PrintingTreeParserException as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
@@ -561,7 +611,7 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             ),
             status=status.HTTP_200_OK,
             content_type='application/json'
-)
+        )
 
 
 class ApplyPatchEndpoint(generics.GenericAPIView):

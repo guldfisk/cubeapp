@@ -1,13 +1,13 @@
 import React from 'react';
-import {CubeablesContainer, CubeRelease, Patch, Preview} from "../../models/models";
+import {CubeRelease, Patch, Preview, VerbosePatch} from "../../models/models";
 import {Loading} from "../../utils/utils";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
-import CubeablesCollectionListView from "../../views/cubeablescollectionview/CubeablesCollectionListView";
 import {Container} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {Redirect} from "react-router";
 import PatchPreview from "../../views/patchview/PatchPreview";
+import PatchMultiView from "../../views/patchview/PatchMultiView";
 
 
 interface DeltaPageProps {
@@ -16,6 +16,7 @@ interface DeltaPageProps {
 
 interface ApplyPatchPageState {
   patch: null | Patch
+  verbosePatch: null | VerbosePatch
   preview: null | Preview
   previewLoading: boolean
   resultingRelease: null | CubeRelease
@@ -27,6 +28,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     super(props);
     this.state = {
       patch: null,
+      verbosePatch: null,
       preview: null,
       previewLoading: true,
       resultingRelease: null,
@@ -47,16 +49,21 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         return patch;
       }
     ).then(
-      patch => patch.preview().then(
-        (preview) => {
-          this.setState(
-            {
-              preview,
-              previewLoading: false,
-            }
-          )
-        }
-      )
+      patch => {
+        patch.preview().then(
+          (preview) => {
+            this.setState(
+              {
+                preview,
+                previewLoading: false,
+              }
+            )
+          }
+        );
+        patch.verbose().then(
+          verbosePatch => this.setState({verbosePatch})
+        )
+      }
     );
   }
 
@@ -79,10 +86,19 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       />
     }
 
+    let patchView = <Loading/>;
+    if (this.state.patch !== null) {
+      patchView = <PatchMultiView
+        patch={this.state.patch}
+        verbosePatch={this.state.verbosePatch}
+      />
+    }
+
     let preview = <Loading/>;
     if (this.state.preview) {
       preview = <PatchPreview
         preview={this.state.preview}
+        noHover={false}
       />;
     }
 
@@ -94,6 +110,18 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         >
           Apply
         </Button>
+      </Row>
+      <Row>
+        <Card>
+          <Card.Header>
+            Delta
+          </Card.Header>
+          <Card.Body>
+            {patchView}
+          </Card.Body>
+        </Card>
+      </Row>
+      <Row>
         {preview}
       </Row>
     </Container>;

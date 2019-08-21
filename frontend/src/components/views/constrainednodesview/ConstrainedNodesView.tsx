@@ -3,11 +3,10 @@ import React from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import cellEditFactory from 'react-bootstrap-table2-editor';
 import paginationFactory from 'react-bootstrap-table2-paginator';
+import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
 import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
 import {NodeListItem} from "../../utils/listitems";
-
-import '../../../styling/ConstrainedNodesView.css';
 
 
 interface ConstrainedNodesViewProps {
@@ -16,7 +15,10 @@ interface ConstrainedNodesViewProps {
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   noHover?: boolean
+  search?: boolean
+  negative?: boolean
 }
+
 
 export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
 
@@ -32,7 +34,10 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         text: 'Qty',
         type: 'number',
         validator: (newValue: string, row: any, column: any): any => {
-          if (/^\d+$/.exec(newValue)) {
+          if (
+            (this.props.negative && /^(-\d+)|(-?0)$/.exec(newValue))
+            || /^\d+$/.exec(newValue)
+        ) {
             return true
           }
           return {
@@ -88,7 +93,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         dataField: 'groups',
         text: 'Groups',
         validator: (newValue: string, row: any, column: any): any => {
-          if (/^(\w+(,\s*)?)+$/.exec(newValue)) {
+          if (/^(\w+(,\s*)?)*$/.exec(newValue)) {
             return true
           }
           return {
@@ -121,80 +126,97 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       }
     );
 
-    return <BootstrapTable
+    const {SearchBar} = Search;
+
+    return <ToolkitProvider
       keyField='key'
       data={data}
       columns={columns}
-      condensed
       bootstrap4
-      striped
-      defaultSorted={
-        [
-          {
-            dataField: 'value',
-            order: 'desc',
-          },
-          {
-            dataField: 'node',
-            order: 'desc',
-          },
-        ]
-      }
-      pagination={
-        paginationFactory(
-          {
-            hidePageListOnlyOnePage: true,
-            showTotal: true,
-            sizePerPage: 30,
-          }
-        )
-      }
-      cellEdit={
-        cellEditFactory(
-          {
-            mode: 'click',
-            beforeSaveCell: (
-              (oldValue: any, newValue: any, row: any, column: any) => {
-                if (oldValue == newValue) {
-                  return;
-                }
-                const oldNode = new ConstrainedNode(
-                  row.node.props.id,
-                  row.node.props.node,
-                  row.value,
-                  row.groups.split(',').map(
-                    (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                  ).filter(
-                    (s: string) => s.length > 0
-                  )
-                );
-                if (column.dataField === 'qty') {
-                  this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
-                  return;
-                }
-                const newNode = new ConstrainedNode(
-                  row.node.props.id,
-                  oldNode.node,
-                  oldNode.value,
-                  oldNode.groups,
-                );
-                if (column.dataField === 'value') {
-                  newNode.value = newValue
-                } else if (column.dataField == 'groups') {
-                  newNode.groups = newValue.split(',').map(
-                    (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                  )
-                } else {
-                  return
-                }
-                this.props.onNodeEdit(oldNode, newNode, row.qty);
+      search
+    >
+      {
+        (props: any) => (
+          <div>
+            {
+              this.props.search ? <SearchBar
+                {...props.searchProps}
+              /> : undefined
+            }
+            <BootstrapTable
+              {...props.baseProps}
+              condensed
+              striped
+              defaultSorted={
+                [
+                  {
+                    dataField: 'value',
+                    order: 'desc',
+                  },
+                  {
+                    dataField: 'node',
+                    order: 'desc',
+                  },
+                ]
               }
-            ),
-            blurToSave: true,
-          }
+              pagination={
+                paginationFactory(
+                  {
+                    hidePageListOnlyOnePage: true,
+                    showTotal: true,
+                    sizePerPage: 30,
+                  }
+                )
+              }
+              cellEdit={
+                cellEditFactory(
+                  {
+                    mode: 'click',
+                    beforeSaveCell: (
+                      (oldValue: any, newValue: any, row: any, column: any) => {
+                        if (oldValue == newValue) {
+                          return;
+                        }
+                        const oldNode = new ConstrainedNode(
+                          row.node.props.id,
+                          row.node.props.node,
+                          row.value,
+                          row.groups.split(',').map(
+                            (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
+                          ).filter(
+                            (s: string) => s.length > 0
+                          )
+                        );
+                        if (column.dataField === 'qty') {
+                          this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
+                          return;
+                        }
+                        const newNode = new ConstrainedNode(
+                          row.node.props.id,
+                          oldNode.node,
+                          oldNode.value,
+                          oldNode.groups,
+                        );
+                        if (column.dataField === 'value') {
+                          newNode.value = newValue
+                        } else if (column.dataField == 'groups') {
+                          newNode.groups = newValue.split(',').map(
+                            (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
+                          )
+                        } else {
+                          return
+                        }
+                        this.props.onNodeEdit(oldNode, newNode, row.qty);
+                      }
+                    ),
+                    blurToSave: true,
+                  }
+                )
+              }
+            />
+          </div>
         )
       }
-    />
-
+    </ToolkitProvider>
   }
 }

@@ -14,13 +14,13 @@ interface PatchPreviewProps {
   onNodeClicked?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
-  hover: boolean
+  noHover: boolean
 }
 
 export default class PatchPreview extends React.Component<PatchPreviewProps> {
 
   public static defaultProps = {
-    hover: false,
+    noHover: true,
   };
 
   render() {
@@ -53,7 +53,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               cubeableType="Cubeables"
               rawCube={this.props.preview.cubeables}
               onCubeableClicked={this.props.onCubeablesClicked}
-              noHover={true}
+              noHover={this.props.noHover}
               noGarbage={true}
             />
           </Tab>
@@ -63,6 +63,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               onNodeClick={this.props.onNodeClicked}
               onNodeEdit={this.props.onNodeEdit}
               onNodeQtyEdit={this.props.onNodeQtyEdit}
+              search
             />
           </Tab>
         </Tabs>

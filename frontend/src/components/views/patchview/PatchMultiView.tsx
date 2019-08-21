@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {ConstrainedNode, Cubeable, Patch, VerbosePatch} from '../../models/models';
+import {ConstrainedNode, Cubeable, CubeChange, Patch, VerbosePatch} from '../../models/models';
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import PatchView from "./PatchView";
@@ -12,7 +12,10 @@ interface PatchMultiViewProps {
   verbosePatch?: VerbosePatch;
   onItemClicked?: (item: Cubeable | ConstrainedNode, amount: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
+  onChangeClicked?: (change: CubeChange, multiplicity: number) => void
 }
+
 
 export default class PatchMultiView extends React.Component<PatchMultiViewProps> {
 
@@ -30,7 +33,6 @@ export default class PatchMultiView extends React.Component<PatchMultiViewProps>
       mountOnEnter={true}
       unmountOnExit={false}
     >
-      <hr/>
       <Tab
         eventKey="raw"
         title="Raw"
@@ -39,6 +41,7 @@ export default class PatchMultiView extends React.Component<PatchMultiViewProps>
           patch={this.props.patch}
           onItemClicked={this.props.onItemClicked}
           onNodeEdit={this.props.onNodeEdit}
+          onNodeQtyEdit={this.props.onNodeQtyEdit}
         />
       </Tab>
       <Tab
@@ -48,6 +51,7 @@ export default class PatchMultiView extends React.Component<PatchMultiViewProps>
       >
         <VerbosePatchView
           patch={this.props.verbosePatch}
+          onChangeClicked={this.props.onChangeClicked}
         />
       </Tab>
     </Tabs>

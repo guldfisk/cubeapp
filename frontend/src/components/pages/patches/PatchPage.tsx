@@ -12,7 +12,7 @@ import {Loading} from '../../utils/utils';
 import {
   ConstrainedNode,
   Cubeable,
-  CubeablesContainer,
+  CubeablesContainer, CubeChange,
   CubeRelease,
   Patch,
   Preview,
@@ -109,11 +109,17 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
     if (cubeable instanceof Printing) {
-      const node = ConstrainedNode.wrappingPrinting(cubeable);
       this.handleMultipleUpdatePatch(
         [
           [cubeable, -multiplicity],
-          [node, multiplicity],
+          [ConstrainedNode.wrappingPrinting(cubeable), multiplicity],
+        ]
+      )
+    } else if (cubeable instanceof Trap) {
+      this.handleMultipleUpdatePatch(
+        [
+          [cubeable, -multiplicity],
+          [ConstrainedNode.fromTrap(cubeable), multiplicity],
         ]
       )
     } else {
@@ -125,7 +131,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     }
   };
 
-  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode, number][]) => {
+  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]) => {
     this.state.patch.update(updates).then(
       (patch: Patch) => {
         this.setPatch(patch);
@@ -159,6 +165,24 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                   [
                     [oldNode, -multiplicity],
                     [newNode, multiplicity],
+                  ]
+                )
+              }
+            )
+        }
+        onChangeClicked={
+          !this.state.editing ? undefined :
+            (change, multiplicity) => {
+              this.handleMultipleUpdatePatch([[change, multiplicity]])
+            }
+        }
+        onNodeQtyEdit={
+          !this.state.editing ? undefined :
+            (
+              (oldValue, newValue, node) => {
+                this.handleMultipleUpdatePatch(
+                  [
+                    [node, newValue - oldValue],
                   ]
                 )
               }
@@ -289,16 +313,16 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                 </Card>
               </Col>
           }
-          <Col>
-            <Card>
-              <Card.Header>
-                Delta
-              </Card.Header>
-              <Card.Body>
-                {patchView}
-              </Card.Body>
-            </Card>
-          </Col>
+        </Row>
+        <Row>
+          <Card>
+            <Card.Header>
+              Delta
+            </Card.Header>
+            <Card.Body>
+              {patchView}
+            </Card.Body>
+          </Card>
         </Row>
         <Row>
           {preview}

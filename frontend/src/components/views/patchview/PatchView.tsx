@@ -13,6 +13,7 @@ interface DeltaViewProps {
   patch: Patch
   onItemClicked?: (item: Cubeable | ConstrainedNode, amount: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
 }
 
 class PatchView extends React.Component<DeltaViewProps, null> {
@@ -22,9 +23,9 @@ class PatchView extends React.Component<DeltaViewProps, null> {
   }
 
   render() {
-    return <Row>
-      <Col>
-        <span className="add-view">
+    return <div>
+      <Row>
+        <Col>
           <CubeablesCollectionListView
             rawCube={this.props.patch.positiveCubeablesContainer}
             cubeableType={"Cubeables"}
@@ -36,46 +37,45 @@ class PatchView extends React.Component<DeltaViewProps, null> {
               )
             }
           />
-        </span>
-      </Col>
-      <Col>
-        <span className="remove-view">
-        <CubeablesCollectionListView
-          rawCube={this.props.patch.negativeCubeablesContainer}
-          cubeableType={"Cubeables"}
-          onCubeableClicked={
-            this.props.onItemClicked && (
-              (cubeable) => {
-                this.props.onItemClicked(cubeable, 1);
-              }
-            )
-          }
-        />
-        </span>
-      </Col>
-      <Col>
-        <span className="add-view">
-        <ConstrainedNodesView
-          constrainedNodes={this.props.patch.positiveConstrainedNodes}
-          onNodeClick={
-            (node) => this.props.onItemClicked(node, -1)
-          }
-          onNodeEdit={this.props.onNodeEdit}
-        />
-        </span>
-      </Col>
-      <Col>
-        <span className="remove-view">
-        <ConstrainedNodesView
-          constrainedNodes={this.props.patch.negativeConstrainedNodes}
-          onNodeClick={
-            (node) => this.props.onItemClicked(node, 1)
-          }
-          onNodeEdit={this.props.onNodeEdit}
-        />
-        </span>
-      </Col>
-    </Row>
+        </Col>
+        <Col>
+          <CubeablesCollectionListView
+            rawCube={this.props.patch.negativeCubeablesContainer}
+            cubeableType={"Cubeables"}
+            onCubeableClicked={
+              this.props.onItemClicked && (
+                (cubeable) => {
+                  this.props.onItemClicked(cubeable, 1);
+                }
+              )
+            }
+          />
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <ConstrainedNodesView
+            constrainedNodes={this.props.patch.positiveConstrainedNodes}
+            onNodeClick={
+              (node) => this.props.onItemClicked(node, -1)
+            }
+            onNodeEdit={this.props.onNodeEdit}
+            onNodeQtyEdit={this.props.onNodeQtyEdit}
+          />
+        </Col>
+        <Col>
+          <ConstrainedNodesView
+            constrainedNodes={this.props.patch.negativeConstrainedNodes}
+            onNodeClick={
+              (node) => this.props.onItemClicked(node, 1)
+            }
+            onNodeEdit={this.props.onNodeEdit}
+            onNodeQtyEdit={this.props.onNodeQtyEdit}
+            negative
+          />
+        </Col>
+      </Row>
+    </div>
   }
 
 }

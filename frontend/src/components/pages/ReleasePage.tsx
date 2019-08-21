@@ -61,6 +61,7 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
               <div/> :
               <ConstrainedNodesView
                 constrainedNodes={this.state.release.constrainedNodes}
+                search
               />
           }
         </Tab>

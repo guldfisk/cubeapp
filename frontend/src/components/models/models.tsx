@@ -23,6 +23,11 @@ export class Atomic {
 
 
 export class Cubeable extends Atomic {
+
+  getType = (): string => {
+    return 'Cubeable'
+  };
+
 }
 
 
@@ -65,6 +70,10 @@ export class Printing extends Cubeable {
       remote.types,
     )
   }
+
+  getType = (): string => {
+    return 'Printing'
+  };
 
   full_name = (): string => {
     return this.name + '|' + this.expansion.code;
@@ -153,6 +162,10 @@ export class Trap extends Cubeable {
     )
   }
 
+  getType = (): string => {
+    return 'Trap'
+  };
+
   serialize = (): any => {
     return {
       node: this.node.serialize(),
@@ -187,6 +200,10 @@ export class Ticket extends Cubeable {
     return new Purple(remote.id, remote.name)
   }
 
+  getType = (): string => {
+    return 'Ticket'
+  };
+
 }
 
 
@@ -201,6 +218,10 @@ export class Purple extends Cubeable {
   public static fromRemote(remote: any): Purple {
     return new Purple(remote.id, remote.name)
   }
+
+  getType = (): string => {
+    return 'Purple'
+  };
 
 }
 
@@ -734,12 +755,15 @@ export class Patch extends Atomic {
     );
   }
 
-  update = (updates: [Cubeable | ConstrainedNode, number][]): Promise<Patch> => {
+  update = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]): Promise<Patch> => {
     let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
       printings: [],
       traps: [],
     };
     let nodeDelta: any = {nodes: []};
+
+    let changeUndoes: [any, number][] = [];
+
     for (const [update, multiplicity] of updates) {
 
       if (update instanceof Printing) {
@@ -763,10 +787,20 @@ export class Patch extends Atomic {
             multiplicity,
           ]
         );
+      } else if (update instanceof CubeChange) {
+        changeUndoes.push(
+          [
+            update.serialize(),
+            multiplicity,
+          ]
+        )
       }
+
     }
+
     console.log(cubeDelta);
     console.log(nodeDelta);
+    console.log(changeUndoes);
 
     return axios.patch(
       apiPath + 'patches/' + this.id + '/',
@@ -776,7 +810,10 @@ export class Patch extends Atomic {
             cube_delta: cubeDelta,
             nodes_delta: nodeDelta,
           }
-        )
+        ),
+        change_undoes: JSON.stringify(
+          changeUndoes
+        ),
       },
       {
         headers: {
@@ -921,6 +958,15 @@ export class ConstrainedNode extends Atomic {
     )
   };
 
+  public static fromTrap(trap: Trap): ConstrainedNode {
+    return new ConstrainedNode(
+      "",
+      trap.node,
+      1,
+      [],
+    )
+  }
+
   serialize = (): any => {
     return {
       node: this.node.serialize(),
@@ -988,77 +1034,95 @@ export class ConstrainedNodes {
 }
 
 
-const cubeableFromRemote = (remote: any): Cubeable => {
-  if (remote.type === 'Printing') {
-    return Printing.fromRemote(remote)
-  }
-  if (remote.type === 'Trap') {
-    return Trap.fromRemote(remote)
-  }
-  if (remote.type === 'Ticket') {
-    return Ticket.fromRemote(remote)
-  }
-  if (remote.type === 'Purple') {
-    return Purple.fromRemote(remote)
-  }
-};
+// const cubeableFromRemote = (remote: any): Cubeable => {
+//   if (remote.type === 'Printing') {
+//     return Printing.fromRemote(remote)
+//   }
+//   if (remote.type === 'Trap') {
+//     return Trap.fromRemote(remote)
+//   }
+//   if (remote.type === 'Ticket') {
+//     return Ticket.fromRemote(remote)
+//   }
+//   if (remote.type === 'Purple') {
+//     return Purple.fromRemote(remote)
+//   }
+// };
 
 
 export class CubeChange extends Atomic {
   explanation: string;
+  type: string;
+  content: any;
+  category: string;
 
-  constructor(id: string, explanation: string) {
+  constructor(id: string, explanation: string, type: string, content: any, category: string) {
     super(id);
     this.explanation = explanation;
+    this.type = type;
+    this.content = content;
+    this.category = category
   }
 
   public static fromRemote(remote: any): CubeChange {
     return new CubeChange(
       remote.id,
       remote.explanation,
+      remote.type,
+      remote.content,
+      remote.category,
     )
+  }
+
+  serialize = (): any => {
+    return {
+      type: this.type,
+      content: this.content,
+    }
   }
 
 }
 
-export class NewCubeable extends CubeChange {
-  cubeable: Cubeable;
 
-  constructor(id: string, explanation: string, cubeable: Cubeable) {
-    super(id, explanation);
-    this.cubeable = cubeable;
-  }
+// export class NewCubeable extends CubeChange {
+//   cubeable: Cubeable;
+//
+//   constructor(id: string, explanation: string, cubeable: Cubeable) {
+//     super(id, explanation);
+//     this.cubeable = cubeable;
+//   }
+//
+//   public static fromRemote(remote: any): NewCubeable {
+//     return new NewCubeable(
+//       remote.id,
+//       remote.explanation,
+//       cubeableFromRemote(remote.cubeable),
+//     )
+//   }
+//
+// }
 
-  public static fromRemote(remote: any): NewCubeable {
-    return new NewCubeable(
-      remote.id,
-      remote.explanation,
-      cubeableFromRemote(remote.cubeable),
-    )
-  }
 
-}
-
-export class AlteredNode extends CubeChange {
-  before: ConstrainedNode;
-  after: ConstrainedNode;
-
-  constructor(id: string, explanation: string, before: ConstrainedNode, after: ConstrainedNode) {
-    super(id, explanation);
-    this.before = before;
-    this.after = after;
-  }
-
-  public static fromRemote(remote: any): AlteredNode {
-    return new AlteredNode(
-      remote.id,
-      remote.explanation,
-      ConstrainedNode.fromRemote(remote.before),
-      ConstrainedNode.fromRemote(remote.after),
-    )
-  }
-
-}
+// export class AlteredNode extends CubeChange {
+//   before: ConstrainedNode;
+//   after: ConstrainedNode;
+//
+//   constructor(id: string, explanation: string, before: ConstrainedNode, after: ConstrainedNode) {
+//     super(id, explanation);
+//     this.before = before;
+//     this.after = after;
+//   }
+//
+//   public static fromRemote(remote: any): AlteredNode {
+//     return new AlteredNode(
+//       remote.id,
+//       remote.explanation,
+//       ConstrainedNode.fromRemote(remote.before),
+//       ConstrainedNode.fromRemote(remote.after),
+//     )
+//   }
+//
+// }
 
 
 export class VerbosePatch {

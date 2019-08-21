@@ -237,11 +237,17 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
 interface CubeChangeListItemProps {
   change: CubeChange
   multiplicity: number
+  onClick?: (change: CubeChange, multiplicity: number) => void
 }
 
 export const CubeChangeListItem: React.FunctionComponent<CubeChangeListItemProps> = (props) => {
   return <ListGroup.Item
     key={props.change.id}
+    className="py-0"
+    onClick={
+      !props.onClick ? undefined :
+        () => props.onClick(props.change, props.multiplicity)
+    }
   >
     {
       (

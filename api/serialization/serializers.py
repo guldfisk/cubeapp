@@ -37,7 +37,6 @@ class OrpModelField(serializers.Field):
         return json.loads(data)
 
     def to_representation(self, value):
-        print(value)
         return self._model_serializer.serialize(
             self._strategy.deserialize(
                 self._serializeable_type,
@@ -151,8 +150,8 @@ class SignupSerializer(serializers.Serializer):
 
 class ParseConstrainedNodeSerializer(serializers.Serializer):
     query = serializers.CharField()
-    groups = serializers.CharField()
-    weight = serializers.IntegerField()
+    groups = serializers.CharField(required=False)
+    weight = serializers.IntegerField(required=False)
 
     def update(self, instance, validated_data):
         raise NotImplemented

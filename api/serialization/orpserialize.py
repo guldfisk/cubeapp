@@ -14,7 +14,7 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
-
+from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 T = t.TypeVar('T')
 
@@ -343,71 +343,74 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
 
     @classmethod
     def serialize(cls, serializeable: cubeupdate.CubeChange) -> compacted_model:
-        d = {}
+        # d = {}
+        #
+        # if isinstance(serializeable, cubeupdate.CubeableCubeChange):
+        #     if isinstance(serializeable.cubeable, Printing):
+        #         serializer = FullPrintingSerializer
+        #     elif isinstance(serializeable.cubeable, Trap):
+        #         serializer = TrapSerializer
+        #     elif isinstance(serializeable.cubeable, Ticket):
+        #         serializer = TicketSerializer
+        #     elif isinstance(serializeable.cubeable, Purple):
+        #         serializer = PurpleSerializer
+        #     else:
+        #         raise ValueError(serializeable)
+        #
+        #     d = {
+        #         'cubeable': serializer.serialize(
+        #             serializeable.cubeable
+        #         ),
+        #     }
+        #
+        # elif isinstance(serializeable, cubeupdate.NodeCubeChange):
+        #     d = {
+        #         'node': ConstrainedNodeOrpSerializer.serialize(
+        #             serializeable.node
+        #         ),
+        #     }
+        #
+        # elif isinstance(serializeable, cubeupdate.PrintingToNode):
+        #     d = {
+        #         'before': FullPrintingSerializer.serialize(
+        #             serializeable.before
+        #         ),
+        #         'after': ConstrainedNodeOrpSerializer.serialize(
+        #             serializeable.after
+        #         ),
+        #     }
+        #
+        # elif isinstance(serializeable, cubeupdate.NodeToPrinting):
+        #     d = {
+        #         'before': ConstrainedNodeOrpSerializer.serialize(
+        #             serializeable.before
+        #         ),
+        #         'after': FullPrintingSerializer.serialize(
+        #             serializeable.after
+        #         ),
+        #     }
+        #
+        # elif isinstance(serializeable, cubeupdate.AlteredNode):
+        #     d = {
+        #         'before': ConstrainedNodeOrpSerializer.serialize(
+        #             serializeable.before
+        #         ),
+        #         'after': ConstrainedNodeOrpSerializer.serialize(
+        #             serializeable.after
+        #         ),
+        #     }
 
-        if isinstance(serializeable, cubeupdate.CubeableCubeChange):
-            if isinstance(serializeable.cubeable, Printing):
-                serializer = FullPrintingSerializer
-            elif isinstance(serializeable.cubeable, Trap):
-                serializer = TrapSerializer
-            elif isinstance(serializeable.cubeable, Ticket):
-                serializer = TicketSerializer
-            elif isinstance(serializeable.cubeable, Purple):
-                serializer = PurpleSerializer
-            else:
-                raise ValueError(serializeable)
-
-            d = {
-                'cubeable': serializer.serialize(
-                    serializeable.cubeable
-                ),
-            }
-
-        elif isinstance(serializeable, cubeupdate.NodeCubeChange):
-            d = {
-                'node': ConstrainedNodeOrpSerializer.serialize(
-                    serializeable.node
-                ),
-            }
-
-        elif isinstance(serializeable, cubeupdate.PrintingToNode):
-            d = {
-                'before': FullPrintingSerializer.serialize(
-                    serializeable.before
-                ),
-                'after': ConstrainedNodeOrpSerializer.serialize(
-                    serializeable.after
-                ),
-            }
-
-        elif isinstance(serializeable, cubeupdate.NodeToPrinting):
-            d = {
-                'before': ConstrainedNodeOrpSerializer.serialize(
-                    serializeable.before
-                ),
-                'after': FullPrintingSerializer.serialize(
-                    serializeable.after
-                ),
-            }
-
-        elif isinstance(serializeable, cubeupdate.AlteredNode):
-            d = {
-                'before': ConstrainedNodeOrpSerializer.serialize(
-                    serializeable.before
-                ),
-                'after': ConstrainedNodeOrpSerializer.serialize(
-                    serializeable.after
-                ),
-            }
-
-        d['type'] =  serializeable.__class__.__name__
-        d['id'] =  serializeable.persistent_hash()
-        d['explanation'] = serializeable.explain()
-
-        return d
+        return {
+            'type': serializeable.__class__.__name__,
+            'id': serializeable.persistent_hash(),
+            'explanation': serializeable.explain(),
+            'content': JsonId.serialize(serializeable),
+            'category': serializeable.category.value,
+        }
 
 
-class VerboseChangeSerializer(ModelSerializer[cubeupdate.VerboseCubePatch]):
+
+class VerbosePatchSerializer(ModelSerializer[cubeupdate.VerboseCubePatch]):
 
     @classmethod
     def serialize(cls, serializeable: cubeupdate.VerboseCubePatch) -> compacted_model:
