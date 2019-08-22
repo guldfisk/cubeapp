@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from knox.models import AuthToken
 
 from magiccube.update import cubeupdate
+from magiccube.update.report import UpdateReport
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.strategies.jsonid import JsonId
@@ -30,7 +31,7 @@ from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
-from magiccube.update.cubeupdate import CubePatch
+from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap, IntentionType
@@ -53,6 +54,7 @@ _IMAGE_TYPES_MAP = {
     'ticket': Ticket,
     'purple': Purple,
 }
+
 
 _IMAGE_SIZE_MAP = {
     size_slug.name.lower(): size_slug
@@ -554,6 +556,44 @@ def patch_preview(request: Request, pk: int) -> Response:
     )
 
 
+@api_view(['GET'])
+def patch_report(request: Request, pk: int) -> Response:
+    try:
+        patch_model = models.CubePatch.objects.get(pk=pk)
+    except models.CubePatch.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    latest_release = patch_model.versioned_cube.latest_release
+
+    # TODO handle no releases in a good way
+    current_cube = JsonId(db).deserialize(
+        Cube,
+        latest_release.cube_content,
+    )
+
+    cube_patch = JsonId(db).deserialize(
+        CubePatch,
+        patch_model.content,
+    )
+
+    node_collection = JsonId(db).deserialize(
+        NodeCollection,
+        latest_release.constrained_nodes.constrained_nodes_content,
+    )
+
+    return Response(
+        orpserialize.UpdateReportSerializer.serialize(
+            UpdateReport(
+                CubeUpdater(
+                    cube=current_cube,
+                    patch=cube_patch,
+                    node_collection=node_collection,
+                )
+            )
+        )
+    )
+
+
 class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
     serializer_class = serializers.ParseConstrainedNodeSerializer
     permission_classes = [permissions.IsAuthenticated, ]
@@ -663,8 +703,11 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
 class CreateRevertPatchEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
-    def post(self, request, *args, **kwargs):
-        pass
+    def post(self, request, pk: int, *args, **kwargs):
+        try:
+            patch = models.CubePatch.objects.get(pk=pk)
+        except models.CubePatch.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class ConstrainedNodesList(generics.ListAPIView):

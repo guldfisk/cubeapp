@@ -1,5 +1,5 @@
 import React from 'react';
-import {CubeRelease, Patch, Preview, VerbosePatch} from "../../models/models";
+import {CubeRelease, Patch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
 import {Loading} from "../../utils/utils";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
@@ -8,6 +8,7 @@ import Button from "react-bootstrap/Button";
 import {Redirect} from "react-router";
 import PatchPreview from "../../views/patchview/PatchPreview";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
+import ReportView from "../../views/report/ReportView";
 
 
 interface DeltaPageProps {
@@ -17,6 +18,7 @@ interface DeltaPageProps {
 interface ApplyPatchPageState {
   patch: null | Patch
   verbosePatch: null | VerbosePatch
+  report: null | UpdateReport
   preview: null | Preview
   previewLoading: boolean
   resultingRelease: null | CubeRelease
@@ -29,6 +31,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     this.state = {
       patch: null,
       verbosePatch: null,
+      report: null,
       preview: null,
       previewLoading: true,
       resultingRelease: null,
@@ -62,7 +65,10 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         );
         patch.verbose().then(
           verbosePatch => this.setState({verbosePatch})
-        )
+        );
+        patch.report().then(
+          report => this.setState({report})
+        );
       }
     );
   }
@@ -85,6 +91,14 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         to={'/release/' + this.state.resultingRelease.id}
       />
     }
+
+    const reportView = (
+      !this.state.report ? <Loading/> :
+        <ReportView
+          report={this.state.report}
+        />
+    );
+
 
     let patchView = <Loading/>;
     if (this.state.patch !== null) {
@@ -110,6 +124,16 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         >
           Apply
         </Button>
+      </Row>
+      <Row>
+        <Card>
+          <Card.Header>
+            Report
+          </Card.Header>
+          <Card.Body>
+            {reportView}
+          </Card.Body>
+        </Card>
       </Row>
       <Row>
         <Card>

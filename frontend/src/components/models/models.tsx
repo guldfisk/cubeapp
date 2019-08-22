@@ -3,6 +3,7 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
+import {promises} from "fs";
 
 
 export const apiPath = '/api/';
@@ -854,6 +855,14 @@ export class Patch extends Atomic {
     )
   };
 
+  report = (): Promise<UpdateReport> => {
+    return axios.get(
+      apiPath + 'patches/' + this.id + '/report/',
+    ).then(
+      response => UpdateReport.fromRemote(response.data)
+    )
+  };
+
   apply = (): Promise<CubeRelease> => {
     return axios.post(
       apiPath + 'patches/' + this.id + '/apply/',
@@ -1141,6 +1150,46 @@ export class VerbosePatch {
             multiplicity,
           ]
         )
+      )
+    )
+  }
+
+}
+
+
+export class ReportNotification {
+  title: string;
+  content: string;
+  level: string;
+
+  constructor(title: string, content: string, level: string) {
+    this.title = title;
+    this.content = content;
+    this.level = level;
+  }
+
+  public static fromRemote(remote: any): ReportNotification {
+    return new ReportNotification(
+      remote.title,
+      remote.content,
+      remote.level,
+    )
+  }
+
+}
+
+
+export class UpdateReport {
+  notifications: ReportNotification[];
+
+  constructor(notifications: ReportNotification[]) {
+    this.notifications = notifications;
+  }
+
+  public static fromRemote(remote: any): UpdateReport {
+    return new UpdateReport(
+      remote.notifications.map(
+        (notification: any) => ReportNotification.fromRemote(notification)
       )
     )
   }

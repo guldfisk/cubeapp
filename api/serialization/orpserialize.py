@@ -1,6 +1,7 @@
 import typing as t
 from abc import abstractmethod
 
+from magiccube.update.report import UpdateReport, ReportNotification
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.expansion import Expansion
@@ -15,6 +16,7 @@ from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+
 
 T = t.TypeVar('T')
 
@@ -343,63 +345,6 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
 
     @classmethod
     def serialize(cls, serializeable: cubeupdate.CubeChange) -> compacted_model:
-        # d = {}
-        #
-        # if isinstance(serializeable, cubeupdate.CubeableCubeChange):
-        #     if isinstance(serializeable.cubeable, Printing):
-        #         serializer = FullPrintingSerializer
-        #     elif isinstance(serializeable.cubeable, Trap):
-        #         serializer = TrapSerializer
-        #     elif isinstance(serializeable.cubeable, Ticket):
-        #         serializer = TicketSerializer
-        #     elif isinstance(serializeable.cubeable, Purple):
-        #         serializer = PurpleSerializer
-        #     else:
-        #         raise ValueError(serializeable)
-        #
-        #     d = {
-        #         'cubeable': serializer.serialize(
-        #             serializeable.cubeable
-        #         ),
-        #     }
-        #
-        # elif isinstance(serializeable, cubeupdate.NodeCubeChange):
-        #     d = {
-        #         'node': ConstrainedNodeOrpSerializer.serialize(
-        #             serializeable.node
-        #         ),
-        #     }
-        #
-        # elif isinstance(serializeable, cubeupdate.PrintingToNode):
-        #     d = {
-        #         'before': FullPrintingSerializer.serialize(
-        #             serializeable.before
-        #         ),
-        #         'after': ConstrainedNodeOrpSerializer.serialize(
-        #             serializeable.after
-        #         ),
-        #     }
-        #
-        # elif isinstance(serializeable, cubeupdate.NodeToPrinting):
-        #     d = {
-        #         'before': ConstrainedNodeOrpSerializer.serialize(
-        #             serializeable.before
-        #         ),
-        #         'after': FullPrintingSerializer.serialize(
-        #             serializeable.after
-        #         ),
-        #     }
-        #
-        # elif isinstance(serializeable, cubeupdate.AlteredNode):
-        #     d = {
-        #         'before': ConstrainedNodeOrpSerializer.serialize(
-        #             serializeable.before
-        #         ),
-        #         'after': ConstrainedNodeOrpSerializer.serialize(
-        #             serializeable.after
-        #         ),
-        #     }
-
         return {
             'type': serializeable.__class__.__name__,
             'id': serializeable.persistent_hash(),
@@ -419,5 +364,31 @@ class VerbosePatchSerializer(ModelSerializer[cubeupdate.VerboseCubePatch]):
                 [CubeChangeSerializer.serialize(change), multiplicity]
                 for change, multiplicity in
                 serializeable.changes.items()
+            ]
+        }
+
+
+class UpdateNotificationSerializer(ModelSerializer[ReportNotification]):
+
+    @classmethod
+    def serialize(cls, serializeable: ReportNotification) -> compacted_model:
+        return {
+            'title': serializeable.title,
+            'content': serializeable.content,
+            'level': serializeable.notification_level.value,
+        }
+
+
+class UpdateReportSerializer(ModelSerializer[UpdateReport]):
+
+    @classmethod
+    def serialize(cls, serializeable: UpdateReport) -> compacted_model:
+        return {
+            'notifications': [
+                UpdateNotificationSerializer.serialize(
+                    notification
+                )
+                for notification in
+                serializeable.notifications
             ]
         }
