@@ -30,3 +30,6 @@ django-rest-knox
 matplotlib
 deap
 gunicorn
+channels
+daphne
+channels_redis

@@ -7,6 +7,7 @@ import json
 
 from distutils.util import strtobool
 
+from django.db import transaction
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
@@ -49,10 +50,10 @@ from resources.staticimageloader import image_loader
 
 
 _IMAGE_TYPES_MAP = {
-    'printing': Printing,
-    'trap': Trap,
-    'ticket': Ticket,
-    'purple': Purple,
+    'Printing': Printing,
+    'Trap': Trap,
+    'Ticket': Ticket,
+    'Purple': Purple,
 }
 
 
@@ -78,7 +79,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
     pictured_type = _IMAGE_TYPES_MAP.get(
         request.GET.get(
             'type',
-            'printing',
+            'Printing',
         ),
         Printing,
     )
@@ -432,68 +433,73 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
     }
 
     def patch(self, request, *args, **kwargs):
-        try:
-            patch = models.CubePatch.objects.get(pk=kwargs['pk'])
-        except models.CubePatch.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-        update = request.data.get('update')
-        change_undoes = request.data.get('change_undoes')
-
-        if not update and not change_undoes:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        current_patch_content = JsonId(db).deserialize(
-            CubePatch,
-            patch.content,
-        )
-
-        if update:
+        with transaction.atomic():
             try:
-                update = JsonId(db).deserialize(
-                    CubePatch,
-                    request.data['update'],
+                patch = (
+                    models.CubePatch.objects
+                        .select_for_update()
+                        .get(pk=kwargs['pk'])
                 )
-            except (KeyError, AttributeError, Exception):
+            except models.CubePatch.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            update = request.data.get('update')
+            change_undoes = request.data.get('change_undoes')
+
+            if not update and not change_undoes:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            current_patch_content += update
+            current_patch_content = JsonId(db).deserialize(
+                CubePatch,
+                patch.content,
+            )
 
-        if change_undoes:
-            try:
-                change_undoes = json.loads(change_undoes)
-            except json.JSONDecodeError:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
-            strategy = JsonId(db)
-            try:
-                for undo, multiplicity in change_undoes:
-                    undoes.append(
-                        (
-                            strategy.deserialize(
-                                self._undo_map[undo['type']],
-                                undo['content'],
-                            ),
-                            multiplicity,
-                        )
+            if update:
+                try:
+                    update = JsonId(db).deserialize(
+                        CubePatch,
+                        request.data['update'],
                     )
-            except (KeyError, TypeError, ValueError):
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                except (KeyError, AttributeError, Exception):
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            for undo, multiplicity in undoes:
-                current_patch_content -= (undo.as_patch() * multiplicity)
+                current_patch_content += update
 
-        patch.content = JsonId.serialize(
-            current_patch_content,
-        )
+            if change_undoes:
+                try:
+                    change_undoes = json.loads(change_undoes)
+                except json.JSONDecodeError:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        patch.save()
+                undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
+                strategy = JsonId(db)
+                try:
+                    for undo, multiplicity in change_undoes:
+                        undoes.append(
+                            (
+                                strategy.deserialize(
+                                    self._undo_map[undo['type']],
+                                    undo['content'],
+                                ),
+                                multiplicity,
+                            )
+                        )
+                except (KeyError, TypeError, ValueError):
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-            serializers.CubePatchSerializer(patch).data,
-            content_type='application/json',
-        )
+                for undo, multiplicity in undoes:
+                    current_patch_content -= (undo.as_patch() * multiplicity)
+
+            patch.content = JsonId.serialize(
+                current_patch_content,
+            )
+
+            patch.save()
+
+            return Response(
+                serializers.CubePatchSerializer(patch).data,
+                content_type='application/json',
+            )
 
 
 @api_view(['GET'])
@@ -511,7 +517,6 @@ def patch_verbose(request: Request, pk: int) -> Response:
             ).as_verbose
         )
     )
-
 
 
 @api_view(['GET'])
@@ -658,45 +663,45 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, pk: int, *args, **kwargs):
-        try:
-            patch = models.CubePatch.objects.get(pk=pk)
-        except models.CubePatch.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            try:
+                patch = (
+                    models.CubePatch.objects
+                        .select_related('constrained_nodes')
+                        .select_for_update()
+                        .get(pk = pk)
+                )
+            except models.CubePatch.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
-        versioned_cube = patch.versioned_cube
-        latest_release = versioned_cube.latest_release
+            versioned_cube = patch.versioned_cube
+            latest_release = versioned_cube.latest_release
 
-        cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
-        cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
+            cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
+            cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
 
-        # cube_updater = CubeUpdater(
-        #     cube = cube,
-        #     node_collection = NodeCollection(()),
-        #     patch = cube_patch,
-        # ).update()
-
-        new_release = models.CubeRelease.create(
-            cube + cube_patch.cube_delta_operation,
-            versioned_cube,
-        )
-
-        if hasattr(latest_release, 'constrained_nodes'):
-            models.ConstrainedNodes.objects.create(
-                constrained_nodes_content = JsonId.serialize(
-                    JsonId(db).deserialize(
-                        NodeCollection,
-                        latest_release.constrained_nodes.constrained_nodes_content,
-                    ) + cube_patch.node_delta_operation
-                ),
-                release = new_release,
+            new_release = models.CubeRelease.create(
+                cube + cube_patch.cube_delta_operation,
+                versioned_cube,
             )
 
-        patch.delete()
+            if hasattr(latest_release, 'constrained_nodes'):
+                models.ConstrainedNodes.objects.create(
+                    constrained_nodes_content = JsonId.serialize(
+                        JsonId(db).deserialize(
+                            NodeCollection,
+                            latest_release.constrained_nodes.constrained_nodes_content,
+                        ) + cube_patch.node_delta_operation
+                    ),
+                    release = new_release,
+                )
 
-        return Response(
-            serializers.FullCubeReleaseSerializer(new_release).data,
-            status=status.HTTP_200_OK,
-        )
+            patch.delete()
+
+            return Response(
+                serializers.FullCubeReleaseSerializer(new_release).data,
+                status=status.HTTP_200_OK,
+            )
 
 
 # TODO

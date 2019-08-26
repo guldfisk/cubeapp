@@ -14,6 +14,13 @@ services:
     networks:
       - database_network
 
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - database_network
+
   web:
     build: .
     volumes:
@@ -25,23 +32,26 @@ services:
     depends_on:
       - db
     networks:
-      - nginx_network
+#      - nginx_network
       - database_network
     env_file:
       - .env
 
-  nginx:
-    image: nginx:1.13
     ports:
-      - "${PORT_OUT}:80"
-    volumes:
-      - ./config/nginx/conf.d:/etc/nginx/conf.d
-      - static_volume:/opt/services/cubeapp/static
-      - media_volume:/opt/services/cubeapp/meda
-    depends_on:
-      - web
-    networks:
-      - nginx_network
+      - "7000:7000"
+
+#  nginx:
+#    image: nginx:1.13
+#    ports:
+#      - "${PORT_OUT}:80"
+#    volumes:
+#      - ./config/nginx/conf.d:/etc/nginx/conf.d
+#      - static_volume:/opt/services/cubeapp/static
+#      - media_volume:/opt/services/cubeapp/meda
+#    depends_on:
+#      - web
+#    networks:
+#      - nginx_network
 
 networks:
   nginx_network:

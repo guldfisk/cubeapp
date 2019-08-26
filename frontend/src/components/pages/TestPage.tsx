@@ -1,74 +1,98 @@
 import React from 'react';
-
-import BootstrapTable from 'react-bootstrap-table-next';
-import cellEditFactory from 'react-bootstrap-table2-editor';
 import Button from "react-bootstrap/Button";
+import Chart from "react-apexcharts";
+
+
+const url: string = 'ws://localhost:7000/ws/distribute/';
 
 
 interface TestPageState {
-  canEdit: boolean
+  ws: WebSocket
+  data: number[]
 }
+
 
 export default class TestPage extends React.Component<null, TestPageState> {
 
   constructor(props: any) {
     super(props);
     this.state = {
-      canEdit: true,
+      ws: new WebSocket(url),
+      data: [],
     }
   }
 
-  render() {
-    const columns = [
-      {
-        dataField: 'first',
-        text: 'First',
-      },
-      {
-        dataField: 'second',
-        text: 'Second',
-      }
-    ];
-    const data = [
-      {
-        first: 1,
-        second: 2
-      },
-      {
-        first: 2,
-        second: 10
-      },
-      {
-        first: 3,
-        second: -12
-      },
-    ];
+  componentDidMount() {
+    this.state.ws.onopen = () => {
+      console.log('connected')
+    };
 
-    return <div>
-      <Button
-        onClick={() => this.setState({canEdit: !this.state.canEdit})}
-      >
-        {this.state.canEdit ? "Disable editing" : "Enable Editing"}
-      </Button>
-      <BootstrapTable
-      keyField='first'
-      data={data}
-      columns={columns}
-      bootstrap4={true}
-      cellEdit={
-        !this.state.canEdit ? undefined : cellEditFactory(
-          {
-            mode: 'click',
-            beforeSaveCell: (
-              (oldValue: any, newValue: any, row: any, column: any) => {
-                console.log(oldValue, newValue, row, column)
+    this.state.ws.onmessage = evt => {
+      const frame = JSON.parse(evt.data);
+      console.log(frame.message);
+      this.setState({data: this.state.data.concat([frame.message])})
+    };
+
+    this.state.ws.onclose = () => {
+      console.log('disconnected');
+      this.setState({
+          ws: new WebSocket(url),
+        }
+      )
+    }
+  }
+
+  submitMessage = () => {
+    const message = {message: 'okokok'};
+    this.state.ws.send(JSON.stringify(message));
+  };
+
+  render() {
+    return (
+      <div>
+        <Button onClick={() => console.log('ok')}>Send message</Button>
+        <Chart
+          type='line'
+          options={
+            {
+              chart: {
+                id: 'chart',
+                animations: {enabled: false}
+              },
+              xaxis: {
+                type: 'numeric',
+                min: 0,
+                max: this.state.data.length,
+                crosshairs: {show: false},
+                axisTicks: {color: 'white'},
+                tooltip: {enabled: false},
+                title: {
+                  text: "Generation",
+                  color: "white",
+                }
+              },
+              yaxis: {
+                title: {
+                  text: "Fitness",
+                  color: "white",
+                },
+                crosshairs: {show: false},
+                axisTicks: {color: 'white'},
+                tooltip: {enabled: false},
               }
-            ),
-            blurToSave: true,
+            }
           }
-        )
-      }
-    />
-    </div>
+          series={
+            [
+              {
+                name: 'something',
+                data: this.state.data,
+              },
+            ]
+          }
+          width='50%'
+        />
+      </div>
+    )
   }
 }

@@ -31,10 +31,10 @@ HOST = _config_parser['default']['host']
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'rest_framework',
     'knox',
     'api.apps.ApiConfig',
-    # 'statics.apps.StaticsConfig',
     'frontend.apps.FrontendConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -149,3 +149,15 @@ REST_FRAMEWORK = {
         'knox.auth.TokenAuthentication',
     ),
 }
+
+ASGI_APPLICATION = 'cubeapp.routing.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
+        },
+    },
+}
+
