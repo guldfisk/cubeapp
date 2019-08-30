@@ -370,6 +370,7 @@ class VersionedCubesList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        # TODO create empty release
 
 
 class VersionedCubeDetail(generics.RetrieveDestroyAPIView):

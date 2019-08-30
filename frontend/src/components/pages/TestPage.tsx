@@ -3,7 +3,7 @@ import Button from "react-bootstrap/Button";
 import Chart from "react-apexcharts";
 
 
-const url: string = 'ws://localhost:7000/ws/distribute/';
+const url: string = 'ws://localhost:7000/ws/distribute/4/';
 
 
 interface TestPageState {
@@ -29,8 +29,8 @@ export default class TestPage extends React.Component<null, TestPageState> {
 
     this.state.ws.onmessage = evt => {
       const frame = JSON.parse(evt.data);
-      console.log(frame.message);
-      this.setState({data: this.state.data.concat([frame.message])})
+      console.log(frame);
+      // this.setState({data: this.state.data.concat([frame.message])})
     };
 
     this.state.ws.onclose = () => {
