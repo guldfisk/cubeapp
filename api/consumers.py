@@ -163,6 +163,10 @@ class DistributorConsumer(JsonWebsocketConsumer):
         self._distribution_task: t.Optional[DistributionTask] = None
         self._consumer: t.Optional[QueueConsumer] = None
 
+        self._patch: t.Optional[models.CubePatch] = None
+        self._patch_pk: t.Optional[int] = None
+        self._subscription_channel_name: t.Optional[str] = None
+
     def _send_message(self, message_type: str, content: t.Any) -> None:
         self.send_json(
             {
@@ -171,23 +175,10 @@ class DistributorConsumer(JsonWebsocketConsumer):
             }
         )
 
-    def _handle_distribution_task_message(self, message: t.Dict[str, t.Any]) -> None:
-        self._send_message('distribution', message)
+    def _generate_new_distribution(self):
 
-    def connect(self):
-        self.accept()
-
-        patch_pk = self.scope["url_route"]["kwargs"]["pk"]
-        self._send_message('ok', patch_pk)
-        try:
-            patch = models.CubePatch.objects.get(pk=patch_pk)
-        except models.CubePatch.DoesNotExist:
-            return
-
-        versioned_cube = patch.versioned_cube
+        versioned_cube = self._patch.versioned_cube
         latest_release = versioned_cube.latest_release
-
-        self._send_message('ok', 'uhu')
 
         # # TODO handle no nodes
         nodes = latest_release.constrained_nodes
@@ -196,7 +187,7 @@ class DistributorConsumer(JsonWebsocketConsumer):
 
         cube_patch = strategy.deserialize(
             CubePatch,
-            patch.content,
+            self._patch.content,
         )
 
         cube = strategy.deserialize(
@@ -222,9 +213,6 @@ class DistributorConsumer(JsonWebsocketConsumer):
 
         trap_amount = updater.new_garbage_trap_amount
 
-        self._send_message('ok', 'ding')
-
-        #
         constraint_set = model.ConstraintSet(
             (
                 (
@@ -260,19 +248,23 @@ class DistributorConsumer(JsonWebsocketConsumer):
             constraints = constraint_set,
         )
 
-        distributor_task = DISTRIBUTOR_SERVICE.submit_distributor(
-            distributor
-        )
-        if distributor_task is None:
-            self._send_message(
-                'status',
-                'service currently unavailable',
-            )
-        else:
+    def connect(self):
+        self._patch_pk = int(self.scope["url_route"]["kwargs"]["pk"])
+        try:
+            self._patch = models.CubePatch.objects.get(pk=self._patch_pk)
+        except models.CubePatch.DoesNotExist:
+            return
+
+        self.accept()
+
+        self._subscription_channel_name = f'{self._patch_pk}_{id(self)}'
+
+        distributor_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
+        if distributor_task is not None:
             self._distribution_task = distributor_task
             self._consumer = QueueConsumer(
-                distributor_task.subscribe('hihi'),
-                self._handle_distribution_task_message,
+                distributor_task.subscribe(str(id(self))),
+                self.send_json,
             )
             self._consumer.start()
 

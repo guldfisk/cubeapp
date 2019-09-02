@@ -14,19 +14,32 @@ class DistributorService(threading.Thread):
         self._task_lock = threading.Lock()
         self._communication_lock = threading.Lock()
 
-        self._task: t.Optional[threading.Thread] = None
+        self._task: t.Optional[DistributionTask] = None
+        self._release_id: t.Optional[int] = None
 
-    def submit_distributor(self, distributor: Distributor) -> t.Optional[DistributionTask]:
+    def connect(self, release_id: int) -> t.Optional[DistributionTask]:
+        with self._communication_lock:
+            if release_id == self._release_id:
+                return self._task
+            else:
+                return None
+
+    def submit_distributor(
+        self,
+        release_id: int,
+        distributor: Distributor,
+    ) -> t.Tuple[t.Optional[DistributionTask], int]:
         with self._communication_lock:
             if self._task is None or not self._task.is_alive():
                 self._task = DistributionTask(
                     distributor,
                     max_generations = 3000,
                 )
+                self._release_id = release_id
                 self._task.start()
-                return self._task
+                return self._task, release_id
             else:
-                return None
+                return self._task, self._release_id
 
 
 DISTRIBUTOR_SERVICE = DistributorService(daemon = True)

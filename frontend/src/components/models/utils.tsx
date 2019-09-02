@@ -1,8 +1,5 @@
-
-
-
 interface IDable {
-  id: () => string
+  id: string
 }
 
 
@@ -44,12 +41,12 @@ export class Counter<T extends IDable> {
     if (amount === 0) {
       return
     }
-    let count = this._counters[item.id()];
+    let count = this._counters[item.id];
     if (count === undefined) {
-      this._counters[item.id()] = new SingleCounter(item, amount)
+      this._counters[item.id] = new SingleCounter(item, amount)
     } else {
       if (count.add(amount).count() === 0) {
-        delete this._counters[item.id()]
+        delete this._counters[item.id]
       }
     }
   };
@@ -61,6 +58,7 @@ export class Counter<T extends IDable> {
   }
 
 }
+
 
 export class MultiplicityList<T> {
   items: [T, number][];

@@ -4,6 +4,7 @@ import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
 import {promises} from "fs";
+import wu from 'wu';
 
 
 export const apiPath = '/api/';
@@ -381,6 +382,65 @@ export class CubeReleaseMeta extends Atomic {
       remote.intended_size,
     )
   };
+
+}
+
+
+export class PrintingCounter extends Counter<Printing> {
+
+  public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCounter {
+    const counter: PrintingCounter = new PrintingCounter();
+    for (const printing of printings) {
+      counter.add(printing);
+    }
+    return counter;
+  }
+
+  printings_of_color = (color: string): wu.WuIterable<[Printing, number]> => {
+    return wu(this.items()).filter(
+      ([printing, _]: [Printing, number]) =>
+        !printing.types.includes('Land')
+        && printing.color.length === 1
+        && printing.color[0] === color
+    )
+  };
+
+  gold_printings = (): wu.WuIterable<[Printing, number]> => {
+    return wu(this.items()).filter(
+      ([printing, _]: [Printing, number]) =>
+        !printing.types.includes('Land')
+        && printing.color.length > 1
+    )
+  };
+
+  colorless_printings = (): wu.WuIterable<[Printing, number]> => {
+    return wu(this.items()).filter(
+      ([printing, _]: [Printing, number]) =>
+        !printing.types.includes('Land')
+        && printing.color.length === 0
+    )
+  };
+
+  land_printings = (): wu.WuIterable<[Printing, number]> => {
+    return wu(this.items()).filter(
+      ([printing, _]: [Printing, number]) =>
+        printing.types.includes('Land')
+    )
+  };
+
+  grouped_printings = (): wu.WuIterable<[Printing, number]>[] => {
+    return [
+      this.printings_of_color('W'),
+      this.printings_of_color('U'),
+      this.printings_of_color('B'),
+      this.printings_of_color('R'),
+      this.printings_of_color('G'),
+      this.gold_printings(),
+      this.colorless_printings(),
+      this.land_printings(),
+    ]
+  };
+
 
 }
 
@@ -1043,22 +1103,6 @@ export class ConstrainedNodes {
 }
 
 
-// const cubeableFromRemote = (remote: any): Cubeable => {
-//   if (remote.type === 'Printing') {
-//     return Printing.fromRemote(remote)
-//   }
-//   if (remote.type === 'Trap') {
-//     return Trap.fromRemote(remote)
-//   }
-//   if (remote.type === 'Ticket') {
-//     return Ticket.fromRemote(remote)
-//   }
-//   if (remote.type === 'Purple') {
-//     return Purple.fromRemote(remote)
-//   }
-// };
-
-
 export class CubeChange extends Atomic {
   explanation: string;
   type: string;
@@ -1091,47 +1135,6 @@ export class CubeChange extends Atomic {
   }
 
 }
-
-
-// export class NewCubeable extends CubeChange {
-//   cubeable: Cubeable;
-//
-//   constructor(id: string, explanation: string, cubeable: Cubeable) {
-//     super(id, explanation);
-//     this.cubeable = cubeable;
-//   }
-//
-//   public static fromRemote(remote: any): NewCubeable {
-//     return new NewCubeable(
-//       remote.id,
-//       remote.explanation,
-//       cubeableFromRemote(remote.cubeable),
-//     )
-//   }
-//
-// }
-
-
-// export class AlteredNode extends CubeChange {
-//   before: ConstrainedNode;
-//   after: ConstrainedNode;
-//
-//   constructor(id: string, explanation: string, before: ConstrainedNode, after: ConstrainedNode) {
-//     super(id, explanation);
-//     this.before = before;
-//     this.after = after;
-//   }
-//
-//   public static fromRemote(remote: any): AlteredNode {
-//     return new AlteredNode(
-//       remote.id,
-//       remote.explanation,
-//       ConstrainedNode.fromRemote(remote.before),
-//       ConstrainedNode.fromRemote(remote.after),
-//     )
-//   }
-//
-// }
 
 
 export class VerbosePatch {
