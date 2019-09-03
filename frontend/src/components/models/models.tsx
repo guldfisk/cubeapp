@@ -428,82 +428,7 @@ export class PrintingCounter extends Counter<Printing> {
     )
   };
 
-  grouped_printings = (): wu.WuIterable<[Printing, number]>[] => {
-    return [
-      this.printings_of_color('W'),
-      this.printings_of_color('U'),
-      this.printings_of_color('B'),
-      this.printings_of_color('R'),
-      this.printings_of_color('G'),
-      this.gold_printings(),
-      this.colorless_printings(),
-      this.land_printings(),
-    ]
-  };
-
-
-}
-
-
-export class PrintingCollection extends MultiplicityList<Printing> {
-
-  constructor(items: [Printing, number][] = []) {
-    super(items);
-    this.items.sort(
-      alphabeticalPropertySortMethodFactory(
-        ([printing, _]: [Printing, number]) => printing.name.toString()
-      )
-    );
-  }
-
-  public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
-    let collector: Record<string, [Printing, number]> = {};
-    for (const printing of printings) {
-      let key = printing.id.toString();
-      if (collector[key] === undefined) {
-        collector[key] = [printing, 1]
-      } else {
-        collector[key][1] += 1
-      }
-    }
-    return new PrintingCollection(
-      Object.values(collector)
-    )
-  }
-
-  printings_of_color = (color: string): [Printing, number][] => {
-    return this.items.filter(
-      ([printing, _]: [Printing, number]) =>
-        !printing.types.includes('Land')
-        && printing.color.length === 1
-        && printing.color[0] === color
-    )
-  };
-
-  gold_printings = (): [Printing, number][] => {
-    return this.items.filter(
-      ([printing, _]: [Printing, number]) =>
-        !printing.types.includes('Land')
-        && printing.color.length > 1
-    )
-  };
-
-  colorless_printings = (): [Printing, number][] => {
-    return this.items.filter(
-      ([printing, _]: [Printing, number]) =>
-        !printing.types.includes('Land')
-        && printing.color.length === 0
-    )
-  };
-
-  land_printings = (): [Printing, number][] => {
-    return this.items.filter(
-      ([printing, _]: [Printing, number]) =>
-        printing.types.includes('Land')
-    )
-  };
-
-  grouped_printings = (): [Printing, number][][] => {
+  grouped_printings = (): IterableIterator<[Printing, number]>[] => {
     return [
       this.printings_of_color('W'),
       this.printings_of_color('U'),
@@ -517,19 +442,93 @@ export class PrintingCollection extends MultiplicityList<Printing> {
   };
 
 }
+
+
+// export class PrintingCollection extends MultiplicityList<Printing> {
+//
+//   constructor(items: [Printing, number][] = []) {
+//     super(items);
+//     this.items.sort(
+//       alphabeticalPropertySortMethodFactory(
+//         ([printing, _]: [Printing, number]) => printing.name.toString()
+//       )
+//     );
+//   }
+//
+//   public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
+//     let collector: Record<string, [Printing, number]> = {};
+//     for (const printing of printings) {
+//       let key = printing.id.toString();
+//       if (collector[key] === undefined) {
+//         collector[key] = [printing, 1]
+//       } else {
+//         collector[key][1] += 1
+//       }
+//     }
+//     return new PrintingCollection(
+//       Object.values(collector)
+//     )
+//   }
+//
+//   printings_of_color = (color: string): [Printing, number][] => {
+//     return this.items.filter(
+//       ([printing, _]: [Printing, number]) =>
+//         !printing.types.includes('Land')
+//         && printing.color.length === 1
+//         && printing.color[0] === color
+//     )
+//   };
+//
+//   gold_printings = (): [Printing, number][] => {
+//     return this.items.filter(
+//       ([printing, _]: [Printing, number]) =>
+//         !printing.types.includes('Land')
+//         && printing.color.length > 1
+//     )
+//   };
+//
+//   colorless_printings = (): [Printing, number][] => {
+//     return this.items.filter(
+//       ([printing, _]: [Printing, number]) =>
+//         !printing.types.includes('Land')
+//         && printing.color.length === 0
+//     )
+//   };
+//
+//   land_printings = (): [Printing, number][] => {
+//     return this.items.filter(
+//       ([printing, _]: [Printing, number]) =>
+//         printing.types.includes('Land')
+//     )
+//   };
+//
+//   grouped_printings = (): [Printing, number][][] => {
+//     return [
+//       this.printings_of_color('W'),
+//       this.printings_of_color('U'),
+//       this.printings_of_color('B'),
+//       this.printings_of_color('R'),
+//       this.printings_of_color('G'),
+//       this.gold_printings(),
+//       this.colorless_printings(),
+//       this.land_printings(),
+//     ]
+//   };
+//
+// }
 
 
 export class CubeablesContainer {
-  printings: PrintingCollection;
-  traps: MultiplicityList<Trap>;
-  tickets: MultiplicityList<Ticket>;
-  purples: MultiplicityList<Purple>;
+  printings: PrintingCounter;
+  traps: Counter<Trap>;
+  tickets: Counter<Ticket>;
+  purples: Counter<Purple>;
 
   constructor(
-    printings: PrintingCollection,
-    traps: MultiplicityList<Trap>,
-    tickets: MultiplicityList<Ticket>,
-    purples: MultiplicityList<Purple>,
+    printings: PrintingCounter,
+    traps: Counter<Trap>,
+    tickets: Counter<Ticket>,
+    purples: Counter<Purple>,
   ) {
     this.printings = printings;
     this.traps = traps;
@@ -539,22 +538,22 @@ export class CubeablesContainer {
 
   public static fromRemote(remote: any): CubeablesContainer {
     return new CubeablesContainer(
-      new PrintingCollection(
+      new PrintingCounter(
         remote.printings.map(
           ([printing, multiplicity]: [Trap, number]) => [Printing.fromRemote(printing), multiplicity]
         )
       ),
-      new MultiplicityList(
+      new Counter(
         remote.traps.map(
           ([trap, multiplicity]: [Trap, number]) => [Trap.fromRemote(trap), multiplicity]
         )
       ),
-      new MultiplicityList(
+      new Counter(
         remote.tickets.map(
           ([ticket, multiplicity]: [Trap, number]) => [Ticket.fromRemote(ticket), multiplicity]
         )
       ),
-      new MultiplicityList(
+      new Counter(
         remote.purples.map(
           ([purple, multiplicity]: [Trap, number]) => [Purple.fromRemote(purple), multiplicity]
         )
@@ -570,13 +569,13 @@ export class CubeablesContainer {
   };
 
   * laps(): IterableIterator<[Cubeable, number]> {
-    yield* this.traps.items;
-    yield* this.tickets.items;
-    yield* this.purples.items;
+    yield* this.traps.items();
+    yield* this.tickets.items();
+    yield* this.purples.items();
   };
 
   * cubeables(): IterableIterator<[Cubeable, number]> {
-    yield* this.printings.items;
+    yield* this.printings.items();
     yield* this.laps();
   };
 
@@ -587,25 +586,25 @@ export class CubeablesContainer {
     yield* this.purples.iter();
   };
 
-  traps_of_intention_types = (intention_types: string[]): [Trap, number][] => {
-    return this.traps.items.filter(
+  traps_of_intention_types = (intention_types: string[]): wu.WuIterable<[Trap, number]> => {
+    return wu(this.traps.items()).filter(
       ([trap, multiplicity]: [Trap, number]) => intention_types.includes(trap.intentionType)
     )
   };
 
-  grouped_laps = (): [Cubeable, number][][] => {
+  grouped_laps = (): IterableIterator<[Cubeable, number]>[] => {
     return [
       this.traps_of_intention_types(['GARBAGE']),
       this.traps_of_intention_types(['SYNERGY', 'NO_INTENTION']),
       this.traps_of_intention_types(['OR']),
-      this.tickets.items,
-      this.purples.items,
+      this.tickets.items(),
+      this.purples.items(),
     ]
   };
 
-  grouped_cubeables = (): [Cubeable, number][][] => {
+  grouped_cubeables = (): IterableIterator<[Cubeable, number]>[] => {
     return (
-      this.printings.grouped_printings() as [Cubeable, number][][]
+      this.printings.grouped_printings() as IterableIterator<[Cubeable, number]>[]
     ).concat(
       this.grouped_laps(),
     )
@@ -744,28 +743,28 @@ export class Patch extends Atomic {
       remote.description,
       remote.created_at,
       new CubeablesContainer(
-        new PrintingCollection(
+        new PrintingCounter(
           remote.content.cube_delta.printings.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
           ).map(
             ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.traps.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
           ).map(
             ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.tickets.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
           ).map(
             ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.purples.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
           ).map(
@@ -774,28 +773,28 @@ export class Patch extends Atomic {
         ),
       ),
       new CubeablesContainer(
-        new PrintingCollection(
+        new PrintingCounter(
           remote.content.cube_delta.printings.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
           ).map(
             ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.traps.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
           ).map(
             ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.tickets.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
           ).map(
             ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
           )
         ),
-        new MultiplicityList(
+        new Counter(
           remote.content.cube_delta.purples.filter(
             ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
           ).map(
@@ -816,7 +815,7 @@ export class Patch extends Atomic {
     );
   }
 
-  update = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]): Promise<Patch> => {
+  private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange, number][]): any {
     let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
       printings: [],
       traps: [],
@@ -859,23 +858,30 @@ export class Patch extends Atomic {
 
     }
 
-    console.log(cubeDelta);
-    console.log(nodeDelta);
-    console.log(changeUndoes);
+    return {
+      update: {
+        cube_delta: cubeDelta,
+        nodes_delta: nodeDelta,
+      },
+      change_undoes: changeUndoes,
+    };
+    // return {
+    //   update: JSON.stringify(
+    //     {
+    //       cube_delta: cubeDelta,
+    //       nodes_delta: nodeDelta,
+    //     }
+    //   ),
+    //   change_undoes: JSON.stringify(
+    //     changeUndoes
+    //   ),
+    // }
+  };
 
+  update = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]): Promise<Patch> => {
     return axios.patch(
       apiPath + 'patches/' + this.id + '/',
-      {
-        update: JSON.stringify(
-          {
-            cube_delta: cubeDelta,
-            nodes_delta: nodeDelta,
-          }
-        ),
-        change_undoes: JSON.stringify(
-          changeUndoes
-        ),
-      },
+      Patch.getUpdateJSON(updates),
       {
         headers: {
           "Content-Type": "application/json",
@@ -885,6 +891,43 @@ export class Patch extends Atomic {
     ).then(
       response => Patch.fromRemote(response.data)
     )
+  };
+
+  public static updateWebsocket(
+    connection: WebSocket,
+    updates: [Cubeable | ConstrainedNode | CubeChange, number][],
+  ): void {
+    const values = Patch.getUpdateJSON(updates);
+    values['type'] = 'update';
+    connection.send(
+      JSON.stringify(
+        values
+      )
+    );
+  };
+
+  getEditWebsocket = (): WebSocket => {
+    const url = new URL('/ws/patch_edit/' + this.id + '/', window.location.href);
+    url.protocol = url.protocol.replace('http', 'ws');
+    const ws = new WebSocket(url.href);
+
+    ws.onopen = () => {
+      console.log('connected');
+      ws.send(
+        JSON.stringify(
+          {
+            type: 'authentication',
+            token: store.getState().token,
+          }
+        )
+      );
+    };
+
+    ws.onclose = () => {
+      console.log('disconnected');
+    };
+
+    return ws;
   };
 
   delete = (): Promise<any> => {
@@ -1067,19 +1110,15 @@ export class ConstrainedNode extends Atomic {
 
 
 export class ConstrainedNodes {
-  _nodes: MultiplicityList<ConstrainedNode>;
+  nodes: Counter<ConstrainedNode>;
 
   constructor(nodes: [any, number][]) {
-    this._nodes = new MultiplicityList(
+    this.nodes = new Counter(
       nodes.map(
         ([node, multiplicity]: [any, number]) => [ConstrainedNode.fromRemote(node), multiplicity]
       )
     )
   }
-
-  nodes = (): MultiplicityList<ConstrainedNode> => {
-    return this._nodes
-  };
 
   static all = (): Promise<ConstrainedNodes[]> => {
     // TODO pagination lol
@@ -1138,15 +1177,15 @@ export class CubeChange extends Atomic {
 
 
 export class VerbosePatch {
-  changes: MultiplicityList<CubeChange>;
+  changes: Counter<CubeChange>;
 
-  constructor(changes: MultiplicityList<CubeChange>) {
+  constructor(changes: Counter<CubeChange>) {
     this.changes = changes;
   }
 
   public static fromRemote(remote: any): VerbosePatch {
     return new VerbosePatch(
-      new MultiplicityList(
+      new Counter(
         remote.changes.map(
           ([change, multiplicity]: [any, number]) => [
             CubeChange.fromRemote(change),

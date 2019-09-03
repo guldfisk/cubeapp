@@ -53,3 +53,22 @@ export function alphabeticalPropertySortMethodFactory<T>(
     return (f < s) ? -1 : (f > s) ? 1 : 0;
   }
 }
+
+
+export class UserGroup {
+  users: Set<String>;
+
+  constructor() {
+    this.users = new Set();
+  }
+
+  add = (userName: string): void => {
+    this.users.add(userName);
+  };
+
+  remove = (userName: string): void => {
+    this.users.delete(userName);
+  };
+
+
+}

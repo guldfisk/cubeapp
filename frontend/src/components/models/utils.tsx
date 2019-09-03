@@ -57,6 +57,14 @@ export class Counter<T extends IDable> {
     }
   }
 
+  * iter(): IterableIterator<T> {
+    for (const count of Object.values(this._counters)) {
+      for (let _ = 0; _ < count.count(); _++) {
+        yield count.item()
+      }
+    }
+  }
+
 }
 
 
@@ -69,7 +77,7 @@ export class MultiplicityList<T> {
 
   * iter(): IterableIterator<T> {
     for (const [item, multiplicity] of this.items) {
-      for (let i = 0; i < multiplicity; i++) {
+      for (let _ = 0; _ < multiplicity; _++) {
         yield item
       }
     }

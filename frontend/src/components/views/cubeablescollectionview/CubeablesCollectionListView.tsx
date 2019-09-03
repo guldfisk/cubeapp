@@ -3,7 +3,7 @@ import {ReactElement} from 'react';
 
 import Row from 'react-bootstrap/Row';
 
-import {CubeablesContainer, PrintingCollection, Cubeable} from "../../models/models";
+import {CubeablesContainer, Cubeable, PrintingCounter} from "../../models/models";
 import {CubeableListItem} from "../../utils/listitems";
 import ListGroup from "react-bootstrap/ListGroup";
 import Container from "react-bootstrap/Container";
@@ -20,46 +20,46 @@ interface RawCubeListViewProps {
 export default class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> {
 
   render() {
-    const printingCollection = (
+    const printingCounter = (
       this.props.cubeableType === 'Cubeables' ?
         this.props.rawCube.printings
-        : PrintingCollection.collectFromIterable(
+        : PrintingCounter.collectFromIterable(
         this.props.rawCube.allPrintings()
         )
     );
 
-    const groups: [[string, string], [Cubeable, number][]][] = [
+    const groups: [[string, string], IterableIterator<[Cubeable, number]>][] = [
       [
         ["yellow", "White"],
-        printingCollection.printings_of_color('W'),
+        printingCounter.printings_of_color('W'),
       ],
       [
         ["blue", "Blue"],
-        printingCollection.printings_of_color('U'),
+        printingCounter.printings_of_color('U'),
       ],
       [
         ["black", "Black"],
-        printingCollection.printings_of_color('B'),
+        printingCounter.printings_of_color('B'),
       ],
       [
         ["red", "Red"],
-        printingCollection.printings_of_color('R'),
+        printingCounter.printings_of_color('R'),
       ],
       [
         ["green", "Green"],
-        printingCollection.printings_of_color('G'),
+        printingCounter.printings_of_color('G'),
       ],
       [
         ["orange", "Gold"],
-        printingCollection.gold_printings(),
+        printingCounter.gold_printings(),
       ],
       [
         ["grey", "Colorless"],
-        printingCollection.colorless_printings(),
+        printingCounter.colorless_printings(),
       ],
       [
         ["brown", "Lands"],
-        printingCollection.land_printings(),
+        printingCounter.land_printings(),
       ],
     ];
 
@@ -87,13 +87,13 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
       groups.push(
         [
           ["pink", "Tickets"],
-          this.props.rawCube.tickets.items,
+          this.props.rawCube.tickets.items(),
         ]
       );
       groups.push(
         [
           ["purple", "Purples"],
-          this.props.rawCube.purples.items,
+          this.props.rawCube.purples.items(),
         ]
       );
     }
@@ -101,7 +101,9 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
     return <Container fluid>
       <Row>
         {
-          groups.filter(
+          groups.map(
+            ([header, items]): [[string, string], [Cubeable, number][]] => [header, Array.from(items)]
+          ).filter(
             ([header, items]) => items.length
           ).map(
             ([[color, title], items]) => {

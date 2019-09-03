@@ -110,7 +110,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       )
     }
 
-    const data = this.props.constrainedNodes.nodes().items.map(
+    const data = Array.from(this.props.constrainedNodes.nodes.items()).map(
       ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
         return {
           qty: multiplicity,

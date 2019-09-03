@@ -12,17 +12,12 @@ import {Loading} from '../../utils/utils';
 import {
   ConstrainedNode,
   Cubeable,
-  CubeablesContainer, CubeChange,
-  CubeRelease,
+  CubeChange,
   Patch,
   Preview,
-  Printing, PrintingNode,
-  Trap, VerbosePatch
+  Printing, Trap, VerbosePatch
 } from '../../models/models';
-import PatchView from '../../views/patchview/PatchView';
 import SearchView from "../../views/search/SearchView";
-import ReleaseMultiView from "../../views/releaseview/ReleaseMultiView";
-import CubeablesCollectionListView from "../../views/cubeablescollectionview/CubeablesCollectionListView";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import TrapParseView from "../../views/traps/TrapParseView";
@@ -33,6 +28,10 @@ import {signIn} from "../../auth/controller";
 import {connect} from "react-redux";
 import Button from "react-bootstrap/Button";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
+
+import {UserGroup} from "../../utils/utils";
+import {jsJsx} from "ts-loader/dist/types/constants";
+import UserGroupView from "../../views/users/UserGroupView";
 
 
 interface DeltaPageProps {
@@ -47,6 +46,8 @@ interface DeltaPageState {
   previewLoading: boolean
   confirmDelete: boolean
   editing: boolean
+  editingConnection: WebSocket | null
+  userGroup: UserGroup
 }
 
 class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
@@ -59,7 +60,9 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       preview: null,
       previewLoading: true,
       confirmDelete: false,
-      editing: false
+      editing: false,
+      editingConnection: null,
+      userGroup: new UserGroup(),
     };
   }
 
@@ -89,22 +92,66 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     );
   };
 
+  handleMessage = (event: any) => {
+    const message = JSON.parse(event.data);
+    console.log(message);
+
+    if (message.type === 'user_update') {
+      if (message.action === 'enter' || message.action === 'here') {
+        this.state.userGroup.add(message.user);
+      } else if (message.action === 'leave') {
+        this.state.userGroup.remove(message.user);
+      }
+      this.setState({userGroup: this.state.userGroup});
+    } else if (message.type === 'update') {
+      this.setState(
+        {
+          patch: Patch.fromRemote(message.content.patch),
+          verbosePatch: VerbosePatch.fromRemote(message.content.verbose_patch),
+          preview: Preview.fromRemote(message.content.preview),
+        }
+      )
+    }
+  };
+
   componentDidMount() {
     Patch.get(
       this.props.match.params.id
     ).then(
       patch => {
-        this.setPatch(patch)
+        this.setPatch(patch);
+        this.setState(
+          {
+            editingConnection: patch.getEditWebsocket()
+          },
+          () => {
+            this.state.editingConnection.onmessage = this.handleMessage;
+          }
+        );
       }
     );
   }
 
+  componentWillUnmount(): void {
+    this.state.editingConnection.close();
+  }
+
   handleUpdatePatch = (update: Cubeable | ConstrainedNode, amount: number) => {
-    this.state.patch.update([[update, amount]]).then(
-      (patch: Patch) => {
-        this.setPatch(patch);
-      }
-    )
+    Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
+    // Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]).then(
+    //   (patch: Patch) => {
+    //     this.setPatch(patch);
+    //   }
+    // )
+  };
+
+  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]) => {
+    Patch.updateWebsocket(this.state.editingConnection, updates);
+    // this.state.patch.update(updates).then(
+    //   (patch: Patch) => {
+    //     this.setPatch(patch);
+    //   }
+    // )
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
@@ -129,14 +176,6 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
         ]
       )
     }
-  };
-
-  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]) => {
-    this.state.patch.update(updates).then(
-      (patch: Patch) => {
-        this.setPatch(patch);
-      }
-    )
   };
 
   handleDeletePatch = () => {
@@ -312,6 +351,9 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                   </Card.Body>
                 </Card>
               </Col>
+          }
+          {
+            !this.state.editing ? undefined : <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
           }
         </Row>
         <Row>

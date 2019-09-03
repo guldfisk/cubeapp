@@ -20,6 +20,8 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 T = t.TypeVar('T')
 
+DATETIME_FORMAT = '%Y %M/%d'
+
 
 class ModelSerializer(t.Generic[T]):
 
@@ -37,7 +39,7 @@ class ExpansionSerializer(ModelSerializer[Expansion]):
             'code': expansion.code,
             'name': expansion.name,
             'block': None if expansion.block is None else expansion.block.name,
-            'release_date': expansion.release_date,
+            'release_date': expansion.release_date.strftime(DATETIME_FORMAT),
             'type': 'expansion',
             'id': expansion.code,
         }
@@ -277,8 +279,9 @@ class ConstrainedNodeOrpSerializer(ModelSerializer[ConstrainedNode]):
     @classmethod
     def serialize(cls, constrained_node: ConstrainedNode) -> compacted_model:
         return {
+            'id': constrained_node.persistent_hash(),
             'value': constrained_node.value,
-            'groups': constrained_node.groups,
+            'groups': list(constrained_node.groups),
             'node': NodeSerializer.serialize(
                 constrained_node.node
             )
