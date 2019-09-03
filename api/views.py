@@ -253,17 +253,13 @@ class SignupEndpoint(generics.GenericAPIView):
             return Response('invalid token', status.HTTP_400_BAD_REQUEST)
 
         try:
-            get_user_model().objects.create_user(
+            new_user = get_user_model().objects.create_user(
                 username=serializer.validated_data['username'],
                 password=serializer.validated_data['password'],
                 email=serializer.validated_data['email'],
             )
         except IntegrityError:
             return Response('User with that username already exists', status=status.HTTP_409_CONFLICT)
-
-        new_user = get_user_model().objects.get(
-            username=serializer.validated_data['username']
-        )
 
         invite.claimed_by = new_user
         invite.save()

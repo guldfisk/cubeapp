@@ -58,7 +58,7 @@ class SignUpForm extends React.Component<SignUpFormProps> {
       </Form.Group>
       <Form.Group controlId="inviteToken">
         <Form.Label>Invite Code</Form.Label>
-        <Form.Control type="text" value={this.props.inviteCode}/>
+        <Form.Control type="text" defaultValue={this.props.inviteCode}/>
       </Form.Group>
       <Button type="submit">Sign Up</Button>
     </Form>
