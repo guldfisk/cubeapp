@@ -30,8 +30,8 @@ import Button from "react-bootstrap/Button";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
 
 import {UserGroup} from "../../utils/utils";
-import {jsJsx} from "ts-loader/dist/types/constants";
 import UserGroupView from "../../views/users/UserGroupView";
+import GroupMapView from "../../views/groupmap/GroupMapView";
 
 
 interface DeltaPageProps {
@@ -353,8 +353,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
               </Col>
           }
           {
-            !this.state.editing ? undefined : <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
+            !this.state.editing ? undefined :
+              <Col sm={1}>
+                <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
+              </Col>
           }
+          <Col>
+            <GroupMapView/>
+          </Col>
         </Row>
         <Row>
           <Card>
