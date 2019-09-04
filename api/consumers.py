@@ -408,7 +408,7 @@ class PatchEditConsumer(JsonWebsocketConsumer):
                         for undo, multiplicity in change_undoes:
                             undoes.append(
                                 (
-                                    RawStrategy(db).deserialize(
+                                    JsonId(db).deserialize(
                                         self._undo_map[undo['type']],
                                         undo['content'],
                                     ),

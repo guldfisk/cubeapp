@@ -27,7 +27,11 @@ export class Atomic {
 export class Cubeable extends Atomic {
 
   getType = (): string => {
-    return 'Cubeable'
+    return 'Cubeable';
+  };
+
+  getSortValue = (): string => {
+    return '';
   };
 
 }
@@ -75,6 +79,10 @@ export class Printing extends Cubeable {
 
   getType = (): string => {
     return 'Printing'
+  };
+
+  getSortValue = (): string => {
+    return this.name;
   };
 
   full_name = (): string => {
@@ -165,7 +173,11 @@ export class Trap extends Cubeable {
   }
 
   getType = (): string => {
-    return 'Trap'
+    return 'Trap';
+  };
+
+  getSortValue = (): string => {
+    return this.node.representation();
   };
 
   serialize = (): any => {
@@ -203,7 +215,11 @@ export class Ticket extends Cubeable {
   }
 
   getType = (): string => {
-    return 'Ticket'
+    return 'Ticket';
+  };
+
+  getSortValue = (): string => {
+    return 'Ticket';
   };
 
 }
@@ -222,7 +238,11 @@ export class Purple extends Cubeable {
   }
 
   getType = (): string => {
-    return 'Purple'
+    return 'Purple';
+  };
+
+  getSortValue = (): string => {
+    return 'Purple';
   };
 
 }

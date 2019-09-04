@@ -17,6 +17,7 @@ interface ConstrainedNodesViewProps {
   noHover?: boolean
   search?: boolean
   negative?: boolean
+  onlyEditQty?: boolean
 }
 
 
@@ -72,6 +73,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         dataField: 'value',
         text: 'Weight',
         type: 'number',
+        editable: !this.props.onlyEditQty,
         validator: (newValue: string, row: any, column: any): any => {
           if (/^\d+$/.exec(newValue)) {
             return true
@@ -92,6 +94,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       {
         dataField: 'groups',
         text: 'Groups',
+        editable: !this.props.onlyEditQty,
         validator: (newValue: string, row: any, column: any): any => {
           if (/^(\w+(,\s*)?)*$/.exec(newValue)) {
             return true

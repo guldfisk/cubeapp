@@ -3,10 +3,11 @@ import {ReactElement} from 'react';
 
 import Row from 'react-bootstrap/Row';
 
-import {CubeablesContainer, Cubeable, PrintingCounter} from "../../models/models";
+import {CubeablesContainer, Cubeable, PrintingCounter, Printing} from "../../models/models";
 import {CubeableListItem} from "../../utils/listitems";
 import ListGroup from "react-bootstrap/ListGroup";
 import Container from "react-bootstrap/Container";
+import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 
 
 interface RawCubeListViewProps {
@@ -102,7 +103,16 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
       <Row>
         {
           groups.map(
-            ([header, items]): [[string, string], [Cubeable, number][]] => [header, Array.from(items)]
+            ([header, items]): [[string, string], [Cubeable, number][]] => {
+              return [
+                header,
+                Array.from(items).sort(
+                  alphabeticalPropertySortMethodFactory(
+                    ([cubeable, _]: [Cubeable, number]) => cubeable.getSortValue()
+                  )
+                )
+              ]
+            }
           ).filter(
             ([header, items]) => items.length
           ).map(

@@ -54,7 +54,19 @@ export default class VerbosePatchView extends React.Component<VerbosePatchViewPr
                   <ListGroup.Item
                     style={{color: VerbosePatchView.colorMap[category]}}
                   >
-                    {type.replace(/([a-z])([A-Z])/g, '$1 $2') + ' ' + group.length}
+                    {
+                      type.replace(/([a-z])([A-Z])/g, '$1 $2')
+                      + ' '
+                      + group.reduce(
+                        (
+                          (
+                            current: number,
+                            [_, multiplicity]: [CubeChange, number],
+                          ) => current + multiplicity
+                        ),
+                        0,
+                      )
+                    }
                   </ListGroup.Item>
                   {
                     group.map(
