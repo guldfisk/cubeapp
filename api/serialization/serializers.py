@@ -9,7 +9,7 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.strategy import Strategy
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection
+from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.update.cubeupdate import CubePatch
 
 from resources.staticdb import db
@@ -79,10 +79,15 @@ class ConstrainedNodesSerializer(serializers.ModelSerializer):
         serializeable_type = NodeCollection,
         strategy = JsonId(db),
     )
+    group_map_content = OrpModelField(
+        model_serializer = orpserialize.GroupMapSerializer,
+        serializeable_type = GroupMap,
+        strategy = JsonId(db),
+    )
 
     class Meta:
         model = models.ConstrainedNodes
-        fields = ('constrained_nodes_content',)
+        fields = ('constrained_nodes_content', 'group_map_content')
 
 
 class CubePatchSerializer(serializers.ModelSerializer):

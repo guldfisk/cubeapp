@@ -20,6 +20,7 @@ from rest_framework.response import Response
 
 from knox.models import AuthToken
 
+from magiccube.collections.meta import MetaCube
 from magiccube.update import cubeupdate
 from magiccube.update.report import UpdateReport
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -31,7 +32,7 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 from mtgimg.interface import SizeSlug, ImageFetchException
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
@@ -48,14 +49,12 @@ from api.mail import send_mail
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 
-
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
     'Trap': Trap,
     'Ticket': Ticket,
     'Purple': Purple,
 }
-
 
 _IMAGE_SIZE_MAP = {
     size_slug.name.lower(): size_slug
@@ -92,23 +91,23 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
     )
 
     if pictured_id == 'back':
-        image = image_loader.get_default_image(size_slug=size_slug)
+        image = image_loader.get_default_image(size_slug = size_slug)
 
     elif pictured_type == Printing:
         try:
             _id = int(pictured_id)
         except ValueError:
-            return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+            return HttpResponse(status = status.HTTP_400_BAD_REQUEST)
 
-        image = image_loader.get_image(db.printings[_id], size_slug=size_slug).get()
+        image = image_loader.get_image(db.printings[_id], size_slug = size_slug).get()
     else:
         try:
-            image = image_loader.get_image(picture_name=pictured_id, pictured_type=pictured_type,
-                                           size_slug=size_slug).get()
+            image = image_loader.get_image(picture_name = pictured_id, pictured_type = pictured_type,
+                                           size_slug = size_slug).get()
         except ImageFetchException:
-            return HttpResponse(status=status.HTTP_404_NOT_FOUND)
+            return HttpResponse(status = status.HTTP_404_NOT_FOUND)
 
-    response = HttpResponse(content_type='image/png')
+    response = HttpResponse(content_type = 'image/png')
     image.save(response, 'PNG')
     return response
 
@@ -146,14 +145,14 @@ class SearchView(generics.ListAPIView):
             descending = strtobool(self.request.query_params.get('descending', 'false'))
 
         except (KeyError, ValueError):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status = status.HTTP_400_BAD_REQUEST)
 
         search_parser = SearchParser(db)
 
         try:
             pattern = search_parser.parse(query, strategy)
         except ParseException as e:
-            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+            return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
 
         return self.get_paginated_response(
             [
@@ -166,8 +165,8 @@ class SearchView(generics.ListAPIView):
                             if strategy == PrintingStrategy else
                             db.cardboards.values()
                         ),
-                        key=order_by,
-                        reverse=descending,
+                        key = order_by,
+                        reverse = descending,
                     )
                 )
             ]
@@ -179,7 +178,7 @@ def filter_release_view(request: Request, pk: int) -> Response:
     try:
         query = request.query_params['query']
     except KeyError:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status = status.HTTP_400_BAD_REQUEST)
 
     try:
         flattened = strtobool(
@@ -189,19 +188,19 @@ def filter_release_view(request: Request, pk: int) -> Response:
             )
         )
     except ValueError:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status = status.HTTP_400_BAD_REQUEST)
 
     search_parser = SearchParser(db)
 
     try:
         pattern = search_parser.parse(query, PrintingStrategy)
     except ParseException as e:
-        return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+        return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
 
     try:
-        release = models.CubeRelease.objects.get(pk=pk)
+        release = models.CubeRelease.objects.get(pk = pk)
     except models.CubeRelease.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status = status.HTTP_404_NOT_FOUND)
 
     cube = JsonId(db).deserialize(
         Cube,
@@ -210,7 +209,7 @@ def filter_release_view(request: Request, pk: int) -> Response:
 
     if flattened:
         cube = Cube(
-            cubeables=cube.all_printings,
+            cubeables = cube.all_printings,
         )
 
     return Response(
@@ -226,7 +225,7 @@ def printing_view(request: Request, printing_id: int):
     try:
         printing = db.printings[printing_id]
     except KeyError:
-        return Response('No printing with that id', status=status.HTTP_404_NOT_FOUND)
+        return Response('No printing with that id', status = status.HTTP_404_NOT_FOUND)
 
     return Response(
         orpserialize.FullPrintingSerializer.serialize(printing)
@@ -237,29 +236,29 @@ class SignupEndpoint(generics.GenericAPIView):
     serializer_class = serializers.SignupSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # type: serializers.SignupSerializer
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data = request.data)  # type: serializers.SignupSerializer
+        serializer.is_valid(raise_exception = True)
 
         token_hash = hashlib.sha3_256()
         token_hash.update(serializer.validated_data['invite_token'].encode('ASCII'))
 
         try:
             invite = models.Invite.objects.get(
-                key_hash=token_hash.hexdigest(),
-                claimed_by=None,
-                created_at__gt=datetime.datetime.now() - datetime.timedelta(days=10),
+                key_hash = token_hash.hexdigest(),
+                claimed_by = None,
+                created_at__gt = datetime.datetime.now() - datetime.timedelta(days = 10),
             )
         except models.Invite.DoesNotExist:
             return Response('invalid token', status.HTTP_400_BAD_REQUEST)
 
         try:
             new_user = get_user_model().objects.create_user(
-                username=serializer.validated_data['username'],
-                password=serializer.validated_data['password'],
-                email=serializer.validated_data['email'],
+                username = serializer.validated_data['username'],
+                password = serializer.validated_data['password'],
+                email = serializer.validated_data['email'],
             )
         except IntegrityError:
-            return Response('User with that username already exists', status=status.HTTP_409_CONFLICT)
+            return Response('User with that username already exists', status = status.HTTP_409_CONFLICT)
 
         invite.claimed_by = new_user
         invite.save()
@@ -270,7 +269,7 @@ class SignupEndpoint(generics.GenericAPIView):
             {
                 "user": serializers.UserSerializer(
                     new_user,
-                    context=self.get_serializer_context(),
+                    context = self.get_serializer_context(),
                 ).data,
                 "token": auth_token,
             }
@@ -281,8 +280,8 @@ class LoginEndpoint(generics.GenericAPIView):
     serializer_class = serializers.LoginSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
         user = serializer.validated_data
 
         _, token = AuthToken.objects.create(user)
@@ -291,7 +290,7 @@ class LoginEndpoint(generics.GenericAPIView):
             {
                 "user": serializers.UserSerializer(
                     user,
-                    context=self.get_serializer_context(),
+                    context = self.get_serializer_context(),
                 ).data,
                 "token": token,
             }
@@ -303,8 +302,8 @@ class InviteUserEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
 
         issuer = request.user
 
@@ -321,9 +320,9 @@ class InviteUserEndpoint(generics.GenericAPIView):
             hasher.update(key.encode('ASCII'))
             try:
                 models.Invite.objects.create(
-                    key_hash=hasher.hexdigest(),
-                    email=serializer.validated_data['email'],
-                    issued_by=issuer,
+                    key_hash = hasher.hexdigest(),
+                    email = serializer.validated_data['email'],
+                    issued_by = issuer,
                 )
                 break
             except IntegrityError:
@@ -333,21 +332,21 @@ class InviteUserEndpoint(generics.GenericAPIView):
             raise Exception('Could not generate unique invite key')
 
         send_mail(
-            subject='YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
-            content=get_template('invite_mail.html').render(
+            subject = 'YOU HAVE BEEN INVITED TO JOIN EXCLUSIVE CLUB!!eleven',
+            content = get_template('invite_mail.html').render(
                 {
                     'inviter': issuer.username,
                     'invite_link': 'http://{host}/sign-up/?invite_code={key}'.format(
-                        host=settings.HOST,
-                        key=key,
+                        host = settings.HOST,
+                        key = key,
                     ),
                 }
             ),
-            recipients=[serializer.validated_data['email'], ]
+            recipients = [serializer.validated_data['email'], ]
         )
 
         return Response(
-            status=status.HTTP_200_OK,
+            status = status.HTTP_200_OK,
         )
 
 
@@ -365,7 +364,7 @@ class VersionedCubesList(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save(author = self.request.user)
         # TODO create empty release
 
 
@@ -392,8 +391,8 @@ class PatchList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(
-            author=self.request.user,
-            content=JsonId.serialize(
+            author = self.request.user,
+            content = JsonId.serialize(
                 CubePatch()
             ),
         )
@@ -404,7 +403,7 @@ class VersionedCubePatchList(generics.ListAPIView):
 
     def get_queryset(self):
         return models.CubePatch.objects.filter(
-            versioned_cube_id=self.kwargs['pk']
+            versioned_cube_id = self.kwargs['pk']
         )
 
 
@@ -435,16 +434,16 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
                 patch = (
                     models.CubePatch.objects
                         .select_for_update()
-                        .get(pk=kwargs['pk'])
+                        .get(pk = kwargs['pk'])
                 )
             except models.CubePatch.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                return Response(status = status.HTTP_404_NOT_FOUND)
 
             update = request.data.get('update')
             change_undoes = request.data.get('change_undoes')
 
             if not update and not change_undoes:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status = status.HTTP_400_BAD_REQUEST)
 
             current_patch_content = JsonId(db).deserialize(
                 CubePatch,
@@ -458,7 +457,7 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
                         request.data['update'],
                     )
                 except (KeyError, AttributeError, Exception):
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                    return Response(status = status.HTTP_400_BAD_REQUEST)
 
                 current_patch_content += update
 
@@ -466,7 +465,7 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
                 try:
                     change_undoes = json.loads(change_undoes)
                 except json.JSONDecodeError:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                    return Response(status = status.HTTP_400_BAD_REQUEST)
 
                 undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
                 strategy = JsonId(db)
@@ -482,7 +481,7 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
                             )
                         )
                 except (KeyError, TypeError, ValueError):
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                    return Response(status = status.HTTP_400_BAD_REQUEST)
 
                 for undo, multiplicity in undoes:
                     current_patch_content -= (undo.as_patch() * multiplicity)
@@ -495,23 +494,47 @@ class PatchDetail(generics.RetrieveUpdateDestroyAPIView):
 
             return Response(
                 serializers.CubePatchSerializer(patch).data,
-                content_type='application/json',
+                content_type = 'application/json',
             )
 
 
 @api_view(['GET'])
 def patch_verbose(request: Request, pk: int) -> Response:
     try:
-        patch_model = models.CubePatch.objects.get(pk=pk)
+        patch_model = models.CubePatch.objects.get(pk = pk)
     except models.CubePatch.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status = status.HTTP_404_NOT_FOUND)
+
+    latest_release = patch_model.versioned_cube.latest_release
+    constrained_nodes = latest_release.constrained_nodes
+
+    current_cube = JsonId(db).deserialize(
+        Cube,
+        latest_release.cube_content,
+    )
+
+    current_nodes = JsonId(db).deserialize(
+        NodeCollection,
+        constrained_nodes.constrained_nodes_content,
+    )
+
+    current_groups = JsonId(db).deserialize(
+        GroupMap,
+        constrained_nodes.group_map_content,
+    )
 
     return Response(
         orpserialize.VerbosePatchSerializer.serialize(
             JsonId(db).deserialize(
                 CubePatch,
                 patch_model.content,
-            ).as_verbose
+            ).as_verbose(
+                MetaCube(
+                    cube = current_cube,
+                    nodes = constrained_nodes,
+                    groups = current_groups,
+                )
+            )
         )
     )
 
@@ -519,9 +542,9 @@ def patch_verbose(request: Request, pk: int) -> Response:
 @api_view(['GET'])
 def patch_preview(request: Request, pk: int) -> Response:
     try:
-        patch_model = models.CubePatch.objects.get(pk=pk)
+        patch_model = models.CubePatch.objects.get(pk = pk)
     except models.CubePatch.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status = status.HTTP_404_NOT_FOUND)
 
     latest_release = patch_model.versioned_cube.latest_release
 
@@ -553,17 +576,23 @@ def patch_preview(request: Request, pk: int) -> Response:
                     )
                 )
             },
+            'group_map': orpserialize.GroupMapSerializer.serialize(
+                JsonId(db).deserialize(
+                    GroupMap,
+                    latest_release.constrained_nodes.group_map_content,
+                )
+            )
         },
-        content_type='application/json',
+        content_type = 'application/json',
     )
 
 
 @api_view(['GET'])
 def patch_report(request: Request, pk: int) -> Response:
     try:
-        patch_model = models.CubePatch.objects.get(pk=pk)
+        patch_model = models.CubePatch.objects.get(pk = pk)
     except models.CubePatch.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status = status.HTTP_404_NOT_FOUND)
 
     latest_release = patch_model.versioned_cube.latest_release
 
@@ -583,13 +612,21 @@ def patch_report(request: Request, pk: int) -> Response:
         latest_release.constrained_nodes.constrained_nodes_content,
     )
 
+    groups = JsonId(db).deserialize(
+        GroupMap,
+        latest_release.constrained_nodes.group_map_content,
+    )
+
     return Response(
         orpserialize.UpdateReportSerializer.serialize(
             UpdateReport(
                 CubeUpdater(
-                    cube=current_cube,
-                    patch=cube_patch,
-                    node_collection=node_collection,
+                    meta_cube = MetaCube(
+                        cube = current_cube,
+                        nodes = node_collection,
+                        groups = groups,
+                    ),
+                    patch = cube_patch,
                 )
             )
         )
@@ -601,28 +638,28 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # type: serializers.ParseTrapSerializer
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data = request.data)  # type: serializers.ParseTrapSerializer
+        serializer.is_valid(raise_exception = True)
 
         try:
             constrained_node = ConstrainedNode(
-                node=PrintingTreeParser(db).parse(serializer.validated_data['query']),
-                groups=[
+                node = PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                groups = [
                     group.rstrip().lstrip()
                     for group in
                     serializer.validated_data.get('groups', '').split(',')
                 ],
-                value=serializer.validated_data.get('weight', 1),
+                value = serializer.validated_data.get('weight', 1),
             )
         except PrintingTreeParserException as e:
-            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+            return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
 
         return Response(
             orpserialize.ConstrainedNodeOrpSerializer.serialize(
                 constrained_node
             ),
-            status=status.HTTP_200_OK,
-            content_type='application/json'
+            status = status.HTTP_200_OK,
+            content_type = 'application/json'
         )
 
 
@@ -631,8 +668,8 @@ class ParseTrapEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data) #type: serializers.ParseTrapSerializer
-        serializer.is_valid(raise_exception=True)
+        serializer = self.get_serializer(data = request.data)  # type: serializers.ParseTrapSerializer
+        serializer.is_valid(raise_exception = True)
 
         try:
             intention_type = IntentionType[serializer.validated_data['intention_type']]
@@ -641,18 +678,18 @@ class ParseTrapEndpoint(generics.GenericAPIView):
 
         try:
             trap = Trap(
-                node=PrintingTreeParser(db).parse(serializer.validated_data['query']),
-                intention_type=intention_type,
+                node = PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                intention_type = intention_type,
             )
         except PrintingTreeParserException as e:
-            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
+            return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
 
         return Response(
             orpserialize.TrapSerializer.serialize(
                 trap
             ),
-            status=status.HTTP_200_OK,
-            content_type='application/json'
+            status = status.HTTP_200_OK,
+            content_type = 'application/json'
         )
 
 
@@ -669,7 +706,7 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
                         .get(pk = pk)
                 )
             except models.CubePatch.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                return Response(status = status.HTTP_404_NOT_FOUND)
 
             versioned_cube = patch.versioned_cube
             latest_release = versioned_cube.latest_release
@@ -697,7 +734,7 @@ class ApplyPatchEndpoint(generics.GenericAPIView):
 
             return Response(
                 serializers.FullCubeReleaseSerializer(new_release).data,
-                status=status.HTTP_200_OK,
+                status = status.HTTP_200_OK,
             )
 
 
@@ -707,9 +744,9 @@ class CreateRevertPatchEndpoint(generics.GenericAPIView):
 
     def post(self, request, pk: int, *args, **kwargs):
         try:
-            patch = models.CubePatch.objects.get(pk=pk)
+            patch = models.CubePatch.objects.get(pk = pk)
         except models.CubePatch.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status = status.HTTP_404_NOT_FOUND)
 
 
 class ConstrainedNodesList(generics.ListAPIView):

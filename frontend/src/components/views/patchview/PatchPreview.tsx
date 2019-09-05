@@ -6,6 +6,7 @@ import {ConstrainedNode, Cubeable, Preview} from "../../models/models";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
+import GroupMapView from "../groupmap/GroupMapView";
 
 
 interface PatchPreviewProps {
@@ -63,6 +64,12 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               onNodeClick={this.props.onNodeClicked}
               onNodeEdit={this.props.onNodeEdit}
               onNodeQtyEdit={this.props.onNodeQtyEdit}
+              search
+            />
+          </Tab>
+          <Tab eventKey='groups' title='Groups'>
+            <GroupMapView
+              groupMap={this.props.preview.groupMap}
               search
             />
           </Tab>

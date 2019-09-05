@@ -107,12 +107,6 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       },
     ];
 
-    // if (!this.props.onNodeEdit) {
-    //   columns.forEach(
-    //     column => column.editable = false
-    //   )
-    // }
-
     const data = Array.from(this.props.constrainedNodes.nodes.items()).map(
       ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
         return {

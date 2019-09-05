@@ -20,7 +20,8 @@ from evolution.logging import LogFrame
 
 from api.services import DISTRIBUTOR_SERVICE
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection
+from magiccube.collections.meta import MetaCube
+from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.laps.traps.distribute import algorithm
 from magiccube.laps.traps.distribute.algorithm import Distributor
 from magiccube.laps.traps.distribute.distribute import DistributionTask
@@ -289,6 +290,9 @@ class PatchEditConsumer(JsonWebsocketConsumer):
         klass.__name__: klass
         for klass in
         (
+            cubeupdate.AddGroup,
+            cubeupdate.RemoveGroup,
+            cubeupdate.GroupWeightChange,
             cubeupdate.NewCubeable,
             cubeupdate.RemovedCubeable,
             cubeupdate.NewNode,
@@ -435,29 +439,45 @@ class PatchEditConsumer(JsonWebsocketConsumer):
                     latest_release.cube_content,
                 )
 
+                current_constrained_nodes = JsonId(db).deserialize(
+                    NodeCollection,
+                    latest_release.constrained_nodes.constrained_nodes_content,
+                )
+
+                current_group_map = JsonId(db).deserialize(
+                    GroupMap,
+                    latest_release.constrained_nodes.group_map_content,
+                )
+
                 msg = {
                     'type': 'cube_update',
                     'update': {
                         'patch': serializers.CubePatchSerializer(patch).data,
                         'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
-                            current_patch.as_verbose
+                            current_patch.as_verbose(
+                                MetaCube(
+                                    cube = current_cube,
+                                    nodes = current_constrained_nodes,
+                                    groups = current_group_map,
+                                )
+                            )
                         ),
                         'preview': {
                             'cube': orpserialize.CubeSerializer.serialize(
-                                current_cube + current_patch.cube_delta_operation,
+                                current_cube + current_patch.cube_delta_operation
                             ),
                             'nodes': {
                                 'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
                                     (
-                                        JsonId(db).deserialize(
-                                            NodeCollection,
-                                            latest_release.constrained_nodes.constrained_nodes_content,
-                                        ) + current_patch.node_delta_operation
+                                        current_constrained_nodes + current_patch.node_delta_operation
                                         if hasattr(latest_release, 'constrained_nodes') else
                                         NodeCollection(())
                                     )
                                 )
                             },
+                            'group_map': orpserialize.GroupMapSerializer.serialize(
+                                current_group_map
+                            ),
                         },
                     }
                 }

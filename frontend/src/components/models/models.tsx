@@ -706,16 +706,19 @@ export class CubeRelease extends CubeReleaseMeta {
 export class Preview {
   cubeables: CubeablesContainer;
   constrainedNodes: ConstrainedNodes;
+  groupMap: GroupMap;
 
-  constructor(cubeables: CubeablesContainer, constrainedNodes: ConstrainedNodes) {
+  constructor(cubeables: CubeablesContainer, constrainedNodes: ConstrainedNodes, groupMap: GroupMap) {
     this.cubeables = cubeables;
     this.constrainedNodes = constrainedNodes;
+    this.groupMap = groupMap;
   }
 
   public static fromRemote(remote: any): Preview {
     return new Preview(
       CubeablesContainer.fromRemote(remote.cube),
       new ConstrainedNodes(remote.nodes.constrained_nodes_content.nodes),
+      GroupMap.fromRemote(remote.group_map),
     )
   }
 
@@ -1158,6 +1161,22 @@ export class ConstrainedNodes {
       response => new ConstrainedNodes(response.data.nodes.constrained_nodes_content)
     )
   };
+
+}
+
+
+export class GroupMap {
+  groups: {string: number};
+
+  constructor(groups: {string: number}) {
+    this.groups = groups;
+  }
+
+  public static fromRemote(remote: any): GroupMap {
+    return new GroupMap(
+      remote.groups,
+    )
+  }
 
 }
 

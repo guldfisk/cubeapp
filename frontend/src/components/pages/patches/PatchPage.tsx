@@ -114,44 +114,52 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     }
   };
 
+  stopEdit = () => {
+    if (this.state.editingConnection && this.state.editingConnection.OPEN) {
+      this.state.editingConnection.close()
+    }
+    this.setState({editing: false})
+  };
+
+  beginEdit = () => {
+    if (!this.state.patch) {
+      return
+    }
+    this.setState(
+      {
+        editingConnection: this.state.patch.getEditWebsocket(),
+        editing: true,
+      },
+      () => {
+        this.state.editingConnection.onmessage = this.handleMessage;
+        this.state.editingConnection.onclose = () => this.setState({editing: false});
+      }
+    );
+  };
+
   componentDidMount() {
     Patch.get(
       this.props.match.params.id
     ).then(
       patch => {
         this.setPatch(patch);
-        this.setState(
-          {
-            editingConnection: patch.getEditWebsocket()
-          },
-          () => {
-            this.state.editingConnection.onmessage = this.handleMessage;
-          }
-        );
       }
     );
   }
 
   componentWillUnmount(): void {
-    this.state.editingConnection.close();
+    if (this.state.editingConnection && this.state.editingConnection.OPEN) {
+      this.state.editingConnection.close();
+
+    }
   }
 
   handleUpdatePatch = (update: Cubeable | ConstrainedNode, amount: number) => {
     Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
-    // Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]).then(
-    //   (patch: Patch) => {
-    //     this.setPatch(patch);
-    //   }
-    // )
   };
 
   handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]) => {
     Patch.updateWebsocket(this.state.editingConnection, updates);
-    // this.state.patch.update(updates).then(
-    //   (patch: Patch) => {
-    //     this.setPatch(patch);
-    //   }
-    // )
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
@@ -307,7 +315,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                       </Link>
                     </p>
                     <Button
-                      onClick={() => this.setState({editing: !this.state.editing})}
+                      onClick={() => this.state.editing ? this.stopEdit() : this.beginEdit()}
                     >
                       {this.state.editing ? "Stop Editing" : "Edit"}
                     </Button>
@@ -358,9 +366,6 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                 <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
               </Col>
           }
-          <Col>
-            <GroupMapView/>
-          </Col>
         </Row>
         <Row>
           <Card>

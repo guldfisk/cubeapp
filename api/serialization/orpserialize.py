@@ -9,7 +9,7 @@ from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -356,6 +356,14 @@ class CubeChangeSerializer(ModelSerializer[cubeupdate.CubeChange]):
             'category': serializeable.category.value,
         }
 
+
+class GroupMapSerializer(ModelSerializer[GroupMap]):
+
+    @classmethod
+    def serialize(cls, serializeable: GroupMap) -> compacted_model:
+        return {
+            'groups': dict(serializeable.groups),
+        }
 
 
 class VerbosePatchSerializer(ModelSerializer[cubeupdate.VerboseCubePatch]):

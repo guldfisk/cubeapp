@@ -64,6 +64,7 @@ class CubeRelease(models.Model):
 
 class ConstrainedNodes(models.Model):
     constrained_nodes_content = models.TextField()
+    group_map_content = models.TextField()
     release = models.OneToOneField(
         CubeRelease,
         related_name = 'constrained_nodes',

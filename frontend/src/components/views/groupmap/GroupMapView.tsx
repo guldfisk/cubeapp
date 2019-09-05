@@ -5,7 +5,7 @@ import cellEditFactory from 'react-bootstrap-table2-editor';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
-import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
+import {ConstrainedNode, ConstrainedNodes, GroupMap} from '../../models/models';
 import {NodeListItem} from "../../utils/listitems";
 
 
@@ -16,6 +16,7 @@ interface GroupMapViewProps {
   // onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   // noHover?: boolean
   search?: boolean
+  groupMap: GroupMap
   // negative?: boolean
   // onlyEditQty?: boolean
 }
@@ -28,20 +29,40 @@ export default class GroupMapView extends React.Component<GroupMapViewProps> {
       {
         dataField: 'name',
         text: 'Name',
+        sort: true,
       },
       {
         dataField: 'weight',
         text: 'Weight',
+        sort: true,
       },
 
     ];
 
-    const data = [
-      {
-        name: 'ok',
-        weight: 2,
+    const data = Object.entries(
+      this.props.groupMap.groups
+    ).sort(
+      ([first_group, first_weight], [second_group, second_weight]): number => {
+        return (
+          first_weight > second_weight ?
+            -1 :
+            first_weight < second_weight ?
+              1 :
+              first_group > second_group ?
+                1 :
+                first_group < second_group ?
+                  -1 :
+                  0
+        )
       }
-    ];
+    ).map(
+      ([group, weight]) => {
+        return {
+          name: group,
+          weight,
+        }
+      }
+    );
 
     const {SearchBar} = Search;
 
@@ -64,20 +85,20 @@ export default class GroupMapView extends React.Component<GroupMapViewProps> {
               {...props.baseProps}
               condensed
               striped
-              defaultSorted={
-                [
-                  {
-                    dataField: 'name',
-                    order: 'asc',
-                  },
-                ]
-              }
+              // defaultSorted={
+              //   [
+              //     {
+              //       dataField: 'weight',
+              //       order: 'desc',
+              //     },
+              //   ]
+              // }
               pagination={
                 paginationFactory(
                   {
                     hidePageListOnlyOnePage: true,
                     showTotal: true,
-                    sizePerPage: 30,
+                    sizePerPage: 20,
                   }
                 )
               }
