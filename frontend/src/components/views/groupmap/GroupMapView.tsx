@@ -5,20 +5,26 @@ import cellEditFactory from 'react-bootstrap-table2-editor';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
-import {ConstrainedNode, ConstrainedNodes, GroupMap} from '../../models/models';
-import {NodeListItem} from "../../utils/listitems";
+import {GroupMap} from '../../models/models';
+
+
+const columnFormatterMetaFactory = (onGroupClicked?: (group: string, weight: number) => void) => {
+  return (cell: any, row: any, rowIndex: number, formatExtraData: any) => {
+    console.log(cell, row);
+    return <span
+      onClick={!onGroupClicked ? undefined : () => onGroupClicked(row.name, row.weight)}
+    >
+      {cell}
+    </span>
+  };
+};
 
 
 interface GroupMapViewProps {
-  // constrainedNodes: ConstrainedNodes
-  // onNodeClick?: ((node: ConstrainedNode, multiplicity: number) => void) | null
-  // onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
-  // onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
-  // noHover?: boolean
+  onGroupClicked?: (group: string, weight: number) => void
+  onGroupEdit?: (group: string, weightBefore: number, weightAfter: number) => void
   search?: boolean
   groupMap: GroupMap
-  // negative?: boolean
-  // onlyEditQty?: boolean
 }
 
 
@@ -29,11 +35,14 @@ export default class GroupMapView extends React.Component<GroupMapViewProps> {
       {
         dataField: 'name',
         text: 'Name',
+        formatter: columnFormatterMetaFactory(this.props.onGroupClicked),
         sort: true,
+        editable: false,
       },
       {
         dataField: 'weight',
         text: 'Weight',
+        type: 'number',
         sort: true,
       },
 
@@ -85,20 +94,28 @@ export default class GroupMapView extends React.Component<GroupMapViewProps> {
               {...props.baseProps}
               condensed
               striped
-              // defaultSorted={
-              //   [
-              //     {
-              //       dataField: 'weight',
-              //       order: 'desc',
-              //     },
-              //   ]
-              // }
               pagination={
                 paginationFactory(
                   {
                     hidePageListOnlyOnePage: true,
                     showTotal: true,
                     sizePerPage: 20,
+                  }
+                )
+              }
+              cellEdit={
+                !this.props.onGroupEdit ? undefined : cellEditFactory(
+                  {
+                    mode: 'click',
+                    beforeSaveCell: (
+                      (oldValue: any, newValue: any, row: any, column: any) => {
+                        if (oldValue == newValue) {
+                          return;
+                        }
+                        this.props.onGroupEdit(row.name, oldValue, newValue);
+                      }
+                    ),
+                    blurToSave: true,
                   }
                 )
               }

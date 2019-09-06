@@ -1,22 +1,16 @@
 import typing as t
 
-import json
 import threading
-import time
-import random
 import queue
 
 from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer, JsonWebsocketConsumer
-from channels.layers import get_channel_layer
-from django.core.serializers.json import DjangoJSONEncoder
+from channels.generic.websocket import JsonWebsocketConsumer
 from django.db import transaction
 from knox.auth import TokenAuthentication
 
 from api import models
 from api.serialization import orpserialize, serializers
 from evolution import model
-from evolution.logging import LogFrame
 
 from api.services import DISTRIBUTOR_SERVICE
 from magiccube.collections.cube import Cube
@@ -30,113 +24,6 @@ from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
-
-_GROUP_WEIGHTS = {
-    key: value / 4
-    for key, value in
-    {
-        'WHITE': 1,
-        'BLUE': 1.5,
-        'BLACK': 1,
-        'RED': 1,
-        'GREEN': 1,
-        'drawgo': 3,
-        'mud': 3,
-        'post': 4,
-        'midrange': 2,
-        'mill': 4,
-        'reanimate': 4,
-        'burn': 4,
-        'hatebear': 2,
-        'removal': 1,
-        'lock': 3,
-        'yardvalue': 3,
-        'ld': 3,
-        'storm': 4,
-        'tezz': 3,
-        'lands': 3,
-        'shatter': 3,
-        'bounce': 3,
-        'shadow': 4,
-        'stifle': 4,
-        'beat': 1,
-        'cheat': 4,
-        'pox': 3,
-        'counter': 3,
-        'discard': 2,
-        'cantrip': 4,
-        'balance': 3,
-        'stasis': 4,
-        'standstill': 3,
-        'whitehate': 4,
-        'bluehate': 4,
-        'blackhate': 4,
-        'redhate': 4,
-        'greenhate': 4,
-        'antiwaste': 4,
-        'delirium': 3,
-        'sacvalue': 2,
-        'lowtoughnesshate': 4,
-        'armageddon': 4,
-        'stax': 3,
-        'bloom': 3,
-        'weldingjar': 3,
-        'drawhate': 4,
-        'pluscard': 3,
-        'ramp': 3,
-        'devoteddruid': 4,
-        'fetchhate': 4,
-        'dragon': 2,
-        'company': 2,
-        'naturalorder': 3,
-        'flash': 3,
-        'wincon': 3,
-        'vial': 4,
-        # lands
-        'fixing': 3,
-        'colorlessvalue': 1,
-        'fetchable': 2,
-        'indestructable': 4,
-        'legendarymatters': 1,
-        'sol': 3,
-        'manland': 4,
-        'storage': 3,
-        'croprotate': 3,
-        'dnt': 3,
-        'equipment': 4,
-        'livingdeath': 3,
-        'eggskci': 3,
-        'hightide': 3,
-        'fatty': 3,
-        'walker': 4,
-        'blink': 2,
-        'miracles': 3,
-        'city': 4,
-        'wrath': 2,
-        'landtax': 4,
-        'discardvalue': 2,
-        'edict': 2,
-        'phoenix': 4,
-        'enchantress': 2,
-        'dork': 2,
-        'tinker': 3,
-        'highpowerhate': 2,
-        'affinity': 3,
-        'academy': 4,
-        'stompy': 2,
-        'shardless': 3,
-        'lanterns': 3,
-        'depths': 3,
-        'survival': 2,
-        'landstill': 2,
-        'moat': 4,
-        'combo': 3,
-        'kite': 3,
-        'haste': 3,
-        'fog': 3,
-        'threat': 4,
-    }.items()
-}
 
 
 class QueueConsumer(threading.Thread):
@@ -165,38 +52,84 @@ class QueueConsumer(threading.Thread):
                 pass
 
 
-class DistributorConsumer(JsonWebsocketConsumer):
+class MessageConsumer(JsonWebsocketConsumer):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._distribution_task: t.Optional[DistributionTask] = None
-        self._consumer: t.Optional[QueueConsumer] = None
+    def _send_message(self, message_type: str, **kwargs):
+        d = {'type': message_type}
+        d.update(kwargs)
+        self.send_json(d)
 
-        self._patch: t.Optional[models.CubePatch] = None
-        self._patch_pk: t.Optional[int] = None
-        self._subscription_channel_name: t.Optional[str] = None
-
-    def _send_message(self, message_type: str, content: t.Any) -> None:
+    def _send_error(self, message: t.Any):
         self.send_json(
             {
-                'type': message_type,
-                'content': content,
+                'type': 'error',
+                'message': message,
             }
         )
 
-    def _generate_new_distribution(self):
 
-        versioned_cube = self._patch.versioned_cube
+class DistributorConsumer(MessageConsumer):
+    _value_value_map = {
+        key: value
+        for key, value in
+        {
+            0: 0,
+            1: 1,
+            2: 5,
+            3: 15,
+            4: 30,
+            5: 55,
+        }.items()
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._patch_pk: t.Optional[int] = None
+        self._group_name: t.Optional[str] = None
+        self._token: t.Optional[t.ByteString] = None
+
+        self._distribution_task: t.Optional[DistributionTask] = None
+        self._consumer: t.Optional[QueueConsumer] = None
+
+    def connect(self):
+        self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
+        self._group_name = f'patch_edit_{self._patch_pk}'
+
+        self.accept()
+
+    def disconnect(self, code):
+        if self._token is not None:
+            async_to_sync(self.channel_layer.group_send)(
+                self._group_name,
+                {
+                    'type': 'patch_lock',
+                    'action': 'release',
+                },
+            )
+        if self._consumer is not None:
+            self._consumer.stop()
+        if self._distribution_task:
+            self._distribution_task.unsubscribe(
+                str(
+                    id(
+                        self
+                    )
+                )
+            )
+
+    def _get_distributor(self) -> Distributor:
+        patch = models.CubePatch.objects.get(pk=self._patch_pk)
+
+        versioned_cube = patch.versioned_cube
         latest_release = versioned_cube.latest_release
 
-        # # TODO handle no nodes
         nodes = latest_release.constrained_nodes
 
         strategy = JsonId(db)
 
         cube_patch = strategy.deserialize(
             CubePatch,
-            self._patch.content,
+            patch.content,
         )
 
         cube = strategy.deserialize(
@@ -210,13 +143,24 @@ class DistributorConsumer(JsonWebsocketConsumer):
         )
 
         for node in constrained_nodes.nodes.distinct_elements():
-            node._value /= 5
+            node._value = self._value_value_map.get(node._value)
+        max_node_weight = max(node.value for node in constrained_nodes)
+        for node in constrained_nodes.nodes.distinct_elements():
+            node._value /= max_node_weight
 
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
 
+        group_map = strategy.deserialize(
+            GroupMap,
+            nodes.group_map_content,
+        ).normalized()
+
         updater = CubeUpdater(
-            cube = cube,
-            node_collection = constrained_nodes,
+            meta_cube = MetaCube(
+                cube = cube,
+                nodes = constrained_nodes,
+                groups = group_map,
+            ),
             patch = cube_patch,
         )
 
@@ -242,50 +186,116 @@ class DistributorConsumer(JsonWebsocketConsumer):
                     algorithm.GroupExclusivityConstraint(
                         distribution_nodes,
                         trap_amount,
-                        _GROUP_WEIGHTS,
+                        group_map.groups,
                     ),
                     2,
                 ),
             )
         )
 
-        distributor = Distributor(
+        return Distributor(
             nodes = constrained_nodes,
             trap_amount = trap_amount,
             initial_population_size = 300,
-            group_weights = _GROUP_WEIGHTS,
             constraints = constraint_set,
         )
 
-    def connect(self):
-        self._patch_pk = int(self.scope["url_route"]["kwargs"]["pk"])
-        try:
-            self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
-        except models.CubePatch.DoesNotExist:
-            return
-
-        self.accept()
-
-        self._subscription_channel_name = f'{self._patch_pk}_{id(self)}'
-
-        distributor_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
-        if distributor_task is not None:
-            self._distribution_task = distributor_task
-            self._consumer = QueueConsumer(
-                distributor_task.subscribe(str(id(self))),
-                self.send_json,
-            )
-            self._consumer.start()
-
-    def disconnect(self, close_code):
-        self._distribution_task.unsubscribe('hihi')
-        self._consumer.stop()
 
     def receive_json(self, content, **kwargs):
-        print('received', content)
+        message_type = content.get('type')
+
+        if message_type is None:
+            self._send_error('No Message type')
+            return
+
+        if message_type == 'authentication':
+            knox_auth = TokenAuthentication()
+            if not isinstance(content['token'], str):
+                self._send_message('authentication', state='failure', reason='invalid token field')
+            else:
+                user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
+                if user is not None:
+                    self._token = auth_token
+                    self.scope['user'] = user
+                    self._send_message('authentication', state='success')
+                    # async_to_sync(self.channel_layer.group_add)(
+                    #     self._group_name,
+                    #     self.channel_name,
+                    # )
+
+                else:
+                    self._send_message('authentication', state='failure', reason='invalid token')
+            return
+
+        if self._token is None:
+            self._send_error('not logged in')
+            return
+
+        if message_type == 'start':
+
+            active_patch = DISTRIBUTOR_SERVICE.is_busy()
+
+            if active_patch is None:
+                async_to_sync(self.channel_layer.group_send)(
+                    self._group_name,
+                    {
+                        'type': 'patch_lock',
+                        'action': 'acquirer',
+                    },
+                )
+
+                self._distribution_task, _ = DISTRIBUTOR_SERVICE.submit_distributor(
+                    self._patch_pk,
+                    self._get_distributor(),
+                )
+                self._consumer = QueueConsumer(
+                    self._distribution_task.subscribe(
+                        str(
+                            id(
+                                self
+                            )
+                        )
+                    ),
+                    self.send_json,
+                )
+                self._consumer.start()
+            elif active_patch == self._patch_pk:
+                self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
+                self._consumer = QueueConsumer(
+                    self._distribution_task.subscribe(
+                        str(
+                            id(
+                                self
+                            )
+                        )
+                    ),
+                    self.send_json,
+                )
+                self._consumer.start()
+            else:
+                self._send_message('status', status = 'busy')
+
+        elif message_type == 'pause':
+            if not (self._distribution_task and self._distribution_task.is_alive()):
+                self._send_message('status', status = 'stopped')
+                return
+            self._distribution_task.pause()
+
+        elif message_type == 'resume':
+            if not (self._distribution_task and self._distribution_task.is_alive()):
+                self._send_message('status', status = 'stopped')
+                return
+            self._distribution_task.resume()
+
+        elif message_type == 'stop':
+            if not (self._distribution_task and self._distribution_task.is_alive()):
+                self._send_message('status', status = 'stopped')
+                return
+            self._distribution_task.stop()
 
 
-class PatchEditConsumer(JsonWebsocketConsumer):
+
+class PatchEditConsumer(MessageConsumer):
     _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {
         klass.__name__: klass
         for klass in
@@ -317,22 +327,7 @@ class PatchEditConsumer(JsonWebsocketConsumer):
 
         self.accept()
 
-    def _send_message(self, message_type: str, **kwargs):
-        d = {'type': message_type}
-        d.update(kwargs)
-        self.send_json(d)
-
-    def _send_error(self, message: t.Any):
-        self.send_json(
-            {
-                'type': 'error',
-                'message': message,
-            }
-        )
-
     def receive_json(self, content, **kwargs):
-        print(content)
-
         message_type = content.get('type')
 
         if message_type is None:
@@ -349,6 +344,8 @@ class PatchEditConsumer(JsonWebsocketConsumer):
                     self._token = auth_token
                     self.scope['user'] = user
                     self._send_message('authentication', state = 'success')
+                    if DISTRIBUTOR_SERVICE.is_busy() == self._patch_pk:
+                        self._send_message('status', status = 'locked')
                     async_to_sync(self.channel_layer.group_add)(
                         self._group_name,
                         self.channel_name,
@@ -370,6 +367,11 @@ class PatchEditConsumer(JsonWebsocketConsumer):
             return
 
         if message_type == 'update':
+
+            if DISTRIBUTOR_SERVICE.is_busy() == self._patch_pk:
+                self._send_message('status', status='locked')
+                return
+
             with transaction.atomic():
                 try:
                     patch = (
@@ -476,7 +478,7 @@ class PatchEditConsumer(JsonWebsocketConsumer):
                                 )
                             },
                             'group_map': orpserialize.GroupMapSerializer.serialize(
-                                current_group_map
+                                current_group_map + current_patch.group_map_delta_operation
                             ),
                         },
                     }
@@ -515,6 +517,12 @@ class PatchEditConsumer(JsonWebsocketConsumer):
                 'action': event['action'],
             }
         )
+
+    def patch_lock(self, event):
+        if event['action'] == 'acquirer':
+            self._send_message('status', status='locked')
+        else:
+            self._send_message('status', status='unlocked')
 
     def disconnect(self, code):
         if self._token is not None:

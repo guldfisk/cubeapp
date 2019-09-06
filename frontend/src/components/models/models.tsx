@@ -838,12 +838,16 @@ export class Patch extends Atomic {
     );
   }
 
-  private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange, number][]): any {
+  private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): any {
+    console.log('updates json', updates);
     let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
       printings: [],
       traps: [],
     };
     let nodeDelta: any = {nodes: []};
+    let groupDelta: {groups: [string, number][]} = {groups: []};
+
+    console.log('group delta', groupDelta);
 
     let changeUndoes: [any, number][] = [];
 
@@ -877,6 +881,13 @@ export class Patch extends Atomic {
             multiplicity,
           ]
         )
+      } else if (typeof update == 'string') {
+        groupDelta.groups.push(
+          [
+            update,
+            multiplicity,
+          ]
+        )
       }
 
     }
@@ -885,23 +896,13 @@ export class Patch extends Atomic {
       update: {
         cube_delta: cubeDelta,
         nodes_delta: nodeDelta,
+        groups_delta: groupDelta,
       },
       change_undoes: changeUndoes,
     };
-    // return {
-    //   update: JSON.stringify(
-    //     {
-    //       cube_delta: cubeDelta,
-    //       nodes_delta: nodeDelta,
-    //     }
-    //   ),
-    //   change_undoes: JSON.stringify(
-    //     changeUndoes
-    //   ),
-    // }
   };
 
-  update = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]): Promise<Patch> => {
+  update = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): Promise<Patch> => {
     return axios.patch(
       apiPath + 'patches/' + this.id + '/',
       Patch.getUpdateJSON(updates),
@@ -918,10 +919,11 @@ export class Patch extends Atomic {
 
   public static updateWebsocket(
     connection: WebSocket,
-    updates: [Cubeable | ConstrainedNode | CubeChange, number][],
+    updates: [Cubeable | ConstrainedNode | CubeChange | string, number][],
   ): void {
     const values = Patch.getUpdateJSON(updates);
     values['type'] = 'update';
+    console.log('websocket send', values);
     connection.send(
       JSON.stringify(
         values

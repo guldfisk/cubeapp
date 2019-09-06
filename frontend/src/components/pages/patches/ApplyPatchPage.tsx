@@ -9,6 +9,7 @@ import {Redirect} from "react-router";
 import PatchPreview from "../../views/patchview/PatchPreview";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
 import ReportView from "../../views/report/ReportView";
+import DistributionView from "../../views/traps/DistributionView";
 
 
 interface DeltaPageProps {
@@ -100,55 +101,59 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     );
 
 
-    let patchView = <Loading/>;
-    if (this.state.patch !== null) {
-      patchView = <PatchMultiView
-        patch={this.state.patch}
-        verbosePatch={this.state.verbosePatch}
-      />
-    }
+    // let patchView = <Loading/>;
+    // if (this.state.patch !== null) {
+    //   patchView = <PatchMultiView
+    //     patch={this.state.patch}
+    //     verbosePatch={this.state.verbosePatch}
+    //   />
+    // }
+    //
+    // let preview = <Loading/>;
+    // if (this.state.preview) {
+    //   preview = <PatchPreview
+    //     preview={this.state.preview}
+    //     noHover={false}
+    //   />;
+    // }
 
-    let preview = <Loading/>;
-    if (this.state.preview) {
-      preview = <PatchPreview
-        preview={this.state.preview}
-        noHover={false}
-      />;
-    }
-
-    return <Container fluid>
-      <Row>
-        <Button
-          onClick={this.handleApply}
-          disabled={!this.state.patch}
-        >
-          Apply
-        </Button>
-      </Row>
-      <Row>
-        <Card>
-          <Card.Header>
-            Report
-          </Card.Header>
-          <Card.Body>
-            {reportView}
-          </Card.Body>
-        </Card>
-      </Row>
-      <Row>
-        <Card>
-          <Card.Header>
-            Delta
-          </Card.Header>
-          <Card.Body>
-            {patchView}
-          </Card.Body>
-        </Card>
-      </Row>
-      <Row>
-        {preview}
-      </Row>
-    </Container>;
+    return <DistributionView id={this.props.match.params.id}/>;
+    // return <Container fluid>
+    //   <Row>
+    //     <Button
+    //       onClick={this.handleApply}
+    //       disabled={!this.state.patch}
+    //     >
+    //       Apply
+    //     </Button>
+    //   </Row>
+    //   <Row>
+    //     <DistributionView id={this.props.match.params.id}/>
+    //   </Row>
+    //   <Row>
+    //     <Card>
+    //       <Card.Header>
+    //         Report
+    //       </Card.Header>
+    //       <Card.Body>
+    //         {reportView}
+    //       </Card.Body>
+    //     </Card>
+    //   </Row>
+    //   <Row>
+    //     <Card>
+    //       <Card.Header>
+    //         Delta
+    //       </Card.Header>
+    //       <Card.Body>
+    //         {/*{patchView}*/}
+    //       </Card.Body>
+    //     </Card>
+    //   </Row>
+    //   <Row>
+    //     {/*{preview}*/}
+    //   </Row>
+    // </Container>;
 
   }
 

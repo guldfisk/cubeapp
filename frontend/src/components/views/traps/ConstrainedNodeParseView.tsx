@@ -20,7 +20,7 @@ class NodeParseForm extends React.Component<NodeParseFormProps> {
       {
         query: event.target.elements.query.value,
         groups: event.target.elements.groups.value,
-        weight: event.target.elements.weight.value,
+        weight: parseInt(event.target.elements.weight.value),
       }
     );
     event.preventDefault();

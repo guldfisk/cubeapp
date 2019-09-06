@@ -1,11 +1,13 @@
 import React from 'react';
-
 import {Link} from "react-router-dom";
-
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
+import {connect} from "react-redux";
+import Button from "react-bootstrap/Button";
+import Tab from "react-bootstrap/Tab";
+import Tabs from "react-bootstrap/Tabs";
 
 import history from '../../routing/history';
 import {Loading} from '../../utils/utils';
@@ -18,20 +20,15 @@ import {
   Printing, Trap, VerbosePatch
 } from '../../models/models';
 import SearchView from "../../views/search/SearchView";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
 import TrapParseView from "../../views/traps/TrapParseView";
 import {ConfirmationDialog} from "../../utils/dialogs";
 import PatchPreview from "../../views/patchview/PatchPreview";
 import ConstrainedNodeParseView from "../../views/traps/ConstrainedNodeParseView";
 import {signIn} from "../../auth/controller";
-import {connect} from "react-redux";
-import Button from "react-bootstrap/Button";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
-
 import {UserGroup} from "../../utils/utils";
 import UserGroupView from "../../views/users/UserGroupView";
-import GroupMapView from "../../views/groupmap/GroupMapView";
+import GroupAddView from "../../views/groupmap/GroupAddView";
 
 
 interface DeltaPageProps {
@@ -46,6 +43,7 @@ interface DeltaPageState {
   previewLoading: boolean
   confirmDelete: boolean
   editing: boolean
+  locked: boolean
   editingConnection: WebSocket | null
   userGroup: UserGroup
 }
@@ -61,6 +59,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       previewLoading: true,
       confirmDelete: false,
       editing: false,
+      locked: false,
       editingConnection: null,
       userGroup: new UserGroup(),
     };
@@ -94,8 +93,6 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
   handleMessage = (event: any) => {
     const message = JSON.parse(event.data);
-    console.log(message);
-
     if (message.type === 'user_update') {
       if (message.action === 'enter' || message.action === 'here') {
         this.state.userGroup.add(message.user);
@@ -154,11 +151,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     }
   }
 
-  handleUpdatePatch = (update: Cubeable | ConstrainedNode, amount: number) => {
+  handleUpdatePatch = (update: Cubeable | ConstrainedNode | string, amount: number) => {
     Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
   };
 
-  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange, number][]) => {
+  handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]) => {
     Patch.updateWebsocket(this.state.editingConnection, updates);
   };
 
@@ -275,6 +272,20 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
               }
             )
         }
+        onGroupClicked={
+          !this.state.editing ? undefined : (
+            (group, weight) => {
+              this.handleUpdatePatch(group, -weight)
+            }
+          )
+        }
+        onGroupEdit={
+          !this.state.editing ? undefined :(
+            (group, oldValue, newValue) => {
+              this.handleUpdatePatch(group, newValue - oldValue)
+            }
+          )
+        }
       />;
     }
 
@@ -328,7 +339,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
               <Col sm={3}>
                 <Card>
                   <Card.Header>
-                    Add cubeables
+                    Add
                   </Card.Header>
                   <Card.Body>
                     <Tabs
@@ -355,6 +366,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                           onSubmit={node => this.handleUpdatePatch(node, 1)}
                         />
                       </Tab>
+                      <Tab eventKey='addGroup' title='Group'>
+                        <GroupAddView
+                          onSubmit={this.handleUpdatePatch}
+                        />
+                      </Tab>
                     </Tabs>
                   </Card.Body>
                 </Card>
@@ -362,7 +378,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
           }
           {
             !this.state.editing ? undefined :
-              <Col sm={1}>
+              <Col sm={2}>
                 <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
               </Col>
           }

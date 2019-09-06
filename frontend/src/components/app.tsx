@@ -63,11 +63,13 @@ class RootComponent extends React.Component<RootProps> {
               isPrivate ?
                 <this.PrivateRoute
                   path={path}
+                  key={path}
                   component={component}
                   {...args}
                 /> :
                 <Route
                   path={path}
+                  key={path}
                   component={component}
                   {...args}
                 />

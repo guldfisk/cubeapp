@@ -16,6 +16,7 @@ interface DeltaViewProps {
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
 }
 
+
 class PatchView extends React.Component<DeltaViewProps, null> {
 
   constructor(props: DeltaViewProps) {

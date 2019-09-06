@@ -15,8 +15,11 @@ interface PatchPreviewProps {
   onNodeClicked?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
+  onGroupClicked?: (group: string, weight: number) => void
+  onGroupEdit?: (group: string, weightBefore: number, weightAfter: number) => void
   noHover: boolean
 }
+
 
 export default class PatchPreview extends React.Component<PatchPreviewProps> {
 
@@ -70,6 +73,8 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
           <Tab eventKey='groups' title='Groups'>
             <GroupMapView
               groupMap={this.props.preview.groupMap}
+              onGroupClicked={this.props.onGroupClicked}
+              onGroupEdit={this.props.onGroupEdit}
               search
             />
           </Tab>
