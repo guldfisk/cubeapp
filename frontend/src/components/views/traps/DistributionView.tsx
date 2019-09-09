@@ -7,6 +7,7 @@ import {Loading} from "../../utils/utils";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
+import {string} from "prop-types";
 
 
 interface DistributionViewProps {
@@ -27,7 +28,13 @@ export default class DistributionView extends React.Component<DistributionViewPr
     this.state = {
       ws: null,
       data: [],
-      status: 'prerun',
+      status: 'stopped',
+    };
+  }
+
+  componentWillUnmount(): void {
+    if (this.state.ws && this.state.ws.OPEN) {
+      this.state.ws.close();
     }
   }
 
@@ -56,9 +63,18 @@ export default class DistributionView extends React.Component<DistributionViewPr
     }
   }
 
+  setStatus = (status: string) => {
+    if (status == 'stopped') {
+      this.setState({data: [], status})
+    } else {
+      this.setState({status})
+    }
+  };
+
   handleUnpackedMessage = (message: any) => {
     if (message.type == 'status') {
-      this.setState({status: message.status});
+      this.setStatus(message.status);
+
     } else if (message.type == 'previous_messages') {
       let status = this.state.status;
       let data = [];
@@ -69,12 +85,14 @@ export default class DistributionView extends React.Component<DistributionViewPr
           data.push(subMessage.frame[0])
         }
       }
+
       this.setState(
         {
           status: status,
-          data: this.state.data.concat(data)
+          data: data,
         }
       )
+
     } else if (message.type === 'frame') {
       this.setState({data: this.state.data.concat(message.frame[0])})
     }
@@ -90,16 +108,43 @@ export default class DistributionView extends React.Component<DistributionViewPr
     this.state.ws.send(JSON.stringify(message));
   };
 
+  private static statusActionMap: Record<string, string[]> = {
+    running: ['stop', 'pause'],
+    pausing: ['stop', 'resume'],
+    resuming: ['stop', 'pause'],
+    paused: ['stop', 'resume'],
+    stopping: [],
+    completed: [],
+    stopped: ['start'],
+    busy: ['start'],
+  };
+
   render() {
 
-    let controlPanel = <Loading/>;
-    if (this.state.status === 'prerun') {
-      controlPanel = <Button
-        onClick={() => this.submitMessage({type: 'start'})}
-      >
-        Start Distribution
-      </Button>
-    }
+    let controlPanel = <div>
+      {
+        DistributionView.statusActionMap[this.state.status].map(
+          action => <Button
+            onClick={() => this.submitMessage({type: action})}
+          >
+            {action}
+          </Button>
+        )
+      }
+    </div>;
+    // if (this.state.status === 'prerun') {
+    //   controlPanel = <Button
+    //     onClick={() => this.submitMessage({type: 'start'})}
+    //   >
+    //     Start Distribution
+    //   </Button>
+    // } else if (this.state.status === 'started') {
+    //   controlPanel = <Button
+    //     onClick={() => this.submitMessage({type: 'stop'})}
+    //   >
+    //     Stop
+    //   </Button>
+    // } else if (this.state)
 
     return <Container fluid>
       <Row>
@@ -133,6 +178,8 @@ export default class DistributionView extends React.Component<DistributionViewPr
                     text: "Fitness",
                     color: "white",
                   },
+                  min: 0,
+                  max: 1,
                   crosshairs: {show: false},
                   axisTicks: {color: 'white'},
                   tooltip: {enabled: false},
@@ -147,7 +194,6 @@ export default class DistributionView extends React.Component<DistributionViewPr
                 },
               ]
             }
-            // width='50%'
           />
         </Col>
       </Row>

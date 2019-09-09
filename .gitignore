@@ -8,3 +8,5 @@ media/
 !/frontend/src/
 cubeapp/frontend/
 __pycache__/
+/static/new_garbage_out_all.pdf
+frontend/migrations/

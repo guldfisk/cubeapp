@@ -34,7 +34,7 @@ class QueueConsumer(threading.Thread):
         callback: t.Callable[[t.Dict[str, t.Any]], None],
         **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(**kwargs)
         self._q = q
         self._callback = callback
         self._terminating = threading.Event()
@@ -200,6 +200,24 @@ class DistributorConsumer(MessageConsumer):
             constraints = constraint_set,
         )
 
+    def _connect_running_distributor(self) -> None:
+        self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
+        if self._distribution_task is None:
+            return
+
+        self._consumer = QueueConsumer(
+            self._distribution_task.subscribe(
+                str(
+                    id(
+                        self
+                    )
+                )
+            ),
+            self.send_json,
+            daemon=True,
+        )
+        self._consumer.start()
+
 
     def receive_json(self, content, **kwargs):
         message_type = content.get('type')
@@ -218,10 +236,7 @@ class DistributorConsumer(MessageConsumer):
                     self._token = auth_token
                     self.scope['user'] = user
                     self._send_message('authentication', state='success')
-                    # async_to_sync(self.channel_layer.group_add)(
-                    #     self._group_name,
-                    #     self.channel_name,
-                    # )
+                    self._connect_running_distributor()
 
                 else:
                     self._send_message('authentication', state='failure', reason='invalid token')
@@ -257,21 +272,11 @@ class DistributorConsumer(MessageConsumer):
                         )
                     ),
                     self.send_json,
+                    daemon = True,
                 )
                 self._consumer.start()
             elif active_patch == self._patch_pk:
-                self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
-                self._consumer = QueueConsumer(
-                    self._distribution_task.subscribe(
-                        str(
-                            id(
-                                self
-                            )
-                        )
-                    ),
-                    self.send_json,
-                )
-                self._consumer.start()
+                self._connect_running_distributor()
             else:
                 self._send_message('status', status = 'busy')
 

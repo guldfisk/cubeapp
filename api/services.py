@@ -26,7 +26,7 @@ class DistributorService(threading.Thread):
 
     def is_busy(self, ) -> t.Optional[int]:
         with self._communication_lock:
-            if self._task is None or not self._task.is_alive():
+            if self._task is not None and self._task.is_alive():
                 return self._patch_id
             else:
                 return None
