@@ -1,16 +1,20 @@
 import React, {Component} from 'react';
 import {Document, Page, pdfjs} from 'react-pdf';
-import PaginationBar from "../utils/PaginationBar";
+import PaginationBar from "../../utils/PaginationBar";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 
-interface TestPageState {
+interface PdfViewProps {
+  url: string
+}
+
+interface PdfViewState {
   numPages: number
   pageNumber: number
 }
 
-export default class TestPage extends Component<null, TestPageState> {
+export default class PdfView extends Component<PdfViewProps, PdfViewState> {
 
   constructor(props: any) {
     super(props);
@@ -28,7 +32,7 @@ export default class TestPage extends Component<null, TestPageState> {
     return (
       <div>
         <Document
-          file="https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/distribution.pdf"
+          file={this.props.url}
           onLoadSuccess={this.onDocumentLoadSuccess}
         >
           <Page pageNumber={this.state.pageNumber}/>
@@ -36,7 +40,7 @@ export default class TestPage extends Component<null, TestPageState> {
         <PaginationBar
           hits={this.state.numPages}
           offset={this.state.pageNumber - 1}
-          handleNewOffset={offset => {this.setState({pageNumber: offset + 1})}}
+          handleNewOffset={(offset: number) => {this.setState({pageNumber: offset + 1})}}
           pageSize={1}
           maxPageDisplay={7}
         />

@@ -12,13 +12,12 @@ from api import models
 from api.serialization import orpserialize, serializers
 from evolution import model
 
-from api.services import DISTRIBUTOR_SERVICE
+from api.services import DISTRIBUTOR_SERVICE, DistributionTask
 from magiccube.collections.cube import Cube
 from magiccube.collections.meta import MetaCube
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.laps.traps.distribute import algorithm
 from magiccube.laps.traps.distribute.algorithm import Distributor
-from magiccube.laps.traps.distribute.distribute import DistributionTask
 from magiccube.update import cubeupdate
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from mtgorp.models.serilization.strategies.jsonid import JsonId
@@ -146,7 +145,7 @@ class DistributorConsumer(MessageConsumer):
             node._value = self._value_value_map.get(node._value)
         max_node_weight = max(node.value for node in constrained_nodes)
         for node in constrained_nodes.nodes.distinct_elements():
-            node._value /= max_node_weight
+            node._value /= max_node_weight # TODO fix
 
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
 
@@ -220,6 +219,8 @@ class DistributorConsumer(MessageConsumer):
 
 
     def receive_json(self, content, **kwargs):
+        print('recv', content)
+
         message_type = content.get('type')
 
         if message_type is None:
@@ -228,8 +229,10 @@ class DistributorConsumer(MessageConsumer):
 
         if message_type == 'authentication':
             knox_auth = TokenAuthentication()
+
             if not isinstance(content['token'], str):
                 self._send_message('authentication', state='failure', reason='invalid token field')
+
             else:
                 user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
                 if user is not None:
@@ -248,7 +251,7 @@ class DistributorConsumer(MessageConsumer):
 
         if message_type == 'start':
 
-            active_patch = DISTRIBUTOR_SERVICE.is_busy()
+            active_patch = DISTRIBUTOR_SERVICE.is_patch_locked()
 
             if active_patch is None:
                 async_to_sync(self.channel_layer.group_send)(
@@ -349,7 +352,7 @@ class PatchEditConsumer(MessageConsumer):
                     self._token = auth_token
                     self.scope['user'] = user
                     self._send_message('authentication', state = 'success')
-                    if DISTRIBUTOR_SERVICE.is_busy() == self._patch_pk:
+                    if DISTRIBUTOR_SERVICE.is_patch_locked() == self._patch_pk:
                         self._send_message('status', status = 'locked')
                     async_to_sync(self.channel_layer.group_add)(
                         self._group_name,
@@ -373,7 +376,7 @@ class PatchEditConsumer(MessageConsumer):
 
         if message_type == 'update':
 
-            if DISTRIBUTOR_SERVICE.is_busy() == self._patch_pk:
+            if DISTRIBUTOR_SERVICE.is_patch_locked() == self._patch_pk:
                 self._send_message('status', status='locked')
                 return
 

@@ -125,7 +125,12 @@ export default class DistributionView extends React.Component<DistributionViewPr
       {
         DistributionView.statusActionMap[this.state.status].map(
           action => <Button
-            onClick={() => this.submitMessage({type: action})}
+            onClick={
+              () => {
+                console.log(action);
+                this.submitMessage({type: action});
+              }
+            }
           >
             {action}
           </Button>

@@ -10,6 +10,7 @@ import PatchPreview from "../../views/patchview/PatchPreview";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
 import ReportView from "../../views/report/ReportView";
 import DistributionView from "../../views/traps/DistributionView";
+import PdfView from "../../views/pdf/PdfView";
 
 
 interface DeltaPageProps {
@@ -116,44 +117,46 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     //     noHover={false}
     //   />;
     // }
-
-    return <DistributionView id={this.props.match.params.id}/>;
-    // return <Container fluid>
-    //   <Row>
-    //     <Button
-    //       onClick={this.handleApply}
-    //       disabled={!this.state.patch}
-    //     >
-    //       Apply
-    //     </Button>
-    //   </Row>
-    //   <Row>
-    //     <DistributionView id={this.props.match.params.id}/>
-    //   </Row>
-    //   <Row>
-    //     <Card>
-    //       <Card.Header>
-    //         Report
-    //       </Card.Header>
-    //       <Card.Body>
-    //         {reportView}
-    //       </Card.Body>
-    //     </Card>
-    //   </Row>
-    //   <Row>
-    //     <Card>
-    //       <Card.Header>
-    //         Delta
-    //       </Card.Header>
-    //       <Card.Body>
-    //         {/*{patchView}*/}
-    //       </Card.Body>
-    //     </Card>
-    //   </Row>
-    //   <Row>
-    //     {/*{preview}*/}
-    //   </Row>
-    // </Container>;
+    
+    return <Container fluid>
+      <Row>
+        <Button
+          onClick={this.handleApply}
+          disabled={!this.state.patch}
+        >
+          Apply
+        </Button>
+      </Row>
+      <Row>
+        <DistributionView id={this.props.match.params.id}/>
+      </Row>
+      <Row>
+        <PdfView url="https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/distribution.pdf"/>
+      </Row>
+      {/*<Row>*/}
+      {/*  <Card>*/}
+      {/*    <Card.Header>*/}
+      {/*      Report*/}
+      {/*    </Card.Header>*/}
+      {/*    <Card.Body>*/}
+      {/*      {reportView}*/}
+      {/*    </Card.Body>*/}
+      {/*  </Card>*/}
+      {/*</Row>*/}
+      {/*<Row>*/}
+      {/*  <Card>*/}
+      {/*    <Card.Header>*/}
+      {/*      Delta*/}
+      {/*    </Card.Header>*/}
+      {/*    <Card.Body>*/}
+      {/*      /!*{patchView}*!/*/}
+      {/*    </Card.Body>*/}
+      {/*  </Card>*/}
+      {/*</Row>*/}
+      {/*<Row>*/}
+      {/*  /!*{preview}*!/*/}
+      {/*</Row>*/}
+    </Container>;
 
   }
 

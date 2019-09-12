@@ -1,4 +1,4 @@
-Django>=2.0,<3.0
+Django
 djangorestframework>=3.9
 -e git+https://github.com/guldfisk/proxypdf.git#egg=proxypdf
 -e git+https://github.com/guldfisk/evolution.git#egg=evolution
@@ -34,3 +34,5 @@ gunicorn
 channels
 daphne
 channels_redis
+django-cors-headers
+boto3
