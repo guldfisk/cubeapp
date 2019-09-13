@@ -1,4 +1,3 @@
-
 from mtgimg.load import Loader
 
 

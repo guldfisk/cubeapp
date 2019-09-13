@@ -84,7 +84,7 @@ class DistributorConsumer(MessageConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._patch_pk: t.Optional[int] = None
-        self._group_name: t.Optional[str] = None
+        # self._group_name: t.Optional[str] = None
         self._token: t.Optional[t.ByteString] = None
 
         self._distribution_task: t.Optional[DistributionTask] = None
@@ -92,22 +92,16 @@ class DistributorConsumer(MessageConsumer):
 
     def connect(self):
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
-        self._group_name = f'patch_edit_{self._patch_pk}'
+        # self._group_name = f'patch_edit_{self._patch_pk}'
+
+        from cubeapp.celery import debug_task
+        print(debug_task.delay().get())
 
         self.accept()
 
     def disconnect(self, code):
-        if self._token is not None:
-            async_to_sync(self.channel_layer.group_send)(
-                self._group_name,
-                {
-                    'type': 'patch_lock',
-                    'action': 'release',
-                },
-            )
-        if self._consumer is not None:
-            self._consumer.stop()
-        if self._distribution_task:
+        print('Begin dist consumer close')
+        if self._distribution_task is not None:
             self._distribution_task.unsubscribe(
                 str(
                     id(
@@ -115,6 +109,9 @@ class DistributorConsumer(MessageConsumer):
                     )
                 )
             )
+            print('UNSUBBED')
+            self._consumer.stop()
+        print('End dist consumer close')
 
     def _get_distributor(self) -> Distributor:
         patch = models.CubePatch.objects.get(pk=self._patch_pk)
@@ -199,10 +196,8 @@ class DistributorConsumer(MessageConsumer):
             constraints = constraint_set,
         )
 
-    def _connect_running_distributor(self) -> None:
+    def _connect_distributor(self) -> None:
         self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
-        if self._distribution_task is None:
-            return
 
         self._consumer = QueueConsumer(
             self._distribution_task.subscribe(
@@ -239,7 +234,8 @@ class DistributorConsumer(MessageConsumer):
                     self._token = auth_token
                     self.scope['user'] = user
                     self._send_message('authentication', state='success')
-                    self._connect_running_distributor()
+
+                    self._connect_distributor()
 
                 else:
                     self._send_message('authentication', state='failure', reason='invalid token')
@@ -250,38 +246,12 @@ class DistributorConsumer(MessageConsumer):
             return
 
         if message_type == 'start':
-
-            active_patch = DISTRIBUTOR_SERVICE.is_patch_locked()
-
-            if active_patch is None:
-                async_to_sync(self.channel_layer.group_send)(
-                    self._group_name,
-                    {
-                        'type': 'patch_lock',
-                        'action': 'acquirer',
-                    },
+            if not self._distribution_task.is_working:
+                self._distribution_task.submit(
+                    self._get_distributor()
                 )
-
-                self._distribution_task, _ = DISTRIBUTOR_SERVICE.submit_distributor(
-                    self._patch_pk,
-                    self._get_distributor(),
-                )
-                self._consumer = QueueConsumer(
-                    self._distribution_task.subscribe(
-                        str(
-                            id(
-                                self
-                            )
-                        )
-                    ),
-                    self.send_json,
-                    daemon = True,
-                )
-                self._consumer.start()
-            elif active_patch == self._patch_pk:
-                self._connect_running_distributor()
             else:
-                self._send_message('status', status = 'busy')
+                self._send_error('Distributor is busy, stop it before restarting')
 
         elif message_type == 'pause':
             if not (self._distribution_task and self._distribution_task.is_alive()):
@@ -299,7 +269,23 @@ class DistributorConsumer(MessageConsumer):
             if not (self._distribution_task and self._distribution_task.is_alive()):
                 self._send_message('status', status = 'stopped')
                 return
-            self._distribution_task.stop()
+            self._distribution_task.cancel()
+
+        elif message_type == 'capture':
+            if not self._distribution_task.status == 'paused':
+                self._send_error('Distributor must be paused to generate trap images')
+                return
+
+            trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
+
+            models.DistributionPossibility.objects.create(
+                patch_id = self._patch_pk,
+                content = JsonId(db).serialize(trap_collection),
+            )
+
+
+        else:
+            self._send_error(f'Unknown message type "{message_type}"')
 
 
 
@@ -330,6 +316,7 @@ class PatchEditConsumer(MessageConsumer):
         self._token: t.Optional[t.ByteString] = None
 
     def _set_locked(self, locked: bool) -> None:
+        print('--------__> set locked', locked)
         self._send_message('status', status='locked' if locked else 'unlocked')
 
     def connect(self) -> None:
@@ -339,6 +326,8 @@ class PatchEditConsumer(MessageConsumer):
         self.accept()
 
     def receive_json(self, content, **kwargs):
+        print('edit', content)
+
         message_type = content.get('type')
 
         if message_type is None:

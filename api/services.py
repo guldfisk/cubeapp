@@ -5,17 +5,21 @@ import queue
 import typing as t
 
 import threading
-from collections import defaultdict
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from evolution.logging import LogFrame
-from magiccube.laps.traps.distribute.algorithm import Distributor
+from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
 from magiccube.laps.traps.distribute.distribute import DistributionWorker
 
 
 class DistributionTask(threading.Thread):
 
-    def __init__(self, max_generations: int = 0, **kwargs):
+    def __init__(self, callback: t.Callable[[], None], *, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
+        self._callback = callback
+
         self._max_generations = max_generations
         self._worker = None
 
@@ -35,7 +39,7 @@ class DistributionTask(threading.Thread):
     @property
     def frames(self) -> t.List[LogFrame]:
         with self._lock:
-            return self._frames
+            return copy.copy(self._frames)
 
     @property
     def status(self) -> str:
@@ -43,13 +47,19 @@ class DistributionTask(threading.Thread):
             return self._status
 
     @property
-    def subscribers(self) -> t.KeysView[str]:
+    def subscribers(self) -> t.FrozenSet[str]:
         with self._lock:
-            return self._subscribers.keys()
+            return frozenset(self._subscribers.keys())
 
     @property
     def is_working(self) -> bool:
         return self._is_working.is_set()
+
+    def get_latest_fittest(self) -> TrapDistribution:
+        with self._lock:
+            if self._status != 'paused':
+                raise RuntimeError('Task must be paused to get distribution')
+            return self._worker.distributor.fittest()
 
     def subscribe(self, key: str) -> queue.Queue[t.Dict[str, t.Any]]:
         with self._lock:
@@ -99,16 +109,20 @@ class DistributionTask(threading.Thread):
         self._worker.resume()
 
     def run(self) -> None:
-        while not self._terminating.is_set():
+        while not (
+            self._terminating.is_set()
+            or self._status == 'stopped'
+            and not self._subscribers
+        ):
             if self._worker is None and not self._is_working.wait(5):
                 continue
 
-            with self._lock:
-                try:
-                    message = self._worker.message_queue.get(timeout = 5)
-                except queue.Empty:
-                    continue
+            try:
+                message = self._worker.message_queue.get(timeout = 5)
+            except queue.Empty:
+                continue
 
+            with self._lock:
                 if message['type'] == 'frame':
                     self._frames.append(message['frame'])
                 if message['type'] == 'status':
@@ -119,6 +133,8 @@ class DistributionTask(threading.Thread):
                 for subscriber in self._subscribers.values():
                     subscriber.put(message)
 
+        self._callback()
+
 
 class DistributorService(object):
 
@@ -126,40 +142,42 @@ class DistributorService(object):
         super().__init__(**kwargs)
 
         self._lock = threading.Lock()
-        self._tasks: t.Dict[int, DistributionTask] = defaultdict(
-            lambda : DistributionTask(max_generations=3000)
-        )
+        self._tasks: t.Dict[int, DistributionTask] = {}
 
-        # self._task: t.Optional[DistributionTask] = None
-        # self._patch_id: t.Optional[int] = None
+    def _distribution_task_complete(self, key):
+        with self._lock:
+            del self._tasks[key]
+            async_to_sync(get_channel_layer().group_send)(
+                f'patch_edit_{key}',
+                {
+                    'type': 'patch_lock',
+                    'action': 'release',
+                },
+            )
 
     def connect(self, patch_id: int) -> t.Optional[DistributionTask]:
         with self._lock:
-            return self._tasks[patch_id]
+            try:
+                return self._tasks[patch_id]
+            except KeyError:
+                async_to_sync(get_channel_layer().group_send)(
+                    f'patch_edit_{patch_id}',
+                    {
+                        'type': 'patch_lock',
+                        'action': 'acquirer',
+                    },
+                )
+                distribution_task = DistributionTask(
+                    lambda : self._distribution_task_complete(patch_id),
+                    max_generations=3000,
+                )
+                distribution_task.start()
+                self._tasks[patch_id] = distribution_task
+                return distribution_task
 
     def is_patch_locked(self, patch_id: int) -> bool:
         with self._lock:
-            return (
-                patch_id in self._tasks
-                and self._tasks[patch_id].subscribers
-            )
-
-    # def submit_distributor(
-    #     self,
-    #     patch_id: int,
-    #     distributor: Distributor,
-    # ) -> t.Tuple[t.Optional[DistributionTask], int]:
-    #     with self._communication_lock:
-    #         if self._task is None or not self._task.is_alive():
-    #             self._task = DistributionTask(
-    #                 distributor,
-    #                 max_generations = 3000,
-    #             )
-    #             self._patch_id = patch_id
-    #             self._task.start()
-    #             return self._task, patch_id
-    #         else:
-    #             return self._task, self._patch_id
+            return patch_id in self._tasks
 
 
 DISTRIBUTOR_SERVICE = DistributorService()

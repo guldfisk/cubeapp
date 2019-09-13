@@ -1,6 +1,3 @@
-
-
-
 from mtgorp.db.load import Loader
 
 

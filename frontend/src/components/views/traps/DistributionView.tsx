@@ -76,20 +76,10 @@ export default class DistributionView extends React.Component<DistributionViewPr
       this.setStatus(message.status);
 
     } else if (message.type == 'previous_messages') {
-      let status = this.state.status;
-      let data = [];
-      for (const subMessage of message.messages) {
-        if (subMessage.type == 'status') {
-          status = subMessage.status
-        } else if (subMessage.type === 'frame') {
-          data.push(subMessage.frame[0])
-        }
-      }
-
       this.setState(
         {
-          status: status,
-          data: data,
+          status: message.status,
+          data: message.frames.map(([max, average]: [number, number]) => max),
         }
       )
 
@@ -115,6 +105,7 @@ export default class DistributionView extends React.Component<DistributionViewPr
     paused: ['stop', 'resume'],
     stopping: [],
     completed: [],
+    prerun: ['start'],
     stopped: ['start'],
     busy: ['start'],
   };

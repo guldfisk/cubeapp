@@ -20,9 +20,30 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
       - database_network
+    ports:
+      - 6379:6379
+
+  celery_worker:
+    image: app-image
+    command: celery -A cubeapp worker --loglevel=info
+    volumes:
+      - .:/code
+      - ~/.local/share/mtgimg:/root/.local/share/mtgimg
+      - ~/.local/share/mtgorp:/root/.local/share/mtgorp
+      - static_volume:/opt/services/cubeapp/static
+      - media_volume:/opt/services/cubeapp/meda
+    depends_on:
+      - redis
+      - db
+    networks:
+      - database_network
+    restart: on-failure
+    env_file:
+      - .env
 
   web:
     build: .
+    image: app-image
     volumes:
       - .:/code
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
@@ -31,8 +52,9 @@ services:
       - media_volume:/opt/services/cubeapp/meda
     depends_on:
       - db
+      - redis
     networks:
-#      - nginx_network
+      #      - nginx_network
       - database_network
     env_file:
       - .env

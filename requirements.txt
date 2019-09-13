@@ -36,3 +36,5 @@ daphne
 channels_redis
 django-cors-headers
 boto3
+celery
+redis

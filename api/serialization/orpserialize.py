@@ -1,13 +1,15 @@
 import typing as t
 from abc import abstractmethod
 
-from magiccube.update.report import UpdateReport, ReportNotification
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.expansion import Expansion
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import compacted_model
+from mtgorp.models.serilization.strategies.jsonid import JsonId
 
+from magiccube.collections.laps import TrapCollection
+from magiccube.update.report import UpdateReport, ReportNotification
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
 from magiccube.laps.purples.purple import Purple
@@ -15,7 +17,6 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
-from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 
 T = t.TypeVar('T')
@@ -401,5 +402,21 @@ class UpdateReportSerializer(ModelSerializer[UpdateReport]):
                 )
                 for notification in
                 serializeable.notifications
+            ]
+        }
+
+
+class TrapCollectionSerializer(ModelSerializer[TrapCollection]):
+
+    @classmethod
+    def serialize(cls, serializeable: TrapCollection) -> compacted_model:
+        return {
+            'traps': [
+                (
+                    TrapSerializer.serialize(trap),
+                    multiplicity,
+                )
+                for trap, multiplicity in
+                serializeable.traps.items()
             ]
         }
