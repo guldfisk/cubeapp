@@ -29,6 +29,7 @@ import PatchMultiView from "../../views/patchview/PatchMultiView";
 import {UserGroup} from "../../utils/utils";
 import UserGroupView from "../../views/users/UserGroupView";
 import GroupAddView from "../../views/groupmap/GroupAddView";
+import Alert from "react-bootstrap/Alert";
 
 
 interface DeltaPageProps {
@@ -40,7 +41,6 @@ interface DeltaPageState {
   patch: null | Patch
   verbosePatch: VerbosePatch | null
   preview: null | Preview
-  previewLoading: boolean
   confirmDelete: boolean
   editing: boolean
   locked: boolean
@@ -56,7 +56,6 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       patch: null,
       verbosePatch: null,
       preview: null,
-      previewLoading: true,
       confirmDelete: false,
       editing: false,
       locked: false,
@@ -67,16 +66,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
   setPatch = (patch: Patch) => {
     this.setState(
-      {
-        patch,
-        previewLoading: true,
-      }
+      {patch,}
     );
     patch.preview().then(
       (preview) => {
         this.setState(
           {
-            previewLoading: false,
             preview: preview,
           }
         )
@@ -100,6 +95,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
         this.state.userGroup.remove(message.user);
       }
       this.setState({userGroup: this.state.userGroup});
+    } else if (message.type === 'status') {
+      if (message.status === 'locked') {
+        this.setState({locked: true})
+      } else if (message.status === 'unlocked') {
+        this.setState({locked: false})
+      }
     } else if (message.type === 'update') {
       this.setState(
         {
@@ -191,6 +192,10 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     )
   };
 
+  canEdit = (): boolean => {
+    return this.state.editing && !this.state.locked
+  };
+
   render() {
     let patchView = <Loading/>;
     if (this.state.patch !== null) {
@@ -198,11 +203,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
         patch={this.state.patch}
         verbosePatch={this.state.verbosePatch}
         onItemClicked={
-          !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             this.handleUpdatePatch
         }
         onNodeEdit={
-          !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             (
               (oldNode, newNode, multiplicity) => {
                 this.handleMultipleUpdatePatch(
@@ -215,13 +220,13 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             )
         }
         onChangeClicked={
-          !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             (change, multiplicity) => {
               this.handleMultipleUpdatePatch([[change, multiplicity]])
             }
         }
         onNodeQtyEdit={
-          !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             (
               (oldValue, newValue, node) => {
                 this.handleMultipleUpdatePatch(
@@ -240,15 +245,15 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       preview = <PatchPreview
         preview={this.state.preview}
         onCubeablesClicked={
-          this.state.previewLoading || !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             this.handleCubeableClicked
         }
         onNodeClicked={
-          this.state.previewLoading || !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             ((node, multiplicity) => this.handleUpdatePatch(node, -1))
         }
         onNodeEdit={
-          this.state.previewLoading || !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             (
               (oldNode, newNode, multiplicity) => {
                 this.handleMultipleUpdatePatch(
@@ -261,7 +266,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             )
         }
         onNodeQtyEdit={
-          this.state.previewLoading || !this.state.editing ? undefined :
+          !this.canEdit() ? undefined :
             (
               (oldValue, newValue, node) => {
                 this.handleMultipleUpdatePatch(
@@ -273,14 +278,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             )
         }
         onGroupClicked={
-          !this.state.editing ? undefined : (
+          !this.canEdit() ? undefined : (
             (group, weight) => {
               this.handleUpdatePatch(group, -weight)
             }
           )
         }
         onGroupEdit={
-          !this.state.editing ? undefined :(
+          !this.canEdit() ? undefined : (
             (group, oldValue, newValue) => {
               this.handleUpdatePatch(group, newValue - oldValue)
             }
@@ -334,54 +339,63 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                 </Card>
               </Col>
           }
-          {
-            !this.state.editing ? undefined :
-              <Col sm={3}>
-                <Card>
-                  <Card.Header>
-                    Add
-                  </Card.Header>
-                  <Card.Body>
-                    <Tabs
-                      id='add-cubeables-tabs'
-                      defaultActiveKey='addPrinting'
-                    >
-                      <Tab eventKey='addPrinting' title='Printing'>
-                        <Card>
-                          <Card.Body>
-                            <SearchView
-                              handleCardClicked={(printing: Printing) => this.handleUpdatePatch(printing, 1)}
-                              limit={3}
+          <Col>
+            {
+              !this.state.locked ? undefined : <Row>
+                <Alert variant="danger">Patch currently being checked out</Alert>
+              </Row>
+            }
+            <Row>
+              {
+                !this.state.editing ? undefined :
+                  <Col sm={3}>
+                    <Card>
+                      <Card.Header>
+                        Add
+                      </Card.Header>
+                      <Card.Body>
+                        <Tabs
+                          id='add-cubeables-tabs'
+                          defaultActiveKey='addPrinting'
+                        >
+                          <Tab eventKey='addPrinting' title='Printing'>
+                            <Card>
+                              <Card.Body>
+                                <SearchView
+                                  handleCardClicked={(printing: Printing) => this.handleUpdatePatch(printing, 1)}
+                                  limit={3}
+                                />
+                              </Card.Body>
+                            </Card>
+                          </Tab>
+                          <Tab eventKey='addTrap' title='Trap'>
+                            <TrapParseView
+                              onSubmit={trap => this.handleUpdatePatch(trap, 1)}
                             />
-                          </Card.Body>
-                        </Card>
-                      </Tab>
-                      <Tab eventKey='addTrap' title='Trap'>
-                        <TrapParseView
-                          onSubmit={trap => this.handleUpdatePatch(trap, 1)}
-                        />
-                      </Tab>
-                      <Tab eventKey='addNode' title='Node'>
-                        <ConstrainedNodeParseView
-                          onSubmit={node => this.handleUpdatePatch(node, 1)}
-                        />
-                      </Tab>
-                      <Tab eventKey='addGroup' title='Group'>
-                        <GroupAddView
-                          onSubmit={this.handleUpdatePatch}
-                        />
-                      </Tab>
-                    </Tabs>
-                  </Card.Body>
-                </Card>
-              </Col>
-          }
-          {
-            !this.state.editing ? undefined :
-              <Col sm={2}>
-                <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
-              </Col>
-          }
+                          </Tab>
+                          <Tab eventKey='addNode' title='Node'>
+                            <ConstrainedNodeParseView
+                              onSubmit={node => this.handleUpdatePatch(node, 1)}
+                            />
+                          </Tab>
+                          <Tab eventKey='addGroup' title='Group'>
+                            <GroupAddView
+                              onSubmit={this.handleUpdatePatch}
+                            />
+                          </Tab>
+                        </Tabs>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+              }
+              {
+                !this.state.editing ? undefined :
+                  <Col sm={2}>
+                    <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
+                  </Col>
+              }
+            </Row>
+          </Col>
         </Row>
         <Row>
           <Card>

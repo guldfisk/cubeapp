@@ -329,7 +329,10 @@ class PatchEditConsumer(MessageConsumer):
         self._group_name: t.Optional[str] = None
         self._token: t.Optional[t.ByteString] = None
 
-    def connect(self):
+    def _set_locked(self, locked: bool) -> None:
+        self._send_message('status', status='locked' if locked else 'unlocked')
+
+    def connect(self) -> None:
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
         self._group_name = f'patch_edit_{self._patch_pk}'
 
@@ -352,8 +355,8 @@ class PatchEditConsumer(MessageConsumer):
                     self._token = auth_token
                     self.scope['user'] = user
                     self._send_message('authentication', state = 'success')
-                    if DISTRIBUTOR_SERVICE.is_patch_locked() == self._patch_pk:
-                        self._send_message('status', status = 'locked')
+                    if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
+                        self._set_locked(True)
                     async_to_sync(self.channel_layer.group_add)(
                         self._group_name,
                         self.channel_name,
@@ -376,7 +379,7 @@ class PatchEditConsumer(MessageConsumer):
 
         if message_type == 'update':
 
-            if DISTRIBUTOR_SERVICE.is_patch_locked() == self._patch_pk:
+            if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
                 self._send_message('status', status='locked')
                 return
 
@@ -527,10 +530,7 @@ class PatchEditConsumer(MessageConsumer):
         )
 
     def patch_lock(self, event):
-        if event['action'] == 'acquirer':
-            self._send_message('status', status='locked')
-        else:
-            self._send_message('status', status='unlocked')
+        self._set_locked(event['action'] == 'acquirer')
 
     def disconnect(self, code):
         if self._token is not None:
