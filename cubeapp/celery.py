@@ -16,4 +16,4 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
-    print('YEAH DUDE OK'*10)
+    print('Debug thingy: {}'.format(self.request))

@@ -207,6 +207,27 @@ export class Trap extends Cubeable {
 
 }
 
+
+export class TrapCollection {
+  traps: Counter<Trap>;
+
+  constructor(traps: Counter<Trap>) {
+    this.traps = traps;
+  }
+
+  public static fromRemote(remote: any): TrapCollection {
+    return new TrapCollection(
+      new Counter(
+        remote.traps.map(
+          ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
+        )
+      )
+    )
+  }
+
+}
+
+
 export class Ticket extends Cubeable {
   name: string;
 

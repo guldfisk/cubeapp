@@ -63,6 +63,15 @@ _IMAGE_SIZE_MAP = {
 }
 
 
+@api_view(['GEt'])
+def test_view(request):
+    from api.tasks import generate_distribution_pdf
+    print(generate_distribution_pdf.delay())
+    return Response(
+        {'ok': 'ok'}
+    )
+
+
 class CubeReleasesList(generics.ListAPIView):
     queryset = models.CubeRelease.objects.all()
     serializer_class = serializers.CubeReleaseSerializer

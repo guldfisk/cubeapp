@@ -10,6 +10,7 @@ from knox.auth import TokenAuthentication
 
 from api import models
 from api.serialization import orpserialize, serializers
+from api.tasks import generate_distribution_pdf
 from evolution import model
 
 from api.services import DISTRIBUTOR_SERVICE, DistributionTask
@@ -84,7 +85,7 @@ class DistributorConsumer(MessageConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._patch_pk: t.Optional[int] = None
-        # self._group_name: t.Optional[str] = None
+        self._group_name: t.Optional[str] = None
         self._token: t.Optional[t.ByteString] = None
 
         self._distribution_task: t.Optional[DistributionTask] = None
@@ -92,15 +93,10 @@ class DistributorConsumer(MessageConsumer):
 
     def connect(self):
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
-        # self._group_name = f'patch_edit_{self._patch_pk}'
-
-        from cubeapp.celery import debug_task
-        print(debug_task.delay().get())
-
+        self._group_name = f'distributor_{self._patch_pk}'
         self.accept()
 
     def disconnect(self, code):
-        print('Begin dist consumer close')
         if self._distribution_task is not None:
             self._distribution_task.unsubscribe(
                 str(
@@ -109,9 +105,12 @@ class DistributorConsumer(MessageConsumer):
                     )
                 )
             )
-            print('UNSUBBED')
             self._consumer.stop()
-        print('End dist consumer close')
+        if self._group_name is not None:
+            async_to_sync(self.channel_layer.group_discard)(
+                self._group_name,
+                self.channel_name,
+            )
 
     def _get_distributor(self) -> Distributor:
         patch = models.CubePatch.objects.get(pk=self._patch_pk)
@@ -233,6 +232,10 @@ class DistributorConsumer(MessageConsumer):
                 if user is not None:
                     self._token = auth_token
                     self.scope['user'] = user
+                    async_to_sync(self.channel_layer.group_add)(
+                        self._group_name,
+                        self.channel_name,
+                    )
                     self._send_message('authentication', state='success')
 
                     self._connect_distributor()
@@ -278,15 +281,35 @@ class DistributorConsumer(MessageConsumer):
 
             trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
 
-            models.DistributionPossibility.objects.create(
-                patch_id = self._patch_pk,
-                content = JsonId(db).serialize(trap_collection),
+            # models.DistributionPossibility.objects.create(
+            #     patch_id = self._patch_pk,
+            #     content = JsonId(db).serialize(trap_collection),
+            # )
+
+            self.send_json(
+                {
+                    'type': 'trap_distribution',
+                    'content': orpserialize.TrapCollectionSerializer.serialize(
+                        trap_collection
+                    )
+                }
+            )
+
+            generate_distribution_pdf.delay(
+                self._patch_pk,
             )
 
 
         else:
             self._send_error(f'Unknown message type "{message_type}"')
 
+    def distribution_pdf_update(self, event):
+        self.send_json(
+            {
+                'type': 'distribution_pdf',
+                'url': event['url']
+            }
+        )
 
 
 class PatchEditConsumer(MessageConsumer):
@@ -316,7 +339,6 @@ class PatchEditConsumer(MessageConsumer):
         self._token: t.Optional[t.ByteString] = None
 
     def _set_locked(self, locked: bool) -> None:
-        print('--------__> set locked', locked)
         self._send_message('status', status='locked' if locked else 'unlocked')
 
     def connect(self) -> None:
