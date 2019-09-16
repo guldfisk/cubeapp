@@ -1,5 +1,5 @@
 import React from 'react';
-import {CubeRelease, Patch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
+import {CubeRelease, DistributionPossibility, Patch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
 import {Loading} from "../../utils/utils";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
@@ -11,11 +11,18 @@ import PatchMultiView from "../../views/patchview/PatchMultiView";
 import ReportView from "../../views/report/ReportView";
 import DistributionView from "../../views/traps/DistributionView";
 import PdfView from "../../views/pdf/PdfView";
+import store from "../../state/store";
+import Col from "react-bootstrap/Col";
+import Chart from "react-apexcharts";
+import DistributionPossibilitiesView from "../../views/traps/DistributionPossibilitiesView";
+import TrapCollectionView from "../../views/traps/TrapCollectionView";
+import DistributionPossibilityView from "../../views/traps/DistributionPossibilityView";
 
 
 interface DeltaPageProps {
   match: any
 }
+
 
 interface ApplyPatchPageState {
   patch: null | Patch
@@ -24,7 +31,13 @@ interface ApplyPatchPageState {
   preview: null | Preview
   previewLoading: boolean
   resultingRelease: null | CubeRelease
+  distributionPossibilities: DistributionPossibility[]
+  distributionPossibility: null | DistributionPossibility
+  ws: WebSocket | null
+  data: number[]
+  status: string
 }
+
 
 export default class ApplyPatchPage extends React.Component<DeltaPageProps, ApplyPatchPageState> {
 
@@ -37,69 +50,153 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       preview: null,
       previewLoading: true,
       resultingRelease: null,
+      distributionPossibilities: [],
+      distributionPossibility: null,
+      ws: null,
+      data: [],
+      status: 'prerun',
     };
   }
 
-  componentDidMount() {
-    Patch.get(
-      this.props.match.params.id
-    ).then(
-      patch => {
-        this.setState(
-          {
-            patch,
-            previewLoading: true,
-          }
-        );
-        return patch;
-      }
-    ).then(
-      patch => {
-        patch.preview().then(
-          (preview) => {
-            this.setState(
-              {
-                preview,
-                previewLoading: false,
-              }
-            )
-          }
-        );
-        patch.verbose().then(
-          verbosePatch => this.setState({verbosePatch})
-        );
-        patch.report().then(
-          report => this.setState({report})
-        );
-      }
-    );
+  componentWillUnmount(): void {
+    if (this.state.ws && this.state.ws.OPEN) {
+      this.state.ws.close();
+    }
   }
 
-  handleApply = () => {
-    this.state.patch.apply().then(
-      (release: CubeRelease) => {
-        this.setState(
+  componentDidMount() {
+    const url = new URL('/ws/distribute/' + this.props.match.params.id + '/', window.location.href);
+    url.protocol = url.protocol.replace('http', 'ws');
+    const ws = new WebSocket(url.href);
+
+    ws.onopen = () => {
+      console.log('connected');
+      ws.send(
+        JSON.stringify(
           {
-            resultingRelease: release,
+            type: 'authentication',
+            token: store.getState().token,
           }
         )
+      );
+      this.setState({ws});
+    };
+
+    ws.onmessage = this.handleMessage;
+
+    ws.onclose = () => {
+      console.log('disconnected');
+    }
+  }
+
+  setStatus = (status: string) => {
+    if (status == 'stopped') {
+      this.setState({data: [], status})
+    } else {
+      this.setState({status})
+    }
+  };
+
+  handleMessage = (event: any) => {
+    const message = JSON.parse(event.data);
+    console.log('new message', message);
+
+    if (message.type == 'status') {
+      this.setStatus(message.status);
+
+    } else if (message.type == 'previous_messages') {
+      this.setState(
+        {
+          status: message.status,
+          data: message.frames.map(([max, average]: [number, number]) => max),
+        }
+      )
+
+    } else if (message.type === 'frame') {
+      this.setState({data: this.state.data.concat(message.frame[0])})
+
+    } else if (message.type === 'items') {
+      this.setState(
+        {
+          distributionPossibilities: message.distributions.map(
+            (distribution: any) => DistributionPossibility.fromRemote(distribution)
+          )
+        }
+      )
+
+    } else if (message.type === 'distribution_possibility') {
+      this.setState(
+        {
+          distributionPossibilities: [DistributionPossibility.fromRemote(message.content)].concat(
+            this.state.distributionPossibilities
+          )
+        }
+      )
+
+    } else if (message.type === 'distribution_pdf') {
+      const possibilities = this.state.distributionPossibilities;
+      for (const possibility of possibilities) {
+        if (possibility.id === message.possibility_id) {
+          possibility.pdfUrl = message.url;
+          break;
+        }
       }
-    )
+      this.setState({distributionPossibilities: possibilities});
+
+    }
+
+  };
+
+  submitMessage = (message: any) => {
+    this.state.ws.send(JSON.stringify(message));
+  };
+
+  handleDistributionPossibilityClicked = (possibility: DistributionPossibility): void => {
+    this.setState({distributionPossibility: possibility});
+  };
+
+  private static statusActionMap: Record<string, string[]> = {
+    running: ['stop', 'pause'],
+    pausing: ['stop', 'resume'],
+    resuming: ['stop', 'pause'],
+    paused: ['stop', 'resume', 'capture'],
+    stopping: [],
+    completed: [],
+    prerun: ['start'],
+    stopped: ['start'],
+    busy: ['start'],
   };
 
   render() {
-    if (this.state.resultingRelease) {
-      return <Redirect
-        to={'/release/' + this.state.resultingRelease.id}
-      />
-    }
+    // if (this.state.resultingRelease) {
+    //   return <Redirect
+    //     to={'/release/' + this.state.resultingRelease.id}
+    //   />
+    // }
 
-    const reportView = (
-      !this.state.report ? <Loading/> :
-        <ReportView
-          report={this.state.report}
-        />
-    );
+    // const reportView = (
+    //   !this.state.report ? <Loading/> :
+    //     <ReportView
+    //       report={this.state.report}
+    //     />
+    // );
+
+    let controlPanel = <div>
+      {
+        ApplyPatchPage.statusActionMap[this.state.status].map(
+          action => <Button
+            onClick={
+              () => {
+                console.log(action);
+                this.submitMessage({type: action});
+              }
+            }
+          >
+            {action}
+          </Button>
+        )
+      }
+    </div>;
 
 
     // let patchView = <Loading/>;
@@ -117,22 +214,31 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     //     noHover={false}
     //   />;
     // }
-    
+
     return <Container fluid>
       <Row>
-        <Button
-          onClick={this.handleApply}
-          disabled={!this.state.patch}
-        >
-          Apply
-        </Button>
+        <Col sm={2}>
+          <label>{this.state.status}</label>
+          {controlPanel}
+        </Col>
+        <Col>
+          {
+            this.state.status === 'prerun' ? undefined :
+              <DistributionView data={this.state.data}/>
+          }
+        </Col>
       </Row>
+      <DistributionPossibilitiesView
+        possibilities={this.state.distributionPossibilities}
+        onPossibilityClick={this.handleDistributionPossibilityClicked}
+      />
       <Row>
-        <DistributionView id={this.props.match.params.id}/>
+        {
+          !this.state.distributionPossibility ? undefined :
+            <DistributionPossibilityView possibility={this.state.distributionPossibility}/>
+        }
       </Row>
-      <Row>
-        <PdfView url="https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/distribution.pdf"/>
-      </Row>
+
       {/*<Row>*/}
       {/*  <Card>*/}
       {/*    <Card.Header>*/}
@@ -156,6 +262,14 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       {/*<Row>*/}
       {/*  /!*{preview}*!/*/}
       {/*</Row>*/}
+      <Row>
+        <Button
+          // onClick={this.handleApply}
+          disabled={!this.state.patch}
+        >
+          Apply
+        </Button>
+      </Row>
     </Container>;
 
   }

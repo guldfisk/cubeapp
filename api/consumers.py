@@ -5,7 +5,8 @@ import queue
 
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
-from django.db import transaction
+from django.contrib.auth import get_user_model
+from django.db import transaction, IntegrityError
 from knox.auth import TokenAuthentication
 
 from api import models
@@ -15,12 +16,14 @@ from evolution import model
 
 from api.services import DISTRIBUTOR_SERVICE, DistributionTask
 from magiccube.collections.cube import Cube
+from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.laps.traps.distribute import algorithm
-from magiccube.laps.traps.distribute.algorithm import Distributor
+from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
 from magiccube.update import cubeupdate
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
+from magiccube.update.report import UpdateReport
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
@@ -90,6 +93,8 @@ class DistributorConsumer(MessageConsumer):
 
         self._distribution_task: t.Optional[DistributionTask] = None
         self._consumer: t.Optional[QueueConsumer] = None
+
+        self._cube_patch: t.Optional[CubePatch] = None
 
     def connect(self):
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
@@ -211,6 +216,90 @@ class DistributorConsumer(MessageConsumer):
         )
         self._consumer.start()
 
+    def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
+        self._token = auth_token
+        self.scope['user'] = user
+        async_to_sync(self.channel_layer.group_add)(
+            self._group_name,
+            self.channel_name,
+        )
+        self._send_message('authentication', state='success')
+
+        try:
+            patch = models.CubePatch.objects.get(pk=self._patch_pk)
+        except models.CubePatch.DoesNotExist:
+            self._send_error(f'no patch with id {self._patch_pk}')
+            self.close()
+            return
+
+        latest_release = patch.versioned_cube.latest_release
+
+        self._cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
+
+        current_cube = JsonId(db).deserialize(
+            Cube,
+            latest_release.cube_content,
+        )
+
+        current_constrained_nodes = JsonId(db).deserialize(
+            NodeCollection,
+            latest_release.constrained_nodes.constrained_nodes_content,
+        )
+
+        current_group_map = JsonId(db).deserialize(
+            GroupMap,
+            latest_release.constrained_nodes.group_map_content,
+        )
+
+        meta_cube = MetaCube(
+            cube = current_cube,
+            nodes = current_constrained_nodes,
+            groups = current_group_map,
+        )
+
+        self.send_json(
+            {
+                'type': 'items',
+                'patch': serializers.CubePatchSerializer(patch).data,
+                'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
+                    self._cube_patch.as_verbose(
+                        meta_cube
+                    )
+                ),
+                'preview': {
+                    'cube': orpserialize.CubeSerializer.serialize(
+                        current_cube + self._cube_patch.cube_delta_operation
+                    ),
+                    'nodes': {
+                        'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                            (
+                                current_constrained_nodes + self._cube_patch.node_delta_operation
+                                if hasattr(latest_release, 'constrained_nodes') else
+                                NodeCollection(())
+                            )
+                        )
+                    },
+                    'group_map': orpserialize.GroupMapSerializer.serialize(
+                        current_group_map + self._cube_patch.group_map_delta_operation
+                    ),
+                },
+                'distributions': [
+                    serializers.DistributionPossibilitySerializer(distribution).data
+                    for distribution in
+                    models.DistributionPossibility.objects.filter(
+                        patch = patch,
+                        patch_checksum = self._cube_patch.persistent_hash(),
+                    ).order_by('-created_at')
+                ],
+                'report': orpserialize.UpdateReportSerializer.serialize(
+                    UpdateReport(
+                        CubeUpdater(meta_cube, self._cube_patch)
+                    )
+                ),
+            }
+        )
+
+        self._connect_distributor()
 
     def receive_json(self, content, **kwargs):
         print('recv', content)
@@ -230,16 +319,7 @@ class DistributorConsumer(MessageConsumer):
             else:
                 user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
                 if user is not None:
-                    self._token = auth_token
-                    self.scope['user'] = user
-                    async_to_sync(self.channel_layer.group_add)(
-                        self._group_name,
-                        self.channel_name,
-                    )
-                    self._send_message('authentication', state='success')
-
-                    self._connect_distributor()
-
+                    self._on_user_authenticated(auth_token, user)
                 else:
                     self._send_message('authentication', state='failure', reason='invalid token')
             return
@@ -279,24 +359,33 @@ class DistributorConsumer(MessageConsumer):
                 self._send_error('Distributor must be paused to generate trap images')
                 return
 
-            trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
+            try:
+                trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
+            except TrapDistribution.InvalidDistribution:
+                self._send_error('Distribution is invalid')
+                return
 
-            # models.DistributionPossibility.objects.create(
-            #     patch_id = self._patch_pk,
-            #     content = JsonId(db).serialize(trap_collection),
-            # )
+            try:
+                possibility = models.DistributionPossibility.objects.create(
+                    patch_id = self._patch_pk,
+                    content = JsonId(db).serialize(trap_collection),
+                    patch_checksum = self._cube_patch.persistent_hash(),
+                    fitness = self._distribution_task.get_latest_fittest().fitness[0],
+                )
+            except IntegrityError:
+                self._send_error('Distribution already captured')
+                return
 
             self.send_json(
                 {
-                    'type': 'trap_distribution',
-                    'content': orpserialize.TrapCollectionSerializer.serialize(
-                        trap_collection
-                    )
+                    'type': 'distribution_possibility',
+                    'content': serializers.DistributionPossibilitySerializer(possibility).data,
                 }
             )
 
             generate_distribution_pdf.delay(
                 self._patch_pk,
+                possibility.id,
             )
 
 
@@ -307,7 +396,8 @@ class DistributorConsumer(MessageConsumer):
         self.send_json(
             {
                 'type': 'distribution_pdf',
-                'url': event['url']
+                'url': event['url'],
+                'possibility_id': event['possibility_id'],
             }
         )
 
@@ -403,6 +493,7 @@ class PatchEditConsumer(MessageConsumer):
                     )
                 except models.CubePatch.DoesNotExist:
                     self._send_error(f'no patch with id {self._patch_pk}')
+                    self.close()
                     return
 
                 update = content.get('update')
@@ -503,7 +594,7 @@ class PatchEditConsumer(MessageConsumer):
                                 current_group_map + current_patch.group_map_delta_operation
                             ),
                         },
-                    }
+                    },
                 }
 
                 async_to_sync(self.channel_layer.group_send)(

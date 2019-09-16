@@ -90,13 +90,19 @@ class CubePatch(models.Model):
 
 class DistributionPossibility(models.Model):
     created_at = models.DateTimeField(default=now)
-    content = models.TextField
+    content = models.TextField()
     pdf_url = models.CharField(max_length = 511, null = True)
+    patch_checksum = models.CharField(max_length=255)
+    distribution_checksum = models.CharField(max_length=255)
+    fitness = models.FloatField()
 
     patch = models.ForeignKey(
         CubePatch,
         on_delete=models.CASCADE,
     )
+
+    class Meta:
+        unique_together = ('id', 'distribution_checksum')
 
 
 class Invite(models.Model):

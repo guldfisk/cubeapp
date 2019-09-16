@@ -4,6 +4,7 @@ import typing as t
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
+from magiccube.collections.laps import TrapCollection
 from mtgorp.models.serilization.serializeable import Serializeable
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.strategy import Strategy
@@ -192,3 +193,14 @@ class VersionedCubeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'created_at', 'author', 'description', 'releases')
 
 
+class DistributionPossibilitySerializer(serializers.ModelSerializer):
+    content = OrpModelField(
+        model_serializer = orpserialize.TrapCollectionSerializer,
+        serializeable_type = TrapCollection,
+        strategy = JsonId(db),
+    )
+    pdf_url = serializers.CharField(allow_null=True)
+
+    class Meta:
+        model = models.DistributionPossibility
+        fields = ('id', 'created_at', 'pdf_url', 'content', 'fitness')

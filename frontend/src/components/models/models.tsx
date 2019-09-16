@@ -228,6 +228,41 @@ export class TrapCollection {
 }
 
 
+export class DistributionPossibility extends Atomic {
+  createdAt: string;
+  pdfUrl: null | string;
+  trapCollection: TrapCollection;
+  fitness: number;
+
+  constructor(
+    id: string,
+    createdAt: string,
+    pdfUrl: null | string,
+    trapCollection: TrapCollection,
+    fitness: number,
+  ) {
+    super(id);
+    this.createdAt = createdAt;
+    this.pdfUrl = pdfUrl;
+    this.trapCollection = trapCollection;
+    this.fitness = fitness;
+  }
+
+  public static fromRemote(remote: any): DistributionPossibility {
+    return new DistributionPossibility(
+      remote.id,
+      remote.created_at,
+      remote.pdf_url,
+      TrapCollection.fromRemote(
+        remote.content
+      ),
+      remote.fitness,
+    )
+  }
+
+}
+
+
 export class Ticket extends Cubeable {
   name: string;
 
@@ -860,15 +895,12 @@ export class Patch extends Atomic {
   }
 
   private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): any {
-    console.log('updates json', updates);
     let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
       printings: [],
       traps: [],
     };
     let nodeDelta: any = {nodes: []};
-    let groupDelta: {groups: [string, number][]} = {groups: []};
-
-    console.log('group delta', groupDelta);
+    let groupDelta: { groups: [string, number][] } = {groups: []};
 
     let changeUndoes: [any, number][] = [];
 
@@ -1189,9 +1221,9 @@ export class ConstrainedNodes {
 
 
 export class GroupMap {
-  groups: {string: number};
+  groups: { string: number };
 
-  constructor(groups: {string: number}) {
+  constructor(groups: { string: number }) {
     this.groups = groups;
   }
 
