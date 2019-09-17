@@ -9,12 +9,11 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 from knox.auth import TokenAuthentication
 
-from api import models
-from api.serialization import orpserialize, serializers
-from api.tasks import generate_distribution_pdf
 from evolution import model
 
-from api.services import DISTRIBUTOR_SERVICE, DistributionTask
+from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+
 from magiccube.collections.cube import Cube
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
@@ -24,8 +23,12 @@ from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribut
 from magiccube.update import cubeupdate
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.update.report import UpdateReport
-from mtgorp.models.serilization.strategies.jsonid import JsonId
-from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from api import models
+from api.serialization import orpserialize, serializers
+from api import tasks
+from api.services import DISTRIBUTOR_SERVICE, DistributionTask
+
 from resources.staticdb import db
 
 
@@ -94,7 +97,9 @@ class DistributorConsumer(MessageConsumer):
         self._distribution_task: t.Optional[DistributionTask] = None
         self._consumer: t.Optional[QueueConsumer] = None
 
-        self._cube_patch: t.Optional[CubePatch] = None
+        self._patch: t.Optional[models.CubePatch] = None
+        self._versioned_cube: t.Optional[models.VersionedCube] = None
+        self._updater: t.Optional[CubeUpdater] = None
 
     def connect(self):
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
@@ -118,53 +123,21 @@ class DistributorConsumer(MessageConsumer):
             )
 
     def _get_distributor(self) -> Distributor:
-        patch = models.CubePatch.objects.get(pk=self._patch_pk)
-
-        versioned_cube = patch.versioned_cube
-        latest_release = versioned_cube.latest_release
-
-        nodes = latest_release.constrained_nodes
-
-        strategy = JsonId(db)
-
-        cube_patch = strategy.deserialize(
-            CubePatch,
-            patch.content,
-        )
-
-        cube = strategy.deserialize(
-            Cube,
-            latest_release.cube_content,
-        )
-
-        constrained_nodes = strategy.deserialize(
-            NodeCollection,
-            nodes.constrained_nodes_content,
-        )
+        constrained_nodes = self._updater.new_nodes
 
         for node in constrained_nodes.nodes.distinct_elements():
-            node._value = self._value_value_map.get(node._value)
+            node._value = self._value_value_map.get(node._value, node._value)
+
         max_node_weight = max(node.value for node in constrained_nodes)
+
         for node in constrained_nodes.nodes.distinct_elements():
-            node._value /= max_node_weight # TODO fix
+            node._value /= max_node_weight  # TODO fix
 
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
 
-        group_map = strategy.deserialize(
-            GroupMap,
-            nodes.group_map_content,
-        ).normalized()
+        group_map = self._updater.new_groups.normalized()
 
-        updater = CubeUpdater(
-            meta_cube = MetaCube(
-                cube = cube,
-                nodes = constrained_nodes,
-                groups = group_map,
-            ),
-            patch = cube_patch,
-        )
-
-        trap_amount = updater.new_garbage_trap_amount
+        trap_amount = self._updater.new_garbage_trap_amount
 
         constraint_set = model.ConstraintSet(
             (
@@ -212,7 +185,7 @@ class DistributorConsumer(MessageConsumer):
                 )
             ),
             self.send_json,
-            daemon=True,
+            daemon = True,
         )
         self._consumer.start()
 
@@ -223,18 +196,19 @@ class DistributorConsumer(MessageConsumer):
             self._group_name,
             self.channel_name,
         )
-        self._send_message('authentication', state='success')
+        self._send_message('authentication', state = 'success')
 
         try:
-            patch = models.CubePatch.objects.get(pk=self._patch_pk)
+            self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
         except models.CubePatch.DoesNotExist:
             self._send_error(f'no patch with id {self._patch_pk}')
             self.close()
             return
 
-        latest_release = patch.versioned_cube.latest_release
+        self._versioned_cube = self._patch.versioned_cube
+        latest_release = self._versioned_cube.latest_release
 
-        self._cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
+        cube_patch = JsonId(db).deserialize(CubePatch, self._patch.content)
 
         current_cube = JsonId(db).deserialize(
             Cube,
@@ -257,43 +231,48 @@ class DistributorConsumer(MessageConsumer):
             groups = current_group_map,
         )
 
+        self._updater = CubeUpdater(
+            meta_cube = meta_cube,
+            patch = cube_patch,
+        )
+
         self.send_json(
             {
                 'type': 'items',
-                'patch': serializers.CubePatchSerializer(patch).data,
+                'patch': serializers.CubePatchSerializer(self._patch).data,
                 'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
-                    self._cube_patch.as_verbose(
+                    cube_patch.as_verbose(
                         meta_cube
                     )
                 ),
                 'preview': {
                     'cube': orpserialize.CubeSerializer.serialize(
-                        current_cube + self._cube_patch.cube_delta_operation
+                        current_cube + cube_patch.cube_delta_operation
                     ),
                     'nodes': {
                         'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
                             (
-                                current_constrained_nodes + self._cube_patch.node_delta_operation
+                                current_constrained_nodes + cube_patch.node_delta_operation
                                 if hasattr(latest_release, 'constrained_nodes') else
                                 NodeCollection(())
                             )
                         )
                     },
                     'group_map': orpserialize.GroupMapSerializer.serialize(
-                        current_group_map + self._cube_patch.group_map_delta_operation
+                        current_group_map + cube_patch.group_map_delta_operation
                     ),
                 },
                 'distributions': [
                     serializers.DistributionPossibilitySerializer(distribution).data
                     for distribution in
                     models.DistributionPossibility.objects.filter(
-                        patch = patch,
-                        patch_checksum = self._cube_patch.persistent_hash(),
+                        patch = self._patch,
+                        patch_checksum = cube_patch.persistent_hash(),
                     ).order_by('-created_at')
                 ],
                 'report': orpserialize.UpdateReportSerializer.serialize(
                     UpdateReport(
-                        CubeUpdater(meta_cube, self._cube_patch)
+                        CubeUpdater(meta_cube, cube_patch)
                     )
                 ),
             }
@@ -314,14 +293,14 @@ class DistributorConsumer(MessageConsumer):
             knox_auth = TokenAuthentication()
 
             if not isinstance(content['token'], str):
-                self._send_message('authentication', state='failure', reason='invalid token field')
+                self._send_message('authentication', state = 'failure', reason = 'invalid token field')
 
             else:
                 user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
                 if user is not None:
                     self._on_user_authenticated(auth_token, user)
                 else:
-                    self._send_message('authentication', state='failure', reason='invalid token')
+                    self._send_message('authentication', state = 'failure', reason = 'invalid token')
             return
 
         if self._token is None:
@@ -369,25 +348,75 @@ class DistributorConsumer(MessageConsumer):
                 possibility = models.DistributionPossibility.objects.create(
                     patch_id = self._patch_pk,
                     content = JsonId(db).serialize(trap_collection),
-                    patch_checksum = self._cube_patch.persistent_hash(),
+                    patch_checksum = self._updater.patch.persistent_hash(),
                     fitness = self._distribution_task.get_latest_fittest().fitness[0],
                 )
             except IntegrityError:
                 self._send_error('Distribution already captured')
                 return
 
-            self.send_json(
+            async_to_sync(self.channel_layer.group_send)(
+                self._group_name,
                 {
                     'type': 'distribution_possibility',
                     'content': serializers.DistributionPossibilitySerializer(possibility).data,
-                }
+                },
             )
 
-            generate_distribution_pdf.delay(
+            tasks.generate_distribution_pdf.delay(
                 self._patch_pk,
                 possibility.id,
             )
 
+        elif message_type == 'apply':
+            possibility_id = content.get('possibility_id')
+
+            with transaction.atomic():
+                if possibility_id is not None:
+                    try:
+                        possibility = JsonId(db).deserialize(
+                            TrapCollection,
+                            models.DistributionPossibility.objects.filter(
+                                pk = possibility_id,
+                                patch_id = self._patch_pk,
+                            ).select_for_update().get().content,
+                        )
+                    except models.DistributionPossibility.DoesNotExist:
+                        self._send_error('Invalid possibility id')
+                        return
+                else:
+                    possibility = None
+
+                finale_cube = self._updater.get_finale_cube(possibility)
+
+                new_release = models.CubeRelease.create(
+                    cube = finale_cube,
+                    versioned_cube = self._versioned_cube,
+                )
+
+                models.ConstrainedNodes.objects.create(
+                    constrained_nodes_content = JsonId.serialize(
+                        self._updater.new_nodes
+                    ),
+                    group_map_content = JsonId.serialize(
+                        self._updater.new_groups
+                    ),
+                    release = new_release,
+                )
+
+                self._patch.delete()
+
+                async_to_sync(self.channel_layer.group_send)(
+                    self._group_name,
+                    {
+                        'type': 'update_success',
+                        'new_release': new_release.id,
+                    },
+                )
+
+                tasks.generate_release_lap_images.delay(
+                    new_release.id,
+                )
 
         else:
             self._send_error(f'Unknown message type "{message_type}"')
@@ -398,6 +427,22 @@ class DistributorConsumer(MessageConsumer):
                 'type': 'distribution_pdf',
                 'url': event['url'],
                 'possibility_id': event['possibility_id'],
+            }
+        )
+
+    def distribution_possibility(self, event) -> None:
+        self.send_json(
+            {
+                'type': 'distribution_possibility',
+                'content': event['content']
+            }
+        )
+
+    def update_success(self, event) -> None:
+        self.send_json(
+            {
+                'type': 'update_success',
+                'new_release': event['new_release'],
             }
         )
 
@@ -429,7 +474,7 @@ class PatchEditConsumer(MessageConsumer):
         self._token: t.Optional[t.ByteString] = None
 
     def _set_locked(self, locked: bool) -> None:
-        self._send_message('status', status='locked' if locked else 'unlocked')
+        self._send_message('status', status = 'locked' if locked else 'unlocked')
 
     def connect(self) -> None:
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
@@ -481,7 +526,7 @@ class PatchEditConsumer(MessageConsumer):
         if message_type == 'update':
 
             if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
-                self._send_message('status', status='locked')
+                self._send_message('status', status = 'locked')
                 return
 
             with transaction.atomic():

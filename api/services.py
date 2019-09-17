@@ -83,7 +83,8 @@ class DistributionTask(threading.Thread):
 
     def stop(self):
         self._terminating.set()
-        self._worker.stop()
+        if self._worker:
+            self._worker.stop()
 
     def submit(self, distributor: Distributor):
         if self._is_working.is_set():

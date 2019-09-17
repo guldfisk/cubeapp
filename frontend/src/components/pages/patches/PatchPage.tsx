@@ -88,6 +88,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
 
   handleMessage = (event: any) => {
     const message = JSON.parse(event.data);
+
     if (message.type === 'user_update') {
       if (message.action === 'enter' || message.action === 'here') {
         this.state.userGroup.add(message.user);
@@ -95,12 +96,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
         this.state.userGroup.remove(message.user);
       }
       this.setState({userGroup: this.state.userGroup});
+
     } else if (message.type === 'status') {
       if (message.status === 'locked') {
         this.setState({locked: true})
       } else if (message.status === 'unlocked') {
         this.setState({locked: false})
       }
+
     } else if (message.type === 'update') {
       this.setState(
         {
@@ -109,7 +112,9 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
           preview: Preview.fromRemote(message.content.preview),
         }
       )
+
     }
+
   };
 
   stopEdit = () => {

@@ -47,9 +47,9 @@ class CubeRelease(models.Model):
     @classmethod
     def create(cls, cube: Cube, versioned_cube: VersionedCube) -> CubeRelease:
         return cls.objects.create(
-            cube_content=JsonId.serialize(cube),
-            checksum=cube.persistent_hash(),
-            name=NameGenerator().get_name(
+            cube_content = JsonId.serialize(cube),
+            checksum = cube.persistent_hash(),
+            name = NameGenerator().get_name(
                 int(
                     hashlib.sha1(
                         cube.persistent_hash().encode('ASCII')
@@ -57,8 +57,8 @@ class CubeRelease(models.Model):
                     16,
                 )
             ),
-            versioned_cube=versioned_cube,
-            intended_size=360,
+            versioned_cube = versioned_cube,
+            intended_size = 360,
         )
 
 

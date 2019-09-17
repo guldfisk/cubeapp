@@ -702,49 +702,49 @@ class ParseTrapEndpoint(generics.GenericAPIView):
         )
 
 
-class ApplyPatchEndpoint(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, ]
-
-    def post(self, request, pk: int, *args, **kwargs):
-        with transaction.atomic():
-            try:
-                patch = (
-                    models.CubePatch.objects
-                        .select_related('constrained_nodes')
-                        .select_for_update()
-                        .get(pk = pk)
-                )
-            except models.CubePatch.DoesNotExist:
-                return Response(status = status.HTTP_404_NOT_FOUND)
-
-            versioned_cube = patch.versioned_cube
-            latest_release = versioned_cube.latest_release
-
-            cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
-            cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
-
-            new_release = models.CubeRelease.create(
-                cube + cube_patch.cube_delta_operation,
-                versioned_cube,
-            )
-
-            if hasattr(latest_release, 'constrained_nodes'):
-                models.ConstrainedNodes.objects.create(
-                    constrained_nodes_content = JsonId.serialize(
-                        JsonId(db).deserialize(
-                            NodeCollection,
-                            latest_release.constrained_nodes.constrained_nodes_content,
-                        ) + cube_patch.node_delta_operation
-                    ),
-                    release = new_release,
-                )
-
-            patch.delete()
-
-            return Response(
-                serializers.FullCubeReleaseSerializer(new_release).data,
-                status = status.HTTP_200_OK,
-            )
+# class ApplyPatchEndpoint(generics.GenericAPIView):
+#     permission_classes = [permissions.IsAuthenticated, ]
+#
+#     def post(self, request, pk: int, *args, **kwargs):
+#         with transaction.atomic():
+#             try:
+#                 patch = (
+#                     models.CubePatch.objects
+#                         .select_related('constrained_nodes')
+#                         .select_for_update()
+#                         .get(pk = pk)
+#                 )
+#             except models.CubePatch.DoesNotExist:
+#                 return Response(status = status.HTTP_404_NOT_FOUND)
+#
+#             versioned_cube = patch.versioned_cube
+#             latest_release = versioned_cube.latest_release
+#
+#             cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
+#             cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
+#
+#             new_release = models.CubeRelease.create(
+#                 cube + cube_patch.cube_delta_operation,
+#                 versioned_cube,
+#             )
+#
+#             if hasattr(latest_release, 'constrained_nodes'):
+#                 models.ConstrainedNodes.objects.create(
+#                     constrained_nodes_content = JsonId.serialize(
+#                         JsonId(db).deserialize(
+#                             NodeCollection,
+#                             latest_release.constrained_nodes.constrained_nodes_content,
+#                         ) + cube_patch.node_delta_operation
+#                     ),
+#                     release = new_release,
+#                 )
+#
+#             patch.delete()
+#
+#             return Response(
+#                 serializers.FullCubeReleaseSerializer(new_release).data,
+#                 status = status.HTTP_200_OK,
+#             )
 
 
 # TODO

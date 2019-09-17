@@ -40,6 +40,8 @@ services:
     restart: on-failure
     env_file:
       - .env
+    environment:
+      - DEBUG=1
 
   web:
     build: .
@@ -54,30 +56,15 @@ services:
       - db
       - redis
     networks:
-      #      - nginx_network
       - database_network
     env_file:
       - .env
-
+    environment:
+      - DEBUG=1
     ports:
-      - "7000:7000"
-
-#  nginx:
-#    image: nginx:1.13
-#    ports:
-#      - "${PORT_OUT}:80"
-#    volumes:
-#      - ./config/nginx/conf.d:/etc/nginx/conf.d
-#      - static_volume:/opt/services/cubeapp/static
-#      - media_volume:/opt/services/cubeapp/meda
-#    depends_on:
-#      - web
-#    networks:
-#      - nginx_network
+      - 7000:7000
 
 networks:
-  nginx_network:
-    driver: bridge
   database_network:
     driver: bridge
 

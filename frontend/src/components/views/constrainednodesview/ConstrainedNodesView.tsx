@@ -23,6 +23,16 @@ interface ConstrainedNodesViewProps {
 
 export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
 
+  sortNodes = (a: any, b: any, order: string = 'asc') => {
+    const aLow = a.props.node.representation().toLowerCase();
+    const bLow = b.props.node.representation().toLowerCase();
+
+    if (order === 'desc') {
+      return aLow > bLow ? -1 : aLow < bLow ? 1 : 0;
+    }
+    return aLow > bLow ? 1 : aLow < bLow ? -1 : 0;
+  };
+
   render() {
     const columns = [
       {
@@ -38,7 +48,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           if (
             (this.props.negative && /^(-\d+)|(-?0)$/.exec(newValue))
             || /^\d+$/.exec(newValue)
-        ) {
+          ) {
             return true
           }
           return {
@@ -59,15 +69,8 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         text: 'Node',
         editable: false,
         sort: true,
-        sortFunc: (a: any, b: any, order: string) => {
-          const aLow = a.props.node.representation().toLowerCase();
-          const bLow = b.props.node.representation().toLowerCase();
-
-          if (order === 'desc') {
-            return aLow > bLow ? 1 : aLow < bLow ? -1 : 0;
-          }
-          return aLow > bLow ? -1 : aLow < bLow ? 1 : 0;
-        }
+        sortFunc: this.sortNodes,
+        filterValue: (cell: any, row: any) => cell.props.node.representation(),
       },
       {
         dataField: 'value',
@@ -121,6 +124,8 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           key: constrainedNode.id,
         }
       }
+    ).sort(
+      (a, b) => this.sortNodes(a.node, b.node)
     );
 
     const {SearchBar} = Search;

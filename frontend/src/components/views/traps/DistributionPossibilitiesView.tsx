@@ -1,7 +1,8 @@
 import React from 'react';
 
-import Table from "react-bootstrap/Table";
 import {DistributionPossibility} from "../../models/models";
+import BootstrapTable from "react-bootstrap-table-next";
+import paginationFactory from "react-bootstrap-table2-paginator";
 
 
 interface DistributionPossibilitiesViewProps {
@@ -9,42 +10,58 @@ interface DistributionPossibilitiesViewProps {
   onPossibilityClick?: (possibility: DistributionPossibility) => void
 }
 
+
 export default class DistributionPossibilitiesView extends React.Component<DistributionPossibilitiesViewProps> {
 
   render() {
-    return <Table>
-      <thead>
-      <tr>
-        <th>ID</th>
-        <th>Created At</th>
-        <th>Fitness</th>
-        <th>Has pdf</th>
-      </tr>
-      </thead>
-      <tbody>
+    const columns = [
       {
-        this.props.possibilities.map(
-          possibility => {
-            return <tr>
-              <td>{possibility.id}</td>
-              <td>
-                <span
-                  onClick={
-                    !this.props.onPossibilityClick ? undefined :
-                      () => this.props.onPossibilityClick(possibility)
-                  }
-                >
-                  {possibility.createdAt}
-                </span>
-              </td>
-              <td>{possibility.fitness}</td>
-              <td>{possibility.pdfUrl ? 'yes' : 'no'}</td>
-            </tr>
+        dataField: 'id',
+        hidden: true,
+      },
+      {
+        dataField: 'createdAt',
+        text: 'Created At',
+      },
+      {
+        dataField: 'fitness',
+        text: 'Fitness',
+        type: 'number',
+      },
+      {
+        dataField: 'pdfUrl',
+        text: 'Has Pdf',
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell ? 'yes' : 'no',
+      },
+    ];
+
+    return <BootstrapTable
+      keyField='id'
+      data={this.props.possibilities}
+      columns={columns}
+      condensed
+      striped
+      pagination={
+        paginationFactory(
+          {
+            hidePageListOnlyOnePage: true,
+            showTotal: true,
+            sizePerPage: 10,
           }
         )
       }
-      </tbody>
-    </Table>
+      selectRow={
+        {
+          mode: 'radio',
+          onSelect: (row: any, isSelect: any, rowIndex: number, e: any) => {
+            if (isSelect) {
+              this.props.onPossibilityClick(row)
+            }
+          },
+          hideSelectAll: true,
+        }
+      }
+    />;
 
   }
 

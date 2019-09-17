@@ -32,7 +32,7 @@ urlpatterns = [
     path('patches/<int:pk>/', views.PatchDetail.as_view()),
     path('patches/<int:pk>/verbose/', views.patch_verbose),
     path('patches/<int:pk>/preview/', views.patch_preview),
-    path('patches/<int:pk>/apply/', views.ApplyPatchEndpoint.as_view()),
+    # path('patches/<int:pk>/apply/', views.ApplyPatchEndpoint.as_view()),
     path('patches/<int:pk>/report/', views.patch_report),
 
     path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),

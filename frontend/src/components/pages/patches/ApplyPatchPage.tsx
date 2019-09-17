@@ -30,7 +30,7 @@ interface ApplyPatchPageState {
   report: null | UpdateReport
   preview: null | Preview
   previewLoading: boolean
-  resultingRelease: null | CubeRelease
+  resultingRelease: null | number
   distributionPossibilities: DistributionPossibility[]
   distributionPossibility: null | DistributionPossibility
   ws: WebSocket | null
@@ -120,7 +120,11 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         {
           distributionPossibilities: message.distributions.map(
             (distribution: any) => DistributionPossibility.fromRemote(distribution)
-          )
+          ),
+          patch: Patch.fromRemote(message.patch),
+          preview: Preview.fromRemote(message.preview),
+          report: UpdateReport.fromRemote(message.report),
+          verbosePatch: VerbosePatch.fromRemote(message.verbose_patch),
         }
       )
 
@@ -142,6 +146,9 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         }
       }
       this.setState({distributionPossibilities: possibilities});
+
+    } else if (message.type === 'update_success') {
+      this.setState({resultingRelease: message.new_release})
 
     }
 
@@ -168,18 +175,18 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
   };
 
   render() {
-    // if (this.state.resultingRelease) {
-    //   return <Redirect
-    //     to={'/release/' + this.state.resultingRelease.id}
-    //   />
-    // }
+    if (this.state.resultingRelease) {
+      return <Redirect
+        to={'/release/' + this.state.resultingRelease}
+      />
+    }
 
-    // const reportView = (
-    //   !this.state.report ? <Loading/> :
-    //     <ReportView
-    //       report={this.state.report}
-    //     />
-    // );
+    const reportView = (
+      !this.state.report ? <Loading/> :
+        <ReportView
+          report={this.state.report}
+        />
+    );
 
     let controlPanel = <div>
       {
@@ -187,7 +194,6 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
           action => <Button
             onClick={
               () => {
-                console.log(action);
                 this.submitMessage({type: action});
               }
             }
@@ -198,22 +204,21 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       }
     </div>;
 
+    let patchView = <Loading/>;
+    if (this.state.patch !== null) {
+      patchView = <PatchMultiView
+        patch={this.state.patch}
+        verbosePatch={this.state.verbosePatch}
+      />
+    }
 
-    // let patchView = <Loading/>;
-    // if (this.state.patch !== null) {
-    //   patchView = <PatchMultiView
-    //     patch={this.state.patch}
-    //     verbosePatch={this.state.verbosePatch}
-    //   />
-    // }
-    //
-    // let preview = <Loading/>;
-    // if (this.state.preview) {
-    //   preview = <PatchPreview
-    //     preview={this.state.preview}
-    //     noHover={false}
-    //   />;
-    // }
+    let preview = <Loading/>;
+    if (this.state.preview) {
+      preview = <PatchPreview
+        preview={this.state.preview}
+        noHover={false}
+      />;
+    }
 
     return <Container fluid>
       <Row>
@@ -228,47 +233,80 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
           }
         </Col>
       </Row>
-      <DistributionPossibilitiesView
-        possibilities={this.state.distributionPossibilities}
-        onPossibilityClick={this.handleDistributionPossibilityClicked}
-      />
+
       <Row>
-        {
-          !this.state.distributionPossibility ? undefined :
-            <DistributionPossibilityView possibility={this.state.distributionPossibility}/>
-        }
+        <Col>
+          <Card>
+            <Card.Header>
+              Distribution Possibilities
+            </Card.Header>
+            <Card.Body>
+              <DistributionPossibilitiesView
+                possibilities={this.state.distributionPossibilities}
+                onPossibilityClick={this.handleDistributionPossibilityClicked}
+              />
+            </Card.Body>
+          </Card>
+        </Col>
       </Row>
 
-      {/*<Row>*/}
-      {/*  <Card>*/}
-      {/*    <Card.Header>*/}
-      {/*      Report*/}
-      {/*    </Card.Header>*/}
-      {/*    <Card.Body>*/}
-      {/*      {reportView}*/}
-      {/*    </Card.Body>*/}
-      {/*  </Card>*/}
-      {/*</Row>*/}
-      {/*<Row>*/}
-      {/*  <Card>*/}
-      {/*    <Card.Header>*/}
-      {/*      Delta*/}
-      {/*    </Card.Header>*/}
-      {/*    <Card.Body>*/}
-      {/*      /!*{patchView}*!/*/}
-      {/*    </Card.Body>*/}
-      {/*  </Card>*/}
-      {/*</Row>*/}
-      {/*<Row>*/}
-      {/*  /!*{preview}*!/*/}
-      {/*</Row>*/}
       <Row>
-        <Button
-          // onClick={this.handleApply}
-          disabled={!this.state.patch}
-        >
-          Apply
-        </Button>
+        <Col>
+          {
+            !this.state.distributionPossibility ? undefined :
+              <DistributionPossibilityView possibility={this.state.distributionPossibility}/>
+          }
+        </Col>
+      </Row>
+
+      <Row>
+        <Card>
+          <Card.Header>
+            Report
+          </Card.Header>
+          <Card.Body>
+            {reportView}
+          </Card.Body>
+        </Card>
+      </Row>
+      <Row>
+        <Card>
+          <Card.Header>
+            Delta
+          </Card.Header>
+          <Card.Body>
+            {patchView}
+          </Card.Body>
+        </Card>
+      </Row>
+      <Row>
+        {preview}
+      </Row>
+      <Row>
+        <Col>
+          <Button
+            onClick={
+              () => {
+                if (this.state.distributionPossibility) {
+                  this.submitMessage(
+                    {
+                      type: 'apply',
+                      possibility_id: this.state.distributionPossibility.id,
+                    }
+                  )
+                } else {
+                  this.submitMessage({type: 'apply'})
+
+                }
+              }
+            }
+            disabled={!this.state.patch}
+            size='lg'
+            block
+          >
+            Apply
+          </Button>
+        </Col>
       </Row>
     </Container>;
 

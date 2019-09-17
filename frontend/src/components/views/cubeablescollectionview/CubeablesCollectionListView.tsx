@@ -71,7 +71,7 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
           this.props.rawCube.traps_of_intention_types(['SYNERGY', 'NO_INTENTION']),
         ]
       );
-      if (this.props.noHover === undefined || !this.props.noHover) {
+      if (!this.props.noGarbage) {
         groups.push(
           [
             ["purple", "Garbage Traps"],

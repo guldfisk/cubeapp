@@ -10,7 +10,6 @@ import {GroupMap} from '../../models/models';
 
 const columnFormatterMetaFactory = (onGroupClicked?: (group: string, weight: number) => void) => {
   return (cell: any, row: any, rowIndex: number, formatExtraData: any) => {
-    console.log(cell, row);
     return <span
       onClick={!onGroupClicked ? undefined : () => onGroupClicked(row.name, row.weight)}
     >
