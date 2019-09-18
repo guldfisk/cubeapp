@@ -1,6 +1,5 @@
 FROM python:3
 ENV PYTHONUNBUFFERED 1
-#ENV cube_app_debug 0
 
 RUN mkdir -p /code
 COPY . /code

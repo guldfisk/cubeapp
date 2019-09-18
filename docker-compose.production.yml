@@ -24,6 +24,7 @@ services:
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/meda
+    restart: on-failure
     depends_on:
       - db
       - redis
