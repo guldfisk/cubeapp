@@ -2,11 +2,11 @@ import React from 'react';
 
 import Table from "react-bootstrap/Table";
 import {Link} from "react-router-dom";
-import {Patch} from "../../models/models";
+import {ReleasePatch} from "../../models/models";
 
 
 interface DeltasViewProps {
-  patches: Patch[]
+  patches: ReleasePatch[]
 }
 
 class PatchesView extends React.Component<DeltasViewProps> {

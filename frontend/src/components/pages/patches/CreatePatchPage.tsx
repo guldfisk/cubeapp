@@ -9,7 +9,7 @@ import {Redirect} from "react-router-dom";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
-import {Patch} from "../../models/models";
+import {ReleasePatch} from "../../models/models";
 
 
 interface CreatePatchPageFormProps {
@@ -49,7 +49,7 @@ interface CreatePatchPageProps {
 
 interface CreatePatchPageState {
   success: boolean
-  patch: Patch | null
+  patch: ReleasePatch | null
 }
 
 export default class CreatePatchPage extends React.Component<CreatePatchPageProps, CreatePatchPageState> {
@@ -63,11 +63,11 @@ export default class CreatePatchPage extends React.Component<CreatePatchPageProp
   };
 
   handleSubmit = ({description}: { description: string }): void => {
-    Patch.create(
+    ReleasePatch.create(
       this.props.match.params.id,
       description,
     ).then(
-      (patch: Patch) => {
+      (patch: ReleasePatch) => {
         this.setState(
           {
             success: true,

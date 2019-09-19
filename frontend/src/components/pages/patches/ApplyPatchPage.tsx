@@ -1,5 +1,5 @@
 import React from 'react';
-import {CubeRelease, DistributionPossibility, Patch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
+import {CubeRelease, DistributionPossibility, ReleasePatch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
 import {Loading} from "../../utils/utils";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
@@ -25,7 +25,7 @@ interface DeltaPageProps {
 
 
 interface ApplyPatchPageState {
-  patch: null | Patch
+  releasePatch: null | ReleasePatch
   verbosePatch: null | VerbosePatch
   report: null | UpdateReport
   preview: null | Preview
@@ -44,7 +44,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
   constructor(props: DeltaPageProps) {
     super(props);
     this.state = {
-      patch: null,
+      releasePatch: null,
       verbosePatch: null,
       report: null,
       preview: null,
@@ -121,7 +121,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
           distributionPossibilities: message.distributions.map(
             (distribution: any) => DistributionPossibility.fromRemote(distribution)
           ),
-          patch: Patch.fromRemote(message.patch),
+          releasePatch: ReleasePatch.fromRemote(message.patch),
           preview: Preview.fromRemote(message.preview),
           report: UpdateReport.fromRemote(message.report),
           verbosePatch: VerbosePatch.fromRemote(message.verbose_patch),
@@ -205,9 +205,9 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     </div>;
 
     let patchView = <Loading/>;
-    if (this.state.patch !== null) {
+    if (this.state.releasePatch !== null) {
       patchView = <PatchMultiView
-        patch={this.state.patch}
+        patch={this.state.releasePatch.patch}
         verbosePatch={this.state.verbosePatch}
       />
     }
@@ -300,7 +300,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
                 }
               }
             }
-            disabled={!this.state.patch}
+            disabled={!this.state.releasePatch}
             size='lg'
             block
           >

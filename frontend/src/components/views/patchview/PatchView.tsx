@@ -17,7 +17,7 @@ interface DeltaViewProps {
 }
 
 
-class PatchView extends React.Component<DeltaViewProps, null> {
+export default class PatchView extends React.Component<DeltaViewProps, null> {
 
   constructor(props: DeltaViewProps) {
     super(props);
@@ -81,5 +81,3 @@ class PatchView extends React.Component<DeltaViewProps, null> {
   }
 
 }
-
-export default PatchView;

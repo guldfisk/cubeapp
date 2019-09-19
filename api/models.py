@@ -6,10 +6,12 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
+from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from mocknames.generate import NameGenerator
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from magiccube.collections.cube import Cube
+from magiccube.update.cubeupdate import CubePatch as Patch
 
 from resources.staticdb import db
 
@@ -71,6 +73,14 @@ class ConstrainedNodes(models.Model):
         on_delete = models.CASCADE,
     )
 
+    @property
+    def constrained_nodes(self) -> NodeCollection:
+        return JsonId(db).deserialize(NodeCollection, self.constrained_nodes_content)
+
+    @property
+    def group_map(self) -> GroupMap:
+        return JsonId(db).deserialize(GroupMap, self.group_map_content)
+
 
 class CubePatch(models.Model):
     created_at = models.DateTimeField(default=now)
@@ -87,6 +97,10 @@ class CubePatch(models.Model):
         related_name = 'deltas',
     )
 
+    @property
+    def patch(self) -> Patch:
+        return JsonId(db).deserialize(Patch, self.content)
+
 
 class DistributionPossibility(models.Model):
     created_at = models.DateTimeField(default=now)
@@ -102,7 +116,25 @@ class DistributionPossibility(models.Model):
     )
 
     class Meta:
-        unique_together = ('id', 'distribution_checksum')
+        unique_together = ('patch', 'distribution_checksum')
+
+
+class LapChangePdf(models.Model):
+    created_at = models.DateTimeField(default=now)
+    pdf_url = models.CharField(max_length=511)
+    original_release = models.ForeignKey(
+        CubeRelease,
+        related_name = 'lap_pdf_originating_from_this',
+        on_delete = models.CASCADE,
+    )
+    resulting_release = models.ForeignKey(
+        CubeRelease,
+        related_name = 'lap_pdf_resulting_in_this',
+        on_delete = models.CASCADE,
+    )
+
+    class Meta:
+        unique_together = ('original_release', 'resulting_release')
 
 
 class Invite(models.Model):

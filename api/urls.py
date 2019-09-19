@@ -11,6 +11,7 @@ urlpatterns = [
     path('cube-releases/', views.CubeReleasesList.as_view()),
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),
+    path('cube-releases/<int:to_pk>/delta-from/<int:from_pk>/', views.release_delta),
 
     path('images/<slug:pictured_id>/', views.image_view, name='image'),
     path('search/', views.SearchView.as_view(), name='search'),

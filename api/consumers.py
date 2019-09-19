@@ -612,7 +612,9 @@ class PatchEditConsumer(MessageConsumer):
                 msg = {
                     'type': 'cube_update',
                     'update': {
-                        'patch': serializers.CubePatchSerializer(patch).data,
+                        'patch': orpserialize.CubePatchOrpSerializer.serialize(
+                            current_patch
+                        ),
                         'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
                             current_patch.as_verbose(
                                 MetaCube(

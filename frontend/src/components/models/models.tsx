@@ -5,6 +5,7 @@ import store from '../state/store';
 import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
 import {promises} from "fs";
 import wu from 'wu';
+import {response} from "express";
 
 
 export const apiPath = '/api/';
@@ -441,12 +442,14 @@ export class Cube extends MinimalCube {
 export class CubeReleaseMeta extends Atomic {
   name: string;
   createdAt: string;
+  createAtTimestamp: number;
   intendedSize: string;
 
   constructor(id: string, name: string, createdAt: string, intendedSize: string) {
     super(id);
     this.name = name;
     this.createdAt = createdAt;
+    this.createAtTimestamp = Date.parse(createdAt);
     this.intendedSize = intendedSize;
   };
 
@@ -723,7 +726,18 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   }
 
-  static all = (): Promise<CubeRelease[]> => {
+  public static compare = (from_id: number, to_id: number): Promise<[Patch, VerbosePatch]> => {
+    return axios.get(
+      apiPath + 'cube-releases/' + to_id + '/delta-from/' + from_id + '/'
+    ).then(
+      response => [
+        Patch.fromRemote(response.data.patch),
+        VerbosePatch.fromRemote(response.data.verbose_patch),
+      ]
+    )
+  };
+
+  public static all = (): Promise<CubeRelease[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'cube-releases/'
@@ -734,7 +748,7 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
-  static get = (id: string): Promise<CubeRelease> => {
+  public static get = (id: string): Promise<CubeRelease> => {
     return axios.get(
       apiPath + 'cube-releases/' + id + '/'
     ).then(
@@ -781,33 +795,18 @@ export class Preview {
 }
 
 
-export class Patch extends Atomic {
-  author: User;
-  cube: MinimalCube;
-  description: string;
-  createdAt: string;
+export class Patch {
   positiveCubeablesContainer: CubeablesContainer;
   negativeCubeablesContainer: CubeablesContainer;
-
   positiveConstrainedNodes: ConstrainedNodes;
   negativeConstrainedNodes: ConstrainedNodes;
 
   constructor(
-    id: string,
-    author: User,
-    cube: MinimalCube,
-    description: string,
-    createdAt: string,
     positiveCubeablesContainer: CubeablesContainer,
     negativeCubeablesContainer: CubeablesContainer,
     positiveConstrainedNodes: ConstrainedNodes,
     negativeConstrainedNodes: ConstrainedNodes,
   ) {
-    super(id);
-    this.author = author;
-    this.cube = cube;
-    this.description = description;
-    this.createdAt = createdAt;
     this.positiveCubeablesContainer = positiveCubeablesContainer;
     this.negativeCubeablesContainer = negativeCubeablesContainer;
     this.positiveConstrainedNodes = positiveConstrainedNodes;
@@ -816,81 +815,112 @@ export class Patch extends Atomic {
 
   public static fromRemote(remote: any): Patch {
     return new Patch(
+      new CubeablesContainer(
+        new PrintingCounter(
+          remote.cube_delta.printings.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.traps.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.tickets.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.purples.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
+          ).map(
+            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
+          )
+        ),
+      ),
+      new CubeablesContainer(
+        new PrintingCounter(
+          remote.cube_delta.printings.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.traps.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.tickets.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
+          )
+        ),
+        new Counter(
+          remote.cube_delta.purples.filter(
+            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
+          ).map(
+            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
+          )
+        ),
+      ),
+      new ConstrainedNodes(
+        remote.node_delta.filter(
+          ([node, multiplicity]: [any, number]) => multiplicity > 0
+        )
+      ),
+      new ConstrainedNodes(
+        remote.node_delta.filter(
+          ([node, multiplicity]: [any, number]) => multiplicity < 0
+        )
+      ),
+    );
+  }
+}
+
+
+export class ReleasePatch extends Atomic {
+  author: User;
+  cube: MinimalCube;
+  description: string;
+  createdAt: string;
+  patch: Patch;
+
+  constructor(
+    id: string,
+    author: User,
+    cube: MinimalCube,
+    description: string,
+    createdAt: string,
+    patch: Patch,
+  ) {
+    super(id);
+    this.author = author;
+    this.cube = cube;
+    this.description = description;
+    this.createdAt = createdAt;
+    this.patch = patch;
+  }
+
+  public static fromRemote(remote: any): ReleasePatch {
+    return new ReleasePatch(
       remote.id,
       User.fromRemote(remote.author),
       MinimalCube.fromRemote(remote.versioned_cube),
       remote.description,
       remote.created_at,
-      new CubeablesContainer(
-        new PrintingCounter(
-          remote.content.cube_delta.printings.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-          ).map(
-            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.traps.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-          ).map(
-            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.tickets.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-          ).map(
-            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.purples.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity > 0
-          ).map(
-            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
-          )
-        ),
-      ),
-      new CubeablesContainer(
-        new PrintingCounter(
-          remote.content.cube_delta.printings.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-          ).map(
-            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.traps.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-          ).map(
-            ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.tickets.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-          ).map(
-            ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
-          )
-        ),
-        new Counter(
-          remote.content.cube_delta.purples.filter(
-            ([cubeable, multiplicity]: [any, number]) => multiplicity < 0
-          ).map(
-            ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
-          )
-        ),
-      ),
-      new ConstrainedNodes(
-        remote.content.node_delta.filter(
-          ([node, multiplicity]: [any, number]) => multiplicity > 0
-        )
-      ),
-      new ConstrainedNodes(
-        remote.content.node_delta.filter(
-          ([node, multiplicity]: [any, number]) => multiplicity < 0
-        )
-      ),
+      Patch.fromRemote(remote.content),
     );
   }
 
@@ -955,10 +985,10 @@ export class Patch extends Atomic {
     };
   };
 
-  update = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): Promise<Patch> => {
+  update = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): Promise<ReleasePatch> => {
     return axios.patch(
       apiPath + 'patches/' + this.id + '/',
-      Patch.getUpdateJSON(updates),
+      ReleasePatch.getUpdateJSON(updates),
       {
         headers: {
           "Content-Type": "application/json",
@@ -966,7 +996,7 @@ export class Patch extends Atomic {
         }
       },
     ).then(
-      response => Patch.fromRemote(response.data)
+      response => ReleasePatch.fromRemote(response.data)
     )
   };
 
@@ -974,7 +1004,7 @@ export class Patch extends Atomic {
     connection: WebSocket,
     updates: [Cubeable | ConstrainedNode | CubeChange | string, number][],
   ): void {
-    const values = Patch.getUpdateJSON(updates);
+    const values = ReleasePatch.getUpdateJSON(updates);
     values['type'] = 'update';
     console.log('websocket send', values);
     connection.send(
@@ -1061,7 +1091,7 @@ export class Patch extends Atomic {
     )
   };
 
-  static create = (cube_id: number, description: string): Promise<Patch> => {
+  static create = (cube_id: number, description: string): Promise<ReleasePatch> => {
     return axios.post(
       apiPath + 'patches/',
       {
@@ -1075,37 +1105,37 @@ export class Patch extends Atomic {
         }
       },
     ).then(
-      response => Patch.fromRemote(response.data)
+      response => ReleasePatch.fromRemote(response.data)
     )
   };
 
-  static all = (): Promise<Patch[]> => {
+  static all = (): Promise<ReleasePatch[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'patches/'
     ).then(
       response => response.data.results.map(
-        (patch: any) => Patch.fromRemote(patch)
+        (patch: any) => ReleasePatch.fromRemote(patch)
       )
     )
   };
 
-  static forCube = (cubeId: number): Promise<Patch[]> => {
+  static forCube = (cubeId: number): Promise<ReleasePatch[]> => {
     // TODO pagination lol
     return axios.get(
       apiPath + 'versioned-cubes/' + cubeId + '/patches/'
     ).then(
       response => response.data.results.map(
-        (patch: any) => Patch.fromRemote(patch)
+        (patch: any) => ReleasePatch.fromRemote(patch)
       )
     )
   };
 
-  static get = (id: string): Promise<Patch> => {
+  static get = (id: string): Promise<ReleasePatch> => {
     return axios.get(
       apiPath + 'patches/' + id + '/'
     ).then(
-      response => Patch.fromRemote(response.data)
+      response => ReleasePatch.fromRemote(response.data)
     )
   };
 

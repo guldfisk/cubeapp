@@ -146,8 +146,10 @@ class Command(BaseCommand):
 
         cube_loader = CubeLoader(db)
 
+        first = True
+
         for cube, time in cube_loader.all_cubes():
-            models.CubeRelease.objects.create(
+            release = models.CubeRelease.objects.create(
                 cube_content = JsonId.serialize(cube),
                 checksum = cube.persistent_hash(),
                 name = name_generator.get_name(
@@ -163,17 +165,28 @@ class Command(BaseCommand):
                 intended_size = 360,
             )
 
+            if first:
+                constrained_nodes = ConstrainedNodes(
+                    ConstrainedNodeFetcher(db).fetch_garbage()
+                )
+                group_map = GroupMap(_GROUP_WEIGHTS)
+            else:
+                constrained_nodes = ConstrainedNodes(())
+                group_map = GroupMap({})
+
+            first = False
+
+            models.ConstrainedNodes.objects.create(
+                release=release,
+                constrained_nodes_content=JsonId.serialize(
+                    constrained_nodes
+                ),
+                group_map_content=JsonId.serialize(
+                    group_map
+                ),
+            )
+
         for cube in models.CubeRelease.objects.all():
             print(cube.name, cube.checksum)
 
-        models.ConstrainedNodes.objects.create(
-            release = models.CubeRelease.objects.order_by('-created_at').first(),
-            constrained_nodes_content = JsonId.serialize(
-                ConstrainedNodes(
-                    ConstrainedNodeFetcher(db).fetch_garbage()
-                )
-            ),
-            group_map_content = JsonId.serialize(
-                GroupMap(_GROUP_WEIGHTS)
-            ),
-        )
+

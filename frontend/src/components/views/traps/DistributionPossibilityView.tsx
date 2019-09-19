@@ -18,7 +18,10 @@ export default class DistributionPossibilityView extends React.Component<Distrib
     return <Row>
       {
         !this.props.possibility.pdfUrl ? undefined :
-          <PdfView url={this.props.possibility.pdfUrl} />
+          <PdfView
+            url={this.props.possibility.pdfUrl}
+            downloadable={true}
+          />
       }
       <Col>
         <TrapCollectionView trapCollection={this.props.possibility.trapCollection} />

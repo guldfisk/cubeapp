@@ -16,6 +16,7 @@ import InvitePage from "../pages/authentication/InvitePage";
 import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
 import TestPage from "../pages/TestPage";
 import AboutPage from "../pages/AboutPage";
+import ReleaseComparePage from "../pages/ReleaseComparePage";
 
 
 // class RouteModel {
@@ -104,6 +105,7 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)', CubePage, false, {}],
+  ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
   ['/invite', InvitePage, true, {}],

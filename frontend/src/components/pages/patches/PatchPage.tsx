@@ -15,9 +15,9 @@ import {
   ConstrainedNode,
   Cubeable,
   CubeChange,
-  Patch,
+  ReleasePatch,
   Preview,
-  Printing, Trap, VerbosePatch
+  Printing, Trap, VerbosePatch, Patch
 } from '../../models/models';
 import SearchView from "../../views/search/SearchView";
 import TrapParseView from "../../views/traps/TrapParseView";
@@ -39,6 +39,7 @@ interface DeltaPageProps {
 
 interface DeltaPageState {
   patch: null | Patch
+  releasePatch: null | ReleasePatch
   verbosePatch: VerbosePatch | null
   preview: null | Preview
   confirmDelete: boolean
@@ -54,6 +55,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     super(props);
     this.state = {
       patch: null,
+      releasePatch: null,
       verbosePatch: null,
       preview: null,
       confirmDelete: false,
@@ -64,11 +66,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     };
   }
 
-  setPatch = (patch: Patch) => {
+  setReleasePatch = (releasePatch: ReleasePatch) => {
     this.setState(
-      {patch,}
+      {
+        releasePatch,
+        patch: releasePatch.patch,
+      }
     );
-    patch.preview().then(
+    releasePatch.preview().then(
       (preview) => {
         this.setState(
           {
@@ -77,7 +82,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
         )
       }
     );
-    patch.verbose().then(
+    releasePatch.verbose().then(
       (verbosePatch) => {
         this.setState(
           {verbosePatch}
@@ -130,7 +135,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     }
     this.setState(
       {
-        editingConnection: this.state.patch.getEditWebsocket(),
+        editingConnection: this.state.releasePatch.getEditWebsocket(),
         editing: true,
       },
       () => {
@@ -141,11 +146,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   componentDidMount() {
-    Patch.get(
+    ReleasePatch.get(
       this.props.match.params.id
     ).then(
       patch => {
-        this.setPatch(patch);
+        this.setReleasePatch(patch);
       }
     );
   }
@@ -158,11 +163,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   }
 
   handleUpdatePatch = (update: Cubeable | ConstrainedNode | string, amount: number) => {
-    Patch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
+    ReleasePatch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
   };
 
   handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]) => {
-    Patch.updateWebsocket(this.state.editingConnection, updates);
+    ReleasePatch.updateWebsocket(this.state.editingConnection, updates);
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
@@ -190,9 +195,9 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   handleDeletePatch = () => {
-    this.state.patch.delete().then(
+    this.state.releasePatch.delete().then(
       () => {
-        history.push('/cube/' + this.state.patch.cube.id + '/patches/')
+        history.push('/cube/' + this.state.releasePatch.cube.id + '/patches/')
       }
     )
   };

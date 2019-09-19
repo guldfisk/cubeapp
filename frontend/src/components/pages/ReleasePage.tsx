@@ -8,11 +8,72 @@ import Container from "react-bootstrap/Container"
 import {Link} from "react-router-dom";
 
 import {Loading} from '../utils/utils';
-import {CubeRelease} from '../models/models';
+import {Cube, CubeRelease, CubeReleaseMeta} from '../models/models';
 import ReleaseMultiView from '../views/releaseview/ReleaseMultiView'
 import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView';
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
+import Button from "react-bootstrap/Button";
+import {ConfirmationDialog} from "../utils/dialogs";
+import {Modal} from "react-bootstrap";
+import PatchesView from "../views/patchview/PatchesView";
+import ReleasesView from "../views/releaseview/ReleasesView";
+import history from '../routing/history';
+
+
+interface ReleaseSelectionDialogProps {
+  currentRelease: CubeRelease;
+  show: boolean
+  onCancel: () => void
+  onReleaseClicked: (cubeReleaseMeta: CubeReleaseMeta) => void
+}
+
+
+interface ReleaseSelectionDialogState {
+  cube: Cube | null
+}
+
+
+class ReleaseSelectionDialog extends React.Component<ReleaseSelectionDialogProps, ReleaseSelectionDialogState> {
+
+  constructor(props: null) {
+    super(props);
+    this.state = {
+      cube: null,
+    };
+  }
+
+  componentDidMount() {
+    Cube.get(this.props.currentRelease.cube.id).then(
+      cube => this.setState({cube})
+    )
+  }
+
+  render() {
+    return <Modal
+      show={this.props.show}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Select release</Modal.Title>
+      </Modal.Header>
+      {
+        !this.state.cube ? <Loading/> :
+          <ReleasesView
+            releases={
+              this.state.cube.releases.filter(
+                release => release.createAtTimestamp < this.props.currentRelease.createAtTimestamp
+              )
+            }
+            onReleaseClicked={this.props.onReleaseClicked}
+          />
+      }
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={this.props.onCancel}>Close</Button>
+      </Modal.Footer>
+    </Modal>
+  }
+}
 
 
 interface ReleasePageProps {
@@ -21,6 +82,8 @@ interface ReleasePageProps {
 
 interface ReleasePageState {
   release: null | CubeRelease
+  selectingCompareRelease: boolean
+
 }
 
 class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
@@ -29,6 +92,7 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
     super(props);
     this.state = {
       release: null,
+      selectingCompareRelease: false,
     };
   }
 
@@ -68,7 +132,40 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
       </Tabs>
     }
 
-    return element;
+    return <>
+      {
+        !this.state.release ? undefined :
+          <ReleaseSelectionDialog
+            currentRelease={this.state.release}
+            show={this.state.selectingCompareRelease}
+            onCancel={() => this.setState({selectingCompareRelease: false})}
+            onReleaseClicked={
+              release => {
+                history.push(
+                  '/release/' + this.props.match.params.id + '/delta-from/' + release.id
+                )
+              }
+            }
+          />
+      }
+      <Container
+        fluid
+      >
+        <Row>
+          <Button
+            onClick={() => this.setState({selectingCompareRelease: true})}
+            disabled={!this.state.release}
+          >
+            Compare
+          </Button>
+        </Row>
+        <Row>
+          <Col>
+            {element}
+          </Col>
+        </Row>
+      </Container>
+    </>;
 
   }
 

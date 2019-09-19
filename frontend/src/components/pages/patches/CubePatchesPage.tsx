@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Patch} from '../../models/models';
+import {ReleasePatch} from '../../models/models';
 
 import PatchesView from '../../views/patchview/PatchesView';
 import Container from "react-bootstrap/Container";
@@ -15,7 +15,7 @@ interface CubeDeltasPageProps {
 }
 
 interface CubeDeltasPageState {
-  patches: Patch[]
+  patches: ReleasePatch[]
 }
 
 class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPageState> {
@@ -28,7 +28,7 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
   }
 
   componentDidMount() {
-    Patch.forCube(
+    ReleasePatch.forCube(
       this.props.match.params.id
     ).then(
       deltas => {

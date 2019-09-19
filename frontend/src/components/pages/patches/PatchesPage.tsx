@@ -1,12 +1,12 @@
 import React from 'react';
 
-import {Patch} from '../../models/models';
+import {ReleasePatch} from '../../models/models';
 
 import PatchesView from '../../views/patchview/PatchesView';
 
 
 interface DeltasPageState {
-  patches: Patch[]
+  patches: ReleasePatch[]
 }
 
 class PatchesPage extends React.Component<null, DeltasPageState> {
@@ -19,7 +19,7 @@ class PatchesPage extends React.Component<null, DeltasPageState> {
   }
 
   componentDidMount() {
-    Patch.all().then(
+    ReleasePatch.all().then(
       deltas => {
         this.setState({patches: deltas})
       }

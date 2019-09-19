@@ -1,10 +1,8 @@
 import React from 'react';
 
-import {ConstrainedNode, Cubeable, CubeChange, Patch, VerbosePatch} from '../../models/models';
+import {CubeChange, VerbosePatch} from '../../models/models';
 import Row from "react-bootstrap/Row";
 import {Col} from "react-bootstrap";
-import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
-import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
 import ListGroup from "react-bootstrap/ListGroup";
 
 import wu from 'wu'
