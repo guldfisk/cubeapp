@@ -2,7 +2,7 @@ import typing as t
 
 import requests
 
-from cubeapp import settings
+from django.conf import settings
 
 
 def send_mail(

@@ -1,4 +1,5 @@
-import io
+import tempfile
+import itertools
 
 from boto3 import session
 from asgiref.sync import async_to_sync
@@ -13,7 +14,6 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from mtgimg.interface import SizeSlug
 
-from magiccube.collections.cube import Cube
 from magiccube.collections.laps import TrapCollection
 
 from api import models
@@ -29,18 +29,8 @@ def generate_release_lap_images(cube_release_id: int):
     except models.CubeRelease.DoesNotExist:
         return
 
-    Promise.all(
-        [
-            image_loader.get_image(trap, size_slug = size_slug, save = True)
-            for trap in
-            JsonId(db).deserialize(
-                Cube,
-                release.cube_content,
-            )
-            for size_slug in
-            SizeSlug
-        ]
-    ).get()
+    for lap, size_slug in itertools.product(release.cube.laps, SizeSlug):
+        image_loader.get_image(lap, size_slug = size_slug, save = True)
 
 
 @shared_task()
@@ -61,37 +51,34 @@ def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: Siz
         possibility.content,
     )
 
-    f = io.BytesIO()
+    with tempfile.TemporaryFile() as f:
+        proxy_writer = ProxyWriter(file = f)
 
-    proxy_writer = ProxyWriter(file = f)
-
-    images = Promise.all(
-        tuple(
-            image_loader.get_image(
-                lap,
-                size_slug = size_slug,
-                save = False,
+        images = Promise.all(
+            tuple(
+                image_loader.get_image(
+                    lap,
+                    size_slug = size_slug,
+                    save = False,
+                )
+                for lap in
+                trap_collection
             )
-            for lap in
-            trap_collection
+        ).get()
+
+        for image in images:
+            proxy_writer.add_proxy(image)
+
+        proxy_writer.save()
+
+        f.seek(0)
+
+        client.put_object(
+            Body = f,
+            Bucket = 'phdk',
+            Key = f'distributions/{trap_collection.persistent_hash()}.pdf',
+            ACL = 'public-read',
         )
-    ).get()
-
-    for image in images:
-        proxy_writer.add_proxy(image)
-
-    proxy_writer.save()
-
-    f.seek(0)
-
-    client.put_object(
-        Body = f,
-        Bucket = 'phdk',
-        Key = f'distributions/{trap_collection.persistent_hash()}.pdf',
-        ACL = 'public-read',
-    )
-
-    f.close()
 
     pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/{trap_collection.persistent_hash()}.pdf'
 
@@ -127,49 +114,46 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
         aws_secret_access_key = settings.SPACES_SECRET_KEY,
     )
 
-    f = io.BytesIO()
+    with tempfile.TemporaryFile() as f:
+        proxy_writer = ProxyWriter(file = f)
 
-    proxy_writer = ProxyWriter(file = f)
-
-    images = Promise.all(
-        tuple(
-            image_loader.get_image(
-                lap,
-                size_slug = SizeSlug.ORIGINAL,
-                save = False,
+        images = Promise.all(
+            tuple(
+                image_loader.get_image(
+                    lap,
+                    size_slug = SizeSlug.ORIGINAL,
+                )
+                for lap in
+                delta.laps
             )
-            for lap in
-            delta.laps
+        ).get()
+
+        for image in images:
+            proxy_writer.add_proxy(image)
+
+        proxy_writer.save()
+
+        f.seek(0)
+
+        client.put_object(
+            Body = f,
+            Bucket = 'phdk',
+            Key = f'distributions/{delta.persistent_hash()}.pdf',
+            ACL = 'public-read',
         )
-    ).get()
 
-    for image in images:
-        proxy_writer.add_proxy(image)
-
-    proxy_writer.save()
-
-    f.seek(0)
-
-    client.put_object(
-        Body = f,
-        Bucket = 'phdk',
-        Key = f'distributions/{delta.persistent_hash()}.pdf',
-        ACL = 'public-read',
-    )
-
-    f.close()
+    pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/{delta.persistent_hash()}.pdf'
 
     models.LapChangePdf.objects.create(
-        pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/{delta.persistent_hash()}.pdf',
+        pdf_url = pdf_url,
         original_release_id = from_release_id,
         resulting_release_id = to_release_id,
     )
-    #
-    # async_to_sync(get_channel_layer().group_send)(
-    #     f'distributor_{patch_id}',
-    #     {
-    #         'type': 'distribution_pdf_update',
-    #         'url': pdf_url,
-    #         'possibility_id': possibility_id,
-    #     },
-    # )
+
+    async_to_sync(get_channel_layer().group_send)(
+        f'pdf_delta_generate_{from_release_id}_{to_release_id}',
+        {
+            'type': 'delta_pdf_update',
+            'pdf_url': pdf_url,
+        },
+    )

@@ -116,7 +116,7 @@ class DistributionPossibility(models.Model):
     )
 
     class Meta:
-        unique_together = ('patch', 'distribution_checksum')
+        unique_together = ('patch', 'patch_checksum', 'distribution_checksum')
 
 
 class LapChangePdf(models.Model):

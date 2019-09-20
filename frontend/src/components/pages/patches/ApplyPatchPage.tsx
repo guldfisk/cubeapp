@@ -1,21 +1,20 @@
 import React from 'react';
-import {CubeRelease, DistributionPossibility, ReleasePatch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
-import {Loading} from "../../utils/utils";
+
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
-import {Container} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {Redirect} from "react-router";
+import {Container} from "react-bootstrap";
+import store from "../../state/store";
+import Col from "react-bootstrap/Col";
+
+import {Loading} from "../../utils/utils";
+import {DistributionPossibility, ReleasePatch, Preview, UpdateReport, VerbosePatch} from "../../models/models";
 import PatchPreview from "../../views/patchview/PatchPreview";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
 import ReportView from "../../views/report/ReportView";
 import DistributionView from "../../views/traps/DistributionView";
-import PdfView from "../../views/pdf/PdfView";
-import store from "../../state/store";
-import Col from "react-bootstrap/Col";
-import Chart from "react-apexcharts";
 import DistributionPossibilitiesView from "../../views/traps/DistributionPossibilitiesView";
-import TrapCollectionView from "../../views/traps/TrapCollectionView";
 import DistributionPossibilityView from "../../views/traps/DistributionPossibilityView";
 
 

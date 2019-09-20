@@ -416,7 +416,7 @@ class VersionedCubePatchList(generics.ListAPIView):
 
 class PatchDetail(generics.RetrieveDestroyAPIView):
     queryset = models.CubePatch.objects.all()
-    # serializer_class = serializers.CubePatchSerializer
+    serializer_class = serializers.CubePatchSerializer
     # permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     # _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {

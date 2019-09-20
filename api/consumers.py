@@ -74,7 +74,52 @@ class MessageConsumer(JsonWebsocketConsumer):
         )
 
 
-class DistributorConsumer(MessageConsumer):
+class AuthenticatedConsumer(MessageConsumer):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._token: t.Optional[t.ByteString] = None
+
+    def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
+        pass
+
+    def _receive_message(self, message_type: str, content: t.Any) -> None:
+        pass
+
+    def receive_json(self, content, **kwargs):
+        print('recv', self.__class__.__name__, content)
+
+        message_type = content.get('type')
+
+        if message_type is None:
+            self._send_error('No Message type')
+            return
+
+        if message_type == 'authentication':
+            knox_auth = TokenAuthentication()
+
+            if not isinstance(content['token'], str):
+                self._send_message('authentication', state = 'failure', reason = 'invalid token field')
+
+            else:
+                user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
+                if user is not None:
+                    self._token = auth_token
+                    self.scope['user'] = user
+                    self._send_message('authentication', state = 'success')
+                    self._on_user_authenticated(auth_token, user)
+                else:
+                    self._send_message('authentication', state = 'failure', reason = 'invalid token')
+            return
+
+        if self._token is None:
+            self._send_error('not logged in')
+            return
+
+        self._receive_message(message_type, content)
+
+
+class DistributorConsumer(AuthenticatedConsumer):
     _value_value_map = {
         key: value
         for key, value in
@@ -92,7 +137,6 @@ class DistributorConsumer(MessageConsumer):
         super().__init__(*args, **kwargs)
         self._patch_pk: t.Optional[int] = None
         self._group_name: t.Optional[str] = None
-        self._token: t.Optional[t.ByteString] = None
 
         self._distribution_task: t.Optional[DistributionTask] = None
         self._consumer: t.Optional[QueueConsumer] = None
@@ -125,15 +169,15 @@ class DistributorConsumer(MessageConsumer):
     def _get_distributor(self) -> Distributor:
         constrained_nodes = self._updater.new_nodes
 
-        for node in constrained_nodes.nodes.distinct_elements():
-            node._value = self._value_value_map.get(node._value, node._value)
-
-        max_node_weight = max(node.value for node in constrained_nodes)
-
-        for node in constrained_nodes.nodes.distinct_elements():
-            node._value /= max_node_weight  # TODO fix
-
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
+
+        for node in distribution_nodes:
+            node.value = self._value_value_map.get(node.value, node.value)
+
+        max_node_weight = max(node.value for node in distribution_nodes)
+
+        for node in distribution_nodes:
+            node.value /= max_node_weight
 
         group_map = self._updater.new_groups.normalized()
 
@@ -167,7 +211,7 @@ class DistributorConsumer(MessageConsumer):
         )
 
         return Distributor(
-            nodes = constrained_nodes,
+            distribution_nodes = distribution_nodes,
             trap_amount = trap_amount,
             initial_population_size = 300,
             constraints = constraint_set,
@@ -190,13 +234,10 @@ class DistributorConsumer(MessageConsumer):
         self._consumer.start()
 
     def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
-        self._token = auth_token
-        self.scope['user'] = user
         async_to_sync(self.channel_layer.group_add)(
             self._group_name,
             self.channel_name,
         )
-        self._send_message('authentication', state = 'success')
 
         try:
             self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
@@ -280,33 +321,7 @@ class DistributorConsumer(MessageConsumer):
 
         self._connect_distributor()
 
-    def receive_json(self, content, **kwargs):
-        print('recv', content)
-
-        message_type = content.get('type')
-
-        if message_type is None:
-            self._send_error('No Message type')
-            return
-
-        if message_type == 'authentication':
-            knox_auth = TokenAuthentication()
-
-            if not isinstance(content['token'], str):
-                self._send_message('authentication', state = 'failure', reason = 'invalid token field')
-
-            else:
-                user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
-                if user is not None:
-                    self._on_user_authenticated(auth_token, user)
-                else:
-                    self._send_message('authentication', state = 'failure', reason = 'invalid token')
-            return
-
-        if self._token is None:
-            self._send_error('not logged in')
-            return
-
+    def _receive_message(self, message_type: str, content: t.Any) -> None:
         if message_type == 'start':
             if not self._distribution_task.is_working:
                 self._distribution_task.submit(
@@ -349,6 +364,7 @@ class DistributorConsumer(MessageConsumer):
                     patch_id = self._patch_pk,
                     content = JsonId(db).serialize(trap_collection),
                     patch_checksum = self._updater.patch.persistent_hash(),
+                    distribution_checksum = trap_collection.persistent_hash(),
                     fitness = self._distribution_task.get_latest_fittest().fitness[0],
                 )
             except IntegrityError:
@@ -447,7 +463,7 @@ class DistributorConsumer(MessageConsumer):
         )
 
 
-class PatchEditConsumer(MessageConsumer):
+class PatchEditConsumer(AuthenticatedConsumer):
     _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {
         klass.__name__: klass
         for klass in
@@ -471,7 +487,6 @@ class PatchEditConsumer(MessageConsumer):
         super().__init__(*args, **kwargs)
         self._patch_pk: t.Optional[int] = None
         self._group_name: t.Optional[str] = None
-        self._token: t.Optional[t.ByteString] = None
 
     def _set_locked(self, locked: bool) -> None:
         self._send_message('status', status = 'locked' if locked else 'unlocked')
@@ -482,172 +497,137 @@ class PatchEditConsumer(MessageConsumer):
 
         self.accept()
 
-    def receive_json(self, content, **kwargs):
-        print('edit', content)
+    def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
+        if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
+            self._set_locked(True)
+        async_to_sync(self.channel_layer.group_add)(
+            self._group_name,
+            self.channel_name,
+        )
+        async_to_sync(self.channel_layer.group_send)(
+            self._group_name,
+            {
+                'type': 'user_update',
+                'action': 'enter',
+                'user': self.scope['user'].username,
+            },
+        )
 
-        message_type = content.get('type')
-
-        if message_type is None:
-            self._send_error('No Message type')
+    def _receive_message(self, message_type: str, content: t.Any) -> None:
+        if not message_type == 'update':
             return
 
-        if message_type == 'authentication':
-            knox_auth = TokenAuthentication()
-            if not isinstance(content['token'], str):
-                self._send_message('authentication', state = 'failure', reason = 'invalid token field')
-            else:
-                user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
-                if user is not None:
-                    self._token = auth_token
-                    self.scope['user'] = user
-                    self._send_message('authentication', state = 'success')
-                    if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
-                        self._set_locked(True)
-                    async_to_sync(self.channel_layer.group_add)(
-                        self._group_name,
-                        self.channel_name,
-                    )
-                    async_to_sync(self.channel_layer.group_send)(
-                        self._group_name,
-                        {
-                            'type': 'user_update',
-                            'action': 'enter',
-                            'user': self.scope['user'].username,
-                        },
-                    )
-                else:
-                    self._send_message('authentication', state = 'failure', reason = 'invalid token')
+        if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
+            self._send_message('status', status = 'locked')
             return
 
-        if self._token is None:
-            self._send_error('not logged in')
-            return
-
-        if message_type == 'update':
-
-            if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
-                self._send_message('status', status = 'locked')
+        with transaction.atomic():
+            try:
+                patch = (
+                    models.CubePatch.objects
+                        .select_for_update()
+                        .get(pk = self._patch_pk)
+                )
+            except models.CubePatch.DoesNotExist:
+                self._send_error(f'no patch with id {self._patch_pk}')
+                self.close()
                 return
 
-            with transaction.atomic():
+            update = content.get('update')
+            change_undoes = content.get('change_undoes')
+
+            if not update and not change_undoes:
+                self._send_error('update must have at least one of "updates" or "change_undoes" fields')
+                return
+
+            current_patch = JsonId(db).deserialize(
+                CubePatch,
+                patch.content,
+            )
+
+            if update:
                 try:
-                    patch = (
-                        models.CubePatch.objects
-                            .select_for_update()
-                            .get(pk = self._patch_pk)
+                    update = RawStrategy(db).deserialize(
+                        CubePatch,
+                        update,
                     )
-                except models.CubePatch.DoesNotExist:
-                    self._send_error(f'no patch with id {self._patch_pk}')
-                    self.close()
+                except (KeyError, AttributeError):
+                    self._send_error('bad request')
                     return
 
-                update = content.get('update')
-                change_undoes = content.get('change_undoes')
+                current_patch += update
 
-                if not update and not change_undoes:
-                    self._send_error('update must have at least one of "updates" or "change_undoes" fields')
-                    return
+            if change_undoes:
 
-                current_patch = JsonId(db).deserialize(
-                    CubePatch,
-                    patch.content,
-                )
-
-                if update:
-                    try:
-                        update = RawStrategy(db).deserialize(
-                            CubePatch,
-                            update,
+                undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
+                try:
+                    for undo, multiplicity in change_undoes:
+                        undoes.append(
+                            (
+                                JsonId(db).deserialize(
+                                    self._undo_map[undo['type']],
+                                    undo['content'],
+                                ),
+                                multiplicity,
+                            )
                         )
-                    except (KeyError, AttributeError):
-                        self._send_error('bad request')
-                        return
+                except (KeyError, TypeError, ValueError):
+                    self._send_error('bad request')
+                    return
 
-                    current_patch += update
+                for undo, multiplicity in undoes:
+                    current_patch -= (undo.as_patch() * multiplicity)
 
-                if change_undoes:
+            patch.content = JsonId.serialize(
+                current_patch,
+            )
 
-                    undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
-                    try:
-                        for undo, multiplicity in change_undoes:
-                            undoes.append(
+            patch.save()
+
+            latest_release = patch.versioned_cube.latest_release
+            current_cube = latest_release.cube
+            current_constrained_nodes = latest_release.constrained_nodes.constrained_nodes
+            current_group_map = latest_release.constrained_nodes.group_map
+
+            msg = {
+                'type': 'cube_update',
+                'update': {
+                    'patch': orpserialize.CubePatchOrpSerializer.serialize(
+                        current_patch
+                    ),
+                    'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
+                        current_patch.as_verbose(
+                            MetaCube(
+                                cube = current_cube,
+                                nodes = current_constrained_nodes,
+                                groups = current_group_map,
+                            )
+                        )
+                    ),
+                    'preview': {
+                        'cube': orpserialize.CubeSerializer.serialize(
+                            current_cube + current_patch.cube_delta_operation
+                        ),
+                        'nodes': {
+                            'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
                                 (
-                                    JsonId(db).deserialize(
-                                        self._undo_map[undo['type']],
-                                        undo['content'],
-                                    ),
-                                    multiplicity,
+                                    current_constrained_nodes + current_patch.node_delta_operation
+                                    if hasattr(latest_release, 'constrained_nodes') else
+                                    NodeCollection(())
                                 )
                             )
-                    except (KeyError, TypeError, ValueError):
-                        self._send_error('bad request')
-                        return
-
-                    for undo, multiplicity in undoes:
-                        current_patch -= (undo.as_patch() * multiplicity)
-
-                patch.content = JsonId.serialize(
-                    current_patch,
-                )
-
-                patch.save()
-
-                latest_release = patch.versioned_cube.latest_release
-
-                current_cube = JsonId(db).deserialize(
-                    Cube,
-                    latest_release.cube_content,
-                )
-
-                current_constrained_nodes = JsonId(db).deserialize(
-                    NodeCollection,
-                    latest_release.constrained_nodes.constrained_nodes_content,
-                )
-
-                current_group_map = JsonId(db).deserialize(
-                    GroupMap,
-                    latest_release.constrained_nodes.group_map_content,
-                )
-
-                msg = {
-                    'type': 'cube_update',
-                    'update': {
-                        'patch': orpserialize.CubePatchOrpSerializer.serialize(
-                            current_patch
-                        ),
-                        'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
-                            current_patch.as_verbose(
-                                MetaCube(
-                                    cube = current_cube,
-                                    nodes = current_constrained_nodes,
-                                    groups = current_group_map,
-                                )
-                            )
-                        ),
-                        'preview': {
-                            'cube': orpserialize.CubeSerializer.serialize(
-                                current_cube + current_patch.cube_delta_operation
-                            ),
-                            'nodes': {
-                                'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                                    (
-                                        current_constrained_nodes + current_patch.node_delta_operation
-                                        if hasattr(latest_release, 'constrained_nodes') else
-                                        NodeCollection(())
-                                    )
-                                )
-                            },
-                            'group_map': orpserialize.GroupMapSerializer.serialize(
-                                current_group_map + current_patch.group_map_delta_operation
-                            ),
                         },
+                        'group_map': orpserialize.GroupMapSerializer.serialize(
+                            current_group_map + current_patch.group_map_delta_operation
+                        ),
                     },
-                }
+                },
+            }
 
-                async_to_sync(self.channel_layer.group_send)(
-                    self._group_name,
-                    msg,
-                )
+            async_to_sync(self.channel_layer.group_send)(
+                self._group_name,
+                msg,
+            )
 
     def cube_update(self, event):
         self.send_json(
@@ -694,4 +674,67 @@ class PatchEditConsumer(MessageConsumer):
         async_to_sync(self.channel_layer.group_discard)(
             self._group_name,
             self.channel_name,
+        )
+
+
+class DeltaPdfConsumer(AuthenticatedConsumer):
+
+    _working: t.Set[t.Tuple[int, int]] = set()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._id_from: t.Optional[int] = None
+        self._id_to: t.Optional[int] = None
+        self._group_name: t.Optional[str] = None
+
+    def connect(self):
+        self._id_from = int(self.scope['url_route']['kwargs']['id_from'])
+        self._id_to = int(self.scope['url_route']['kwargs']['id_to'])
+        self._group_name = f'pdf_delta_generate_{self._id_from}_{self._id_to}'
+        async_to_sync(self.channel_layer.group_add)(
+            self._group_name,
+            self.channel_name,
+        )
+
+        self.accept()
+
+        if (self._id_from, self._id_to) in self._working:
+            self._send_message('status', status = 'generating')
+
+    def disconnect(self, code):
+        async_to_sync(self.channel_layer.group_discard)(
+            self._group_name,
+            self.channel_name,
+        )
+
+    def _receive_message(self, message_type: str, content: t.Any) -> None:
+        if message_type == 'generate':
+            if (self._id_from, self._id_to) in self._working:
+                self._send_error('Already generating')
+            elif models.LapChangePdf.objects.filter(
+                original_release_id = self._id_from,
+                resulting_release_id = self._id_to,
+            ):
+                self._send_error('Already generated')
+            else:
+                self._working.add((self._id_from, self._id_to))
+                tasks.generate_release_lap_delta_pdf.delay(
+                    self._id_from,
+                    self._id_to,
+                )
+                self._send_message('status', status = 'generating')
+
+    def delta_pdf_update(self, event: t.Mapping[str, t.Any]):
+        print('delta pdf update')
+
+        try:
+            self._working.remove((self._id_from, self._id_to))
+        except KeyError:
+            pass
+
+        self.send_json(
+            {
+                'type': 'delta_pdf_update',
+                'pdf_url': event['pdf_url'],
+            }
         )
