@@ -33,7 +33,7 @@ from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
-from magiccube.laps.traps.trap import Trap, IntentionType
+from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.parse import PrintingTreeParser, PrintingTreeParserException
 
 from cubeapp import settings
@@ -688,9 +688,9 @@ class ParseTrapEndpoint(generics.GenericAPIView):
         serializer.is_valid(raise_exception = True)
 
         try:
-            intention_type = IntentionType[serializer.validated_data['intention_type']]
+            intention_type = Trap.IntentionType[serializer.validated_data['intention_type']]
         except KeyError:
-            intention_type = IntentionType.NO_INTENTION
+            intention_type = Trap.IntentionType.NO_INTENTION
 
         try:
             trap = Trap(
