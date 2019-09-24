@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: "${DB_PASSWORD}"
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
     volumes:
-      - db:/var/lib/docker_mysql
+      - db:/var/lib/mysql
     networks:
       - database_network
 

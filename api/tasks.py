@@ -29,8 +29,13 @@ def generate_release_lap_images(cube_release_id: int):
     except models.CubeRelease.DoesNotExist:
         return
 
-    for lap, size_slug in itertools.product(release.cube.laps, SizeSlug):
-        image_loader.get_image(lap, size_slug = size_slug, save = True)
+    Promise.all(
+        [
+            image_loader.get_image(lap, cache_only = True, size_slug = size_slug)
+            for lap, size_slug in
+            itertools.product(release.cube.laps, SizeSlug)
+        ]
+    ).get()
 
 
 @shared_task()

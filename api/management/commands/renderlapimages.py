@@ -13,10 +13,9 @@ from api.models import CubeRelease
 
 
 class Command(BaseCommand):
-    help = 'Populate cubes'
+    help = 'Render lap images for existing releases½'
 
     def handle(self, *args, **options):
-
         laps = set(
             itertools.chain(
                 *(
@@ -31,7 +30,7 @@ class Command(BaseCommand):
 
         images = promise.Promise.all(
             [
-                image_loader.get_image(trap, size_slug=size_slug, save=True)
+                image_loader.get_image(trap, size_slug = size_slug, save = True, cache_only = True)
                 for trap in
                 laps
                 for size_slug in

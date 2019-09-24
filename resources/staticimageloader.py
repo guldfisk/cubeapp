@@ -1,4 +1,4 @@
 from mtgimg.load import Loader
 
 
-image_loader = Loader(20, 20)
+image_loader = Loader(15, 15)
