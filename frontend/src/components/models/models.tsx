@@ -1174,7 +1174,7 @@ export class ConstrainedNode extends Atomic {
         new MultiplicityList([[printing, 1]]),
         'AllNode',
       ),
-      1,
+      0,
       [],
     )
   };

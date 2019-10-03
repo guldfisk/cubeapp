@@ -47,6 +47,7 @@ interface DeltaPageState {
   locked: boolean
   editingConnection: WebSocket | null
   userGroup: UserGroup
+  awaitingUpdate: boolean
 }
 
 class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
@@ -63,6 +64,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       locked: false,
       editingConnection: null,
       userGroup: new UserGroup(),
+      awaitingUpdate: false,
     };
   }
 
@@ -115,6 +117,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
           patch: Patch.fromRemote(message.content.patch),
           verbosePatch: VerbosePatch.fromRemote(message.content.verbose_patch),
           preview: Preview.fromRemote(message.content.preview),
+          awaitingUpdate: false,
         }
       )
 
@@ -163,10 +166,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   }
 
   handleUpdatePatch = (update: Cubeable | ConstrainedNode | string, amount: number) => {
+    this.setState({awaitingUpdate: true});
     ReleasePatch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
   };
 
   handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]) => {
+    this.setState({awaitingUpdate: true});
     ReleasePatch.updateWebsocket(this.state.editingConnection, updates);
   };
 
@@ -203,7 +208,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   canEdit = (): boolean => {
-    return this.state.editing && !this.state.locked
+    return this.state.editing && !this.state.locked && !this.state.awaitingUpdate
   };
 
   render() {

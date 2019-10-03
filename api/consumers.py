@@ -168,7 +168,6 @@ class DistributorConsumer(AuthenticatedConsumer):
 
     def _get_distributor(self) -> Distributor:
         constrained_nodes = self._updater.new_nodes
-
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
 
         for node in distribution_nodes:

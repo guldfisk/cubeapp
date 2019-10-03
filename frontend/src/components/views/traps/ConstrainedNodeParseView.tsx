@@ -43,7 +43,7 @@ class NodeParseForm extends React.Component<NodeParseFormProps> {
         <Form.Label>Weight</Form.Label>
         <Form.Control type="number"/>
       </Form.Group>
-      <Button type="submit">Add Trap</Button>
+      <Button type="submit">Add Node</Button>
     </Form>
   }
 

@@ -156,8 +156,8 @@ class SignupSerializer(serializers.Serializer):
 
 class ParseConstrainedNodeSerializer(serializers.Serializer):
     query = serializers.CharField()
-    groups = serializers.CharField(required=False)
-    weight = serializers.IntegerField(required=False)
+    groups = serializers.CharField(required=False, allow_blank = True)
+    weight = serializers.IntegerField(required=False, allow_null = True)
 
     def update(self, instance, validated_data):
         raise NotImplemented

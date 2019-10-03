@@ -62,6 +62,7 @@ export default class PatchView extends React.Component<DeltaViewProps, null> {
             }
             onNodeEdit={this.props.onNodeEdit}
             onNodeQtyEdit={this.props.onNodeQtyEdit}
+            search
           />
         </Col>
         <Col>
@@ -74,6 +75,7 @@ export default class PatchView extends React.Component<DeltaViewProps, null> {
             onNodeQtyEdit={this.props.onNodeQtyEdit}
             negative
             onlyEditQty
+            search
           />
         </Col>
       </Row>

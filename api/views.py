@@ -657,6 +657,8 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
         serializer = self.get_serializer(data = request.data)  # type: serializers.ParseTrapSerializer
         serializer.is_valid(raise_exception = True)
 
+        value = serializer.validated_data.get('weight', 1)
+
         try:
             constrained_node = ConstrainedNode(
                 node = PrintingTreeParser(db).parse(serializer.validated_data['query']),
@@ -665,7 +667,7 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
                     for group in
                     serializer.validated_data.get('groups', '').split(',')
                 ],
-                value = serializer.validated_data.get('weight', 1),
+                value = value if value is not None else 1,
             )
         except PrintingTreeParserException as e:
             return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
