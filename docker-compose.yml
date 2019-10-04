@@ -21,7 +21,8 @@ services:
     networks:
       - database_network
     ports:
-      - 6379:6379
+      - "0.0.0.0:6378:6379"
+    restart: always
 
   celery_worker:
     image: app-image

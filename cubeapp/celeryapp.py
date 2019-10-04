@@ -5,7 +5,7 @@ from celery import Celery
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cubeapp.settings')
 
-redis_url = 'redis://redis:6379/0'
+redis_url = 'redis://redis:6378/0'
 
 app = Celery(
     'cubeapp',
