@@ -85,7 +85,7 @@ class CreateCubePage extends React.Component<CreateCubePageProps, CreateCubePage
 
   render() {
     if (this.state.success) {
-      return <Redirect to="/cubes/"/>
+      return <Redirect to="/"/>
     }
 
     return <Container>

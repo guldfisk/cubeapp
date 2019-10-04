@@ -20,8 +20,6 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
       - database_network
-    ports:
-      - "0.0.0.0:6378:6379"
     restart: always
 
   celery_worker:

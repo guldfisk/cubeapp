@@ -1,3 +1,4 @@
+import string
 import typing as t
 
 import datetime
@@ -6,6 +7,7 @@ import random
 
 from distutils.util import strtobool
 
+from django.db import transaction
 from django.http import HttpResponse, HttpRequest
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
@@ -318,7 +320,7 @@ class InviteUserEndpoint(generics.GenericAPIView):
 
         for _ in range(128):
             key = ''.join(
-                random.choice('abcdefghijklmnopqrtuvwxyz')
+                random.choice(string.ascii_letters)
                 for _ in
                 range(255)
             )
@@ -371,8 +373,17 @@ class VersionedCubesList(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
     def perform_create(self, serializer):
-        serializer.save(author = self.request.user)
-        # TODO create empty release
+        with transaction.atomic():
+            versioned_cube = serializer.save(author = self.request.user)
+            release = models.CubeRelease.create(
+                cube = Cube(),
+                versioned_cube = versioned_cube,
+            )
+            models.ConstrainedNodes.objects.create(
+                constrained_nodes_content = JsonId.serialize(NodeCollection(())),
+                group_map_content = JsonId.serialize(GroupMap({})),
+                release = release,
+            )
 
 
 class VersionedCubeDetail(generics.RetrieveDestroyAPIView):
