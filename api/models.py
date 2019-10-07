@@ -6,45 +6,47 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
-from magiccube.collections.nodecollection import NodeCollection, GroupMap
+from magiccube.collections.laps import TrapCollection
+from magiccube.laps.traps.distribute.algorithm import TrapDistribution
 from mocknames.generate import NameGenerator
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from magiccube.collections.cube import Cube
 from magiccube.update.cubeupdate import CubePatch as Patch
+from magiccube.collections.nodecollection import NodeCollection, GroupMap
+
+
+from api.fields.orp import OrpField
 
 from resources.staticdb import db
+from utils.methods import get_random_name
 
 
 class VersionedCube(models.Model):
-    created_at = models.DateTimeField(default=now)
-    name = models.CharField(max_length=128)
+    created_at = models.DateTimeField(default = now)
+    name = models.CharField(max_length = 128)
     description = models.TextField()
     author = models.ForeignKey(
         get_user_model(),
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
 
     @property
     def latest_release(self) -> CubeRelease:
-        return CubeRelease.objects.filter(versioned_cube=self).order_by('created_at').last()
+        return CubeRelease.objects.filter(versioned_cube = self).order_by('created_at').last()
 
 
 class CubeRelease(models.Model):
-    created_at = models.DateTimeField(default=now)
-    checksum = models.CharField(max_length=256)
-    name = models.CharField(max_length=64)
+    created_at = models.DateTimeField(default = now)
+    checksum = models.CharField(max_length = 256)
+    name = models.CharField(max_length = 64)
     intended_size = models.PositiveIntegerField()
-    cube_content = models.TextField()
+    cube: Cube = OrpField(model_type = Cube)
 
-    versioned_cube = models.ForeignKey(VersionedCube, on_delete=models.CASCADE, related_name='releases')
+    versioned_cube = models.ForeignKey(VersionedCube, on_delete = models.CASCADE, related_name = 'releases')
 
     class Meta:
         ordering = ('-created_at',)
-
-    @property
-    def cube(self) -> Cube:
-        return JsonId(db).deserialize(Cube, self.cube_content)
 
     @classmethod
     def create(cls, cube: Cube, versioned_cube: VersionedCube) -> CubeRelease:
@@ -65,54 +67,49 @@ class CubeRelease(models.Model):
 
 
 class ConstrainedNodes(models.Model):
-    constrained_nodes_content = models.TextField()
-    group_map_content = models.TextField()
+    constrained_nodes: ConstrainedNodes = OrpField(NodeCollection)
+    group_map: GroupMap = OrpField(GroupMap)
     release = models.OneToOneField(
         CubeRelease,
         related_name = 'constrained_nodes',
         on_delete = models.CASCADE,
     )
 
-    @property
-    def constrained_nodes(self) -> NodeCollection:
-        return JsonId(db).deserialize(NodeCollection, self.constrained_nodes_content)
-
-    @property
-    def group_map(self) -> GroupMap:
-        return JsonId(db).deserialize(GroupMap, self.group_map_content)
-
 
 class CubePatch(models.Model):
-    created_at = models.DateTimeField(default=now)
+    created_at = models.DateTimeField(default = now)
     description = models.TextField()
-    content = models.TextField()
+    patch: Patch = OrpField(model_type = Patch)
+    name = models.CharField(max_length = 127, default = get_random_name)
 
     author = models.ForeignKey(
         get_user_model(),
         on_delete = models.CASCADE,
     )
-    versioned_cube  =  models.ForeignKey(
+    versioned_cube = models.ForeignKey(
         VersionedCube,
         on_delete = models.CASCADE,
         related_name = 'deltas',
     )
-
-    @property
-    def patch(self) -> Patch:
-        return JsonId(db).deserialize(Patch, self.content)
+    forked_from = models.ForeignKey(
+        'CubePatch',
+        related_name = 'forks',
+        null = True,
+        on_delete = models.SET_NULL,
+    )
 
 
 class DistributionPossibility(models.Model):
-    created_at = models.DateTimeField(default=now)
-    content = models.TextField()
+    created_at = models.DateTimeField(default = now)
+    trap_collection = OrpField(model_type = TrapCollection)
     pdf_url = models.CharField(max_length = 511, null = True)
-    patch_checksum = models.CharField(max_length=255)
-    distribution_checksum = models.CharField(max_length=255)
+    patch_checksum = models.CharField(max_length = 255)
+    distribution_checksum = models.CharField(max_length = 255)
     fitness = models.FloatField()
 
     patch = models.ForeignKey(
         CubePatch,
-        on_delete=models.CASCADE,
+        on_delete = models.CASCADE,
     )
 
     class Meta:
@@ -120,8 +117,8 @@ class DistributionPossibility(models.Model):
 
 
 class LapChangePdf(models.Model):
-    created_at = models.DateTimeField(default=now)
-    pdf_url = models.CharField(max_length=511)
+    created_at = models.DateTimeField(default = now)
+    pdf_url = models.CharField(max_length = 511)
     original_release = models.ForeignKey(
         CubeRelease,
         related_name = 'lap_pdf_originating_from_this',
@@ -138,7 +135,7 @@ class LapChangePdf(models.Model):
 
 
 class Invite(models.Model):
-    key_hash = models.CharField(max_length = 255, unique=True)
+    key_hash = models.CharField(max_length = 255, unique = True)
     email = models.CharField(max_length = 255)
     created_at = models.DateTimeField(default = now)
     issued_by = models.ForeignKey(

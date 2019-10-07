@@ -51,11 +51,6 @@ def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: Siz
 
     possibility = models.DistributionPossibility.objects.get(pk = possibility_id)
 
-    trap_collection = JsonId(db).deserialize(
-        TrapCollection,
-        possibility.content,
-    )
-
     with tempfile.TemporaryFile() as f:
         proxy_writer = ProxyWriter(file = f)
 
@@ -67,7 +62,7 @@ def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: Siz
                     save = False,
                 )
                 for lap in
-                trap_collection
+                possibility.trap_collection
             )
         ).get()
 
@@ -81,11 +76,12 @@ def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: Siz
         client.put_object(
             Body = f,
             Bucket = 'phdk',
-            Key = f'distributions/{trap_collection.persistent_hash()}.pdf',
+            Key = f'distributions/{possibility.trap_collection.persistent_hash()}.pdf',
             ACL = 'public-read',
         )
 
-    pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/{trap_collection.persistent_hash()}.pdf'
+    pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/' \
+        f'{possibility.trap_collection.persistent_hash()}.pdf'
 
     possibility.pdf_url = pdf_url
     possibility.save()

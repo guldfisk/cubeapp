@@ -14,91 +14,10 @@ import CreatePatchPage from '../pages/patches/CreatePatchPage';
 import SignUpPage from "../pages/authentication/SignUpPage";
 import InvitePage from "../pages/authentication/InvitePage";
 import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
-import TestPage from "../pages/TestPage";
+// import TestPage from "../pages/TestPage";
 import AboutPage from "../pages/AboutPage";
 import ReleaseComparePage from "../pages/ReleaseComparePage";
 import LatestReleasePage from "../pages/LatestReleasePage";
-
-
-// class RouteModel {
-//   _relative_path: string;
-//   _parent: RouteModel | null;
-//   component: (typeof React.Component) | React.FunctionComponent;
-//   isPrivate: boolean;
-//   _children: RouteModel[];
-//
-//   constructor(
-//     relative_path: string,
-//     component: (typeof React.Component) | React.FunctionComponent,
-//     isPrivate: boolean,
-//     children: RouteModel[] = [],
-//     parent: RouteModel | null = null,
-//   ) {
-//     this._relative_path = relative_path;
-//     this._parent = parent;
-//     this.component = component;
-//     this.isPrivate = isPrivate;
-//     this._children = children;
-//
-//     children.forEach(
-//       child => {
-//         child._parent = this
-//       }
-//     );
-//   }
-//
-//   path = (): string => {
-//     return this._parent === null ?
-//       this._relative_path
-//       : this._parent.path() + this._relative_path
-//   };
-//
-//   populatedPath = (params: Object) => {
-//     return Object.entries(params).reduce(
-//       (replaced: string, [key, value]: [string, string]) => replaced.replace(
-//         new RegExp(':' + key + '\(.*\)'),
-//         value,
-//       ),
-//       this.path(),
-//     )
-//   };
-//
-//   * family(): IterableIterator<RouteModel> {
-//     yield this;
-//     for (const child of this._children) {
-//       yield* child.family();
-//     }
-//   };
-//
-//   * trail(params: Object): IterableIterator<string> {
-//     if (this._parent !== null) {
-//       yield* this._parent.trail(params);
-//     }
-//     yield this.populatedPath(params);
-//
-//   };
-//
-//   BreadcrumbTrail = (props: any) => {
-//     return <Breadcrumb>
-//       {
-//         Array.from(this.trail(props.match.params)).map(
-//           (path: string) => <Breadcrumb.Item>{path}</Breadcrumb.Item>
-//         )
-//       }
-//     </Breadcrumb>;
-//   };
-//
-// }
-//
-//
-// const routeModel = new RouteModel(
-//   '/',
-//   CubesPage,
-//   false,
-//   [
-//
-//   ]
-// );
 
 
 export const routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][] = [
@@ -117,7 +36,7 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/patches', PatchesPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   ['/patch/:id(\\d+)', PatchPage, false, {}],
-  ['/test', TestPage, false, {}],
+  // ['/test', TestPage, false, {}],
   ['/about', AboutPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

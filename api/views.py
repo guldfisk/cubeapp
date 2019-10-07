@@ -428,109 +428,21 @@ class VersionedCubePatchList(generics.ListAPIView):
 class PatchDetail(generics.RetrieveDestroyAPIView):
     queryset = models.CubePatch.objects.all()
     serializer_class = serializers.CubePatchSerializer
-    # permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
-
-    # _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {
-    #     klass.__name__: klass
-    #     for klass in
-    #     (
-    #         cubeupdate.NewCubeable,
-    #         cubeupdate.RemovedCubeable,
-    #         cubeupdate.NewNode,
-    #         cubeupdate.RemovedNode,
-    #         cubeupdate.PrintingsToNode,
-    #         cubeupdate.NodeToPrintings,
-    #         cubeupdate.TrapToNode,
-    #         cubeupdate.NodeToTrap,
-    #         cubeupdate.AlteredNode,
-    #     )
-    # }
-    #
-    # def patch(self, request, *args, **kwargs):
-    #     with transaction.atomic():
-    #         try:
-    #             patch = (
-    #                 models.CubePatch.objects
-    #                     .select_for_update()
-    #                     .get(pk = kwargs['pk'])
-    #             )
-    #         except models.CubePatch.DoesNotExist:
-    #             return Response(status = status.HTTP_404_NOT_FOUND)
-    #
-    #         update = request.data.get('update')
-    #         change_undoes = request.data.get('change_undoes')
-    #
-    #         if not update and not change_undoes:
-    #             return Response(status = status.HTTP_400_BAD_REQUEST)
-    #
-    #         current_patch_content = JsonId(db).deserialize(
-    #             CubePatch,
-    #             patch.content,
-    #         )
-    #
-    #         if update:
-    #             try:
-    #                 update = JsonId(db).deserialize(
-    #                     CubePatch,
-    #                     request.data['update'],
-    #                 )
-    #             except (KeyError, AttributeError, Exception):
-    #                 return Response(status = status.HTTP_400_BAD_REQUEST)
-    #
-    #             current_patch_content += update
-    #
-    #         if change_undoes:
-    #             try:
-    #                 change_undoes = json.loads(change_undoes)
-    #             except json.JSONDecodeError:
-    #                 return Response(status = status.HTTP_400_BAD_REQUEST)
-    #
-    #             undoes: t.List[t.Tuple[cubeupdate.CubeChange, int]] = []
-    #             strategy = JsonId(db)
-    #             try:
-    #                 for undo, multiplicity in change_undoes:
-    #                     undoes.append(
-    #                         (
-    #                             strategy.deserialize(
-    #                                 self._undo_map[undo['type']],
-    #                                 undo['content'],
-    #                             ),
-    #                             multiplicity,
-    #                         )
-    #                     )
-    #             except (KeyError, TypeError, ValueError):
-    #                 return Response(status = status.HTTP_400_BAD_REQUEST)
-    #
-    #             for undo, multiplicity in undoes:
-    #                 current_patch_content -= (undo.as_patch() * multiplicity)
-    #
-    #         patch.content = JsonId.serialize(
-    #             current_patch_content,
-    #         )
-    #
-    #         patch.save()
-    #
-    #         return Response(
-    #             serializers.CubePatchSerializer(patch).data,
-    #             content_type = 'application/json',
-    #         )
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
 
 @api_view(['GET'])
 def patch_verbose(request: Request, pk: int) -> Response:
     try:
-        patch_model = models.CubePatch.objects.get(pk = pk)
+        patch = models.CubePatch.objects.get(pk = pk)
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
-    latest_release = patch_model.versioned_cube.latest_release
+    latest_release = patch.versioned_cube.latest_release
 
     return Response(
         orpserialize.VerbosePatchSerializer.serialize(
-            JsonId(db).deserialize(
-                CubePatch,
-                patch_model.content,
-            ).as_verbose(
+            patch.patch.as_verbose(
                 MetaCube(
                     cube = latest_release.cube,
                     nodes = latest_release.constrained_nodes,
@@ -544,44 +456,24 @@ def patch_verbose(request: Request, pk: int) -> Response:
 @api_view(['GET'])
 def patch_preview(request: Request, pk: int) -> Response:
     try:
-        patch_model = models.CubePatch.objects.get(pk = pk)
+        patch = models.CubePatch.objects.get(pk = pk)
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
-    latest_release = patch_model.versioned_cube.latest_release
-
-    current_cube = JsonId(db).deserialize(
-        Cube,
-        latest_release.cube_content,
-    )
-
-    cube_patch = JsonId(db).deserialize(
-        CubePatch,
-        patch_model.content,
-    )
+    latest_release = patch.versioned_cube.latest_release
 
     return Response(
         {
             'cube': orpserialize.CubeSerializer.serialize(
-                current_cube + cube_patch.cube_delta_operation,
+                latest_release.cube + patch.patch.cube_delta_operation,
             ),
             'nodes': {
-                'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                    (
-                        JsonId(db).deserialize(
-                            NodeCollection,
-                            latest_release.constrained_nodes.constrained_nodes_content,
-                        ) + cube_patch.node_delta_operation
-                        if hasattr(latest_release, 'constrained_nodes') else
-                        NodeCollection(())
-                    )
+                'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                    latest_release.constrained_nodes.constrained_nodes + patch.patch.node_delta_operation
                 )
             },
             'group_map': orpserialize.GroupMapSerializer.serialize(
-                JsonId(db).deserialize(
-                    GroupMap,
-                    latest_release.constrained_nodes.group_map_content,
-                )
+                latest_release.constrained_nodes.group_map + patch.patch.group_map_delta_operation
             )
         },
         content_type = 'application/json',
@@ -659,7 +551,6 @@ def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
     )
 
 
-
 class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
     serializer_class = serializers.ParseConstrainedNodeSerializer
     permission_classes = [permissions.IsAuthenticated, ]
@@ -722,51 +613,6 @@ class ParseTrapEndpoint(generics.GenericAPIView):
         )
 
 
-# class ApplyPatchEndpoint(generics.GenericAPIView):
-#     permission_classes = [permissions.IsAuthenticated, ]
-#
-#     def post(self, request, pk: int, *args, **kwargs):
-#         with transaction.atomic():
-#             try:
-#                 patch = (
-#                     models.CubePatch.objects
-#                         .select_related('constrained_nodes')
-#                         .select_for_update()
-#                         .get(pk = pk)
-#                 )
-#             except models.CubePatch.DoesNotExist:
-#                 return Response(status = status.HTTP_404_NOT_FOUND)
-#
-#             versioned_cube = patch.versioned_cube
-#             latest_release = versioned_cube.latest_release
-#
-#             cube = JsonId(db).deserialize(Cube, latest_release.cube_content)
-#             cube_patch = JsonId(db).deserialize(CubePatch, patch.content)
-#
-#             new_release = models.CubeRelease.create(
-#                 cube + cube_patch.cube_delta_operation,
-#                 versioned_cube,
-#             )
-#
-#             if hasattr(latest_release, 'constrained_nodes'):
-#                 models.ConstrainedNodes.objects.create(
-#                     constrained_nodes_content = JsonId.serialize(
-#                         JsonId(db).deserialize(
-#                             NodeCollection,
-#                             latest_release.constrained_nodes.constrained_nodes_content,
-#                         ) + cube_patch.node_delta_operation
-#                     ),
-#                     release = new_release,
-#                 )
-#
-#             patch.delete()
-#
-#             return Response(
-#                 serializers.FullCubeReleaseSerializer(new_release).data,
-#                 status = status.HTTP_200_OK,
-#             )
-
-
 # TODO
 class CreateRevertPatchEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
@@ -776,8 +622,3 @@ class CreateRevertPatchEndpoint(generics.GenericAPIView):
             patch = models.CubePatch.objects.get(pk = pk)
         except models.CubePatch.DoesNotExist:
             return Response(status = status.HTTP_404_NOT_FOUND)
-
-
-class ConstrainedNodesList(generics.ListAPIView):
-    queryset = models.ConstrainedNodes.objects.all()
-    serializer_class = serializers.ConstrainedNodesSerializer

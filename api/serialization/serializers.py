@@ -46,6 +46,27 @@ class OrpModelField(serializers.Field):
         )
 
 
+class NewOrpModelField(serializers.Field):
+
+    def __init__(
+        self,
+        *args,
+        model_serializer: t.Type[orpserialize.ModelSerializer],
+        **kwargs,
+    ):
+        kwargs['read_only'] = True
+        self._model_serializer = model_serializer
+        super().__init__(*args, **kwargs)
+
+    def to_internal_value(self, data):
+        return json.loads(data)
+
+    def to_representation(self, value):
+        return self._model_serializer.serialize(
+            value
+        )
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
@@ -75,20 +96,16 @@ class MinimalCubeReleaseSerializer(serializers.Serializer):
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):
-    constrained_nodes_content = OrpModelField(
+    constrained_nodes = NewOrpModelField(
         model_serializer = orpserialize.ConstrainedNodesOrpSerializer,
-        serializeable_type = NodeCollection,
-        strategy = JsonId(db),
     )
-    group_map_content = OrpModelField(
+    group_map = NewOrpModelField(
         model_serializer = orpserialize.GroupMapSerializer,
-        serializeable_type = GroupMap,
-        strategy = JsonId(db),
     )
 
     class Meta:
         model = models.ConstrainedNodes
-        fields = ('constrained_nodes_content', 'group_map_content')
+        fields = ('constrained_nodes', 'group_map')
 
 
 class CubePatchSerializer(serializers.ModelSerializer):
@@ -100,15 +117,13 @@ class CubePatchSerializer(serializers.ModelSerializer):
     )
     versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
-    content = OrpModelField(
+    patch = NewOrpModelField(
         model_serializer = orpserialize.CubePatchOrpSerializer,
-        serializeable_type = CubePatch,
-        strategy = JsonId(db),
     )
 
     class Meta:
         model = models.CubePatch
-        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'content')
+        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'patch')
 
 
 class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
@@ -116,10 +131,8 @@ class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
 
 
 class FullCubeReleaseSerializer(CubeReleaseSerializer):
-    cube_content = OrpModelField(
+    cube = NewOrpModelField(
         model_serializer = orpserialize.CubeSerializer,
-        serializeable_type = Cube,
-        strategy = JsonId(db),
     )
     constrained_nodes = ConstrainedNodesSerializer(read_only=True)
 
@@ -194,13 +207,11 @@ class VersionedCubeSerializer(serializers.ModelSerializer):
 
 
 class DistributionPossibilitySerializer(serializers.ModelSerializer):
-    content = OrpModelField(
+    trap_collection = NewOrpModelField(
         model_serializer = orpserialize.TrapCollectionSerializer,
-        serializeable_type = TrapCollection,
-        strategy = JsonId(db),
     )
     pdf_url = serializers.CharField(allow_null=True)
 
     class Meta:
         model = models.DistributionPossibility
-        fields = ('id', 'created_at', 'pdf_url', 'content', 'fitness')
+        fields = ('id', 'created_at', 'pdf_url', 'trap_collection', 'fitness')

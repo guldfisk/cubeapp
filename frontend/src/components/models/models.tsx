@@ -2,10 +2,7 @@ import axios from 'axios';
 
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
-import {alphabeticalPropertySortMethodFactory} from "../utils/utils";
-import {promises} from "fs";
 import wu from 'wu';
-import {response} from "express";
 
 
 export const apiPath = '/api/';
@@ -53,6 +50,7 @@ export class Expansion extends Atomic {
   }
 
 }
+
 
 export class Printing extends Cubeable {
   name: string;
@@ -255,7 +253,7 @@ export class DistributionPossibility extends Atomic {
       remote.created_at,
       remote.pdf_url,
       TrapCollection.fromRemote(
-        remote.content
+        remote.trap_collection
       ),
       remote.fitness,
     )
@@ -719,9 +717,9 @@ export class CubeRelease extends CubeReleaseMeta {
       remote.created_at,
       remote.intended_size,
       MinimalCube.fromRemote(remote.versioned_cube),
-      CubeablesContainer.fromRemote(remote.cube_content),
+      CubeablesContainer.fromRemote(remote.cube),
       remote.constrained_nodes ?
-        new ConstrainedNodes(remote.constrained_nodes.constrained_nodes_content.nodes)
+        new ConstrainedNodes(remote.constrained_nodes.constrained_nodes.nodes)
         : null,
     )
   }
@@ -788,7 +786,7 @@ export class Preview {
   public static fromRemote(remote: any): Preview {
     return new Preview(
       CubeablesContainer.fromRemote(remote.cube),
-      new ConstrainedNodes(remote.nodes.constrained_nodes_content.nodes),
+      new ConstrainedNodes(remote.nodes.constrained_nodes.nodes),
       GroupMap.fromRemote(remote.group_map),
     )
   }
@@ -921,7 +919,7 @@ export class ReleasePatch extends Atomic {
       MinimalCube.fromRemote(remote.versioned_cube),
       remote.description,
       remote.created_at,
-      Patch.fromRemote(remote.content),
+      Patch.fromRemote(remote.patch),
     );
   }
 
@@ -1235,7 +1233,7 @@ export class ConstrainedNodes {
       apiPath + 'constrained-nodes/'
     ).then(
       response => response.data.results.map(
-        (constrainedNode: any) => ConstrainedNode.fromRemote(constrainedNode.nodes.constrained_nodes_content)
+        (constrainedNode: any) => ConstrainedNode.fromRemote(constrainedNode.nodes.constrained_nodes)
       )
     )
   };
@@ -1244,7 +1242,7 @@ export class ConstrainedNodes {
     return axios.get(
       apiPath + 'constrained-nodes/' + id + '/'
     ).then(
-      response => new ConstrainedNodes(response.data.nodes.constrained_nodes_content)
+      response => new ConstrainedNodes(response.data.nodes.constrained_nodes)
     )
   };
 

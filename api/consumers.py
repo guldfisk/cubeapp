@@ -248,27 +248,12 @@ class DistributorConsumer(AuthenticatedConsumer):
         self._versioned_cube = self._patch.versioned_cube
         latest_release = self._versioned_cube.latest_release
 
-        cube_patch = JsonId(db).deserialize(CubePatch, self._patch.content)
-
-        current_cube = JsonId(db).deserialize(
-            Cube,
-            latest_release.cube_content,
-        )
-
-        current_constrained_nodes = JsonId(db).deserialize(
-            NodeCollection,
-            latest_release.constrained_nodes.constrained_nodes_content,
-        )
-
-        current_group_map = JsonId(db).deserialize(
-            GroupMap,
-            latest_release.constrained_nodes.group_map_content,
-        )
+        cube_patch = self._patch.patch
 
         meta_cube = MetaCube(
-            cube = current_cube,
-            nodes = current_constrained_nodes,
-            groups = current_group_map,
+            cube = latest_release.cube,
+            nodes = latest_release.constrained_nodes.constrained_nodes,
+            groups = latest_release.constrained_nodes.group_map,
         )
 
         self._updater = CubeUpdater(
@@ -287,19 +272,15 @@ class DistributorConsumer(AuthenticatedConsumer):
                 ),
                 'preview': {
                     'cube': orpserialize.CubeSerializer.serialize(
-                        current_cube + cube_patch.cube_delta_operation
+                        latest_release.cube + cube_patch.cube_delta_operation
                     ),
                     'nodes': {
-                        'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                            (
-                                current_constrained_nodes + cube_patch.node_delta_operation
-                                if hasattr(latest_release, 'constrained_nodes') else
-                                NodeCollection(())
-                            )
+                        'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                            latest_release.constrained_nodes.constrained_nodes + cube_patch.node_delta_operation
                         )
                     },
                     'group_map': orpserialize.GroupMapSerializer.serialize(
-                        current_group_map + cube_patch.group_map_delta_operation
+                        latest_release.constrained_nodes.group_map + cube_patch.group_map_delta_operation
                     ),
                 },
                 'distributions': [
@@ -361,7 +342,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             try:
                 possibility = models.DistributionPossibility.objects.create(
                     patch_id = self._patch_pk,
-                    content = JsonId(db).serialize(trap_collection),
+                    trap_collection = trap_collection,
                     patch_checksum = self._updater.patch.persistent_hash(),
                     distribution_checksum = trap_collection.persistent_hash(),
                     fitness = self._distribution_task.get_latest_fittest().fitness[0],
@@ -410,12 +391,8 @@ class DistributorConsumer(AuthenticatedConsumer):
                 )
 
                 models.ConstrainedNodes.objects.create(
-                    constrained_nodes_content = JsonId.serialize(
-                        self._updater.new_nodes
-                    ),
-                    group_map_content = JsonId.serialize(
-                        self._updater.new_groups
-                    ),
+                    constrained_nodes = self._updater.new_nodes,
+                    group_map = self._updater.new_groups,
                     release = new_release,
                 )
 
@@ -539,11 +516,6 @@ class PatchEditConsumer(AuthenticatedConsumer):
                 self._send_error('update must have at least one of "updates" or "change_undoes" fields')
                 return
 
-            current_patch = JsonId(db).deserialize(
-                CubePatch,
-                patch.content,
-            )
-
             if update:
                 try:
                     update = RawStrategy(db).deserialize(
@@ -554,7 +526,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     self._send_error('bad request')
                     return
 
-                current_patch += update
+                patch.patch += update
 
             if change_undoes:
 
@@ -575,11 +547,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     return
 
                 for undo, multiplicity in undoes:
-                    current_patch -= (undo.as_patch() * multiplicity)
-
-            patch.content = JsonId.serialize(
-                current_patch,
-            )
+                    patch.patch -= (undo.as_patch() * multiplicity)
 
             patch.save()
 
@@ -592,10 +560,10 @@ class PatchEditConsumer(AuthenticatedConsumer):
                 'type': 'cube_update',
                 'update': {
                     'patch': orpserialize.CubePatchOrpSerializer.serialize(
-                        current_patch
+                        patch.patch
                     ),
                     'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
-                        current_patch.as_verbose(
+                        patch.patch.as_verbose(
                             MetaCube(
                                 cube = current_cube,
                                 nodes = current_constrained_nodes,
@@ -605,19 +573,15 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     ),
                     'preview': {
                         'cube': orpserialize.CubeSerializer.serialize(
-                            current_cube + current_patch.cube_delta_operation
+                            current_cube + patch.patch.cube_delta_operation
                         ),
                         'nodes': {
-                            'constrained_nodes_content': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                                (
-                                    current_constrained_nodes + current_patch.node_delta_operation
-                                    if hasattr(latest_release, 'constrained_nodes') else
-                                    NodeCollection(())
-                                )
+                            'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                                current_constrained_nodes + patch.patch.node_delta_operation
                             )
                         },
                         'group_map': orpserialize.GroupMapSerializer.serialize(
-                            current_group_map + current_patch.group_map_delta_operation
+                            current_group_map + patch.patch.group_map_delta_operation
                         ),
                     },
                 },
@@ -677,7 +641,6 @@ class PatchEditConsumer(AuthenticatedConsumer):
 
 
 class DeltaPdfConsumer(AuthenticatedConsumer):
-
     _working: t.Set[t.Tuple[int, int]] = set()
 
     def __init__(self, *args, **kwargs):
