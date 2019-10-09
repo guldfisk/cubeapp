@@ -1,52 +1,19 @@
-import json
 import typing as t
+
+import json
+
+from distutils.util import strtobool
 
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
-from magiccube.collections.laps import TrapCollection
-from mtgorp.models.serilization.serializeable import Serializeable
-from mtgorp.models.serilization.strategies.jsonid import JsonId
-from mtgorp.models.serilization.strategies.strategy import Strategy
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 
-from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection, GroupMap
-from magiccube.update.cubeupdate import CubePatch
-
-from resources.staticdb import db
 from api import models
 from api.serialization import orpserialize
 
 
-class OrpModelField(serializers.Field):
-
-    def __init__(
-        self,
-        *args,
-        model_serializer: t.Type[orpserialize.ModelSerializer],
-        serializeable_type: t.Type[Serializeable],
-        strategy: Strategy,
-        **kwargs,
-    ):
-        kwargs['read_only'] = True
-        self._model_serializer = model_serializer
-        self._serializeable_type = serializeable_type
-        self._strategy = strategy
-        super().__init__(*args, **kwargs)
-
-    def to_internal_value(self, data):
-        return json.loads(data)
-
-    def to_representation(self, value):
-        return self._model_serializer.serialize(
-            self._strategy.deserialize(
-                self._serializeable_type,
-                value
-            )
-        )
-
-
-class NewOrpModelField(serializers.Field):
+class OrpSerializerField(serializers.Field):
 
     def __init__(
         self,
@@ -62,6 +29,8 @@ class NewOrpModelField(serializers.Field):
         return json.loads(data)
 
     def to_representation(self, value):
+        if self.context.get('request') and strtobool(self.context['request'].query_params.get('native', '0')):
+            return RawStrategy.serialize(value)
         return self._model_serializer.serialize(
             value
         )
@@ -96,10 +65,10 @@ class MinimalCubeReleaseSerializer(serializers.Serializer):
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):
-    constrained_nodes = NewOrpModelField(
+    constrained_nodes = OrpSerializerField(
         model_serializer = orpserialize.ConstrainedNodesOrpSerializer,
     )
-    group_map = NewOrpModelField(
+    group_map = OrpSerializerField(
         model_serializer = orpserialize.GroupMapSerializer,
     )
 
@@ -117,7 +86,7 @@ class CubePatchSerializer(serializers.ModelSerializer):
     )
     versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
 
-    patch = NewOrpModelField(
+    patch = OrpSerializerField(
         model_serializer = orpserialize.CubePatchOrpSerializer,
     )
 
@@ -131,7 +100,7 @@ class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
 
 
 class FullCubeReleaseSerializer(CubeReleaseSerializer):
-    cube = NewOrpModelField(
+    cube = OrpSerializerField(
         model_serializer = orpserialize.CubeSerializer,
     )
     constrained_nodes = ConstrainedNodesSerializer(read_only=True)
@@ -207,7 +176,7 @@ class VersionedCubeSerializer(serializers.ModelSerializer):
 
 
 class DistributionPossibilitySerializer(serializers.ModelSerializer):
-    trap_collection = NewOrpModelField(
+    trap_collection = OrpSerializerField(
         model_serializer = orpserialize.TrapCollectionSerializer,
     )
     pdf_url = serializers.CharField(allow_null=True)

@@ -18,6 +18,7 @@ import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
 import AboutPage from "../pages/AboutPage";
 import ReleaseComparePage from "../pages/ReleaseComparePage";
 import LatestReleasePage from "../pages/LatestReleasePage";
+import SearchSyntaxPage from "../pages/SearchSyntaxPage";
 
 
 export const routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][] = [
@@ -34,6 +35,7 @@ export const routes: [string | undefined, (typeof React.Component) | React.Funct
   ['/sign-up', SignUpPage, false, {}],
   ['/create-cube', CreateCubePage, true, {}],
   ['/patches', PatchesPage, false, {}],
+  ['/syntax', SearchSyntaxPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   ['/patch/:id(\\d+)', PatchPage, false, {}],
   // ['/test', TestPage, false, {}],
