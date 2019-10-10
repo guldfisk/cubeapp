@@ -15,6 +15,11 @@ import {CubeableImage} from "../../images";
 
 interface SearchViewProps {
   handleCardClicked: (printing: Printing) => void
+  handleSearchRequest?: ((query: string, orderBy: string, sortDirection: string, offset: number) => void) | undefined
+  query: string
+  orderBy: string
+  sortDirection: string
+  offset: number
   limit: number
 }
 
@@ -34,22 +39,40 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
   public static defaultProps = {
     handleCardClicked: () => {
     },
+    query: '',
+    orderBy: 'name',
+    sortDirection: 'ascending',
+    offset: 0,
     limit: 50,
   };
 
-  constructor(props: any) {
+  constructor(props: SearchViewProps) {
     super(props);
     this.state = {
       searchResults: [],
-      offset: 0,
+      offset: props.offset,
       hits: 0,
-      query: "",
-      orderBy: "name",
-      sortDirection: "ascending"
+      query: props.query,
+      orderBy: props.orderBy,
+      sortDirection: props.sortDirection,
     }
   }
 
-  performSearch = (
+  newSearch = (
+    query: string,
+    orderBy: string,
+    sortDirection: string,
+    offset: number,
+  ) => {
+    this.setState(
+      {query, orderBy, sortDirection, offset},
+      () => {
+        this.internalPerformSearch(query, orderBy, sortDirection, offset)
+      }
+    )
+  };
+
+  internalPerformSearch = (
     query: string,
     orderBy: string,
     sortDirection: string,
@@ -82,10 +105,23 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
             ),
             hits: response.data.count,
             offset,
-          }
+          },
         )
       }
     )
+  };
+
+  performSearch = (
+    query: string,
+    orderBy: string,
+    sortDirection: string,
+    offset: number,
+  ) => {
+    if (this.props.handleSearchRequest) {
+      this.props.handleSearchRequest(query, orderBy, sortDirection, offset);
+    } else {
+      this.internalPerformSearch(query, orderBy, sortDirection, offset);
+    }
   };
 
   userSubmit = (event: any) => {

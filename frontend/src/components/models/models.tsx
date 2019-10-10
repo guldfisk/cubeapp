@@ -895,6 +895,7 @@ export class ReleasePatch extends Atomic {
   description: string;
   createdAt: string;
   patch: Patch;
+  name: string;
 
   constructor(
     id: string,
@@ -903,6 +904,7 @@ export class ReleasePatch extends Atomic {
     description: string,
     createdAt: string,
     patch: Patch,
+    name: string,
   ) {
     super(id);
     this.author = author;
@@ -910,6 +912,7 @@ export class ReleasePatch extends Atomic {
     this.description = description;
     this.createdAt = createdAt;
     this.patch = patch;
+    this.name = name;
   }
 
   public static fromRemote(remote: any): ReleasePatch {
@@ -920,6 +923,7 @@ export class ReleasePatch extends Atomic {
       remote.description,
       remote.created_at,
       Patch.fromRemote(remote.patch),
+      remote.name,
     );
   }
 

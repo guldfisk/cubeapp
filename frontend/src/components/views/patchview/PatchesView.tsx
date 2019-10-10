@@ -15,6 +15,7 @@ class PatchesView extends React.Component<DeltasViewProps> {
     return <Table>
       <thead>
       <tr>
+        <th>Name</th>
         <th>Description</th>
         <th>Author</th>
         <th>Created At</th>
@@ -23,15 +24,18 @@ class PatchesView extends React.Component<DeltasViewProps> {
       <tbody>
       {
         this.props.patches.map(
-          delta => {
+          patch => {
             return <tr>
-              <td>{delta.description}</td>
               <td>
-                 <Link to={"/patch/" + delta.id}>
-                   {delta.author.username}
-                 </Link>
+                <Link to={"/patch/" + patch.id}>
+                  {patch.name}
+                </Link>
               </td>
-              <td>{delta.createdAt}</td>
+              <td>{patch.description}</td>
+              <td>
+                {patch.author.username}
+              </td>
+              <td>{patch.createdAt}</td>
             </tr>
           }
         )

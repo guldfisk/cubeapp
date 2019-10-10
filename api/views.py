@@ -25,6 +25,7 @@ from magiccube.update.report import UpdateReport
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
 
@@ -47,7 +48,6 @@ from api.mail import send_mail
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
-
 
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
@@ -163,20 +163,30 @@ class SearchView(generics.ListAPIView):
         except ParseException as e:
             return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
 
+        printings = pattern.matches(
+            db.printings.values()
+            if strategy == PrintingStrategy else
+            db.cardboards.values()
+        )
+
+        if order_by != _sort_keys['name']:
+            printings = sorted(
+                printings,
+                key = _sort_keys['name'],
+            )
+
+        printings = sorted(
+            printings,
+            key = order_by,
+            reverse = descending,
+        )
+
         return self.get_paginated_response(
             [
                 serializer.serialize(printing)
                 for printing in
                 self.paginate_queryset(
-                    sorted(
-                        pattern.matches(
-                            db.printings.values()
-                            if strategy == PrintingStrategy else
-                            db.cardboards.values()
-                        ),
-                        key = order_by,
-                        reverse = descending,
-                    )
+                    printings
                 )
             ]
         )
@@ -440,8 +450,14 @@ def patch_verbose(request: Request, pk: int) -> Response:
 
     latest_release = patch.versioned_cube.latest_release
 
+    native = strtobool(request.query_params.get('native', '0'))
+
     return Response(
-        orpserialize.VerbosePatchSerializer.serialize(
+        (
+            RawStrategy
+            if native else
+            orpserialize.VerbosePatchSerializer
+        ).serialize(
             patch.patch.as_verbose(
                 MetaCube(
                     cube = latest_release.cube,
@@ -462,17 +478,31 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     latest_release = patch.versioned_cube.latest_release
 
+    native = strtobool(request.query_params.get('native', '0'))
+
     return Response(
         {
-            'cube': orpserialize.CubeSerializer.serialize(
+            'cube': (
+                RawStrategy
+                if native else
+                orpserialize.CubeSerializer
+            ).serialize(
                 latest_release.cube + patch.patch.cube_delta_operation,
             ),
             'nodes': {
-                'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                'constrained_nodes': (
+                    RawStrategy
+                    if native else
+                    orpserialize.ConstrainedNodesOrpSerializer
+                ).serialize(
                     latest_release.constrained_nodes.constrained_nodes + patch.patch.node_delta_operation
                 )
             },
-            'group_map': orpserialize.GroupMapSerializer.serialize(
+            'group_map': (
+                RawStrategy
+                if native else
+                orpserialize.GroupMapSerializer
+            ).serialize(
                 latest_release.constrained_nodes.group_map + patch.patch.group_map_delta_operation
             )
         },
@@ -508,8 +538,8 @@ def patch_report(request: Request, pk: int) -> Response:
 @api_view(['GET'])
 def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
     try:
-        to_release = models.CubeRelease.objects.get(pk=to_pk)
-        from_release = models.CubeRelease.objects.get(pk=from_pk)
+        to_release = models.CubeRelease.objects.get(pk = to_pk)
+        from_release = models.CubeRelease.objects.get(pk = from_pk)
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 

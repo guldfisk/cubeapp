@@ -162,6 +162,7 @@ class FullPrintingSerializer(ModelSerializer[Printing]):
     def serialize(cls, printing: Printing) -> compacted_model:
         return {
             'id': printing.id,
+            'name': printing.cardboard.name,
             'expansion': ExpansionSerializer.serialize(printing.expansion),
             'cardboard': CardboardSerializer.serialize(printing.cardboard),
             'type': printing.__class__.__name__,

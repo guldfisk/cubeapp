@@ -94,6 +94,10 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Cubes</Nav.Link>
             </LinkContainer>
 
+            <LinkContainer to='/search/'>
+              <Nav.Link>Search</Nav.Link>
+            </LinkContainer>
+
             <LinkContainer to='/syntax/'>
               <Nav.Link>Search Syntax</Nav.Link>
             </LinkContainer>

@@ -13,6 +13,9 @@ from api import models
 from api.serialization import orpserialize
 
 
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
 class OrpSerializerField(serializers.Field):
 
     def __init__(
@@ -44,6 +47,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
+    created_at = serializers.DateTimeField(read_only = True, format = DATETIME_FORMAT)
 
     class Meta:
         model = models.VersionedCube
@@ -52,7 +56,7 @@ class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
 
 class MinimalCubeReleaseSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True, format = DATETIME_FORMAT)
     name = serializers.CharField(read_only=True)
     checksum = serializers.CharField(read_only=True)
     intended_size = serializers.IntegerField(read_only=True)
@@ -79,6 +83,7 @@ class ConstrainedNodesSerializer(serializers.ModelSerializer):
 
 class CubePatchSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
+    created_at = serializers.DateTimeField(read_only = True, format = DATETIME_FORMAT)
     versioned_cube_id = serializers.PrimaryKeyRelatedField(
         write_only=True,
         source='versioned_cube',
@@ -92,7 +97,7 @@ class CubePatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CubePatch
-        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'patch')
+        fields = ('id', 'created_at', 'author', 'description', 'versioned_cube_id', 'versioned_cube', 'patch', 'name')
 
 
 class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
@@ -166,8 +171,7 @@ class InviteSerializer(serializers.ModelSerializer):
         fields = ('email', )
 
 
-class VersionedCubeSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+class VersionedCubeSerializer(MinimalVersionedCubeSerializer):
     releases = MinimalCubeReleaseSerializer(read_only=True, many=True)
 
     class Meta:

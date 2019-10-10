@@ -17,7 +17,6 @@ interface CubeableImageProps {
 export const CubeableImage: React.FunctionComponent<CubeableImageProps> = (
   {cubeable = null, sizeSlug = 'medium', onClick = null, id=null, type=null}: CubeableImageProps
 ) => {
-
   return <LazyImage
     src={
       get_cubeable_images_url(
