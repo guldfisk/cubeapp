@@ -21,7 +21,7 @@ from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.laps.traps.distribute import algorithm
 from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
 from magiccube.update import cubeupdate
-from magiccube.update.cubeupdate import CubePatch, CubeUpdater
+from magiccube.update.cubeupdate import CubePatch, CubeUpdater, CUBE_CHANGE_MAP
 from magiccube.update.report import UpdateReport
 
 from api import models
@@ -440,24 +440,6 @@ class DistributorConsumer(AuthenticatedConsumer):
 
 
 class PatchEditConsumer(AuthenticatedConsumer):
-    _undo_map: t.Dict[str, t.Type[cubeupdate.CubeChange]] = {
-        klass.__name__: klass
-        for klass in
-        (
-            cubeupdate.AddGroup,
-            cubeupdate.RemoveGroup,
-            cubeupdate.GroupWeightChange,
-            cubeupdate.NewCubeable,
-            cubeupdate.RemovedCubeable,
-            cubeupdate.NewNode,
-            cubeupdate.RemovedNode,
-            cubeupdate.PrintingsToNode,
-            cubeupdate.NodeToPrintings,
-            cubeupdate.TrapToNode,
-            cubeupdate.NodeToTrap,
-            cubeupdate.AlteredNode,
-        )
-    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -536,7 +518,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                         undoes.append(
                             (
                                 JsonId(db).deserialize(
-                                    self._undo_map[undo['type']],
+                                    CUBE_CHANGE_MAP[undo['type']],
                                     undo['content'],
                                 ),
                                 multiplicity,
