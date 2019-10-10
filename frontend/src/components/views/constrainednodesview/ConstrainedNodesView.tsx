@@ -171,7 +171,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                 )
               }
               cellEdit={
-                !this.props.onNodeEdit ? undefined : cellEditFactory(
+                !this.props.onNodeEdit ? cellEditFactory({mode: 'click'}) : cellEditFactory(
                   {
                     mode: 'click',
                     beforeSaveCell: (
