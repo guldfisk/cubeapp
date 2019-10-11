@@ -161,7 +161,6 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   componentWillUnmount(): void {
     if (this.state.editingConnection && this.state.editingConnection.OPEN) {
       this.state.editingConnection.close();
-
     }
   }
 
@@ -203,6 +202,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     this.state.releasePatch.delete().then(
       () => {
         history.push('/cube/' + this.state.releasePatch.cube.id + '/patches/')
+      }
+    )
+  };
+
+  handleForkPatch = () => {
+    this.state.releasePatch.fork().then(
+      patch => {
+        history.push('/patch/' + patch.id);
       }
     )
   };
@@ -336,6 +343,14 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                         }
                       >
                         Delete patch
+                      </Link>
+                    </p>
+                    <p>
+                      <Link
+                        to={"#"}
+                        onClick={this.handleForkPatch}
+                      >
+                        Fork patch
                       </Link>
                     </p>
                     < p>

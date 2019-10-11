@@ -64,6 +64,7 @@ class RootComponent extends React.Component<RootProps> {
                 <this.PrivateRoute
                   path={path}
                   key={path}
+                  exact
                   component={component}
                   {...args}
                 /> :

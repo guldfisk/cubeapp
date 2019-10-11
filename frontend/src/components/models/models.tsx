@@ -1053,6 +1053,21 @@ export class ReleasePatch extends Atomic {
     )
   };
 
+  fork = (): Promise<ReleasePatch> => {
+    return axios.post(
+      apiPath + 'patches/' + this.id + '/fork/',
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => ReleasePatch.fromRemote(response.data)
+    )
+  };
+
   preview = (): Promise<Preview> => {
     return axios.get(
       apiPath + 'patches/' + this.id + '/preview/',

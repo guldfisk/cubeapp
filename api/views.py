@@ -420,9 +420,7 @@ class PatchList(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(
             author = self.request.user,
-            content = JsonId.serialize(
-                CubePatch()
-            ),
+            patch = CubePatch(),
         )
 
 
@@ -535,6 +533,48 @@ def patch_report(request: Request, pk: int) -> Response:
     )
 
 
+class ForkPatch(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def post(self, request, *args, **kwargs):
+        try:
+            patch_model = models.CubePatch.objects.get(pk = kwargs['pk'])
+        except models.CubePatch.DoesNotExist:
+            return Response(status = status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            serializers.CubePatchSerializer(
+                models.CubePatch.objects.create(
+                    description = f'Forked from {patch_model.name}',
+                    patch = patch_model.patch,
+                    versioned_cube = patch_model.versioned_cube,
+                    author = request.user,
+                )
+            ).data,
+            status = status.HTTP_201_CREATED,
+        )
+
+
+# @api_view(['POST'])
+# def fork_patch(request: Request, pk: int) -> Response:
+#     try:
+#         patch_model = models.CubePatch.objects.get(pk = pk)
+#     except models.CubePatch.DoesNotExist:
+#         return Response(status = status.HTTP_404_NOT_FOUND)
+#
+#     return Response(
+#         serializers.CubePatchSerializer(
+#             models.CubePatch.objects.create(
+#                 description = f'Forked from {patch_model.name}',
+#                 patch = patch_model.patch,
+#                 versioned_cube = patch_model.versioned_cube,
+#                 author = request.user,
+#             )
+#         ),
+#         status = status.HTTP_201_CREATED,
+#     )
+
+
 @api_view(['GET'])
 def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
     try:
@@ -586,7 +626,7 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data = request.data)  # type: serializers.ParseTrapSerializer
+        serializer: serializers.ParseTrapSerializer = self.get_serializer(data = request.data)
         serializer.is_valid(raise_exception = True)
 
         value = serializer.validated_data.get('weight', 1)
