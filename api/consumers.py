@@ -214,6 +214,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             trap_amount = trap_amount,
             initial_population_size = 300,
             constraints = constraint_set,
+            save_generations = False,
         )
 
     def _connect_distributor(self) -> None:

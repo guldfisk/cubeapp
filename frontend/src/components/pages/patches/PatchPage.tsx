@@ -207,11 +207,13 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   handleForkPatch = () => {
+    this.componentWillUnmount();
     this.state.releasePatch.fork().then(
       patch => {
         history.push('/patch/' + patch.id);
       }
-    )
+    );
+    this.componentDidMount();
   };
 
   canEdit = (): boolean => {
