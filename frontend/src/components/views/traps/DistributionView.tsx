@@ -3,7 +3,8 @@ import Chart from "react-apexcharts";
 
 
 interface DistributionViewProps {
-  data: number[],
+  dataSeriesLabels: string[],
+  data: number[][],
 }
 
 
@@ -21,7 +22,7 @@ export default class DistributionView extends React.Component<DistributionViewPr
           xaxis: {
             type: 'numeric',
             min: 0,
-            max: this.props.data.length,
+            max: this.props.data.length ? this.props.data[0].length : 1,
             crosshairs: {show: false},
             axisTicks: {color: 'white'},
             tooltip: {enabled: false},
@@ -44,12 +45,14 @@ export default class DistributionView extends React.Component<DistributionViewPr
         }
       }
       series={
-        [
-          {
-            name: 'something',
-            data: this.props.data,
-          },
-        ]
+        this.props.dataSeriesLabels.map(
+          (label, index) => {
+            return {
+              name: label,
+              data: this.props.data[index],
+            }
+          }
+        )
       }
     />
   }

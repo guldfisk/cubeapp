@@ -37,6 +37,10 @@ class DistributionTask(threading.Thread):
         self._subscribers: t.Dict[str, queue.Queue[t.Dict[str, t.Any]]] = {}
 
     @property
+    def distribution_worker(self) -> t.Optional[DistributionWorker]:
+        return self._worker
+
+    @property
     def frames(self) -> t.List[LogFrame]:
         with self._lock:
             return copy.copy(self._frames)

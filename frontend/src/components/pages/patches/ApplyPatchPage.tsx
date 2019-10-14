@@ -33,7 +33,8 @@ interface ApplyPatchPageState {
   distributionPossibilities: DistributionPossibility[]
   distributionPossibility: null | DistributionPossibility
   ws: WebSocket | null
-  data: number[]
+  dataSeriesLabels: string[]
+  data: number[][]
   status: string
 }
 
@@ -52,6 +53,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       distributionPossibilities: [],
       distributionPossibility: null,
       ws: null,
+      dataSeriesLabels: [],
       data: [],
       status: 'prerun',
     };
@@ -90,7 +92,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
 
   setStatus = (status: string) => {
     if (status == 'stopped') {
-      this.setState({data: [], status})
+      this.setState({data: [[], []], status})
     } else {
       this.setState({status})
     }
@@ -107,16 +109,28 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       this.setState(
         {
           status: message.status,
-          data: message.frames.map(([max, average]: [number, number]) => max),
+          data: message.frames.length > 1 ? message.frames.map(
+            (column: number[][], i: number) => message.frames.map(
+              (row: number[]) => row[i]
+            )
+          ) : this.state.data,
         }
       )
 
     } else if (message.type === 'frame') {
-      this.setState({data: this.state.data.concat(message.frame[0])})
+      this.setState(
+        {
+          data: this.state.data.map(
+            (series: number[], index: number) => series.concat(message.frame[index])
+          )
+        }
+      )
 
     } else if (message.type === 'items') {
       this.setState(
         {
+          dataSeriesLabels: message.series_labels,
+          data: message.series_labels.map((): number[] => []),
           distributionPossibilities: message.distributions.map(
             (distribution: any) => DistributionPossibility.fromRemote(distribution)
           ),
@@ -228,7 +242,10 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         <Col>
           {
             this.state.status === 'prerun' ? undefined :
-              <DistributionView data={this.state.data}/>
+              <DistributionView
+                dataSeriesLabels={this.state.dataSeriesLabels}
+                data={this.state.data}
+              />
           }
         </Col>
       </Row>

@@ -2,6 +2,7 @@ import typing as t
 
 import threading
 import queue
+from collections import OrderedDict
 
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -10,14 +11,13 @@ from django.db import transaction, IntegrityError
 from knox.auth import TokenAuthentication
 
 from evolution import model
+from evolution import logging
 
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
-from magiccube.collections.cube import Cube
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
-from magiccube.collections.nodecollection import NodeCollection, GroupMap
 from magiccube.laps.traps.distribute import algorithm
 from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
 from magiccube.update import cubeupdate
@@ -121,17 +121,38 @@ class AuthenticatedConsumer(MessageConsumer):
 
 class DistributorConsumer(AuthenticatedConsumer):
     _value_value_map = {
-        key: value
-        for key, value in
-        {
-            0: 0,
-            1: 1,
-            2: 5,
-            3: 15,
-            4: 30,
-            5: 55,
-        }.items()
+        0: 0,
+        1: 1,
+        2: 5,
+        3: 15,
+        4: 30,
+        5: 55,
     }
+
+    _logging_scheme = OrderedDict(
+        (
+            (
+                'Max',
+                logging.LogMax(),
+            ),
+            (
+                'Mean',
+                logging.LogAverage(),
+            ),
+            (
+                'Size Homogeneity',
+                logging.LogAverageConstraint(1),
+            ),
+            (
+                'Value Homogeneity',
+                logging.LogAverageConstraint(2),
+            ),
+            (
+                'Group Collisions',
+                logging.LogAverageConstraint(3),
+            ),
+        )
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -215,6 +236,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             initial_population_size = 300,
             constraints = constraint_set,
             save_generations = False,
+            logger = logging.Logger(self._logging_scheme),
         )
 
     def _connect_distributor(self) -> None:
@@ -265,6 +287,7 @@ class DistributorConsumer(AuthenticatedConsumer):
         self.send_json(
             {
                 'type': 'items',
+                'series_labels': list(self._logging_scheme.keys()),
                 'patch': serializers.CubePatchSerializer(self._patch).data,
                 'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
                     cube_patch.as_verbose(
