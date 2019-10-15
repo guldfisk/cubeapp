@@ -16,6 +16,7 @@ import {loadUser} from "./auth/controller";
 import {Loading} from "./utils/utils";
 import SignInPage from './pages/authentication/SignInPage';
 import store from './state/store';
+import PatchPage from "./pages/patches/PatchPage";
 
 
 interface RootProps {
@@ -50,15 +51,13 @@ class RootComponent extends React.Component<RootProps> {
   };
 
   createRoutes = (
-    routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object][]
+    routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, { [key: string]: any }][]
   ) => {
     return <Switch>
+
       {
         routes.map(
-          (
-            [path, component, isPrivate, args]:
-              [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, object]
-          ) => {
+          ([path, component, isPrivate, args]) => {
             return (
               isPrivate ?
                 <this.PrivateRoute
@@ -71,7 +70,8 @@ class RootComponent extends React.Component<RootProps> {
                 <Route
                   path={path}
                   key={path}
-                  component={component}
+                  exact
+                  component={args.render ? undefined : component}
                   {...args}
                 />
             )

@@ -74,7 +74,6 @@ export default class TrapParseView extends React.Component<TrapParseViewProps, T
   };
 
   render() {
-    console.log(this.state.errorMessage);
     return <>
       {
         !this.state.errorMessage ? undefined : <Alert

@@ -78,9 +78,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     releasePatch.preview().then(
       (preview) => {
         this.setState(
-          {
-            preview: preview,
-          }
+          {preview}
         )
       }
     );
@@ -129,7 +127,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     if (this.state.editingConnection && this.state.editingConnection.OPEN) {
       this.state.editingConnection.close()
     }
-    this.setState({editing: false})
+    this.setState({editing: false});
   };
 
   beginEdit = () => {
@@ -207,13 +205,13 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   handleForkPatch = () => {
-    this.componentWillUnmount();
+    // this.componentWillUnmount();
     this.state.releasePatch.fork().then(
       patch => {
         history.push('/patch/' + patch.id);
       }
     );
-    this.componentDidMount();
+    // this.componentDidMount();
   };
 
   canEdit = (): boolean => {
@@ -332,7 +330,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
               <Col sm={2}>
                 <Card>
                   <Card.Header>
-                    Actions
+                    {!this.state.releasePatch ? "" : this.state.releasePatch.name}
                   </Card.Header>
                   <Card.Body>
                     <p>
@@ -423,7 +421,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
               {
                 !this.state.editing ? undefined :
                   <Col sm={2}>
-                    <UserGroupView userGroup={this.state.userGroup} title="User editing"/>
+                    <UserGroupView userGroup={this.state.userGroup} title="Users editing"/>
                   </Col>
               }
             </Row>

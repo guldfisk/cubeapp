@@ -85,7 +85,6 @@ export default class SearchPage extends React.Component<SearchPageProps, SearchP
   };
 
   componentDidUpdate(prevProps: Readonly<SearchPageProps>, prevState: Readonly<SearchPageState>, snapshot?: any): void {
-    console.log('compo upda', prevProps, prevState);
     this.initSearch(this.props.location.search);
   }
 

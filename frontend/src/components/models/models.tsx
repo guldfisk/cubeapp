@@ -1092,23 +1092,6 @@ export class ReleasePatch extends Atomic {
     )
   };
 
-  apply = (): Promise<CubeRelease> => {
-    return axios.post(
-      apiPath + 'patches/' + this.id + '/apply/',
-      {},
-      {
-        headers: {
-          "Content-Type":
-            "application/json",
-          "Authorization":
-            `Token ${store.getState().token}`,
-        }
-      },
-    ).then(
-      response => CubeRelease.fromRemote(response.data)
-    )
-  };
-
   static create = (cube_id: number, description: string): Promise<ReleasePatch> => {
     return axios.post(
       apiPath + 'patches/',

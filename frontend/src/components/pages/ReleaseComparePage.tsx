@@ -58,13 +58,11 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
 
   handleMessage = (event: any) => {
     const message = JSON.parse(event.data);
-    console.log('new message', message);
 
     if (message.type === 'delta_pdf_update') {
       this.setState({pdfUrl: message.pdf_url, generating: false})
 
     } else if (message.type === 'status' && message.status === 'generating') {
-      console.log('set state generating true');
       this.setState({generating: true})
 
     }
