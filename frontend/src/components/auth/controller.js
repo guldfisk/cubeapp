@@ -18,10 +18,15 @@ export const signUp = ({username, email, password, inviteToken}) => {
         dispatch({type: signInSuccess, data: response.data});
       }
     ).catch(
-      exception => {
+      error => {
         dispatch(
           {
             type: authFailed,
+            errorMessage: typeof(error.response.data) === 'string' ?
+              error.response.data
+              : Object.entries(error.response.data).map(
+              ([key, value]) => key.toString() + ': ' + value.toString()
+            ).join(', '),
           }
         )
       }
@@ -63,7 +68,6 @@ export const loadUser = () => {
 
 export const signIn = (username, password) => {
   return (dispatch, getState) => {
-
     return axios.post(
       '/api/auth/login/',
       {username, password},
@@ -72,8 +76,8 @@ export const signIn = (username, password) => {
         dispatch({type: signInSuccess, data: result.data});
       }
     ).catch(
-      exception => {
-        dispatch({type: authFailed});
+      error => {
+        dispatch({type: authFailed, errorMessage: "Invalid username or password"});
       }
     )
   }

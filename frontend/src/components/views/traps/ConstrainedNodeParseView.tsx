@@ -4,6 +4,7 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
 import {ConstrainedNode} from "../../models/models";
+import {Alert} from "react-bootstrap";
 
 
 interface NodeParseFormProps {
@@ -12,6 +13,7 @@ interface NodeParseFormProps {
       { query: string, groups: string, weight: number }
   ) => void
 }
+
 
 class NodeParseForm extends React.Component<NodeParseFormProps> {
 
@@ -54,25 +56,47 @@ interface CreatePatchPageProps {
   onSubmit: (constrainedNode: ConstrainedNode) => void
 }
 
-export default class ConstrainedNodeParseView extends React.Component<CreatePatchPageProps> {
+
+interface ConstrainedNodeParseViewState {
+  errorMessage: string | null
+}
+
+
+export default class ConstrainedNodeParseView extends React.Component<CreatePatchPageProps,
+  ConstrainedNodeParseViewState> {
 
   constructor(props: any) {
     super(props);
     this.state = {
-      success: false,
-      patch: null,
+      errorMessage: null
     }
   };
 
   handleSubmit = ({query, groups, weight}: { query: string, groups: string, weight: number }): void => {
     ConstrainedNode.parse(query, groups, weight).then(
-      node => this.props.onSubmit(node)
+      node => {
+        this.setState({errorMessage: null});
+        this.props.onSubmit(node);
+      }
+    ).catch(
+      (error: any) => {
+        this.setState({errorMessage: error.response.data.toString()});
+      }
     )
   };
 
   render() {
 
-    return <NodeParseForm handleSubmit={this.handleSubmit}/>
+    return <>
+      {
+        !this.state.errorMessage ? undefined : <Alert
+          variant="danger"
+        >
+          {this.state.errorMessage}
+        </Alert>
+      }
+      <NodeParseForm handleSubmit={this.handleSubmit}/>
+    </>
   }
 
 }

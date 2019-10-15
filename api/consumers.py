@@ -125,8 +125,8 @@ class DistributorConsumer(AuthenticatedConsumer):
         1: 1,
         2: 5,
         3: 15,
-        4: 30,
-        5: 55,
+        4: 25,
+        5: 50,
     }
 
     _logging_scheme = OrderedDict(

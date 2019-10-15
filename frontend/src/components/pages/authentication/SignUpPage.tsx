@@ -11,6 +11,7 @@ import Button from "react-bootstrap/Button";
 import {signUp} from "../../auth/controller";
 import {connect} from "react-redux";
 import {Redirect} from "react-router";
+import Alert from "react-bootstrap/Alert";
 
 
 interface SignUpFormProps {
@@ -20,6 +21,7 @@ interface SignUpFormProps {
   ) => void
   inviteCode: string
 }
+
 
 class SignUpForm extends React.Component<SignUpFormProps> {
 
@@ -69,6 +71,7 @@ class SignUpForm extends React.Component<SignUpFormProps> {
 
 interface SignUpPageProps {
   authenticated: boolean
+  errorMessage: string | null
   signUp: (
     {username, password, email, inviteToken}:
       { username: string, password: string, email: string, inviteToken: string }
@@ -76,6 +79,7 @@ interface SignUpPageProps {
   match: any
   location: any
 }
+
 
 class SignUpPage extends React.Component<SignUpPageProps> {
 
@@ -103,6 +107,13 @@ class SignUpPage extends React.Component<SignUpPageProps> {
 
     return <Container>
       <Col>
+        {
+          !this.props.errorMessage ? undefined : <Alert
+            variant="danger"
+          >
+            {this.props.errorMessage}
+          </Alert>
+        }
         <Card>
           <Card.Header>
             Sign up
@@ -124,6 +135,7 @@ class SignUpPage extends React.Component<SignUpPageProps> {
 const mapStateToProps = (state: any) => {
   return {
     authenticated: state.authenticated,
+    errorMessage: state.errorMessage,
   };
 };
 

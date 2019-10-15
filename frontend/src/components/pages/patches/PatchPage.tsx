@@ -380,7 +380,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             <Row>
               {
                 !this.state.editing ? undefined :
-                  <Col sm={3}>
+                  <Col sm={8}>
                     <Card>
                       <Card.Header>
                         Add

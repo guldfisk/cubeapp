@@ -11,6 +11,7 @@ import Form from "react-bootstrap/Form";
 
 import PaginationBar from '../../utils/PaginationBar';
 import {CubeableImage} from "../../images";
+import Alert from "react-bootstrap/Alert";
 
 
 interface SearchViewProps {
@@ -31,6 +32,7 @@ interface SearchViewState {
   query: string
   orderBy: string
   sortDirection: string
+  errorMessage: string | null
 }
 
 
@@ -55,6 +57,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
       query: props.query,
       orderBy: props.orderBy,
       sortDirection: props.sortDirection,
+      errorMessage: null,
     }
   }
 
@@ -105,8 +108,13 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
             ),
             hits: response.data.count,
             offset,
+            errorMessage: null,
           },
-        )
+        );
+      }
+    ).catch(
+      error => {
+        this.setState({errorMessage: error.response.data.toString()});
       }
     )
   };
@@ -172,8 +180,14 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
   render() {
     return <Container fluid>
       <Col>
+        {
+          !this.state.errorMessage ? undefined : <Alert
+            variant="danger"
+          >
+            {this.state.errorMessage}
+          </Alert>
+        }
         <Row>
-
           <Form
             onSubmit={this.userSubmit}
           >

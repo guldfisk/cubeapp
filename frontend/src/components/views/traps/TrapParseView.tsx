@@ -4,11 +4,15 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
 import {Trap} from "../../models/models";
+import {Simulate} from "react-dom/test-utils";
+import error = Simulate.error;
+import {Alert} from "react-bootstrap";
 
 
 interface TrapParseViewFormProps {
   handleSubmit: ({query, intentionType}: { query: string, intentionType: string }) => void
 }
+
 
 class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
 
@@ -38,29 +42,49 @@ class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
 }
 
 
-interface CreatePatchPageProps {
+interface TrapParseViewProps {
   onSubmit: (trap: Trap) => void
 }
 
-export default class TrapParseView extends React.Component<CreatePatchPageProps> {
+
+interface TrapParseViewState {
+  errorMessage: null | string
+}
+
+export default class TrapParseView extends React.Component<TrapParseViewProps, TrapParseViewState> {
 
   constructor(props: any) {
     super(props);
     this.state = {
-      success: false,
-      patch: null,
+      errorMessage: null
     }
   };
 
   handleSubmit = ({query, intentionType}: { query: string, intentionType: string }): void => {
     Trap.parse(query).then(
-      this.props.onSubmit
+      (trap: Trap) => {
+        this.setState({errorMessage: null});
+        this.props.onSubmit(trap);
+      }
+    ).catch(
+      (error: any) => {
+        this.setState({errorMessage: error.response.data.toString()})
+      }
     )
   };
 
   render() {
-
-    return <TrapParseViewForm handleSubmit={this.handleSubmit}/>
+    console.log(this.state.errorMessage);
+    return <>
+      {
+        !this.state.errorMessage ? undefined : <Alert
+          variant="danger"
+        >
+          {this.state.errorMessage}
+        </Alert>
+      }
+      <TrapParseViewForm handleSubmit={this.handleSubmit}/>
+    </>
   }
 
 }

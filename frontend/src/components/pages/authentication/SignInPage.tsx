@@ -7,14 +7,14 @@ import Container from "react-bootstrap/Container"
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
-import {connect} from "react-redux";
-
-import {signIn} from '../../auth/controller';
 import {Redirect} from "react-router";
+import Alert from "react-bootstrap/Alert";
+import {signIn} from "../../auth/controller";
+import {connect} from "react-redux";
 
 
 interface SignInFormProps {
-  handleSubmit: ({username, password}: {username: string, password: string}) => void
+  handleSubmit: ({username, password}: { username: string, password: string }) => void
 }
 
 class SignInForm extends React.Component<SignInFormProps> {
@@ -51,12 +51,14 @@ class SignInForm extends React.Component<SignInFormProps> {
 
 interface SignInPageProps {
   authenticated: boolean
+  errorMessage: null | string
   signIn: (username: string, password: string) => void
 }
 
+
 class SignInPage extends React.Component<SignInPageProps> {
 
-  handleSubmit = ({username, password}: {username: string, password: string}) => {
+  handleSubmit = ({username, password}: { username: string, password: string }) => {
     this.props.signIn(username, password);
   };
 
@@ -66,28 +68,38 @@ class SignInPage extends React.Component<SignInPageProps> {
     }
 
     return <Container>
-        <Col>
-          <Card>
-            <Card.Header>
-              Sign in
-            </Card.Header>
-            <Card.Body>
-              <SignInForm
-                handleSubmit={this.handleSubmit}
-              />
-            </Card.Body>
-          </Card>
-        </Col>
+      <Col>
+        {
+          !this.props.errorMessage ? undefined : <Alert
+            variant="danger"
+          >
+            {this.props.errorMessage}
+          </Alert>
+        }
+        <Card>
+          <Card.Header>
+            Sign in
+          </Card.Header>
+          <Card.Body>
+            <SignInForm
+              handleSubmit={this.handleSubmit}
+            />
+          </Card.Body>
+        </Card>
+      </Col>
     </Container>
   }
 
 }
 
+
 const mapStateToProps = (state: any) => {
   return {
     authenticated: state.authenticated,
+    errorMessage: state.errorMessage,
   };
 };
+
 
 const mapDispatchToProps = (dispatch: any) => {
   return {
