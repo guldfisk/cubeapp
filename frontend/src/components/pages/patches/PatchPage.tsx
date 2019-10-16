@@ -17,7 +17,7 @@ import {
   CubeChange,
   ReleasePatch,
   Preview,
-  Printing, Trap, VerbosePatch, Patch
+  Printing, Trap, VerbosePatch, Patch, User, EditEvent
 } from '../../models/models';
 import SearchView from "../../views/search/SearchView";
 import TrapParseView from "../../views/traps/TrapParseView";
@@ -30,6 +30,7 @@ import {UserGroup} from "../../utils/utils";
 import UserGroupView from "../../views/users/UserGroupView";
 import GroupAddView from "../../views/groupmap/GroupAddView";
 import Alert from "react-bootstrap/Alert";
+import EditHistoryView from "../../views/patchview/EditHistory";
 
 
 interface DeltaPageProps {
@@ -48,6 +49,7 @@ interface DeltaPageState {
   editingConnection: WebSocket | null
   userGroup: UserGroup
   awaitingUpdate: boolean
+  editHistory: EditEvent[]
 }
 
 class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
@@ -65,6 +67,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       editingConnection: null,
       userGroup: new UserGroup(),
       awaitingUpdate: false,
+      editHistory: [],
     };
   }
 
@@ -115,6 +118,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
           patch: Patch.fromRemote(message.content.patch),
           verbosePatch: VerbosePatch.fromRemote(message.content.verbose_patch),
           preview: Preview.fromRemote(message.content.preview),
+          editHistory: [
+            new EditEvent(
+              User.fromRemote(message.content.updater),
+              VerbosePatch.fromRemote(message.content.update),
+            )
+          ].concat(this.state.editHistory),
           awaitingUpdate: false,
         }
       )
@@ -205,17 +214,23 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   handleForkPatch = () => {
-    // this.componentWillUnmount();
     this.state.releasePatch.fork().then(
       patch => {
         history.push('/patch/' + patch.id);
       }
     );
-    // this.componentDidMount();
   };
 
   canEdit = (): boolean => {
     return this.state.editing && !this.state.locked && !this.state.awaitingUpdate
+  };
+
+  undoEditEvent = (event: EditEvent): void => {
+    this.handleMultipleUpdatePatch(
+      Array.from(
+        event.change.changes.items()
+      )
+    );
   };
 
   render() {
@@ -378,7 +393,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             <Row>
               {
                 !this.state.editing ? undefined :
-                  <Col sm={8}>
+                  <Col sm={6}>
                     <Card>
                       <Card.Header>
                         Add
@@ -422,6 +437,24 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                 !this.state.editing ? undefined :
                   <Col sm={2}>
                     <UserGroupView userGroup={this.state.userGroup} title="Users editing"/>
+                  </Col>
+              }
+              {
+                !this.state.editing ? undefined :
+                  <Col sm={4}>
+                    <Card>
+                      <Card.Header>
+                        History
+                      </Card.Header>
+                      <Card.Body>
+                        <EditHistoryView
+                          history={this.state.editHistory}
+                          eventClicked={
+                            this.canEdit() ? this.undoEditEvent : undefined
+                          }
+                        />
+                      </Card.Body>
+                    </Card>
                   </Col>
               }
             </Row>

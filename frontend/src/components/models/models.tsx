@@ -186,12 +186,12 @@ export class Trap extends Cubeable {
     }
   };
 
-  public static parse(query: string): any {
+  public static parse(query: string, intentionType: string): any {
     return axios.post(
       apiPath + 'service/parse-trap/',
       {
         query: query,
-        intention_type: 'SYNERGY'
+        intention_type: intentionType,
       },
       {
         headers: {
@@ -1359,6 +1359,26 @@ export class UpdateReport {
         (notification: any) => ReportNotification.fromRemote(notification)
       )
     )
+  }
+
+}
+
+
+export class EditEvent extends Atomic {
+  user: User;
+  change: VerbosePatch;
+
+  private static idCounter = 0;
+
+  private static getNextId(): string {
+    EditEvent.idCounter += 1;
+    return EditEvent.idCounter.toString();
+  };
+
+  constructor(user: User, change: VerbosePatch) {
+    super(EditEvent.getNextId());
+    this.user = user;
+    this.change = change;
   }
 
 }

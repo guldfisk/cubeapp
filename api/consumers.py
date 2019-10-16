@@ -522,6 +522,8 @@ class PatchEditConsumer(AuthenticatedConsumer):
                 self._send_error('update must have at least one of "updates" or "change_undoes" fields')
                 return
 
+            patch_update = CubePatch()
+
             if update:
                 try:
                     update = RawStrategy(db).deserialize(
@@ -532,7 +534,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     self._send_error('bad request')
                     return
 
-                patch.patch += update
+                patch_update += update
 
             if change_undoes:
 
@@ -553,14 +555,21 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     return
 
                 for undo, multiplicity in undoes:
-                    patch.patch -= (undo.as_patch() * multiplicity)
+                    patch_update -= (undo.as_patch() * multiplicity)
 
+            patch.patch += patch_update
             patch.save()
 
             latest_release = patch.versioned_cube.latest_release
             current_cube = latest_release.cube
             current_constrained_nodes = latest_release.constrained_nodes.constrained_nodes
             current_group_map = latest_release.constrained_nodes.group_map
+
+            meta_cube = MetaCube(
+                cube = current_cube,
+                nodes = current_constrained_nodes,
+                groups = current_group_map,
+            )
 
             msg = {
                 'type': 'cube_update',
@@ -570,11 +579,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     ),
                     'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
                         patch.patch.as_verbose(
-                            MetaCube(
-                                cube = current_cube,
-                                nodes = current_constrained_nodes,
-                                groups = current_group_map,
-                            )
+                            meta_cube
                         )
                     ),
                     'preview': {
@@ -590,6 +595,12 @@ class PatchEditConsumer(AuthenticatedConsumer):
                             current_group_map + patch.patch.group_map_delta_operation
                         ),
                     },
+                    'updater': serializers.UserSerializer(self.scope['user']).data,
+                    'update': orpserialize.VerbosePatchSerializer.serialize(
+                        patch_update.as_verbose(
+                            meta_cube
+                        )
+                    )
                 },
             }
 

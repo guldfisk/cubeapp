@@ -4,8 +4,6 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
 import {Trap} from "../../models/models";
-import {Simulate} from "react-dom/test-utils";
-import error = Simulate.error;
 import {Alert} from "react-bootstrap";
 
 
@@ -20,7 +18,8 @@ class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
     this.props.handleSubmit(
       {
         query: event.target.elements.query.value,
-        intentionType: "",
+        intentionType: event.target.elements.intentionType.value,
+        // intentionType: "SYNERGY",
       }
     );
     event.preventDefault();
@@ -34,6 +33,13 @@ class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
       <Form.Group controlId="query">
         <Form.Label>Trap</Form.Label>
         <Form.Control type="text"/>
+      </Form.Group>
+      <Form.Group controlId="intentionType">
+        <Form.Label>Intention Type</Form.Label>
+        <Form.Control as="select">
+          <option>SYNERGY</option>
+          <option>OR</option>
+        </Form.Control>
       </Form.Group>
       <Button type="submit">Add Trap</Button>
     </Form>
@@ -61,7 +67,7 @@ export default class TrapParseView extends React.Component<TrapParseViewProps, T
   };
 
   handleSubmit = ({query, intentionType}: { query: string, intentionType: string }): void => {
-    Trap.parse(query).then(
+    Trap.parse(query, intentionType).then(
       (trap: Trap) => {
         this.setState({errorMessage: null});
         this.props.onSubmit(trap);

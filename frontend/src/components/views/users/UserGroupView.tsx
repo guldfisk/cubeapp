@@ -2,7 +2,6 @@ import React from 'react';
 
 import Card from "react-bootstrap/Card";
 import ListGroup from "react-bootstrap/ListGroup";
-import wu from 'wu';
 
 import {UserGroup} from "../../utils/utils";
 

@@ -658,7 +658,7 @@ class ParseTrapEndpoint(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated, ]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data = request.data)  # type: serializers.ParseTrapSerializer
+        serializer: serializers.ParseTrapSerializer = self.get_serializer(data = request.data)
         serializer.is_valid(raise_exception = True)
 
         try:
