@@ -20,4 +20,5 @@ class Command(BaseCommand):
                     16,
                 )
             )
+            release.checksum = release.cube.persistent_hash()
             release.save()
