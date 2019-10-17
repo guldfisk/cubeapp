@@ -174,7 +174,6 @@ class DistributorService(object):
                 )
                 distribution_task = DistributionTask(
                     lambda : self._distribution_task_complete(patch_id),
-                    max_generations=3000,
                 )
                 distribution_task.start()
                 self._tasks[patch_id] = distribution_task
