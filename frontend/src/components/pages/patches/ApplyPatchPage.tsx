@@ -4,7 +4,7 @@ import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import {Redirect} from "react-router";
-import {Container} from "react-bootstrap";
+import {Container, Modal} from "react-bootstrap";
 import store from "../../state/store";
 import Col from "react-bootstrap/Col";
 
@@ -36,6 +36,7 @@ interface ApplyPatchPageState {
   dataSeriesLabels: string[]
   data: number[][]
   status: string
+  errorMessage: string | null
 }
 
 
@@ -56,6 +57,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       dataSeriesLabels: [],
       data: [],
       status: 'prerun',
+      errorMessage: null,
     };
   }
 
@@ -163,6 +165,9 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     } else if (message.type === 'update_success') {
       this.setState({resultingRelease: message.new_release})
 
+    } else if (message.type === 'error') {
+      this.setState({errorMessage: message.message})
+
     }
 
   };
@@ -233,98 +238,117 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       />;
     }
 
-    return <Container fluid>
-      <Row>
-        <Col sm={2}>
-          <label>{this.state.status}</label>
-          {controlPanel}
-        </Col>
-        <Col>
-          {
-            this.state.status === 'prerun' ? undefined :
-              <DistributionView
-                dataSeriesLabels={this.state.dataSeriesLabels}
-                data={this.state.data}
-              />
+    return <>
+      <Modal
+        show={!!this.state.errorMessage}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{this.state.errorMessage}</Modal.Title>
+        </Modal.Header>
+        <Modal.Footer>
+          <Button variant="primary" onClick={
+            () => {
+              this.setState({errorMessage: null})
+            }
           }
-        </Col>
-      </Row>
+          >
+            Ok
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <Container fluid>
+        <Row>
+          <Col sm={2}>
+            <label>{this.state.status}</label>
+            {controlPanel}
+          </Col>
+          <Col>
+            {
+              this.state.status === 'prerun' ? undefined :
+                <DistributionView
+                  dataSeriesLabels={this.state.dataSeriesLabels}
+                  data={this.state.data}
+                />
+            }
+          </Col>
+        </Row>
 
-      <Row>
-        <Col>
+        <Row>
+          <Col>
+            <Card>
+              <Card.Header>
+                Distribution Possibilities
+              </Card.Header>
+              <Card.Body>
+                <DistributionPossibilitiesView
+                  possibilities={this.state.distributionPossibilities}
+                  onPossibilityClick={this.handleDistributionPossibilityClicked}
+                />
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col>
+            {
+              !this.state.distributionPossibility ? undefined :
+                <DistributionPossibilityView possibility={this.state.distributionPossibility}/>
+            }
+          </Col>
+        </Row>
+
+        <Row>
           <Card>
             <Card.Header>
-              Distribution Possibilities
+              Report
             </Card.Header>
             <Card.Body>
-              <DistributionPossibilitiesView
-                possibilities={this.state.distributionPossibilities}
-                onPossibilityClick={this.handleDistributionPossibilityClicked}
-              />
+              {reportView}
             </Card.Body>
           </Card>
-        </Col>
-      </Row>
+        </Row>
+        <Row>
+          <Card>
+            <Card.Header>
+              Delta
+            </Card.Header>
+            <Card.Body>
+              {patchView}
+            </Card.Body>
+          </Card>
+        </Row>
+        <Row>
+          {preview}
+        </Row>
+        <Row>
+          <Col>
+            <Button
+              onClick={
+                () => {
+                  if (this.state.distributionPossibility) {
+                    this.submitMessage(
+                      {
+                        type: 'apply',
+                        possibility_id: this.state.distributionPossibility.id,
+                      }
+                    )
+                  } else {
+                    this.submitMessage({type: 'apply'})
 
-      <Row>
-        <Col>
-          {
-            !this.state.distributionPossibility ? undefined :
-              <DistributionPossibilityView possibility={this.state.distributionPossibility}/>
-          }
-        </Col>
-      </Row>
-
-      <Row>
-        <Card>
-          <Card.Header>
-            Report
-          </Card.Header>
-          <Card.Body>
-            {reportView}
-          </Card.Body>
-        </Card>
-      </Row>
-      <Row>
-        <Card>
-          <Card.Header>
-            Delta
-          </Card.Header>
-          <Card.Body>
-            {patchView}
-          </Card.Body>
-        </Card>
-      </Row>
-      <Row>
-        {preview}
-      </Row>
-      <Row>
-        <Col>
-          <Button
-            onClick={
-              () => {
-                if (this.state.distributionPossibility) {
-                  this.submitMessage(
-                    {
-                      type: 'apply',
-                      possibility_id: this.state.distributionPossibility.id,
-                    }
-                  )
-                } else {
-                  this.submitMessage({type: 'apply'})
-
+                  }
                 }
               }
-            }
-            disabled={!this.state.releasePatch}
-            size='lg'
-            block
-          >
-            Apply
-          </Button>
-        </Col>
-      </Row>
-    </Container>;
+              disabled={!this.state.releasePatch}
+              size='lg'
+              block
+            >
+              Apply
+            </Button>
+          </Col>
+        </Row>
+      </Container>
+    </>;
 
   }
 

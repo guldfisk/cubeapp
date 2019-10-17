@@ -122,10 +122,10 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 
 class SearchView(generics.ListAPIView):
-    _search_target_map = {
+    _search_target_map: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], orpserialize.ModelSerializer]] = {
         'printings': (PrintingStrategy, orpserialize.FullPrintingSerializer),
         'cardboards': (CardboardStrategy, orpserialize.MinimalCardboardSerializer),
-    }  # type: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], orpserialize.ModelSerializer]]
+    }
 
     def list(self, request, *args, **kwargs):
         try:
@@ -134,7 +134,7 @@ class SearchView(generics.ListAPIView):
                 self.request.query_params.get('search_target', 'printings')
             ]
 
-            _sort_keys = {
+            _sort_keys: t.Dict[str, t.Callable[[t.Union[Printing, Cardboard]], t.Any]] = {
                 'name': lambda model: tuple(strategy.extract_name(model)),
                 'cmc': lambda model: tuple(strategy.extract_cmc(model)),
                 'power': lambda model: tuple(strategy.extract_power(model)),
@@ -146,7 +146,7 @@ class SearchView(generics.ListAPIView):
                     for expansion in
                     strategy.extract_expansion(model)
                 ),
-            }  # type: t.Dict[str, t.Callable[[t.Union[Printing, Cardboard]], t.Any]]
+            }
 
             order_by = _sort_keys[
                 self.request.query_params.get('order_by', 'name')
@@ -555,24 +555,23 @@ class ForkPatch(generics.GenericAPIView):
         )
 
 
-# @api_view(['POST'])
-# def fork_patch(request: Request, pk: int) -> Response:
-#     try:
-#         patch_model = models.CubePatch.objects.get(pk = pk)
-#     except models.CubePatch.DoesNotExist:
-#         return Response(status = status.HTTP_404_NOT_FOUND)
-#
-#     return Response(
-#         serializers.CubePatchSerializer(
-#             models.CubePatch.objects.create(
-#                 description = f'Forked from {patch_model.name}',
-#                 patch = patch_model.patch,
-#                 versioned_cube = patch_model.versioned_cube,
-#                 author = request.user,
-#             )
-#         ),
-#         status = status.HTTP_201_CREATED,
-#     )
+class ListDistributionPossibilities(generics.ListAPIView):
+
+    def list(self, request, *args, **kwargs):
+        return self.get_paginated_response(
+            [
+                serializers.DistributionPossibilitySerializer(
+                    possibility,
+                    context = {'request': request},
+                ).data
+                for possibility in
+                self.paginate_queryset(
+                    models.DistributionPossibility.objects.filter(
+                        patch_id = kwargs['pk']
+                    ).order_by('-created_at')
+                )
+            ]
+        )
 
 
 @api_view(['GET'])

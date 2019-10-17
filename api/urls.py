@@ -35,6 +35,7 @@ urlpatterns = [
     path('patches/<int:pk>/preview/', views.patch_preview),
     path('patches/<int:pk>/report/', views.patch_report),
     path('patches/<int:pk>/fork/', views.ForkPatch.as_view()),
+    path('patches/<int:pk>/distribution-possibilities/', views.ListDistributionPossibilities.as_view()),
 
     path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),
     path('service/parse-constrained-node/', views.ParseConstrainedNodeEndpoint.as_view()),
