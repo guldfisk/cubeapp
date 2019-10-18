@@ -52,7 +52,7 @@ class QueueConsumer(threading.Thread):
         while not self._terminating.is_set():
             try:
                 self._callback(
-                    self._q.get(timeout = 5)
+                    self._q.get(timeout=5)
                 )
             except queue.Empty:
                 pass
@@ -99,17 +99,17 @@ class AuthenticatedConsumer(MessageConsumer):
             knox_auth = TokenAuthentication()
 
             if not isinstance(content['token'], str):
-                self._send_message('authentication', state = 'failure', reason = 'invalid token field')
+                self._send_message('authentication', state='failure', reason='invalid token field')
 
             else:
                 user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
                 if user is not None:
                     self._token = auth_token
                     self.scope['user'] = user
-                    self._send_message('authentication', state = 'success')
+                    self._send_message('authentication', state='success')
                     self._on_user_authenticated(auth_token, user)
                 else:
-                    self._send_message('authentication', state = 'failure', reason = 'invalid token')
+                    self._send_message('authentication', state='failure', reason='invalid token')
             return
 
         if self._token is None:
@@ -231,12 +231,12 @@ class DistributorConsumer(AuthenticatedConsumer):
         )
 
         return Distributor(
-            distribution_nodes = distribution_nodes,
-            trap_amount = trap_amount,
-            initial_population_size = 300,
-            constraints = constraint_set,
-            save_generations = False,
-            logger = logging.Logger(self._logging_scheme),
+            distribution_nodes=distribution_nodes,
+            trap_amount=trap_amount,
+            initial_population_size=300,
+            constraints=constraint_set,
+            save_generations=False,
+            logger=logging.Logger(self._logging_scheme),
         )
 
     def _connect_distributor(self) -> None:
@@ -251,7 +251,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                 )
             ),
             self.send_json,
-            daemon = True,
+            daemon=True,
         )
         self._consumer.start()
 
@@ -262,7 +262,7 @@ class DistributorConsumer(AuthenticatedConsumer):
         )
 
         try:
-            self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
+            self._patch = models.CubePatch.objects.get(pk=self._patch_pk)
         except models.CubePatch.DoesNotExist:
             self._send_error(f'no patch with id {self._patch_pk}')
             self.close()
@@ -274,14 +274,14 @@ class DistributorConsumer(AuthenticatedConsumer):
         cube_patch = self._patch.patch
 
         meta_cube = MetaCube(
-            cube = latest_release.cube,
-            nodes = latest_release.constrained_nodes.constrained_nodes,
-            groups = latest_release.constrained_nodes.group_map,
+            cube=latest_release.cube,
+            nodes=latest_release.constrained_nodes.constrained_nodes,
+            groups=latest_release.constrained_nodes.group_map,
         )
 
         self._updater = CubeUpdater(
-            meta_cube = meta_cube,
-            patch = cube_patch,
+            meta_cube=meta_cube,
+            patch=cube_patch,
         )
 
         self.send_json(
@@ -311,8 +311,8 @@ class DistributorConsumer(AuthenticatedConsumer):
                     serializers.DistributionPossibilitySerializer(distribution).data
                     for distribution in
                     models.DistributionPossibility.objects.filter(
-                        patch = self._patch,
-                        patch_checksum = cube_patch.persistent_hash(),
+                        patch=self._patch,
+                        patch_checksum=cube_patch.persistent_hash(),
                     ).order_by('-created_at')
                 ],
                 'report': orpserialize.UpdateReportSerializer.serialize(
@@ -336,19 +336,19 @@ class DistributorConsumer(AuthenticatedConsumer):
 
         elif message_type == 'pause':
             if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
+                self._send_message('status', status='stopped')
                 return
             self._distribution_task.pause()
 
         elif message_type == 'resume':
             if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
+                self._send_message('status', status='stopped')
                 return
             self._distribution_task.resume()
 
         elif message_type == 'stop':
             if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
+                self._send_message('status', status='stopped')
                 return
             self._distribution_task.cancel()
 
@@ -365,11 +365,11 @@ class DistributorConsumer(AuthenticatedConsumer):
 
             try:
                 possibility = models.DistributionPossibility.objects.create(
-                    patch_id = self._patch_pk,
-                    trap_collection = trap_collection,
-                    patch_checksum = self._updater.patch.persistent_hash(),
-                    distribution_checksum = trap_collection.persistent_hash(),
-                    fitness = self._distribution_task.get_latest_fittest().fitness[0],
+                    patch_id=self._patch_pk,
+                    trap_collection=trap_collection,
+                    patch_checksum=self._updater.patch.persistent_hash(),
+                    distribution_checksum=trap_collection.persistent_hash(),
+                    fitness=self._distribution_task.get_latest_fittest().fitness[0],
                 )
             except IntegrityError:
                 self._send_error('Distribution already captured')
@@ -394,13 +394,10 @@ class DistributorConsumer(AuthenticatedConsumer):
             with transaction.atomic():
                 if possibility_id is not None:
                     try:
-                        possibility = JsonId(db).deserialize(
-                            TrapCollection,
-                            models.DistributionPossibility.objects.filter(
-                                pk = possibility_id,
-                                patch_id = self._patch_pk,
-                            ).select_for_update().get().content,
-                        )
+                        possibility = models.DistributionPossibility.objects.filter(
+                            pk=possibility_id,
+                            patch_id=self._patch_pk,
+                        ).select_for_update().get().trap_collection
                     except models.DistributionPossibility.DoesNotExist:
                         self._send_error('Invalid possibility id')
                         return
@@ -410,14 +407,14 @@ class DistributorConsumer(AuthenticatedConsumer):
                 finale_cube = self._updater.get_finale_cube(possibility)
 
                 new_release = models.CubeRelease.create(
-                    cube = finale_cube,
-                    versioned_cube = self._versioned_cube,
+                    cube=finale_cube,
+                    versioned_cube=self._versioned_cube,
                 )
 
                 models.ConstrainedNodes.objects.create(
-                    constrained_nodes = self._updater.new_nodes,
-                    group_map = self._updater.new_groups,
-                    release = new_release,
+                    constrained_nodes=self._updater.new_nodes,
+                    group_map=self._updater.new_groups,
+                    release=new_release,
                 )
 
                 self._patch.delete()
@@ -471,7 +468,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
         self._group_name: t.Optional[str] = None
 
     def _set_locked(self, locked: bool) -> None:
-        self._send_message('status', status = 'locked' if locked else 'unlocked')
+        self._send_message('status', status='locked' if locked else 'unlocked')
 
     def connect(self) -> None:
         self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
@@ -500,7 +497,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
             return
 
         if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
-            self._send_message('status', status = 'locked')
+            self._send_message('status', status='locked')
             return
 
         with transaction.atomic():
@@ -508,7 +505,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                 patch = (
                     models.CubePatch.objects
                         .select_for_update()
-                        .get(pk = self._patch_pk)
+                        .get(pk=self._patch_pk)
                 )
             except models.CubePatch.DoesNotExist:
                 self._send_error(f'no patch with id {self._patch_pk}')
@@ -566,9 +563,9 @@ class PatchEditConsumer(AuthenticatedConsumer):
             current_group_map = latest_release.constrained_nodes.group_map
 
             meta_cube = MetaCube(
-                cube = current_cube,
-                nodes = current_constrained_nodes,
-                groups = current_group_map,
+                cube=current_cube,
+                nodes=current_constrained_nodes,
+                groups=current_group_map,
             )
 
             msg = {
@@ -678,7 +675,7 @@ class DeltaPdfConsumer(AuthenticatedConsumer):
         self.accept()
 
         if (self._id_from, self._id_to) in self._working:
-            self._send_message('status', status = 'generating')
+            self._send_message('status', status='generating')
 
     def disconnect(self, code):
         async_to_sync(self.channel_layer.group_discard)(
@@ -691,8 +688,8 @@ class DeltaPdfConsumer(AuthenticatedConsumer):
             if (self._id_from, self._id_to) in self._working:
                 self._send_error('Already generating')
             elif models.LapChangePdf.objects.filter(
-                original_release_id = self._id_from,
-                resulting_release_id = self._id_to,
+                original_release_id=self._id_from,
+                resulting_release_id=self._id_to,
             ):
                 self._send_error('Already generated')
             else:
@@ -701,7 +698,7 @@ class DeltaPdfConsumer(AuthenticatedConsumer):
                     self._id_from,
                     self._id_to,
                 )
-                self._send_message('status', status = 'generating')
+                self._send_message('status', status='generating')
 
     def delta_pdf_update(self, event: t.Mapping[str, t.Any]):
         print('delta pdf update')
