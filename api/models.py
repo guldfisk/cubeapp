@@ -67,7 +67,7 @@ class CubeRelease(models.Model):
 
 
 class ConstrainedNodes(models.Model):
-    constrained_nodes: ConstrainedNodes = OrpField(NodeCollection)
+    constrained_nodes: NodeCollection = OrpField(NodeCollection)
     group_map: GroupMap = OrpField(GroupMap)
     release = models.OneToOneField(
         CubeRelease,
