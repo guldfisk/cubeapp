@@ -116,7 +116,7 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
     )
 
     with tempfile.TemporaryFile() as f:
-        proxy_writer = ProxyWriter(file = f)
+        proxy_writer = ProxyWriter(file = f, margin_size = .5)
 
         images = Promise.all(
             tuple(
