@@ -15,6 +15,12 @@ services:
     networks:
       - database_network
 
+  rabbitmq:
+    image: 'bitnami/rabbitmq:latest'
+    networks:
+      - database_network
+    restart: always
+
   redis:
     image: 'bitnami/redis:latest'
     environment:
