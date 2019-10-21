@@ -38,3 +38,4 @@ boto3
 celery
 redis
 channels_rabbitmq
+channels_redis
