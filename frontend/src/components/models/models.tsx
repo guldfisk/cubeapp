@@ -1028,8 +1028,7 @@ export class ReleasePatch extends Atomic {
         JSON.stringify(
           {
             type: 'authentication',
-            // token: store.getState().token,
-            token: 'xdxd',
+            token: store.getState().token,
           }
         )
       );
