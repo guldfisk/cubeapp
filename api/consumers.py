@@ -650,7 +650,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
             {
                 'type': 'user_update',
                 'action': 'leave',
-                'user': self.scope['user'].username,
+                'user': 'some user',
             },
         )
         if self._token is not None:
