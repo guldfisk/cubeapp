@@ -9,6 +9,7 @@ from channels.generic.websocket import JsonWebsocketConsumer
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 from knox.auth import TokenAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 
 from evolution import model
 from evolution import logging
@@ -60,11 +61,13 @@ class QueueConsumer(threading.Thread):
 class MessageConsumer(JsonWebsocketConsumer):
 
     def _send_message(self, message_type: str, **kwargs):
+        print('send message', message_type, kwargs)
         d = {'type': message_type}
         d.update(kwargs)
         self.send_json(d)
 
     def _send_error(self, message: t.Any):
+        print('send error', message)
         self.send_json(
             {
                 'type': 'error',
@@ -101,7 +104,10 @@ class AuthenticatedConsumer(MessageConsumer):
                 self._send_message('authentication', state = 'failure', reason = 'invalid token field')
 
             else:
-                user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
+                try:
+                    user, auth_token = knox_auth.authenticate_credentials(content['token'].encode('UTF-8'))
+                except AuthenticationFailed:
+                    user, auth_token = None, None
                 if user is not None:
                     self._token = auth_token
                     self.scope['user'] = user
