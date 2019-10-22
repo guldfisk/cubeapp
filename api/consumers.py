@@ -119,51 +119,51 @@ class AuthenticatedConsumer(MessageConsumer):
 
 
 class DistributorConsumer(AuthenticatedConsumer):
-    _value_value_map = {
-        0: 0,
-        1: 1,
-        2: 5,
-        3: 15,
-        4: 25,
-        5: 50,
-    }
-
-    _logging_scheme = OrderedDict(
-        (
-            (
-                'Max',
-                logging.LogMax(),
-            ),
-            (
-                'Mean',
-                logging.LogAverage(),
-            ),
-            (
-                'Size Homogeneity',
-                logging.LogAverageConstraint(1),
-            ),
-            (
-                'Value Homogeneity',
-                logging.LogAverageConstraint(2),
-            ),
-            (
-                'Group Collisions',
-                logging.LogAverageConstraint(3),
-            ),
-        )
-    )
+    # _value_value_map = {
+    #     0: 0,
+    #     1: 1,
+    #     2: 5,
+    #     3: 15,
+    #     4: 25,
+    #     5: 50,
+    # }
+    #
+    # _logging_scheme = OrderedDict(
+    #     (
+    #         (
+    #             'Max',
+    #             logging.LogMax(),
+    #         ),
+    #         (
+    #             'Mean',
+    #             logging.LogAverage(),
+    #         ),
+    #         (
+    #             'Size Homogeneity',
+    #             logging.LogAverageConstraint(1),
+    #         ),
+    #         (
+    #             'Value Homogeneity',
+    #             logging.LogAverageConstraint(2),
+    #         ),
+    #         (
+    #             'Group Collisions',
+    #             logging.LogAverageConstraint(3),
+    #         ),
+    #     )
+    # )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._patch_pk: t.Optional[int] = None
-        self._group_name: t.Optional[str] = None
-
-        self._distribution_task: t.Optional[DistributionTask] = None
-        self._consumer: t.Optional[QueueConsumer] = None
-
-        self._patch: t.Optional[models.CubePatch] = None
-        self._versioned_cube: t.Optional[models.VersionedCube] = None
-        self._updater: t.Optional[CubeUpdater] = None
+        # self._patch_pk: t.Optional[int] = None
+        # self._group_name: t.Optional[str] = None
+        #
+        # self._distribution_task: t.Optional[DistributionTask] = None
+        # self._consumer: t.Optional[QueueConsumer] = None
+        #
+        # self._patch: t.Optional[models.CubePatch] = None
+        # self._versioned_cube: t.Optional[models.VersionedCube] = None
+        # self._updater: t.Optional[CubeUpdater] = None
 
     def connect(self):
         # self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
@@ -186,73 +186,73 @@ class DistributorConsumer(AuthenticatedConsumer):
     #             self.channel_name,
     #         )
 
-    def _get_distributor(self) -> Distributor:
-        constrained_nodes = self._updater.new_nodes
-        distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
-
-        for node in distribution_nodes:
-            node.value = self._value_value_map.get(node.value, node.value)
-
-        max_node_weight = max(node.value for node in distribution_nodes)
-
-        for node in distribution_nodes:
-            node.value /= max_node_weight
-
-        group_map = self._updater.new_groups.normalized()
-
-        trap_amount = self._updater.new_garbage_trap_amount
-
-        constraint_set = model.ConstraintSet(
-            (
-                (
-                    algorithm.SizeHomogeneityConstraint(
-                        distribution_nodes,
-                        trap_amount,
-                    ),
-                    1,
-                ),
-                (
-                    algorithm.ValueDistributionHomogeneityConstraint(
-                        distribution_nodes,
-                        trap_amount,
-                    ),
-                    2,
-                ),
-                (
-                    algorithm.GroupExclusivityConstraint(
-                        distribution_nodes,
-                        trap_amount,
-                        group_map.groups,
-                    ),
-                    2,
-                ),
-            )
-        )
-
-        return Distributor(
-            distribution_nodes = distribution_nodes,
-            trap_amount = trap_amount,
-            initial_population_size = 300,
-            constraints = constraint_set,
-            save_generations = False,
-            logger = logging.Logger(self._logging_scheme),
-        )
-
-    def _connect_distributor(self) -> None:
-        self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
-
-        self._consumer = QueueConsumer(
-            self._distribution_task.subscribe(
-                str(
-                    id(
-                        self
-                    )
-                )
-            ),
-            self.send_json,
-            daemon = True,
-        )
-        self._consumer.start()
+    # def _get_distributor(self) -> Distributor:
+    #     constrained_nodes = self._updater.new_nodes
+    #     distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
+    #
+    #     for node in distribution_nodes:
+    #         node.value = self._value_value_map.get(node.value, node.value)
+    #
+    #     max_node_weight = max(node.value for node in distribution_nodes)
+    #
+    #     for node in distribution_nodes:
+    #         node.value /= max_node_weight
+    #
+    #     group_map = self._updater.new_groups.normalized()
+    #
+    #     trap_amount = self._updater.new_garbage_trap_amount
+    #
+    #     constraint_set = model.ConstraintSet(
+    #         (
+    #             (
+    #                 algorithm.SizeHomogeneityConstraint(
+    #                     distribution_nodes,
+    #                     trap_amount,
+    #                 ),
+    #                 1,
+    #             ),
+    #             (
+    #                 algorithm.ValueDistributionHomogeneityConstraint(
+    #                     distribution_nodes,
+    #                     trap_amount,
+    #                 ),
+    #                 2,
+    #             ),
+    #             (
+    #                 algorithm.GroupExclusivityConstraint(
+    #                     distribution_nodes,
+    #                     trap_amount,
+    #                     group_map.groups,
+    #                 ),
+    #                 2,
+    #             ),
+    #         )
+    #     )
+    #
+    #     return Distributor(
+    #         distribution_nodes = distribution_nodes,
+    #         trap_amount = trap_amount,
+    #         initial_population_size = 300,
+    #         constraints = constraint_set,
+    #         save_generations = False,
+    #         logger = logging.Logger(self._logging_scheme),
+    #     )
+    #
+    # def _connect_distributor(self) -> None:
+    #     self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
+    #
+    #     self._consumer = QueueConsumer(
+    #         self._distribution_task.subscribe(
+    #             str(
+    #                 id(
+    #                     self
+    #                 )
+    #             )
+    #         ),
+    #         self.send_json,
+    #         daemon = True,
+    #     )
+    #     self._consumer.start()
 
     # def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
     #     async_to_sync(self.channel_layer.group_add)(
@@ -433,30 +433,30 @@ class DistributorConsumer(AuthenticatedConsumer):
     #     else:
     #         self._send_error(f'Unknown message type "{message_type}"')
 
-    def distribution_pdf_update(self, event):
-        self.send_json(
-            {
-                'type': 'distribution_pdf',
-                'url': event['url'],
-                'possibility_id': event['possibility_id'],
-            }
-        )
-
-    def distribution_possibility(self, event) -> None:
-        self.send_json(
-            {
-                'type': 'distribution_possibility',
-                'content': event['content']
-            }
-        )
-
-    def update_success(self, event) -> None:
-        self.send_json(
-            {
-                'type': 'update_success',
-                'new_release': event['new_release'],
-            }
-        )
+    # def distribution_pdf_update(self, event):
+    #     self.send_json(
+    #         {
+    #             'type': 'distribution_pdf',
+    #             'url': event['url'],
+    #             'possibility_id': event['possibility_id'],
+    #         }
+    #     )
+    #
+    # def distribution_possibility(self, event) -> None:
+    #     self.send_json(
+    #         {
+    #             'type': 'distribution_possibility',
+    #             'content': event['content']
+    #         }
+    #     )
+    #
+    # def update_success(self, event) -> None:
+    #     self.send_json(
+    #         {
+    #             'type': 'update_success',
+    #             'new_release': event['new_release'],
+    #         }
+    #     )
 
 
 class PatchEditConsumer(AuthenticatedConsumer):
