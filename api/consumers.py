@@ -131,14 +131,14 @@ class DistributorConsumer(AuthenticatedConsumer):
         # self._patch: t.Optional[models.CubePatch] = None
         # self._versioned_cube: t.Optional[models.VersionedCube] = None
         # self._updater: t.Optional[CubeUpdater] = None
-        self._value_value_map = {
-            0: 0,
-            1: 1,
-            2: 5,
-            3: 15,
-            4: 25,
-            5: 50,
-        }
+        # self._value_value_map = {
+        #     0: 0,
+        #     1: 1,
+        #     2: 5,
+        #     3: 15,
+        #     4: 25,
+        #     5: 50,
+        # }
 
         # self._logging_scheme = OrderedDict(
         #     (
