@@ -9,6 +9,7 @@ services:
       MYSQL_USER: 'phdk'
       MYSQL_PASSWORD: "${DB_PASSWORD}"
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+      DEBUG: 1
     volumes:
       - db:/var/lib/mysql
     networks:
@@ -20,13 +21,13 @@ services:
       - database_network
     restart: always
     environment:
-      - RABBITMQ_NODE_NAME=rabbit@localhost
-#      - RABBITMQ_VHOST=rmq
+      DEBUG: 1
 
   redis:
     image: 'bitnami/redis:latest'
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+      ALLOW_EMPTY_PASSWORD: "yes"
+      DEBUG: 1
     networks:
       - database_network
     restart: always

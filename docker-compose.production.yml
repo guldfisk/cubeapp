@@ -2,6 +2,10 @@ version: '3.3'
 
 services:
 
+  db:
+    environment:
+      DEBUG: 0
+
   nginx:
     image: nginx:1.13
     ports:
@@ -17,6 +21,8 @@ services:
       - nginx_network
     env_file:
       - .env
+    environment:
+      DEBUG: 0
 
   web_channels:
     command: daphne -b 0.0.0.0 -p 7001 cubeapp.asgi:application
@@ -37,17 +43,25 @@ services:
     env_file:
       - .env
     environment:
-      - DEBUG=0
+      DEBUG: 0
 
   celery_worker:
     environment:
-      - DEBUG=0
+      DEBUG: 0
 
   web:
     networks:
       - nginx_network
     environment:
-      - DEBUG=0
+      DEBUG: 0
+
+  redis:
+    environment:
+      DEBUG: 0
+
+  rabbitmq:
+    environment:
+      DEBUG: 0
 
 
 networks:
