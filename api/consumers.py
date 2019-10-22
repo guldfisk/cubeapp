@@ -171,21 +171,20 @@ class DistributorConsumer(AuthenticatedConsumer):
         self.accept()
 
     def disconnect(self, code):
-        pass
-        # if self._distribution_task is not None:
-        #     self._distribution_task.unsubscribe(
-        #         str(
-        #             id(
-        #                 self
-        #             )
-        #         )
-        #     )
-        #     self._consumer.stop()
-        # if self._group_name is not None:
-        #     async_to_sync(self.channel_layer.group_discard)(
-        #         self._group_name,
-        #         self.channel_name,
-        #     )
+        if self._distribution_task is not None:
+            self._distribution_task.unsubscribe(
+                str(
+                    id(
+                        self
+                    )
+                )
+            )
+            self._consumer.stop()
+        if self._group_name is not None:
+            async_to_sync(self.channel_layer.group_discard)(
+                self._group_name,
+                self.channel_name,
+            )
 
     def _get_distributor(self) -> Distributor:
         constrained_nodes = self._updater.new_nodes
@@ -255,184 +254,184 @@ class DistributorConsumer(AuthenticatedConsumer):
         )
         self._consumer.start()
 
-    def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
-        async_to_sync(self.channel_layer.group_add)(
-            self._group_name,
-            self.channel_name,
-        )
-
-        try:
-            self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
-        except models.CubePatch.DoesNotExist:
-            self._send_error(f'no patch with id {self._patch_pk}')
-            self.close()
-            return
-
-        self._versioned_cube = self._patch.versioned_cube
-        latest_release = self._versioned_cube.latest_release
-
-        cube_patch = self._patch.patch
-
-        meta_cube = MetaCube(
-            cube = latest_release.cube,
-            nodes = latest_release.constrained_nodes.constrained_nodes,
-            groups = latest_release.constrained_nodes.group_map,
-        )
-
-        self._updater = CubeUpdater(
-            meta_cube = meta_cube,
-            patch = cube_patch,
-        )
-
-        self.send_json(
-            {
-                'type': 'items',
-                'series_labels': list(self._logging_scheme.keys()),
-                'patch': serializers.CubePatchSerializer(self._patch).data,
-                'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
-                    cube_patch.as_verbose(
-                        meta_cube
-                    )
-                ),
-                'preview': {
-                    'cube': orpserialize.CubeSerializer.serialize(
-                        latest_release.cube + cube_patch.cube_delta_operation
-                    ),
-                    'nodes': {
-                        'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                            latest_release.constrained_nodes.constrained_nodes + cube_patch.node_delta_operation
-                        )
-                    },
-                    'group_map': orpserialize.GroupMapSerializer.serialize(
-                        latest_release.constrained_nodes.group_map + cube_patch.group_map_delta_operation
-                    ),
-                },
-                'distributions': [
-                    serializers.DistributionPossibilitySerializer(distribution).data
-                    for distribution in
-                    models.DistributionPossibility.objects.filter(
-                        patch = self._patch,
-                        patch_checksum = cube_patch.persistent_hash(),
-                    ).order_by('-created_at')
-                ],
-                'report': orpserialize.UpdateReportSerializer.serialize(
-                    UpdateReport(
-                        CubeUpdater(meta_cube, cube_patch)
-                    )
-                ),
-            }
-        )
-
-        self._connect_distributor()
-
-    def _receive_message(self, message_type: str, content: t.Any) -> None:
-        if message_type == 'start':
-            if not self._distribution_task.is_working:
-                self._distribution_task.submit(
-                    self._get_distributor()
-                )
-            else:
-                self._send_error('Distributor is busy, stop it before restarting')
-
-        elif message_type == 'pause':
-            if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
-                return
-            self._distribution_task.pause()
-
-        elif message_type == 'resume':
-            if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
-                return
-            self._distribution_task.resume()
-
-        elif message_type == 'stop':
-            if not (self._distribution_task and self._distribution_task.is_alive()):
-                self._send_message('status', status = 'stopped')
-                return
-            self._distribution_task.cancel()
-
-        elif message_type == 'capture':
-            if not self._distribution_task.status == 'paused':
-                self._send_error('Distributor must be paused to generate trap images')
-                return
-
-            try:
-                trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
-            except TrapDistribution.InvalidDistribution:
-                self._send_error('Distribution is invalid')
-                return
-
-            try:
-                possibility = models.DistributionPossibility.objects.create(
-                    patch_id = self._patch_pk,
-                    trap_collection = trap_collection,
-                    patch_checksum = self._updater.patch.persistent_hash(),
-                    distribution_checksum = trap_collection.persistent_hash(),
-                    fitness = self._distribution_task.get_latest_fittest().fitness[0],
-                )
-            except IntegrityError:
-                self._send_error('Distribution already captured')
-                return
-
-            async_to_sync(self.channel_layer.group_send)(
-                self._group_name,
-                {
-                    'type': 'distribution_possibility',
-                    'content': serializers.DistributionPossibilitySerializer(possibility).data,
-                },
-            )
-
-            tasks.generate_distribution_pdf.delay(
-                self._patch_pk,
-                possibility.id,
-            )
-
-        elif message_type == 'apply':
-            possibility_id = content.get('possibility_id')
-
-            with transaction.atomic():
-                if possibility_id is not None:
-                    try:
-                        possibility = models.DistributionPossibility.objects.filter(
-                            pk = possibility_id,
-                            patch_id = self._patch_pk,
-                        ).select_for_update().get().trap_collection
-                    except models.DistributionPossibility.DoesNotExist:
-                        self._send_error('Invalid possibility id')
-                        return
-                else:
-                    possibility = None
-
-                finale_cube = self._updater.get_finale_cube(possibility)
-
-                new_release = models.CubeRelease.create(
-                    cube = finale_cube,
-                    versioned_cube = self._versioned_cube,
-                )
-
-                models.ConstrainedNodes.objects.create(
-                    constrained_nodes = self._updater.new_nodes,
-                    group_map = self._updater.new_groups,
-                    release = new_release,
-                )
-
-                self._patch.delete()
-
-                async_to_sync(self.channel_layer.group_send)(
-                    self._group_name,
-                    {
-                        'type': 'update_success',
-                        'new_release': new_release.id,
-                    },
-                )
-
-                tasks.generate_release_lap_images.delay(
-                    new_release.id,
-                )
-
-        else:
-            self._send_error(f'Unknown message type "{message_type}"')
+    # def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
+    #     async_to_sync(self.channel_layer.group_add)(
+    #         self._group_name,
+    #         self.channel_name,
+    #     )
+    #
+    #     try:
+    #         self._patch = models.CubePatch.objects.get(pk = self._patch_pk)
+    #     except models.CubePatch.DoesNotExist:
+    #         self._send_error(f'no patch with id {self._patch_pk}')
+    #         self.close()
+    #         return
+    #
+    #     self._versioned_cube = self._patch.versioned_cube
+    #     latest_release = self._versioned_cube.latest_release
+    #
+    #     cube_patch = self._patch.patch
+    #
+    #     meta_cube = MetaCube(
+    #         cube = latest_release.cube,
+    #         nodes = latest_release.constrained_nodes.constrained_nodes,
+    #         groups = latest_release.constrained_nodes.group_map,
+    #     )
+    #
+    #     self._updater = CubeUpdater(
+    #         meta_cube = meta_cube,
+    #         patch = cube_patch,
+    #     )
+    #
+    #     self.send_json(
+    #         {
+    #             'type': 'items',
+    #             'series_labels': list(self._logging_scheme.keys()),
+    #             'patch': serializers.CubePatchSerializer(self._patch).data,
+    #             'verbose_patch': orpserialize.VerbosePatchSerializer.serialize(
+    #                 cube_patch.as_verbose(
+    #                     meta_cube
+    #                 )
+    #             ),
+    #             'preview': {
+    #                 'cube': orpserialize.CubeSerializer.serialize(
+    #                     latest_release.cube + cube_patch.cube_delta_operation
+    #                 ),
+    #                 'nodes': {
+    #                     'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+    #                         latest_release.constrained_nodes.constrained_nodes + cube_patch.node_delta_operation
+    #                     )
+    #                 },
+    #                 'group_map': orpserialize.GroupMapSerializer.serialize(
+    #                     latest_release.constrained_nodes.group_map + cube_patch.group_map_delta_operation
+    #                 ),
+    #             },
+    #             'distributions': [
+    #                 serializers.DistributionPossibilitySerializer(distribution).data
+    #                 for distribution in
+    #                 models.DistributionPossibility.objects.filter(
+    #                     patch = self._patch,
+    #                     patch_checksum = cube_patch.persistent_hash(),
+    #                 ).order_by('-created_at')
+    #             ],
+    #             'report': orpserialize.UpdateReportSerializer.serialize(
+    #                 UpdateReport(
+    #                     CubeUpdater(meta_cube, cube_patch)
+    #                 )
+    #             ),
+    #         }
+    #     )
+    #
+    #     self._connect_distributor()
+    #
+    # def _receive_message(self, message_type: str, content: t.Any) -> None:
+    #     if message_type == 'start':
+    #         if not self._distribution_task.is_working:
+    #             self._distribution_task.submit(
+    #                 self._get_distributor()
+    #             )
+    #         else:
+    #             self._send_error('Distributor is busy, stop it before restarting')
+    #
+    #     elif message_type == 'pause':
+    #         if not (self._distribution_task and self._distribution_task.is_alive()):
+    #             self._send_message('status', status = 'stopped')
+    #             return
+    #         self._distribution_task.pause()
+    #
+    #     elif message_type == 'resume':
+    #         if not (self._distribution_task and self._distribution_task.is_alive()):
+    #             self._send_message('status', status = 'stopped')
+    #             return
+    #         self._distribution_task.resume()
+    #
+    #     elif message_type == 'stop':
+    #         if not (self._distribution_task and self._distribution_task.is_alive()):
+    #             self._send_message('status', status = 'stopped')
+    #             return
+    #         self._distribution_task.cancel()
+    #
+    #     elif message_type == 'capture':
+    #         if not self._distribution_task.status == 'paused':
+    #             self._send_error('Distributor must be paused to generate trap images')
+    #             return
+    #
+    #         try:
+    #             trap_collection = self._distribution_task.get_latest_fittest().as_trap_collection()
+    #         except TrapDistribution.InvalidDistribution:
+    #             self._send_error('Distribution is invalid')
+    #             return
+    #
+    #         try:
+    #             possibility = models.DistributionPossibility.objects.create(
+    #                 patch_id = self._patch_pk,
+    #                 trap_collection = trap_collection,
+    #                 patch_checksum = self._updater.patch.persistent_hash(),
+    #                 distribution_checksum = trap_collection.persistent_hash(),
+    #                 fitness = self._distribution_task.get_latest_fittest().fitness[0],
+    #             )
+    #         except IntegrityError:
+    #             self._send_error('Distribution already captured')
+    #             return
+    #
+    #         async_to_sync(self.channel_layer.group_send)(
+    #             self._group_name,
+    #             {
+    #                 'type': 'distribution_possibility',
+    #                 'content': serializers.DistributionPossibilitySerializer(possibility).data,
+    #             },
+    #         )
+    #
+    #         tasks.generate_distribution_pdf.delay(
+    #             self._patch_pk,
+    #             possibility.id,
+    #         )
+    #
+    #     elif message_type == 'apply':
+    #         possibility_id = content.get('possibility_id')
+    #
+    #         with transaction.atomic():
+    #             if possibility_id is not None:
+    #                 try:
+    #                     possibility = models.DistributionPossibility.objects.filter(
+    #                         pk = possibility_id,
+    #                         patch_id = self._patch_pk,
+    #                     ).select_for_update().get().trap_collection
+    #                 except models.DistributionPossibility.DoesNotExist:
+    #                     self._send_error('Invalid possibility id')
+    #                     return
+    #             else:
+    #                 possibility = None
+    #
+    #             finale_cube = self._updater.get_finale_cube(possibility)
+    #
+    #             new_release = models.CubeRelease.create(
+    #                 cube = finale_cube,
+    #                 versioned_cube = self._versioned_cube,
+    #             )
+    #
+    #             models.ConstrainedNodes.objects.create(
+    #                 constrained_nodes = self._updater.new_nodes,
+    #                 group_map = self._updater.new_groups,
+    #                 release = new_release,
+    #             )
+    #
+    #             self._patch.delete()
+    #
+    #             async_to_sync(self.channel_layer.group_send)(
+    #                 self._group_name,
+    #                 {
+    #                     'type': 'update_success',
+    #                     'new_release': new_release.id,
+    #                 },
+    #             )
+    #
+    #             tasks.generate_release_lap_images.delay(
+    #                 new_release.id,
+    #             )
+    #
+    #     else:
+    #         self._send_error(f'Unknown message type "{message_type}"')
 
     def distribution_pdf_update(self, event):
         self.send_json(
