@@ -665,10 +665,10 @@ class PatchEditConsumer(AuthenticatedConsumer):
             #             'user': self.scope['user'].username,
             #         },
             #     )
-            async_to_sync(self.channel_layer.group_discard)(
-                self._group_name,
-                self.channel_name,
-            )
+            # async_to_sync(self.channel_layer.group_discard)(
+            #     self._group_name,
+            #     self.channel_name,
+            # )
         except Exception as e:
             print(e)
             raise e
