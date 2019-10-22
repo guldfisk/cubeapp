@@ -645,8 +645,12 @@ class PatchEditConsumer(AuthenticatedConsumer):
         self._set_locked(event['action'] == 'acquirer')
 
     def disconnect(self, code):
-        import time
-        time.sleep(1)
+        async_to_sync(self.channel_layer.group_send)(
+            self._group_name,
+            {
+                'type': 'yikes',
+            },
+        )
         if self._token is not None:
             async_to_sync(self.channel_layer.group_send)(
                 self._group_name,
