@@ -639,20 +639,19 @@ class PatchEditConsumer(AuthenticatedConsumer):
         self._set_locked(event['action'] == 'acquirer')
 
     def disconnect(self, code):
-        pass
-        # if self._token is not None:
-        #     async_to_sync(self.channel_layer.group_send)(
-        #         self._group_name,
-        #         {
-        #             'type': 'user_update',
-        #             'action': 'leave',
-        #             'user': self.scope['user'].username,
-        #         },
-        #     )
-        # async_to_sync(self.channel_layer.group_discard)(
-        #     self._group_name,
-        #     self.channel_name,
-        # )
+        if self._token is not None:
+            async_to_sync(self.channel_layer.group_send)(
+                self._group_name,
+                {
+                    'type': 'user_update',
+                    'action': 'leave',
+                    'user': self.scope['user'].username,
+                },
+            )
+        async_to_sync(self.channel_layer.group_discard)(
+            self._group_name,
+            self.channel_name,
+        )
 
 
 class DeltaPdfConsumer(AuthenticatedConsumer):
@@ -702,8 +701,6 @@ class DeltaPdfConsumer(AuthenticatedConsumer):
                 self._send_message('status', status = 'generating')
 
     def delta_pdf_update(self, event: t.Mapping[str, t.Any]):
-        print('delta pdf update')
-
         try:
             self._working.remove((self._id_from, self._id_to))
         except KeyError:
