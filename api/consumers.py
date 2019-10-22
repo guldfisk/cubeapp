@@ -656,15 +656,15 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     'user': 'some user',
                 },
             )
-            if self._token is not None:
-                async_to_sync(self.channel_layer.group_send)(
-                    self._group_name,
-                    {
-                        'type': 'user_update',
-                        'action': 'leave',
-                        'user': self.scope['user'].username,
-                    },
-                )
+            # if self._token is not None:
+            #     async_to_sync(self.channel_layer.group_send)(
+            #         self._group_name,
+            #         {
+            #             'type': 'user_update',
+            #             'action': 'leave',
+            #             'user': self.scope['user'].username,
+            #         },
+            #     )
             async_to_sync(self.channel_layer.group_discard)(
                 self._group_name,
                 self.channel_name,
