@@ -140,30 +140,30 @@ class DistributorConsumer(AuthenticatedConsumer):
             5: 50,
         }
 
-        self._logging_scheme = OrderedDict(
-            (
-                (
-                    'Max',
-                    logging.LogMax(),
-                ),
-                (
-                    'Mean',
-                    logging.LogAverage(),
-                ),
-                (
-                    'Size Homogeneity',
-                    logging.LogAverageConstraint(1),
-                ),
-                (
-                    'Value Homogeneity',
-                    logging.LogAverageConstraint(2),
-                ),
-                (
-                    'Group Collisions',
-                    logging.LogAverageConstraint(3),
-                ),
-            )
-        )
+        # self._logging_scheme = OrderedDict(
+        #     (
+        #         (
+        #             'Max',
+        #             logging.LogMax(),
+        #         ),
+        #         (
+        #             'Mean',
+        #             logging.LogAverage(),
+        #         ),
+        #         (
+        #             'Size Homogeneity',
+        #             logging.LogAverageConstraint(1),
+        #         ),
+        #         (
+        #             'Value Homogeneity',
+        #             logging.LogAverageConstraint(2),
+        #         ),
+        #         (
+        #             'Group Collisions',
+        #             logging.LogAverageConstraint(3),
+        #         ),
+        #     )
+        # )
 
 
     def connect(self):
