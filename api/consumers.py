@@ -672,6 +672,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
         except Exception as e:
             print(e)
             raise e
+        print('dc completed')
 
 
 class DeltaPdfConsumer(AuthenticatedConsumer):
