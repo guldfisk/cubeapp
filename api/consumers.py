@@ -171,7 +171,6 @@ class DistributorConsumer(JsonWebsocketConsumer):
         #     )
         # )
 
-
     def connect(self):
         # self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
         # self._group_name = f'distributor_{self._patch_pk}'
@@ -485,10 +484,10 @@ class PatchEditConsumer(AuthenticatedConsumer):
     def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
         if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
             self._set_locked(True)
-        # async_to_sync(self.channel_layer.group_add)(
-        #     self._group_name,
-        #     self.channel_name,
-        # )
+        async_to_sync(self.channel_layer.group_add)(
+            self._group_name,
+            self.channel_name,
+        )
         async_to_sync(self.channel_layer.group_send)(
             self._group_name,
             {
@@ -645,34 +644,19 @@ class PatchEditConsumer(AuthenticatedConsumer):
         self._set_locked(event['action'] == 'acquirer')
 
     def disconnect(self, code):
-        print('disconnect', self)
-        try:
-            print(self._token)
+        if self._token is not None:
             async_to_sync(self.channel_layer.group_send)(
                 self._group_name,
                 {
                     'type': 'user_update',
                     'action': 'leave',
-                    'user': 'some user',
+                    'user': self.scope['user'].username,
                 },
             )
-            # if self._token is not None:
-            #     async_to_sync(self.channel_layer.group_send)(
-            #         self._group_name,
-            #         {
-            #             'type': 'user_update',
-            #             'action': 'leave',
-            #             'user': self.scope['user'].username,
-            #         },
-            #     )
-            # async_to_sync(self.channel_layer.group_discard)(
-            #     self._group_name,
-            #     self.channel_name,
-            # )
-        except Exception as e:
-            print(e)
-            raise e
-        print('dc completed')
+        async_to_sync(self.channel_layer.group_discard)(
+            self._group_name,
+            self.channel_name,
+        )
 
 
 class DeltaPdfConsumer(AuthenticatedConsumer):
