@@ -166,25 +166,25 @@ class DistributorConsumer(AuthenticatedConsumer):
         self._updater: t.Optional[CubeUpdater] = None
 
     def connect(self):
-        self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
-        self._group_name = f'distributor_{self._patch_pk}'
+        # self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
+        # self._group_name = f'distributor_{self._patch_pk}'
         self.accept()
 
-    def disconnect(self, code):
-        if self._distribution_task is not None:
-            self._distribution_task.unsubscribe(
-                str(
-                    id(
-                        self
-                    )
-                )
-            )
-            self._consumer.stop()
-        if self._group_name is not None:
-            async_to_sync(self.channel_layer.group_discard)(
-                self._group_name,
-                self.channel_name,
-            )
+    # def disconnect(self, code):
+    #     if self._distribution_task is not None:
+    #         self._distribution_task.unsubscribe(
+    #             str(
+    #                 id(
+    #                     self
+    #                 )
+    #             )
+    #         )
+    #         self._consumer.stop()
+    #     if self._group_name is not None:
+    #         async_to_sync(self.channel_layer.group_discard)(
+    #             self._group_name,
+    #             self.channel_name,
+    #         )
 
     def _get_distributor(self) -> Distributor:
         constrained_nodes = self._updater.new_nodes
