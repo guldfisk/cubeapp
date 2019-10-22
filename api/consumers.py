@@ -171,15 +171,15 @@ class DistributorConsumer(AuthenticatedConsumer):
         self.accept()
 
     def disconnect(self, code):
-        if self._distribution_task is not None:
-            self._distribution_task.unsubscribe(
-                str(
-                    id(
-                        self
-                    )
-                )
-            )
-            self._consumer.stop()
+        # if self._distribution_task is not None:
+        #     self._distribution_task.unsubscribe(
+        #         str(
+        #             id(
+        #                 self
+        #             )
+        #         )
+        #     )
+        #     self._consumer.stop()
         if self._group_name is not None:
             async_to_sync(self.channel_layer.group_discard)(
                 self._group_name,
