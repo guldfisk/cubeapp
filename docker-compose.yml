@@ -19,6 +19,9 @@ services:
     networks:
       - database_network
     restart: always
+    environment:
+      - RABBITMQ_NODE_NAME=rabbit@localhost
+#      - RABBITMQ_VHOST=rmq
 
   redis:
     image: 'bitnami/redis:latest'
@@ -60,6 +63,7 @@ services:
     depends_on:
       - db
       - redis
+      - rabbitmq
     networks:
       - database_network
     env_file:
