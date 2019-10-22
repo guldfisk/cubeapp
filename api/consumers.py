@@ -485,10 +485,10 @@ class PatchEditConsumer(AuthenticatedConsumer):
     def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
         if DISTRIBUTOR_SERVICE.is_patch_locked(self._patch_pk):
             self._set_locked(True)
-        async_to_sync(self.channel_layer.group_add)(
-            self._group_name,
-            self.channel_name,
-        )
+        # async_to_sync(self.channel_layer.group_add)(
+        #     self._group_name,
+        #     self.channel_name,
+        # )
         async_to_sync(self.channel_layer.group_send)(
             self._group_name,
             {
