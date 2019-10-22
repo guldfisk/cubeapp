@@ -645,27 +645,33 @@ class PatchEditConsumer(AuthenticatedConsumer):
         self._set_locked(event['action'] == 'acquirer')
 
     def disconnect(self, code):
-        async_to_sync(self.channel_layer.group_send)(
-            self._group_name,
-            {
-                'type': 'user_update',
-                'action': 'leave',
-                'user': 'some user',
-            },
-        )
-        if self._token is not None:
+        print('disconnect', self)
+        try:
+            print(self._token)
             async_to_sync(self.channel_layer.group_send)(
                 self._group_name,
                 {
                     'type': 'user_update',
                     'action': 'leave',
-                    'user': self.scope['user'].username,
+                    'user': 'some user',
                 },
             )
-        async_to_sync(self.channel_layer.group_discard)(
-            self._group_name,
-            self.channel_name,
-        )
+            if self._token is not None:
+                async_to_sync(self.channel_layer.group_send)(
+                    self._group_name,
+                    {
+                        'type': 'user_update',
+                        'action': 'leave',
+                        'user': self.scope['user'].username,
+                    },
+                )
+            async_to_sync(self.channel_layer.group_discard)(
+                self._group_name,
+                self.channel_name,
+            )
+        except Exception as e:
+            print(e)
+            raise e
 
 
 class DeltaPdfConsumer(AuthenticatedConsumer):
