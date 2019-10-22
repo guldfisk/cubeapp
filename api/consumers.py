@@ -118,7 +118,7 @@ class AuthenticatedConsumer(MessageConsumer):
         self._receive_message(message_type, content)
 
 
-class DistributorConsumer(AuthenticatedConsumer):
+class DistributorConsumer(JsonWebsocketConsumer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
