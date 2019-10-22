@@ -26,7 +26,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = _config_parser['default']['secret_key']
 
 DEBUG = strtobool(os.environ['DEBUG'])
-print('---------------------------------> debug', DEBUG)
 
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if not DEBUG else []
 HOST = _config_parser['default']['host']
@@ -157,9 +156,6 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
         "CONFIG": {
             "host": 'amqp://user:bitnami@rabbitmq:5672',
-            # "host": 'amqp://user:bitnami@rabbitmq/asgi:37002',
-            # "host": 'rabbitmq',
-            # "ssl_context": ... (optional)
         },
     },
 }
