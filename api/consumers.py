@@ -119,39 +119,6 @@ class AuthenticatedConsumer(MessageConsumer):
 
 
 class DistributorConsumer(AuthenticatedConsumer):
-    _value_value_map = {
-        0: 0,
-        1: 1,
-        2: 5,
-        3: 15,
-        4: 25,
-        5: 50,
-    }
-
-    _logging_scheme = OrderedDict(
-        (
-            (
-                'Max',
-                logging.LogMax(),
-            ),
-            (
-                'Mean',
-                logging.LogAverage(),
-            ),
-            (
-                'Size Homogeneity',
-                logging.LogAverageConstraint(1),
-            ),
-            (
-                'Value Homogeneity',
-                logging.LogAverageConstraint(2),
-            ),
-            (
-                'Group Collisions',
-                logging.LogAverageConstraint(3),
-            ),
-        )
-    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -164,6 +131,40 @@ class DistributorConsumer(AuthenticatedConsumer):
         # self._patch: t.Optional[models.CubePatch] = None
         # self._versioned_cube: t.Optional[models.VersionedCube] = None
         # self._updater: t.Optional[CubeUpdater] = None
+        self._value_value_map = {
+            0: 0,
+            1: 1,
+            2: 5,
+            3: 15,
+            4: 25,
+            5: 50,
+        }
+
+        self._logging_scheme = OrderedDict(
+            (
+                (
+                    'Max',
+                    logging.LogMax(),
+                ),
+                (
+                    'Mean',
+                    logging.LogAverage(),
+                ),
+                (
+                    'Size Homogeneity',
+                    logging.LogAverageConstraint(1),
+                ),
+                (
+                    'Value Homogeneity',
+                    logging.LogAverageConstraint(2),
+                ),
+                (
+                    'Group Collisions',
+                    logging.LogAverageConstraint(3),
+                ),
+            )
+        )
+
 
     def connect(self):
         # self._patch_pk = int(self.scope['url_route']['kwargs']['pk'])
