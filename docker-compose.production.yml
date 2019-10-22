@@ -1,13 +1,11 @@
 version: '3.3'
 
 services:
-  db:
-    ports: []
 
   nginx:
     image: nginx:1.13
     ports:
-      - 7070:80
+      - "${PORT_OUT}:80"
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - static_volume:/opt/services/cubeapp/static
@@ -17,6 +15,8 @@ services:
       - web_channels
     networks:
       - nginx_network
+    env_file:
+      - .env
 
   web_channels:
     command: daphne -b 0.0.0.0 -p 7001 cubeapp.asgi:application
@@ -38,8 +38,6 @@ services:
       - .env
     environment:
       - DEBUG=0
-    ports:
-      - 7001:7001
 
   celery_worker:
     environment:

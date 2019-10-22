@@ -4,7 +4,6 @@ services:
   db:
     image: mysql:5.7
     restart: always
-    ports: ['0.0.0.0:3333:3306']
     environment:
       MYSQL_DATABASE: 'cubespoiler'
       MYSQL_USER: 'phdk'
@@ -67,8 +66,6 @@ services:
       - .env
     environment:
       - DEBUG=1
-    ports:
-      - 7000:7000
 
 networks:
   database_network:
