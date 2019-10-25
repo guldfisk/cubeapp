@@ -151,11 +151,13 @@ ASGI_APPLICATION = 'cubeapp.routing.application'
 #     },
 # }
 
+print(os.environ)
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
         "CONFIG": {
-            "host": 'amqp://user:bitnami@rabbitmq:5672',
+            "host": f'amqp://{os.environ["RABBITMQ_USERNAME"]}:{os.environ["RABBITMQ_PASSWORD"]}@rabbitmq:5672',
         },
     },
 }

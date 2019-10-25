@@ -59,6 +59,7 @@ services:
   web:
     build: .
     image: app-image
+    restart: always
     volumes:
       - .:/code
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
