@@ -38,4 +38,4 @@ boto3
 celery
 redis
 channels_rabbitmq
-channels_redis
+channels_redis==2.2.1

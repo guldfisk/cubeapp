@@ -59,9 +59,9 @@ services:
     environment:
       DEBUG: 0
 
-  rabbitmq:
-    environment:
-      DEBUG: 0
+#  rabbitmq:
+#    environment:
+#      DEBUG: 0
 
 
 networks:

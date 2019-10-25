@@ -15,17 +15,17 @@ services:
     networks:
       - database_network
 
-  rabbitmq:
-    image: 'bitnami/rabbitmq:latest'
-    networks:
-      - database_network
-    restart: always
-    environment:
-      DEBUG: 1
-    env_file:
-      - .env
-    ports:
-      - 1515:15672
+#  rabbitmq:
+#    image: 'bitnami/rabbitmq:latest'
+#    networks:
+#      - database_network
+#    restart: always
+#    environment:
+#      DEBUG: 1
+#    env_file:
+#      - .env
+#    ports:
+#      - 1515:15672
 
   redis:
     image: 'bitnami/redis:latest'
@@ -69,7 +69,7 @@ services:
     depends_on:
       - db
       - redis
-      - rabbitmq
+#      - rabbitmq
     networks:
       - database_network
     env_file:

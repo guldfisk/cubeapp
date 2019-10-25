@@ -142,22 +142,20 @@ REST_FRAMEWORK = {
 
 ASGI_APPLICATION = 'cubeapp.routing.application'
 
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             "hosts": [('redis', 6379)],
-#         },
-#     },
-# }
-
-print(os.environ)
-
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
-        "CONFIG": {
-            "host": f'amqp://{os.environ["RABBITMQ_USERNAME"]}:{os.environ["RABBITMQ_PASSWORD"]}@rabbitmq:5672',
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
         },
     },
 }
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+#         "CONFIG": {
+#             "host": f'amqp://{os.environ["RABBITMQ_USERNAME"]}:{os.environ["RABBITMQ_PASSWORD"]}@rabbitmq:5672',
+#         },
+#     },
+# }
