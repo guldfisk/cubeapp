@@ -221,15 +221,11 @@ def filter_release_view(request: Request, pk: int) -> Response:
     except models.CubeRelease.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
-    cube = JsonId(db).deserialize(
-        Cube,
-        release.cube_content
-    )
-
     if flattened:
         cube = Cube(
-            cubeables = cube.all_printings,
+            cubeables = release.cube.all_printings,
         )
+    else: cube = release.cube
 
     return Response(
         orpserialize.CubeSerializer.serialize(
