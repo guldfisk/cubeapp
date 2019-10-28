@@ -29,7 +29,7 @@ from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
 
-from mtgimg.interface import SizeSlug, ImageFetchException
+from mtgimg.interface import SizeSlug, ImageFetchException, ImageRequest
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
@@ -63,15 +63,6 @@ _IMAGE_SIZE_MAP = {
 }
 
 
-@api_view(['GEt'])
-def test_view(request):
-    from api.tasks import generate_distribution_pdf
-    print(generate_distribution_pdf.delay())
-    return Response(
-        {'ok': 'ok'}
-    )
-
-
 class CubeReleasesList(generics.ListAPIView):
     queryset = models.CubeRelease.objects.all()
     serializer_class = serializers.CubeReleaseSerializer
@@ -101,18 +92,28 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
     if pictured_id == 'back':
         image = image_loader.get_default_image(size_slug = size_slug)
-
-    elif pictured_type == Printing:
-        try:
-            _id = int(pictured_id)
-        except ValueError:
-            return HttpResponse(status = status.HTTP_400_BAD_REQUEST)
-
-        image = image_loader.get_image(db.printings[_id], size_slug = size_slug).get()
     else:
+        if pictured_type == Printing:
+            try:
+                _id = int(pictured_id)
+            except ValueError:
+                return HttpResponse(status = status.HTTP_400_BAD_REQUEST)
+            try:
+                printing = db.printings[_id]
+            except KeyError:
+                return HttpResponse(status = status.HTTP_404_NOT_FOUND)
+            image_request = ImageRequest(printing, size_slug = size_slug)
+            # image = image_loader.get_image(db.printings[_id], size_slug = size_slug).get()
+        else:
+            image_request = ImageRequest(
+                picture_name = pictured_id,
+                pictured_type = pictured_type,
+                size_slug = size_slug,
+            )
         try:
-            image = image_loader.get_image(picture_name = pictured_id, pictured_type = pictured_type,
-                                           size_slug = size_slug).get()
+            image = image_loader.get_image(
+                image_request = image_request
+            ).get()
         except ImageFetchException:
             return HttpResponse(status = status.HTTP_404_NOT_FOUND)
 
@@ -676,6 +677,17 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             status = status.HTTP_200_OK,
             content_type = 'application/json'
         )
+
+
+@api_view(['GET', ])
+def printing_strings(request: Request) -> Response:
+    return Response(
+        [
+            printing.full_name()
+            for printing in
+            db.printings.values()
+        ]
+    )
 
 
 # TODO

@@ -6,8 +6,6 @@ from api import views
 urlpatterns = [
     path('', views.CubeReleasesList.as_view(), name='index'),
     
-    path('test/', views.test_view),
-
     path('cube-releases/', views.CubeReleasesList.as_view()),
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),
@@ -39,5 +37,6 @@ urlpatterns = [
 
     path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),
     path('service/parse-constrained-node/', views.ParseConstrainedNodeEndpoint.as_view()),
+    # path('services/printing-strings/', views.printing_strings),
 
 ]
