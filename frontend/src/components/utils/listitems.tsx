@@ -4,8 +4,6 @@ import ReactTooltip from "react-tooltip";
 import {Cubeable, CubeChange, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
 import {CubeableImage} from "../images";
 import ListGroup from "react-bootstrap/ListGroup";
-import {Simulate} from "react-dom/test-utils";
-import change = Simulate.change;
 
 
 interface PrintingListItemProps {
@@ -14,6 +12,7 @@ interface PrintingListItemProps {
   onClick?: (printing: Printing, multiplicity: number) => void
   noHover?: boolean
 }
+
 
 export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: PrintingListItemProps) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?

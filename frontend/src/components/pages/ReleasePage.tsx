@@ -2,10 +2,7 @@ import React from 'react';
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card"
 import Container from "react-bootstrap/Container"
-
-import {Link} from "react-router-dom";
 
 import {Loading} from '../utils/utils';
 import {Cube, CubeRelease, CubeReleaseMeta} from '../models/models';
@@ -14,9 +11,7 @@ import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodes
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import Button from "react-bootstrap/Button";
-import {ConfirmationDialog} from "../utils/dialogs";
 import {Modal} from "react-bootstrap";
-import PatchesView from "../views/patchview/PatchesView";
 import ReleasesView from "../views/releaseview/ReleasesView";
 import history from '../routing/history';
 
@@ -36,7 +31,7 @@ interface ReleaseSelectionDialogState {
 
 class ReleaseSelectionDialog extends React.Component<ReleaseSelectionDialogProps, ReleaseSelectionDialogState> {
 
-  constructor(props: null) {
+  constructor(props: ReleaseSelectionDialogProps) {
     super(props);
     this.state = {
       cube: null,

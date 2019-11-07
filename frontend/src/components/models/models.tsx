@@ -265,8 +265,13 @@ export class DistributionPossibility extends Atomic {
 export class Ticket extends Cubeable {
   name: string;
 
+  constructor(id: string, name: string) {
+    super(id);
+    this.name = name;
+  }
+
   public static fromRemote(remote: any): Ticket {
-    return new Purple(remote.id, remote.name)
+    return new Ticket(remote.id, remote.name)
   }
 
   getType = (): string => {

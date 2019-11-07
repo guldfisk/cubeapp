@@ -9,6 +9,7 @@ import {Link} from "react-router-dom";
 import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCollectionListView';
 import CubeablesCollectionSpoilerView from '../cubeablescollectionview/CubeablesCollectionSpoilerView';
 import {CubeRelease, CubeablesContainer} from "../../models/models";
+import Alert from "react-bootstrap/Alert";
 
 
 interface ReleaseMultiViewProps {
@@ -20,6 +21,7 @@ interface ReleaseMultiViewState {
   viewType: string
   cubeableType: string
   cubeablesContainer: CubeablesContainer
+  filterError: string | null
 }
 
 
@@ -31,6 +33,7 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
       viewType: 'List',
       cubeableType: 'Cubeables',
       cubeablesContainer: props.release.cubeablesContainer,
+      filterError: null,
     }
   }
 
@@ -40,11 +43,21 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
       this.setState({cubeablesContainer: this.props.release.cubeablesContainer});
     } else {
       this.props.release.filter(
-        // encodeURIComponent(query),
         query,
         this.state.cubeableType !== 'Cubeables',
       ).then(
-        rawCube => this.setState({cubeablesContainer: rawCube})
+        rawCube => {
+          this.setState(
+            {
+              cubeablesContainer: rawCube,
+              filterError: null,
+            }
+          )
+        }
+      ).catch(
+        error => {
+          this.setState({filterError: error.response.data.toString()});
+        }
       );
     }
     event.preventDefault();
@@ -98,6 +111,13 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
               <Form.Control type="text"/>
             </Form.Group>
           </Form>
+          {
+            !this.state.filterError ? undefined : <Alert
+              variant="danger"
+            >
+              {this.state.filterError}
+            </Alert>
+          }
 
           <select
             className="ml-auto"
