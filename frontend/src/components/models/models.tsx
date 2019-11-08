@@ -132,7 +132,7 @@ export class PrintingNode extends Atomic {
     return '(' + this.children.items.map(
       ([child, multiplicity]: [Printing | PrintingNode, number]) =>
         (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
-        + (child instanceof Printing ? child.full_name() : child.representation())
+        + (child instanceof Printing ? child.full_name : child.representation())
     ).join(
       this.type === 'AllNode' ? '; ' : ' || '
     ) + ')'
@@ -143,7 +143,7 @@ export class PrintingNode extends Atomic {
       type: this.type,
       options: this.children.items.map(
         ([child, multiplicity]) => [
-          child instanceof Printing ? child.id : child.serialize(),
+          child instanceof Printing ? child.id : (child as PrintingNode).serialize(),
           multiplicity,
         ]
       )
@@ -733,7 +733,7 @@ export class CubeRelease extends CubeReleaseMeta {
     return axios.get(
       apiPath + 'cube-releases/' + to_id + '/delta-from/' + from_id + '/'
     ).then(
-      response => [
+      (response: any) => [
         Patch.fromRemote(response.data.patch),
         VerbosePatch.fromRemote(response.data.verbose_patch),
         response.data.pdf_url,

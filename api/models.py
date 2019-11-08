@@ -7,18 +7,14 @@ from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
 from magiccube.collections.laps import TrapCollection
-from magiccube.laps.traps.distribute.algorithm import TrapDistribution
 from mocknames.generate import NameGenerator
-from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from magiccube.collections.cube import Cube
 from magiccube.update.cubeupdate import CubePatch as Patch
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
 
-
 from api.fields.orp import OrpField
 
-from resources.staticdb import db
 from utils.methods import get_random_name
 
 

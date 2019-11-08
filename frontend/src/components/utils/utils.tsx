@@ -4,12 +4,9 @@ import '../../styling/utils.css';
 
 import axios from 'axios';
 
-import {Printing, Trap, PrintingNode, apiPath} from "../models/models";
-import {CubeableImage} from "../images";
-import ReactTooltip from 'react-tooltip';
+import {apiPath} from "../models/models";
 
 import store from '../state/store';
-import {number} from "prop-types";
 
 
 const imagesPath = '/api/images/';
