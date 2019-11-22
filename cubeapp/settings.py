@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'knox',
     'api.apps.ApiConfig',
+    'lobbies.apps.ApiConfig',
     'frontend.apps.FrontendConfig',
     # 'corsheaders',
     # 'django.contrib.admin',
