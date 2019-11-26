@@ -13,13 +13,16 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from evolution import model
 from evolution import logging
+from evolution.environment import Environment
+from magiccube.collections.laps import TrapCollection
+from magiccube.laps.traps.distribute.delta import DeltaDistributor
 
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from magiccube.collections.meta import MetaCube
 from magiccube.laps.traps.distribute import algorithm
-from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
+from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution, TrapCollectionIndividual
 from magiccube.update import cubeupdate
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater, CUBE_CHANGE_MAP
 from magiccube.update.report import UpdateReport
@@ -192,7 +195,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                 self.channel_name,
             )
 
-    def _get_distributor(self) -> Distributor:
+    def _get_distributor(self, delta: bool, **kwargs) -> Environment[TrapCollectionIndividual]:
         constrained_nodes = self._updater.new_nodes
         distribution_nodes = list(map(algorithm.DistributionNode, constrained_nodes))
 
@@ -235,14 +238,26 @@ class DistributorConsumer(AuthenticatedConsumer):
             )
         )
 
-        return Distributor(
-            distribution_nodes = distribution_nodes,
-            trap_amount = trap_amount,
-            initial_population_size = 300,
-            constraints = constraint_set,
-            save_generations = False,
-            logger = logging.Logger(self._logging_scheme),
-        )
+        if delta:
+            return DeltaDistributor(
+                distribution_nodes = distribution_nodes,
+                trap_amount = trap_amount,
+                initial_population_size = 300,
+                constraints = constraint_set,
+                original_collection = TrapCollection(self._versioned_cube.latest_release.cube.garbage_traps),
+                max_trap_delta = kwargs.get('max_trap_delta', 1),
+                save_generations = False,
+                logger = logging.Logger(self._logging_scheme),
+            )
+        else:
+            return Distributor(
+                distribution_nodes = distribution_nodes,
+                trap_amount = trap_amount,
+                initial_population_size = 300,
+                constraints = constraint_set,
+                save_generations = False,
+                logger = logging.Logger(self._logging_scheme),
+            )
 
     def _connect_distributor(self) -> None:
         self._distribution_task = DISTRIBUTOR_SERVICE.connect(self._patch_pk)
@@ -318,6 +333,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                     models.DistributionPossibility.objects.filter(
                         patch = self._patch,
                         patch_checksum = cube_patch.persistent_hash(),
+                        release = self._versioned_cube.latest_release,
                     ).order_by('-created_at')
                 ],
                 'report': orpserialize.UpdateReportSerializer.serialize(
@@ -332,9 +348,19 @@ class DistributorConsumer(AuthenticatedConsumer):
 
     def _receive_message(self, message_type: str, content: t.Any) -> None:
         if message_type == 'start':
+            try:
+                delta = bool(content['delta'])
+                if delta:
+                    max_trap_delta = int(content['max_trap_delta'])
+                else:
+                    max_trap_delta = 1
+            except (ValueError, KeyError):
+                self._send_error('Invalid arguments')
+                return
+
             if not self._distribution_task.is_working:
                 self._distribution_task.submit(
-                    self._get_distributor()
+                    self._get_distributor(delta, max_trap_delta = max_trap_delta)
                 )
             else:
                 self._send_error('Distributor is busy, stop it before restarting')
@@ -371,6 +397,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             try:
                 possibility = models.DistributionPossibility.objects.create(
                     patch_id = self._patch_pk,
+                    release = self._versioned_cube.latest_release,
                     trap_collection = trap_collection,
                     patch_checksum = self._updater.patch.persistent_hash(),
                     distribution_checksum = trap_collection.persistent_hash(),
@@ -391,6 +418,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             tasks.generate_distribution_pdf.delay(
                 self._patch_pk,
                 possibility.id,
+                include_changes_pdf = True,
             )
 
         elif message_type == 'apply':
@@ -443,7 +471,9 @@ class DistributorConsumer(AuthenticatedConsumer):
         self.send_json(
             {
                 'type': 'distribution_pdf',
-                'url': event['url'],
+                'url': event['pdf_url'],
+                'added_url': event.get('added_pdf_url'),
+                'removed_url': event.get('removed_pdf_url'),
                 'possibility_id': event['possibility_id'],
             }
         )

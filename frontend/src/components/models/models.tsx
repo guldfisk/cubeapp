@@ -132,7 +132,7 @@ export class PrintingNode extends Atomic {
     return '(' + this.children.items.map(
       ([child, multiplicity]: [Printing | PrintingNode, number]) =>
         (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
-        + (child instanceof Printing ? child.full_name : child.representation())
+        + (child instanceof Printing ? child.full_name() : child.representation())
     ).join(
       this.type === 'AllNode' ? '; ' : ' || '
     ) + ')'
@@ -143,7 +143,7 @@ export class PrintingNode extends Atomic {
       type: this.type,
       options: this.children.items.map(
         ([child, multiplicity]) => [
-          child instanceof Printing ? child.id : (child as PrintingNode).serialize(),
+          child instanceof Printing ? child.id : child.serialize(),
           multiplicity,
         ]
       )
@@ -230,21 +230,33 @@ export class TrapCollection {
 export class DistributionPossibility extends Atomic {
   createdAt: string;
   pdfUrl: null | string;
+  addedPdfUrl: null | string;
+  removedPdfUrl: null | string;
   trapCollection: TrapCollection;
   fitness: number;
+  addedTraps: TrapCollection;
+  removedTraps: TrapCollection;
 
   constructor(
     id: string,
     createdAt: string,
     pdfUrl: null | string,
+    addedPdfUrl: null | string,
+    removedPdfUrl: null | string,
     trapCollection: TrapCollection,
     fitness: number,
+    addedTraps: TrapCollection,
+    removedTraps: TrapCollection,
   ) {
     super(id);
     this.createdAt = createdAt;
     this.pdfUrl = pdfUrl;
+    this.addedPdfUrl = addedPdfUrl;
+    this.removedPdfUrl = removedPdfUrl;
     this.trapCollection = trapCollection;
     this.fitness = fitness;
+    this.addedTraps = addedTraps;
+    this.removedTraps = removedTraps;
   }
 
   public static fromRemote(remote: any): DistributionPossibility {
@@ -252,10 +264,18 @@ export class DistributionPossibility extends Atomic {
       remote.id,
       remote.created_at,
       remote.pdf_url,
+      remote.added_pdf_url,
+      remote.removed_pdf_url,
       TrapCollection.fromRemote(
         remote.trap_collection
       ),
       remote.fitness,
+      TrapCollection.fromRemote(
+        remote.added_traps
+      ),
+      TrapCollection.fromRemote(
+        remote.removed_traps
+      ),
     )
   }
 

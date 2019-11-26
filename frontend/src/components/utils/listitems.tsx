@@ -131,6 +131,7 @@ interface TrapListItemProps {
   onClick?: (trap: Trap, multiplicity: number) => void
 }
 
+
 export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
   const multiplicityIndicator =
     props.multiplicity && props.multiplicity !== 1 &&

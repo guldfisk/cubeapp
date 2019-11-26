@@ -37,6 +37,8 @@ interface ApplyPatchPageState {
   data: number[][]
   status: string
   errorMessage: string | null
+  delta: boolean
+  maxTrapDelta: number
 }
 
 
@@ -58,6 +60,8 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       data: [],
       status: 'prerun',
       errorMessage: null,
+      delta: false,
+      maxTrapDelta: 10,
     };
   }
 
@@ -157,6 +161,8 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       for (const possibility of possibilities) {
         if (possibility.id === message.possibility_id) {
           possibility.pdfUrl = message.url;
+          possibility.addedPdfUrl = message.added_url;
+          possibility.removedPdfUrl = message.removed_url;
           break;
         }
       }
@@ -173,6 +179,10 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
   };
 
   submitMessage = (message: any) => {
+    if (message.type == 'start') {
+      message.delta = this.state.delta;
+      message.max_trap_delta = this.state.maxTrapDelta;
+    }
     this.state.ws.send(JSON.stringify(message));
   };
 
@@ -186,7 +196,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     resuming: ['stop', 'pause'],
     paused: ['stop', 'resume', 'capture'],
     stopping: [],
-    completed: [],
+    completed: ['stop'],
     prerun: ['start'],
     stopped: ['start'],
     busy: ['start'],
@@ -206,21 +216,46 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         />
     );
 
-    let controlPanel = <div>
-      {
-        ApplyPatchPage.statusActionMap[this.state.status].map(
-          action => <Button
-            onClick={
-              () => {
-                this.submitMessage({type: action});
+    let controlPanel = <Col>
+      <Row>
+        {
+          ApplyPatchPage.statusActionMap[this.state.status].map(
+            action => <Button
+              onClick={
+                () => {
+                  this.submitMessage({type: action});
+                }
               }
+            >
+              {action}
+            </Button>
+          )
+        }
+      </Row>
+      {
+        ApplyPatchPage.statusActionMap[this.state.status].includes('start') ?
+          <>
+            <Row>
+              <label>Distribution type: </label>
+              <Button
+                onClick={() => this.setState({delta: !this.state.delta})}
+              >
+                {this.state.delta ? 'delta' : 'full'}
+              </Button>
+            </Row>
+            {
+              this.state.delta ?
+                <Row>
+                  <input
+                    type="number"
+                    defaultValue={this.state.maxTrapDelta.toString()}
+                    onChange={event => this.setState({maxTrapDelta: parseInt(event.target.value)})}
+                  />
+                </Row> : null
             }
-          >
-            {action}
-          </Button>
-        )
+          </> : null
       }
-    </div>;
+    </Col>;
 
     let patchView = <Loading/>;
     if (this.state.releasePatch !== null) {

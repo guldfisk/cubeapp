@@ -10,15 +10,12 @@ from django.conf import settings
 
 from proxypdf.write import ProxyWriter
 
-from mtgorp.models.serilization.strategies.jsonid import JsonId
-
 from mtgimg.interface import SizeSlug
 
 from magiccube.collections.laps import TrapCollection
 
 from api import models
 
-from resources.staticdb import db
 from resources.staticimageloader import image_loader
 
 
@@ -39,7 +36,12 @@ def generate_release_lap_images(cube_release_id: int):
 
 
 @shared_task()
-def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: SizeSlug = SizeSlug.MEDIUM):
+def generate_distribution_pdf(
+    patch_id: int,
+    possibility_id: int,
+    size_slug: SizeSlug = SizeSlug.MEDIUM,
+    include_changes_pdf: bool = False,
+):
     boto_session = session.Session()
     client = boto_session.client(
         's3',
@@ -51,48 +53,85 @@ def generate_distribution_pdf(patch_id: int, possibility_id: int, size_slug: Siz
 
     possibility = models.DistributionPossibility.objects.get(pk = possibility_id)
 
-    with tempfile.TemporaryFile() as f:
-        proxy_writer = ProxyWriter(file = f)
+    cube_traps = TrapCollection(possibility.release.cube.garbage_traps)
 
-        images = Promise.all(
+    unique_traps = frozenset(possibility.trap_collection) | frozenset(cube_traps)
+
+    def _helper(trap):
+        def _wrapped(img):
+            return trap, img
+        return _wrapped
+
+    images = dict(
+        Promise.all(
             tuple(
                 image_loader.get_image(
-                    lap,
+                    trap,
                     size_slug = size_slug,
                     save = False,
+                ).then(
+                    _helper(trap)
                 )
-                for lap in
-                possibility.trap_collection
+                for trap in
+                unique_traps
             )
         ).get()
+    )
 
-        for image in images:
-            proxy_writer.add_proxy(image)
+    pdfs = (
+        ('all', possibility.trap_collection, 'pdf_url'),
+    )
 
-        proxy_writer.save()
-
-        f.seek(0)
-
-        client.put_object(
-            Body = f,
-            Bucket = 'phdk',
-            Key = f'distributions/{possibility.trap_collection.persistent_hash()}.pdf',
-            ACL = 'public-read',
+    if include_changes_pdf:
+        pdfs += (
+            ('added', possibility.trap_collection - cube_traps, 'added_pdf_url'),
+            ('removed', cube_traps - possibility.trap_collection, 'removed_pdf_url'),
         )
 
-    pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/' \
-        f'{possibility.trap_collection.persistent_hash()}.pdf'
+    urls = {}
 
-    possibility.pdf_url = pdf_url
+    for name, traps, url_attribute_name in pdfs:
+        with tempfile.TemporaryFile() as f:
+            proxy_writer = ProxyWriter(file = f)
+
+            for trap in traps:
+                proxy_writer.add_proxy(images[trap])
+
+            proxy_writer.save()
+
+            f.seek(0)
+
+            storage_key = f'distributions/{possibility.trap_collection.persistent_hash()}_{name}.pdf'
+
+            client.put_object(
+                Body = f,
+                Bucket = 'phdk',
+                Key = storage_key,
+                ACL = 'public-read',
+            )
+
+            pdf_url = 'https://phdk.fra1.digitaloceanspaces.com/phdk/' + storage_key
+
+            urls[url_attribute_name] = pdf_url
+
+            setattr(
+                possibility,
+                url_attribute_name,
+                pdf_url
+            )
+
     possibility.save()
+
+    content = {
+        'type': 'distribution_pdf_update',
+        'possibility_id': possibility_id,
+    }
+
+    content.update(urls)
 
     async_to_sync(get_channel_layer().group_send)(
         f'distributor_{patch_id}',
-        {
-            'type': 'distribution_pdf_update',
-            'url': pdf_url,
-            'possibility_id': possibility_id,
-        },
+        content,
     )
 
 

@@ -7,6 +7,8 @@ from distutils.util import strtobool
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
+from magiccube.collections.laps import TrapCollection
+from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from api import models
@@ -183,8 +185,31 @@ class DistributionPossibilitySerializer(serializers.ModelSerializer):
     trap_collection = OrpSerializerField(
         model_serializer = orpserialize.TrapCollectionSerializer,
     )
-    pdf_url = serializers.CharField(allow_null=True)
+    added_traps = serializers.SerializerMethodField()
+    removed_traps = serializers.SerializerMethodField()
+
+    @classmethod
+    def get_added_traps(cls, obj: models.DistributionPossibility) -> compacted_model:
+        return orpserialize.TrapCollectionSerializer.serialize(
+            obj.trap_collection - TrapCollection(obj.release.cube.garbage_traps)
+        )
+
+    @classmethod
+    def get_removed_traps(cls, obj: models.DistributionPossibility) -> compacted_model:
+        return orpserialize.TrapCollectionSerializer.serialize(
+            TrapCollection(obj.release.cube.garbage_traps) - obj.trap_collection
+        )
 
     class Meta:
         model = models.DistributionPossibility
-        fields = ('id', 'created_at', 'pdf_url', 'trap_collection', 'fitness')
+        fields = (
+            'id',
+            'created_at',
+            'pdf_url',
+            'added_pdf_url',
+            'removed_pdf_url',
+            'trap_collection',
+            'fitness',
+            'added_traps',
+            'removed_traps',
+        )

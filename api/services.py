@@ -9,8 +9,9 @@ import threading
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+from evolution.environment import Environment
 from evolution.logging import LogFrame
-from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution
+from magiccube.laps.traps.distribute.algorithm import TrapDistribution, TrapCollectionIndividual
 from magiccube.laps.traps.distribute.distribute import DistributionWorker
 
 
@@ -90,9 +91,10 @@ class DistributionTask(threading.Thread):
         if self._worker:
             self._worker.stop()
 
-    def submit(self, distributor: Distributor):
+    def submit(self, distributor: Environment[TrapCollectionIndividual]):
         if self._is_working.is_set():
             return
+
         with self._submit_lock:
             self._worker = DistributionWorker(distributor, max_generations=self._max_generations)
             self._frames = []
@@ -103,6 +105,7 @@ class DistributionTask(threading.Thread):
     def cancel(self) -> None:
         if not self._is_working.is_set():
             return
+
         with self._submit_lock:
             self._worker.stop()
             self._is_working.clear()

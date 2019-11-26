@@ -99,12 +99,19 @@ class DistributionPossibility(models.Model):
     created_at = models.DateTimeField(default = now)
     trap_collection = OrpField(model_type = TrapCollection)
     pdf_url = models.CharField(max_length = 511, null = True)
+    added_pdf_url = models.CharField(max_length = 511, null = True)
+    removed_pdf_url = models.CharField(max_length = 511, null = True)
     patch_checksum = models.CharField(max_length = 255)
     distribution_checksum = models.CharField(max_length = 255)
     fitness = models.FloatField()
 
     patch = models.ForeignKey(
         CubePatch,
+        on_delete = models.CASCADE,
+    )
+
+    release = models.ForeignKey(
+        CubeRelease,
         on_delete = models.CASCADE,
     )
 

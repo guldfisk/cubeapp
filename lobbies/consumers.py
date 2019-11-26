@@ -4,7 +4,6 @@ import typing as t
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 from django.contrib.auth import get_user_model
-from django.db import transaction, IntegrityError
 from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
