@@ -358,28 +358,56 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         </Row>
         <Row>
           <Col>
-            <Button
-              onClick={
-                () => {
-                  if (this.state.distributionPossibility) {
-                    this.submitMessage(
-                      {
-                        type: 'apply',
-                        possibility_id: this.state.distributionPossibility.id,
-                      }
-                    )
-                  } else {
-                    this.submitMessage({type: 'apply'})
+            <Row>
+              <Button
+                onClick={
+                  () => {
+                    if (this.state.distributionPossibility) {
+                      this.submitMessage(
+                        {
+                          type: 'apply',
+                          possibility_id: null,
+                        }
+                      )
+                    } else {
+                      this.submitMessage({type: 'apply'})
 
+                    }
                   }
                 }
-              }
-              disabled={!this.state.releasePatch}
-              size='lg'
-              block
-            >
-              Apply
-            </Button>
+                disabled={!this.state.releasePatch}
+                size='lg'
+                block
+              >
+                Apply without distribution
+              </Button>
+            </Row>
+            {
+              this.state.distributionPossibility ? <Row>
+                <Button
+                  onClick={
+                    () => {
+                      if (this.state.distributionPossibility) {
+                        this.submitMessage(
+                          {
+                            type: 'apply',
+                            possibility_id: this.state.distributionPossibility.id,
+                          }
+                        )
+                      } else {
+                        this.submitMessage({type: 'apply'})
+
+                      }
+                    }
+                  }
+                  disabled={!this.state.releasePatch}
+                  size='lg'
+                  block
+                >
+                  Apply with distribution
+                </Button>
+              </Row> : null
+            }
           </Col>
         </Row>
       </Container>

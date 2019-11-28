@@ -83,6 +83,8 @@ class DistributionTask(threading.Thread):
         with self._lock:
             try:
                 del self._subscribers[key]
+                if not self._is_working.is_set() and not self._subscribers:
+                    self.stop()
             except KeyError:
                 pass
 
@@ -122,11 +124,11 @@ class DistributionTask(threading.Thread):
             or self._status == 'stopped'
             and not self._subscribers
         ):
-            if self._worker is None and not self._is_working.wait(5):
+            if self._worker is None and not self._is_working.wait(2):
                 continue
 
             try:
-                message = self._worker.message_queue.get(timeout = 5)
+                message = self._worker.message_queue.get(timeout = 2)
             except queue.Empty:
                 continue
 
