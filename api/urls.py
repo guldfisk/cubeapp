@@ -10,6 +10,7 @@ urlpatterns = [
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),
     path('cube-releases/<int:to_pk>/delta-from/<int:from_pk>/', views.release_delta),
+    path('cube-releases/<int:pk>/sample-pack/<int:size>/', views.sample_pack),
 
     path('images/<slug:pictured_id>/', views.image_view, name='image'),
     path('search/', views.SearchView.as_view(), name='search'),
@@ -37,6 +38,7 @@ urlpatterns = [
 
     path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),
     path('service/parse-constrained-node/', views.ParseConstrainedNodeEndpoint.as_view()),
+    # path('service/sample-pack')
     # path('services/printing-strings/', views.printing_strings),
 
 ]

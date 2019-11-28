@@ -572,6 +572,20 @@ class ListDistributionPossibilities(generics.ListAPIView):
 
 
 @api_view(['GET'])
+def sample_pack(request: Request, pk: int, size: int) -> Response:
+    try:
+        release = models.CubeRelease.objects.get(pk = pk)
+    except models.CubePatch.DoesNotExist:
+        return Response(status = status.HTTP_404_NOT_FOUND)
+
+    return Response(
+        orpserialize.CubeSerializer.serialize(
+            Cube(random.sample(release.cube.cubeables, size))
+        )
+    )
+
+
+@api_view(['GET'])
 def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
     try:
         to_release = models.CubeRelease.objects.get(pk = to_pk)
@@ -679,23 +693,23 @@ class ParseTrapEndpoint(generics.GenericAPIView):
         )
 
 
-@api_view(['GET', ])
-def printing_strings(request: Request) -> Response:
-    return Response(
-        [
-            printing.full_name()
-            for printing in
-            db.printings.values()
-        ]
-    )
-
-
-# TODO
-class CreateRevertPatchEndpoint(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated, ]
-
-    def post(self, request, pk: int, *args, **kwargs):
-        try:
-            patch = models.CubePatch.objects.get(pk = pk)
-        except models.CubePatch.DoesNotExist:
-            return Response(status = status.HTTP_404_NOT_FOUND)
+# @api_view(['GET', ])
+# def printing_strings(request: Request) -> Response:
+#     return Response(
+#         [
+#             printing.full_name()
+#             for printing in
+#             db.printings.values()
+#         ]
+#     )
+#
+#
+# # TODO
+# class CreateRevertPatchEndpoint(generics.GenericAPIView):
+#     permission_classes = [permissions.IsAuthenticated, ]
+#
+#     def post(self, request, pk: int, *args, **kwargs):
+#         try:
+#             patch = models.CubePatch.objects.get(pk = pk)
+#         except models.CubePatch.DoesNotExist:
+#             return Response(status = status.HTTP_404_NOT_FOUND)
