@@ -8,11 +8,16 @@ import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 interface CubeablesCollectionSpoilerViewProps {
   cubeablesContainer: CubeablesContainer
   cubeableType: string
+  sizeSlug: string
 }
 
 export default class CubeablesCollectionSpoilerView extends React.Component<CubeablesCollectionSpoilerViewProps> {
 
-  * groupsSortedChained(groups: IterableIterator<[Cubeable, number]>[]): IterableIterator<Cubeable> {
+  static defaultProps = {
+    sizeSlug: 'thumbnail',
+  };
+
+  *groupsSortedChained(groups: IterableIterator<[Cubeable, number]>[]): IterableIterator<Cubeable> {
     for (const group of groups) {
       for (
         const [cubeable, multiplicity] of Array.from(group).sort(
@@ -72,7 +77,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
           (cubeable) => {
             return <CubeableImage
               cubeable={cubeable}
-              sizeSlug="thumbnail"
+              sizeSlug={this.props.sizeSlug}
             />
           }
         )

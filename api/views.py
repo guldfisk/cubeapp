@@ -578,11 +578,14 @@ def sample_pack(request: Request, pk: int, size: int) -> Response:
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
-    return Response(
-        orpserialize.CubeSerializer.serialize(
-            Cube(random.sample(release.cube.cubeables, size))
+    try:
+        return Response(
+            orpserialize.CubeSerializer.serialize(
+                Cube(random.sample(release.cube.cubeables, size))
+            )
         )
-    )
+    except ValueError:
+        return Response('Pack to large', status = status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])

@@ -14,6 +14,7 @@ import Button from "react-bootstrap/Button";
 import {Modal} from "react-bootstrap";
 import ReleasesView from "../views/releaseview/ReleasesView";
 import history from '../routing/history';
+import {Link} from "react-router-dom";
 
 
 interface ReleaseSelectionDialogProps {
@@ -152,6 +153,11 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
             disabled={!this.state.release}
           >
             Compare
+          </Button>
+          <Button>
+            <Link to={'/release/' + this.props.match.params.id + '/sample-pack/'}>
+              Sample pack
+            </Link>
           </Button>
         </Row>
         <Row>

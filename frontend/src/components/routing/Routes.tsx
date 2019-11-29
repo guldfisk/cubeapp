@@ -19,6 +19,7 @@ import ReleaseComparePage from "../pages/ReleaseComparePage";
 import LatestReleasePage from "../pages/LatestReleasePage";
 import SearchSyntaxPage from "../pages/SearchSyntaxPage";
 import SearchPage from "../pages/SearchPage";
+import SamplePackPage from "../pages/SamplePackPage";
 
 export const routes: [
   string | undefined,
@@ -32,6 +33,7 @@ export const routes: [
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],
   ['/cube/:id(\\d+)', CubePage, false, {}],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
+  ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
   ['/invite', InvitePage, true, {}],

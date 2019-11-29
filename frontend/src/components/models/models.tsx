@@ -780,6 +780,14 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
+  public static samplePack = (id: string, size: number): Promise<CubeablesContainer> => {
+    return axios.get(
+      apiPath + 'cube-releases/' + id + '/sample-pack/' + size + '/'
+    ).then(
+      response => CubeablesContainer.fromRemote(response.data)
+    )
+  };
+
   filter = (query: string, flattened: boolean = false): Promise<CubeablesContainer> => {
     return axios.get(
       apiPath + 'cube-releases/' + this.id + '/filter/',
