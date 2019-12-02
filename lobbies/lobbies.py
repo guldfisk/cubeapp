@@ -123,7 +123,7 @@ class Lobby(object):
                             'lobbies': [
                                 lobby.name
                                 for lobby in
-                                self._lobbies.values()
+                                self._manager._lobbies.values()
                             ],
                         },
                     )

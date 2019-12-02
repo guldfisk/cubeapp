@@ -21,6 +21,7 @@ import SearchSyntaxPage from "../pages/SearchSyntaxPage";
 import SearchPage from "../pages/SearchPage";
 import SamplePackPage from "../pages/SamplePackPage";
 
+
 export const routes: [
   string | undefined,
   (typeof React.Component) | React.FunctionComponent,

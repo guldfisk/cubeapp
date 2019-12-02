@@ -87,6 +87,7 @@ class LobbyConsumer(AuthenticatedConsumer):
             LOBBY_MANAGER.group_name,
             self.channel_name,
         )
+        self.accept()
 
     def disconnect(self, code):
         super().disconnect(code)
@@ -117,5 +118,13 @@ class LobbyConsumer(AuthenticatedConsumer):
             {
                 'type': 'user_update',
                 'content': event['users']
+            }
+        )
+
+    def lobby_update(self, event) -> None:
+        self.send_json(
+            {
+                'type': 'lobby_update',
+                'content': event['lobbies']
             }
         )
