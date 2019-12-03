@@ -182,7 +182,7 @@ class SearchView(generics.ListAPIView):
             reverse = descending,
         )
 
-        return self.get_paginated_response(
+        response = self.get_paginated_response(
             [
                 serializer.serialize(printing)
                 for printing in
@@ -191,6 +191,9 @@ class SearchView(generics.ListAPIView):
                 )
             ]
         )
+
+        response.data['query_explained'] = pattern.matchable.explain()
+        return response
 
 
 @api_view(['GET'])
@@ -226,7 +229,8 @@ def filter_release_view(request: Request, pk: int) -> Response:
         cube = Cube(
             cubeables = release.cube.all_printings,
         )
-    else: cube = release.cube
+    else:
+        cube = release.cube
 
     return Response(
         orpserialize.CubeSerializer.serialize(
@@ -694,7 +698,6 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             status = status.HTTP_200_OK,
             content_type = 'application/json'
         )
-
 
 # @api_view(['GET', ])
 # def printing_strings(request: Request) -> Response:

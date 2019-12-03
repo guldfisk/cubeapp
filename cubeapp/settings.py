@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'knox',
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
+    'draft.apps.ApiConfig',
     'frontend.apps.FrontendConfig',
     # 'corsheaders',
     # 'django.contrib.admin',

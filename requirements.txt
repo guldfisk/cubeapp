@@ -3,6 +3,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/proxypdf.git#egg=proxypdf
 -e git+https://github.com/guldfisk/evolution.git#egg=evolution
 -e git+https://github.com/guldfisk/yeetlong.git#egg=yeetlong
+-e git+https://github.com/guldfisk/ring.git#egg=ring
 -e git+https://github.com/guldfisk/orp.git#egg=orp
 -e git+https://github.com/guldfisk/mtgorp.git#egg=mtgorp
 -e git+https://github.com/guldfisk/mtgimg.git#egg=mtgimg

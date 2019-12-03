@@ -33,6 +33,7 @@ interface SearchViewState {
   orderBy: string
   sortDirection: string
   errorMessage: string | null
+  queryExplained: string | null
 }
 
 
@@ -58,6 +59,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
       orderBy: props.orderBy,
       sortDirection: props.sortDirection,
       errorMessage: null,
+      queryExplained: null,
     }
   }
 
@@ -109,6 +111,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
             hits: response.data.count,
             offset,
             errorMessage: null,
+            queryExplained: response.data.query_explained,
           },
         );
       }
@@ -243,6 +246,10 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
           </Form>
 
         </Row>
+
+        {
+          this.state.queryExplained !== null ? <h4>{'where ' + this.state.queryExplained}</h4> : null
+        }
 
         <Row>
           <span>
