@@ -95,15 +95,15 @@ class LobbyConsumer(AuthenticatedConsumer):
             self._lobby.leave(self.scope['user'], self.channel_name)
 
     def _receive_message(self, message_type: str, content: t.Any) -> None:
-        if message_type == 'list':
-            self._send_message(
-                'list',
-                items = list(
-                    LOBBY_MANAGER.get_lobbies().keys()
-                ),
-            )
+        # if message_type == 'list':
+        #     self._send_message(
+        #         'list',
+        #         items = list(
+        #             LOBBY_MANAGER.get_lobbies().keys()
+        #         ),
+        #     )
 
-        elif message_type == 'create':
+        if message_type == 'create':
             name = content.get('name')
             if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
                 self._send_error('invalid request')
@@ -112,6 +112,9 @@ class LobbyConsumer(AuthenticatedConsumer):
                 self._lobby = LOBBY_MANAGER.create_lobby(name, self.scope['user'], self.channel_name)
             except LobbyManager.LobbyAlreadyExists:
                 self._send_error('lobby already exists')
+
+        else:
+            self._send_error('unknown command')
 
     def user_update(self, event) -> None:
         self.send_json(

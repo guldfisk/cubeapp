@@ -12,7 +12,9 @@ from ring import Ring
 
 from magiccube.collections.cube import Cube
 
-from draft.draft import Draft, Drafter
+from draft.draft import Draft, Drafter, DraftInterface
+
+from resources.staticdb import db
 
 
 User: DjangoUser = get_user_model()
@@ -42,6 +44,10 @@ class DraftSlot(object):
     def consumer(self) -> t.Optional[WebsocketConsumer]:
         with self._lock:
             return self._consumer
+
+    @property
+    def interface(self) -> DraftInterface:
+        return self._draft.get_draft_interface(self._drafter)
 
     def connect(self, consumer: WebsocketConsumer) -> None:
         with self._lock:
@@ -84,31 +90,47 @@ class DraftCoordinator(object):
         with self._lock:
             return self._drafters.get(key)
 
-    def start_draft(self, users: t.Iterable[User], cube: Cube) -> None:
-        drafters = Ring(
-            Drafter(
-                user.username,
-                uuid.uuid4(),
+    def start_draft(self, users: t.Iterable[User], cube: Cube) -> t.Tuple[t.Tuple[User, Drafter], ...]:
+        print('start draft')
+        drafters = tuple(
+            (
+                user,
+                Drafter(
+                    user.username,
+                    # uuid.uuid4(),
+                    uuid.UUID('13fc7b25-4c47-4f34-91ef-21ab17fab8f4'),
+                ),
             )
             for user in
             users
         )
+        print('drafters', drafters)
+        drafters_ring = Ring(
+            drafter
+            for _, drafter in
+            drafters
+        )
         draft = Draft(
             uuid.uuid4(),
-            drafters,
+            drafters_ring,
             cube,
+            db = db,
         )
+        print('draft', draft)
 
         with self._lock:
             self._drafts.add(draft)
 
-            for drafter in drafters.all:
+            for drafter in drafters_ring.all:
                 self._drafters[drafter.key] = DraftSlot(
                     draft,
                     drafter,
                 )
 
         draft.start()
+        print('started')
+
+        return drafters
 
     # def connect_drafter(self, draft_slot: DraftSlot, consumer: WebsocketConsumer) -> None:
     #     with self._lock:

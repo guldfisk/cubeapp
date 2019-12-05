@@ -28,6 +28,10 @@ class Drafter(object):
         self._key = key
 
     @property
+    def name(self) -> str:
+        return self._name
+
+    @property
     def key(self) -> uuid.UUID:
         return self._key
 
@@ -121,6 +125,10 @@ class DraftInterface(object):
     def booster_queue(self) -> Queue[Booster]:
         return self._booster_queue
 
+    @property
+    def pick_queue(self) -> Queue[cubeable]:
+        return self._pick_queue
+
     # @property
     # def in_queue(self):
     #     return self._pick_queue
@@ -184,8 +192,8 @@ class DraftInterface(object):
         else:
             pass
 
-    def run(self) -> None:
-        self._communicator.start()
+    def start(self) -> None:
+        # self._communicator.start()
         self._booster_pusher.start()
 
     def stop(self) -> None:
@@ -209,11 +217,32 @@ class DraftInterface(object):
             with self._current_booster_lock:
                 self._current_booster = booster
 
+            self._out_queue.put(
+                {
+                    'type': 'booster',
+                    'booster': RawStrategy.serialize(self._current_booster),
+                }
+            )
+
+            print(
+                'new booster arrived at {}: {}'.format(
+                    self._drafter.name,
+                    self._current_booster.cubeables,
+                )
+            )
+
             while not self._terminating.is_set():
                 try:
                     pick = self._pick_queue.get(timeout = 2)
                 except Empty:
                     continue
+
+                print(
+                    '{} picked {}'.format(
+                        self._drafter.name,
+                        pick,
+                    )
+                )
 
                 if not pick in self._current_booster.cubeables:
                     #TODO error
@@ -223,9 +252,12 @@ class DraftInterface(object):
                 # TODO put pick in pool
                 if self._current_booster.cubeables:
                     self.boost_out_queue.put(self._current_booster)
+                    print('pack sent on')
                 else:
                     self._draft.booster_empty(self._current_booster)
+                    print('pack empty; returned')
                 self._current_booster = None
+                break
 
 
 class Draft(object):
@@ -235,11 +267,13 @@ class Draft(object):
         key: uuid.UUID,
         drafters: Ring[Drafter],
         cube: Cube,
+        db: CardDatabase,
     ):
         self._key = key
 
         self._drafters = drafters
         self._cube = cube
+        self._db = db
 
         cubeables = random.sample(
             self._cube.cubeables,
@@ -262,6 +296,8 @@ class Draft(object):
             range(self._pack_amount)
         ]
 
+        self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
+
     @property
     def drafters(self) -> t.Iterable[Drafter]:
         return self._drafters.all
@@ -275,14 +311,47 @@ class Draft(object):
 
     @classmethod
     def get_booster_size_amount(cls, cube_size: int, amount_players: int) -> t.Tuple[int, int]:
-        amount_cards_per_player = 90 - (amount_players - 2) * (45 / 6)
-        pack_size = amount_players * 2 - 1
-        amount_packs = amount_cards_per_player // pack_size
-        amount_packs -= max(((amount_packs * pack_size) - cube_size) // pack_size, 0)
-        return int(amount_packs), int(pack_size)
+        # amount_cards_per_player = 90 - (amount_players - 2) * (45 / 6)
+        # pack_size = amount_players * 2 - 1
+        # amount_packs = amount_cards_per_player // pack_size
+        # amount_packs -= max(((amount_packs * pack_size) - cube_size) // pack_size, 0)
+        # return int(amount_packs), int(pack_size)
+        return 2, 2
+
+    def get_draft_interface(self, drafter: Drafter) -> DraftInterface:
+        return self._drafter_interfaces[drafter]
+
+    def _chain_booster_queue(self, clockwise: bool) -> None:
+        for drafter, interface in self._drafter_interfaces.items():
+            interface.boost_out_queue = self._drafter_interfaces[
+                self._drafters.after(
+                    drafter
+                )
+            ].booster_queue
+
+    def _administer_boosters(self) -> None:
+        for interface in self._drafter_interfaces.values():
+            interface.booster_queue.put(
+                self._boosters.pop()
+            )
 
     def start(self) -> None:
-        pass
+        print('draft start')
+        self._drafter_interfaces = {
+            drafter: DraftInterface(
+                drafter = drafter,
+                db = self._db,
+                draft = self,
+            )
+            for drafter in
+            self._drafters.all
+        }
+        for interface in self._drafter_interfaces.values():
+            interface.start()
+
+        self._chain_booster_queue(True)
+        self._administer_boosters()
+        print('draft started')
 
 
 class ConnectionInterface(object):
