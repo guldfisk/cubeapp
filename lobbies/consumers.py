@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby
+from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby, CreateLobbyException, JoinLobbyException
 
 
 class MessageConsumer(JsonWebsocketConsumer):
@@ -92,35 +92,67 @@ class LobbyConsumer(AuthenticatedConsumer):
     def disconnect(self, code):
         super().disconnect(code)
         if self._lobby is not None:
-            self._lobby.leave(self.scope['user'], self.channel_name)
+            self._lobby.leave(self.scope['user'])
+
+    def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
+        self._send_message(
+            'all_lobbies',
+            lobbies = [
+                lobby.serialize()
+                for lobby in
+                LOBBY_MANAGER.get_lobbies().values()
+            ],
+        )
 
     def _receive_message(self, message_type: str, content: t.Any) -> None:
-        # if message_type == 'list':
-        #     self._send_message(
-        #         'list',
-        #         items = list(
-        #             LOBBY_MANAGER.get_lobbies().keys()
-        #         ),
-        #     )
-
         if message_type == 'create':
             name = content.get('name')
             if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
                 self._send_error('invalid request')
                 return
             try:
-                self._lobby = LOBBY_MANAGER.create_lobby(name, self.scope['user'], self.channel_name)
-            except LobbyManager.LobbyAlreadyExists:
-                self._send_error('lobby already exists')
+                self._lobby = LOBBY_MANAGER.create_lobby(name, self.scope['user'], 8)
+            except CreateLobbyException as e:
+                self._send_error(str(e))
+
+        elif message_type == 'join':
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            try:
+                lobby.join(self.scope['user'])
+            except JoinLobbyException as e:
+                self._send_error(e)
+                return
+
+        elif message_type == 'leave':
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            try:
+                lobby.leave(self.scope['user'])
+            except JoinLobbyException as e:
+                self._send_error(str(e))
+                return
 
         else:
             self._send_error('unknown command')
 
-    def user_update(self, event) -> None:
+    def lobby_created(self, event) -> None:
         self.send_json(
             {
-                'type': 'user_update',
-                'content': event['users']
+                'type': 'lobby_created',
+                **event,
             }
         )
 
@@ -128,6 +160,14 @@ class LobbyConsumer(AuthenticatedConsumer):
         self.send_json(
             {
                 'type': 'lobby_update',
-                'content': event['lobbies']
+                **event,
+            }
+        )
+
+    def lobbies_closed(self, event) -> None:
+        self.send_json(
+            {
+                'type': 'lobby_closed',
+                **event,
             }
         )

@@ -242,12 +242,12 @@ class DraftConsumer(MessageConsumer):
     #     if message_type == 'join_draft':
     #         pass
 
-from api import models
-user = get_user_model().objects.get(username='root')
-cube = models.CubeRelease.objects.get(pk=14).cube
-drafters = DRAFT_COORDINATOR.start_draft(
-    (user,),
-    cube,
-)
-for user, drafter in drafters:
-    print(user.username, drafter.key)
+# from api import models
+# user = get_user_model().objects.get(username='root')
+# cube = models.CubeRelease.objects.get(pk=14).cube
+# drafters = DRAFT_COORDINATOR.start_draft(
+#     (user,),
+#     cube,
+# )
+# for user, drafter in drafters:
+#     print(user.username, drafter.key)
