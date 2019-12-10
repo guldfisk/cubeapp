@@ -161,6 +161,7 @@ class Lobby(object):
                     },
                 )
             else:
+                print('lobby abandoned')
                 with self._manager._lock:
                     del self._manager._lobbies[self._name]
                     async_to_sync(self._manager.channel_layer.group_send)(

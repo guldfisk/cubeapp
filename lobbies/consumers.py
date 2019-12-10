@@ -164,7 +164,7 @@ class LobbyConsumer(AuthenticatedConsumer):
             }
         )
 
-    def lobbies_closed(self, event) -> None:
+    def lobby_closed(self, event) -> None:
         self.send_json(
             {
                 'type': 'lobby_closed',
