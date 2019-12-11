@@ -53,20 +53,18 @@ _deserialize_type_map = {
 
 
 class Booster(Serializeable):
-    _id_counter = 0
 
     def __init__(self, cubeables: t.Iterable[cubeable]):
         self._cubeables = Multiset(cubeables)
-        self._id = self._id_counter
-        Booster._id_counter += 1
+        self._booster_id = uuid.uuid4()
 
     @property
     def cubeables(self) -> Multiset[cubeable]:
         return self._cubeables
 
     @property
-    def id(self):
-        return self._id
+    def booster_id(self) -> uuid.UUID:
+        return self._booster_id
 
     def serialize(self) -> serialization_model:
         return [
@@ -88,12 +86,12 @@ class Booster(Serializeable):
         )
 
     def __hash__(self) -> int:
-        return hash(self._id)
+        return hash(self._booster_id)
 
     def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._id == other._id
+            and self._booster_id == other._booster_id
         )
 
 

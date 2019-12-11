@@ -1,5 +1,6 @@
 import re
 import typing as t
+from distutils.util import strtobool
 
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -7,7 +8,8 @@ from django.contrib.auth import get_user_model
 from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby, CreateLobbyException, JoinLobbyException
+from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby, CreateLobbyException, JoinLobbyException, \
+    ReadyException, StartGameException
 
 
 class MessageConsumer(JsonWebsocketConsumer):
@@ -80,7 +82,6 @@ class LobbyConsumer(AuthenticatedConsumer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._lobby: t.Optional[Lobby] = None
 
     def connect(self):
         async_to_sync(self.channel_layer.group_add)(
@@ -91,14 +92,14 @@ class LobbyConsumer(AuthenticatedConsumer):
 
     def disconnect(self, code):
         super().disconnect(code)
-        if self._lobby is not None:
-            self._lobby.leave(self.scope['user'])
+        if self._token:
+            LOBBY_MANAGER.leave_all_lobbies(self.scope['user'])
 
     def _on_user_authenticated(self, auth_token: t.AnyStr, user: get_user_model()) -> None:
         self._send_message(
             'all_lobbies',
             lobbies = [
-                lobby.serialize()
+                lobby.serialize_with_key(self.scope['user'])
                 for lobby in
                 LOBBY_MANAGER.get_lobbies().values()
             ],
@@ -111,7 +112,7 @@ class LobbyConsumer(AuthenticatedConsumer):
                 self._send_error('invalid request')
                 return
             try:
-                self._lobby = LOBBY_MANAGER.create_lobby(name, self.scope['user'], 8)
+                LOBBY_MANAGER.create_lobby(name, self.scope['user'], 8)
             except CreateLobbyException as e:
                 self._send_error(str(e))
 
@@ -127,7 +128,7 @@ class LobbyConsumer(AuthenticatedConsumer):
             try:
                 lobby.join(self.scope['user'])
             except JoinLobbyException as e:
-                self._send_error(e)
+                self._send_error(str(e))
                 return
 
         elif message_type == 'leave':
@@ -142,6 +143,40 @@ class LobbyConsumer(AuthenticatedConsumer):
             try:
                 lobby.leave(self.scope['user'])
             except JoinLobbyException as e:
+                self._send_error(str(e))
+                return
+
+        elif message_type == 'ready':
+            state = content.get('state')
+            if not isinstance(state, bool):
+                self._send_error('invalid ready state')
+                return
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            try:
+                lobby.set_ready(self.scope['user'], state)
+            except ReadyException as e:
+                self._send_error(str(e))
+                return
+
+        elif message_type == 'start':
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            try:
+                lobby.start_game(self.scope['user'], **content)
+            except StartGameException as e:
                 self._send_error(str(e))
                 return
 
@@ -169,5 +204,14 @@ class LobbyConsumer(AuthenticatedConsumer):
             {
                 'type': 'lobby_closed',
                 **event,
+            }
+        )
+
+    def game_started(self, event) -> None:
+        self.send_json(
+            {
+                'type': 'game_started',
+                'lobby': event['lobby'],
+                'key': event['keys'].get(self.scope['user'].username),
             }
         )

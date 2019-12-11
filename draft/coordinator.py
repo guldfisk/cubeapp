@@ -97,8 +97,7 @@ class DraftCoordinator(object):
                 user,
                 Drafter(
                     user.username,
-                    # uuid.uuid4(),
-                    uuid.UUID('13fc7b25-4c47-4f34-91ef-21ab17fab8f4'),
+                    uuid.uuid4(),
                 ),
             )
             for user in
