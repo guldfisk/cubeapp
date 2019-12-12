@@ -9,7 +9,7 @@ from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby, CreateLobbyException, JoinLobbyException, \
-    ReadyException, StartGameException
+    ReadyException, StartGameException, SetOptionsException
 
 
 class MessageConsumer(JsonWebsocketConsumer):
@@ -175,8 +175,27 @@ class LobbyConsumer(AuthenticatedConsumer):
                 self._send_error('no lobby with that name')
                 return
             try:
-                lobby.start_game(self.scope['user'], **content)
+                lobby.start_game(self.scope['user'])
             except StartGameException as e:
+                self._send_error(str(e))
+                return
+
+        elif message_type == 'options':
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            options = content.get('options')
+            if options is None:
+                self._send_error('invalid options')
+                return
+            try:
+                lobby.set_options(self.scope['user'], options)
+            except SetOptionsException as e:
                 self._send_error(str(e))
                 return
 

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
     'draft.apps.ApiConfig',
+    'sealed.apps.ApiConfig',
     'frontend.apps.FrontendConfig',
     # 'corsheaders',
     # 'django.contrib.admin',

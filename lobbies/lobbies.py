@@ -44,6 +44,10 @@ class StartGameException(LobbyException):
     pass
 
 
+class SetOptionsException(LobbyException):
+    pass
+
+
 class LobbyManager(object):
 
     def __init__(self):
@@ -102,11 +106,14 @@ class LobbyManager(object):
 
 class Lobby(object):
 
-    def __init__(self, manager: LobbyManager, name: str, owner: AbstractUser, size: int):
+    def __init__(self, manager: LobbyManager, name: str, owner: AbstractUser, size: int, options: t.Any = None):
         self._manager = manager
         self._name = name
         self._owner = owner
         self._size = size
+        self._options = self._validate_options(
+            {} if options is None else options
+        )
 
         self._state: LobbyState = LobbyState.PRE_GAME
         self._users: t.MutableMapping[AbstractUser, bool] = {}
@@ -130,6 +137,10 @@ class Lobby(object):
     def state(self) -> LobbyState:
         return self._state
 
+    @property
+    def options(self) -> t.Any:
+        return self._options
+
     def _serialize_user(self, user: AbstractUser) -> t.Any:
         return {
             'username': user.username,
@@ -143,6 +154,7 @@ class Lobby(object):
             'state': self._state.value,
             'size': self._size,
             'users': list(map(self._serialize_user, self._users)),
+            'options': self._options,
         }
 
     def serialize_with_key(self, user: AbstractUser):
@@ -168,7 +180,34 @@ class Lobby(object):
                     },
                 )
 
-    def start_game(self, user: AbstractUser, **kwargs) -> None:
+    def _validate_options(self, options: t.Any):
+        # TODO this should be an external setting or something. Maybe just have an abstract datamodel.
+        if not isinstance(options, t.MutableMapping):
+            raise SetOptionsException('invalid options type')
+
+        if 'game_type' in options:
+            if not options['game_type'] in ('draft', 'sealed'):
+                raise SetOptionsException('invalid value for option "game_type"')
+        else:
+            options['game_type'] = 'draft'
+
+        return options
+
+    def set_options(self,user: AbstractUser,  options: t.Any) -> None:
+        if user != self._owner:
+            raise SetOptionsException('only lobby owner can modify lobby options')
+
+        with self._lock:
+            self._options = self._validate_options(options)
+            async_to_sync(self._manager.channel_layer.group_send)(
+                self._manager.group_name,
+                {
+                    'type': 'lobby_update',
+                    'lobby': self.serialize(),
+                },
+            )
+
+    def start_game(self, user: AbstractUser) -> None:
         with self._lock:
             if user != self._owner:
                 raise StartGameException('not allowed: only lobby owner can start game')

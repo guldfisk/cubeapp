@@ -49,6 +49,7 @@ from api.mail import send_mail
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 
+
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
     'Trap': Trap,
