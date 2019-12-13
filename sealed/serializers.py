@@ -14,4 +14,4 @@ class PoolSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Pool
-        fields = ('user', 'pool')
+        fields = ('key', 'user', 'pool')

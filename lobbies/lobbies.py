@@ -16,6 +16,7 @@ from django.contrib.auth.models import AbstractUser
 
 from api import models
 from draft.coordinator import DRAFT_COORDINATOR
+from sealed.models import SealedSession
 
 
 class LobbyState(Enum):
@@ -181,7 +182,7 @@ class Lobby(object):
                 )
 
     def _validate_options(self, options: t.Any):
-        # TODO this should be an external setting or something. Maybe just have an abstract datamodel.
+        # TODO this should be an external setting or something. Maybe just have an abstract data model.
         if not isinstance(options, t.MutableMapping):
             raise SetOptionsException('invalid options type')
 
@@ -196,6 +197,9 @@ class Lobby(object):
     def set_options(self,user: AbstractUser,  options: t.Any) -> None:
         if user != self._owner:
             raise SetOptionsException('only lobby owner can modify lobby options')
+
+        if self._state != LobbyState.PRE_GAME:
+            raise StartGameException('cannot modify options after pre-game')
 
         with self._lock:
             self._options = self._validate_options(options)
@@ -220,7 +224,7 @@ class Lobby(object):
 
             self._state = LobbyState.GAME
 
-            cube = models.CubeRelease.objects.get(pk = 14).cube
+            release = models.CubeRelease.objects.get(pk = 14)
 
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
@@ -230,13 +234,24 @@ class Lobby(object):
                 },
             )
 
-            keys = DRAFT_COORDINATOR.start_draft(self._users, cube)
-            self._keys = {
-                user: str(drafter.key)
-                for user, drafter in
-                keys
-            }
-
+            if self._options.get('game_type') == 'draft':
+                keys = DRAFT_COORDINATOR.start_draft(self._users, release.cube)
+                self._keys = {
+                    user: str(drafter.key)
+                    for user, drafter in
+                    keys
+                }
+            else:
+                self._keys = {
+                    user: str(uuid.uuid4())
+                    for user in
+                    self._users
+                }
+                SealedSession.generate(
+                    release,
+                    self._keys.items(),
+                    90,
+                )
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {

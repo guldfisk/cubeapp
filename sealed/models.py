@@ -22,8 +22,9 @@ class SealedSession(models.Model):
     pool_size = models.PositiveSmallIntegerField()
     release = models.ForeignKey(CubeRelease, on_delete = models.CASCADE, related_name = 'sealed_sessions')
 
+    @classmethod
     def generate(
-        self,
+        cls,
         release: CubeRelease,
         users: t.Iterable[t.Tuple[AbstractUser, str]],
         pool_size: int,
@@ -35,7 +36,7 @@ class SealedSession(models.Model):
         cubeables = list(release.cube.cubeables)
         random.shuffle(cubeables)
 
-        sealed_session = self.objects.create(
+        sealed_session = cls.objects.create(
             release = release,
             pool_size = pool_size,
         )
