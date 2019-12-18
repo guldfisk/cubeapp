@@ -12,6 +12,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/mocknames.git#egg=mocknames
 -e git+https://github.com/guldfisk/secretresources.git#egg=secretresources
 -e git+https://github.com/guldfisk/sheetclient.git#egg=sheetclient
+-e git+https://github.com/guldfisk/mkmcheck.git#egg=mkmcheck
 lazy-property
 multiset
 appdirs

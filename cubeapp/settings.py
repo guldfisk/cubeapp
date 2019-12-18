@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'draft.apps.ApiConfig',
     'sealed.apps.ApiConfig',
     'frontend.apps.FrontendConfig',
+    'wishlist.apps.WishListConfig'
     # 'corsheaders',
     # 'django.contrib.admin',
     'django.contrib.auth',

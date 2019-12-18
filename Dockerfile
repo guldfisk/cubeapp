@@ -15,6 +15,4 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x -o /tmp/nodesource_setup.sh
 RUN bash /tmp/nodesource_setup.sh
 RUN apt-get update && apt-get install nodejs
 
-#RUN python3 -m mtgorp.db.init
-
 CMD ["bash", "./entrypoint.sh"]
