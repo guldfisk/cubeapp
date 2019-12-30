@@ -34,7 +34,7 @@ export const routes: [
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],
   ['/cube/:id(\\d+)', CubePage, false, {}],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
-  ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
+  ['/2/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
   ['/invite', InvitePage, true, {}],
