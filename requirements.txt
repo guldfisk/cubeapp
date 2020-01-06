@@ -13,6 +13,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/secretresources.git#egg=secretresources
 -e git+https://github.com/guldfisk/sheetclient.git#egg=sheetclient
 -e git+https://github.com/guldfisk/mkmcheck.git#egg=mkmcheck
+-e git+https://github.com/guldfisk/django-typed-models.git#egg=django-typed-models
 lazy-property
 multiset
 appdirs
@@ -41,4 +42,3 @@ celery
 redis
 channels_rabbitmq
 channels_redis==2.2.1
-django-typed-models
