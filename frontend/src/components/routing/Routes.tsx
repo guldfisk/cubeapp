@@ -20,6 +20,7 @@ import LatestReleasePage from "../pages/LatestReleasePage";
 import SearchSyntaxPage from "../pages/SearchSyntaxPage";
 import SearchPage from "../pages/SearchPage";
 import SamplePackPage from "../pages/SamplePackPage";
+import WishListPage from "../pages/WishListPage";
 
 
 export const routes: [
@@ -53,6 +54,7 @@ export const routes: [
       )
     }
   ],
+  ['/wishlist/:id(\\d+)/', WishListPage, false, {}],
   ['/about', AboutPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

@@ -1,3 +1,5 @@
+import datetime
+import itertools
 from distutils.util import strtobool
 
 from django.db import models
@@ -6,34 +8,70 @@ from typedmodels.models import TypedModel
 
 from mtgorp.models.persistent.attributes.borders import Border
 from utils.fields import EnumField
+from utils.mixins import TimestampedModel
+from utils.values import JAVASCRIPT_DATETIME_FORMAT
 from wishlist.values import Condition, Language
 
 
-class WishList(models.Model):
-    created_at = models.DateTimeField(auto_now = True, editable = False)
+class WishList(TimestampedModel, models.Model):
+    name = models.CharField(max_length = 255)
+
+    @property
+    def last_updated(self):
+        return max(
+            itertools.chain(
+                (self.updated_at,),
+                (
+                    wish.last_updated
+                    for wish in
+                    self.wishes.all()
+                )
+            )
+        )
 
 
-class Wish(models.Model):
+class Wish(TimestampedModel, models.Model):
     wish_list = models.ForeignKey(WishList, on_delete = models.CASCADE, related_name = 'wishes')
     weight = models.PositiveSmallIntegerField(default = 1)
 
+    @property
+    def last_updated(self):
+        return max(
+            itertools.chain(
+                (self.updated_at,),
+                (
+                    cardboard_wish.last_updated
+                    for cardboard_wish in
+                    self.cardboard_wishes.all()
+                )
+            )
+        )
 
-class CardboardWish(models.Model):
+
+class CardboardWish(TimestampedModel, models.Model):
     cardboard_name = models.CharField(max_length = 255)
     minimum_amount = models.PositiveSmallIntegerField(default = 1)
     wish = models.ForeignKey(Wish, on_delete = models.CASCADE, related_name = 'cardboard_wishes')
 
-    # class Meta:
-    #     unique_together = ('cardboard_name', 'wish')
+    @property
+    def last_updated(self):
+        return max(
+            itertools.chain(
+                (self.updated_at,),
+                self.requirements.all().values_list('updated_at', flat = True),
+            )
+        )
 
 
-class Requirement(TypedModel):
+class Requirement(TimestampedModel, TypedModel):
     cardboard_wish = models.ForeignKey(CardboardWish, on_delete = models.CASCADE, related_name = 'requirements')
 
     def serialize(self):
         return {
             'id': self.id,
             'type': self.__class__.__name__,
+            'created_at': self.created_at.strftime(JAVASCRIPT_DATETIME_FORMAT),
+            'updated_at': self.updated_at.strftime(JAVASCRIPT_DATETIME_FORMAT),
         }
 
     @classmethod
@@ -43,6 +81,11 @@ class Requirement(TypedModel):
 
 class FromExpansions(Requirement):
     pass
+
+
+class ExpansionCode(models.Model):
+    code = models.CharField(max_length = 7)
+    requirement = models.ForeignKey(FromExpansions, on_delete = models.CASCADE, related_name = 'expansion_codes')
 
 
 class IsBorder(Requirement):

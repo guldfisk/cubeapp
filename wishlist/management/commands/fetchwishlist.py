@@ -5,8 +5,10 @@ from django.core.management.base import BaseCommand
 import mkmcheck
 from mkmcheck.model import models
 from mkmcheck.wishload.fetch import WishListFetcher
-from wishlist.models import WishList, Wish, CardboardWish, Requirement, IsBorder, IsMinimumCondition, IsLanguage, \
-    IsFoil, IsAltered, IsSigned
+from wishlist.models import (
+    WishList, Wish, CardboardWish, IsBorder, IsMinimumCondition, IsLanguage,
+    IsFoil, IsAltered, IsSigned, FromExpansions, ExpansionCode
+)
 
 
 class Command(BaseCommand):
@@ -20,6 +22,11 @@ class Command(BaseCommand):
 
         if isinstance(requirement, models.IsBorder):
             IsBorder.objects.create(border = requirement.border, cardboard_wish = cardboard_wish)
+
+        elif isinstance(requirement, models.FromExpansions):
+            _requirement = FromExpansions.objects.create(cardboard_wish = cardboard_wish)
+            for code in requirement.expansion_codes:
+                ExpansionCode.objects.create(code = code, requirement = _requirement)
 
         elif isinstance(requirement, models.IsMinimumCondition):
             IsMinimumCondition.objects.create(condition = requirement.condition, cardboard_wish = cardboard_wish)
@@ -76,5 +83,3 @@ class Command(BaseCommand):
         converted_wish_list = self._convert_wish_list(fetched_wish_list)
 
         print(converted_wish_list)
-
-

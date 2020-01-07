@@ -1,0 +1,9 @@
+.hide-header thead {
+    visibility: collapse;
+}
+.light-table {
+    background-color: #333333;
+}
+.dark-table {
+    background-color: #222222;
+}
