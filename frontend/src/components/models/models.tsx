@@ -28,7 +28,16 @@ interface Remoteable<T> {
 }
 
 
-export class Cubeable extends Atomic {
+export class Imageable extends Atomic {
+
+  getType = (): string => {
+    return 'Imageable';
+  };
+
+}
+
+
+export class Cubeable extends Imageable {
 
   getType = (): string => {
     return 'Cubeable';
@@ -58,6 +67,37 @@ export class Expansion extends Atomic {
 }
 
 
+export class Cardboard extends Imageable {
+  name: string;
+  color: string[];
+  types: string[];
+
+  constructor(id: string, color: string[], types: string[]) {
+    super(id);
+    this.name = id;
+    this.color = color;
+    this.types = types;
+  }
+
+  public static fromRemote(remote: any): Cardboard {
+    return new Cardboard(
+      remote.id,
+      remote.color,
+      remote.types,
+    )
+  }
+
+  getType = (): string => {
+    return 'Cardboard'
+  };
+
+  getSortValue = (): string => {
+    return this.name;
+  };
+
+}
+
+
 export class Printing extends Cubeable {
   name: string;
   expansion: Expansion;
@@ -74,7 +114,7 @@ export class Printing extends Cubeable {
 
   public static fromRemote(remote: any): Printing {
     return new Printing(
-      remote.id,
+      remote.id.toString(),
       remote.name,
       Expansion.fromRemote(remote.expansion),
       remote.color,
@@ -1443,18 +1483,41 @@ export class Requirement {
   };
 
   public static fromRemote(remote: any): Requirement {
-    return (
-      {
-        IsBorder: IsBorder,
-        FromExpansions: FromExpansions,
-        IsMinimumCondition: IsMinimumCondition,
-        IsLanguage: IsLanguage,
-        IsFoil: IsFoil,
-        IsAltered: IsAltered,
-        IsSigned: IsSigned,
-      } as { [key: string]: Remoteable<Requirement> }
-    )[remote.type].fromRemote(remote)
+    return requirementTypeMap[remote.type].fromRemote(remote)
   }
+
+  serialize = (): any => {
+    return {}
+  };
+
+  create = (cardboardWishId: string): Promise<void> => {
+    return axios.post(
+      apiPath + 'wishlist/requirement/',
+      {
+        cardboard_wish_id: cardboardWishId,
+        ...this.serialize(),
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
+  public static delete(id: string): Promise<void> {
+    return axios.delete(
+      apiPath + 'wishlist/requirement/' + id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
 
 }
 
@@ -1473,6 +1536,13 @@ export class IsBorder extends Requirement {
 
   value = (): string => {
     return this.border;
+  };
+
+  serialize = (): any => {
+    return {
+      type: 'IsBorder',
+      border: this.border,
+    }
   };
 
   public static fromRemote(remote: any): IsBorder {
@@ -1500,6 +1570,13 @@ export class FromExpansions extends Requirement {
 
   value = (): string => {
     return this.expansionCodes.join(', ');
+  };
+
+  serialize = (): any => {
+    return {
+      type: 'FromExpansions',
+      expansions: this.expansionCodes,
+    }
   };
 
   public static fromRemote(remote: any): FromExpansions {
@@ -1530,6 +1607,13 @@ export class IsMinimumCondition extends Requirement {
     return this.condition;
   };
 
+  serialize = (): any => {
+    return {
+      type: 'IsMinimumCondition',
+      condition: this.condition,
+    }
+  };
+
   public static fromRemote(remote: any): IsMinimumCondition {
     return new IsMinimumCondition(
       remote.id,
@@ -1556,6 +1640,13 @@ export class IsLanguage extends Requirement {
 
   value = (): string => {
     return this.language;
+  };
+
+  serialize = (): any => {
+    return {
+      type: 'IsLanguage',
+      language: this.language,
+    }
   };
 
   public static fromRemote(remote: any): IsLanguage {
@@ -1586,6 +1677,13 @@ export class IsFoil extends Requirement {
     return this.isFoil;
   };
 
+  serialize = (): any => {
+    return {
+      type: 'IsFoil',
+      is_foil: this.isFoil,
+    }
+  };
+
   public static fromRemote(remote: any): IsFoil {
     return new IsFoil(
       remote.id,
@@ -1612,6 +1710,13 @@ export class IsAltered extends Requirement {
 
   value = (): string => {
     return this.isAltered;
+  };
+
+  serialize = (): any => {
+    return {
+      type: 'IsAltered',
+      is_altered: this.isAltered,
+    }
   };
 
   public static fromRemote(remote: any): IsAltered {
@@ -1642,6 +1747,13 @@ export class IsSigned extends Requirement {
     return this.isSigned;
   };
 
+  serialize = (): any => {
+    return {
+      type: 'IsSigned',
+      is_signed: this.isSigned,
+    }
+  };
+
   public static fromRemote(remote: any): IsSigned {
     return new IsSigned(
       remote.id,
@@ -1654,9 +1766,20 @@ export class IsSigned extends Requirement {
 }
 
 
+export const requirementTypeMap: { [key: string]: Remoteable<Requirement> } = {
+  IsBorder: IsBorder,
+  FromExpansions: FromExpansions,
+  IsMinimumCondition: IsMinimumCondition,
+  IsLanguage: IsLanguage,
+  IsFoil: IsFoil,
+  IsAltered: IsAltered,
+  IsSigned: IsSigned,
+};
+
+
 export class CardboardWish {
   id: string;
-  cardboardName: string;
+  cardboard: Cardboard;
   minimumAmount: number;
   createdAt: string;
   updatedAt: string;
@@ -1664,14 +1787,14 @@ export class CardboardWish {
 
   constructor(
     id: string,
-    cardboardName: string,
+    cardboard: Cardboard,
     minimumAmount: number,
     createdAt: string,
     updatedAt: string,
     requirements: Requirement[],
   ) {
     this.id = id;
-    this.cardboardName = cardboardName;
+    this.cardboard = cardboard;
     this.minimumAmount = minimumAmount;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
@@ -1681,7 +1804,7 @@ export class CardboardWish {
   public static fromRemote(remote: any): CardboardWish {
     return new CardboardWish(
       remote.id,
-      remote.cardboard_name,
+      Cardboard.fromRemote(remote.cardboard),
       remote.minimum_amount,
       remote.created_at,
       remote.updated_at,
@@ -1690,6 +1813,68 @@ export class CardboardWish {
       ),
     )
   }
+
+  public static create(
+    wishId: string,
+    values: { [key: string]: string },
+    requirements: Requirement[] | null = null,
+  ): Promise<any> {
+    let cardboardWish = axios.post(
+      apiPath + 'wishlist/cardboard-wish/',
+      {
+        wish_id: wishId,
+        ...values,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    );
+    if (requirements === null) {
+      return cardboardWish
+    }
+
+    return cardboardWish.then(
+      response => {
+        return Promise.all(
+          requirements.map(
+            requirement => requirement.create(response.data.id)
+          )
+        )
+      }
+    );
+
+  };
+
+  public static update(id: string, values: { [key: string]: string }): Promise<CardboardWish> {
+    return axios.patch(
+      apiPath + 'wishlist/cardboard-wish/' + id + '/',
+      values,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => CardboardWish.fromRemote(response.data)
+    )
+  };
+
+  public static delete(id: string): Promise<void> {
+    return axios.delete(
+      apiPath + 'wishlist/cardboard-wish/' + id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
 
 }
 
@@ -1700,7 +1885,6 @@ export class Wish {
   cardboardWishes: CardboardWish[];
   createdAt: string;
   updatedAt: string;
-
 
   constructor(id: string, weight: number, cardboardWishes: CardboardWish[], createdAt: string, updatedAt: string) {
     this.id = id;
@@ -1732,21 +1916,34 @@ export class Wish {
         }
       },
     )
-  }
+  };
+
+  public static update(id: string, values: { [key: string]: string }): Promise<Wish> {
+    return axios.patch(
+      apiPath + 'wishlist/wish/' + id + '/',
+      values,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => Wish.fromRemote(response.data)
+    )
+  };
 
 }
 
 
 export class WishList {
   id: string;
-  wishes: Wish[];
   createdAt: string;
   updatedAt: string;
 
 
-  constructor(id: string, wishes: Wish[], createdAt: string, updatedAt: string) {
+  constructor(id: string, createdAt: string, updatedAt: string) {
     this.id = id;
-    this.wishes = wishes;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -1754,9 +1951,6 @@ export class WishList {
   public static fromRemote(remote: any): WishList {
     return new WishList(
       remote.id,
-      remote.wishes.map(
-        (wish: any) => Wish.fromRemote(wish)
-      ),
       remote.created_at,
       remote.updated_at,
     )
@@ -1770,8 +1964,42 @@ export class WishList {
     )
   };
 
-  createWish = (weight: number): Promise<Wish> => {
-    return axios.post(
+  getWishes = (
+    offset: number = 0,
+    limit: number = 50,
+    sortField: string = 'weight',
+    sortAscending: boolean = false,
+    filters: { [key: string]: string } = {},
+  ): Promise<PaginationResponse<Wish>> => {
+    return axios.get(
+      apiPath + 'wishlist/wishes/' + this.id + '/',
+      {
+        params: {
+          offset,
+          limit,
+          sort_key: sortField,
+          ascending: sortAscending,
+          ...filters,
+        }
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (wish: any) => Wish.fromRemote(wish)
+          ),
+          hits: response.data.count,
+        }
+      }
+    )
+  };
+
+  createWish(
+    weight: number,
+    cardboard: Cardboard | null = null,
+    requirements: Requirement[] | null = null,
+  ): Promise<any> {
+    const wishPromise = axios.post(
       apiPath + 'wishlist/wish/',
       {
         weight,
@@ -1783,9 +2011,16 @@ export class WishList {
           "Authorization": `Token ${store.getState().token}`,
         }
       },
-    ).then(
-      response => Wish.fromRemote(response.data)
-    )
-  }
+    );
+
+    if (cardboard === null) {
+      return wishPromise
+    }
+
+    return wishPromise.then(
+      response => CardboardWish.create(response.data.id, {cardboard: cardboard.name}, requirements)
+    );
+
+  };
 
 }

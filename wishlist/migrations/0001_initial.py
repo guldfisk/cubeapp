@@ -160,4 +160,14 @@ class Migration(migrations.Migration):
                 ('requirement', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='expansion_codes', to='wishlist.FromExpansions')),
             ],
         ),
+
+        migrations.RunSQL(
+            """
+            alter table cubespoiler.wishlist_requirement
+            add constraint cardboard_wish_id
+            foreign key (cardboard_wish_id)
+            REFERENCES cubespoiler.wishlist_cardboardwish(id)
+            on delete cascade;
+            """
+        ),
     ]

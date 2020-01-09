@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {CubeableImage} from '../../images';
+import {ImageableImage} from '../../images';
 import {Cubeable, CubeablesContainer, PrintingCounter} from "../../models/models";
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 
@@ -75,8 +75,8 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
       {
         Array.from(this.groupsSortedChained(groups)).map(
           (cubeable) => {
-            return <CubeableImage
-              cubeable={cubeable}
+            return <ImageableImage
+              imageable={cubeable}
               sizeSlug={this.props.sizeSlug}
             />
           }

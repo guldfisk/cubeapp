@@ -1,18 +1,20 @@
 import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
+import cellEditFactory from 'react-bootstrap-table2-editor';
 
-import {Wish} from '../../models/models';
-import Container from "react-bootstrap/Container";
-import Col from "react-bootstrap/Col";
-import Row from "react-bootstrap/Row";
+import {CardboardWish, Requirement, Wish} from '../../models/models';
+import RequirementsView from "./RequirementsView";
+import {CardboardListItem} from "../../utils/listitems";
 
 import '../../../styling/WishView.css';
-import RequirementsView from "./RequirementsView";
 
 
 interface WishViewProps {
   wish: Wish;
+  onCardboardWishMinimumAmountChange: (cardboardWish: CardboardWish, minimumAmount: number) => void
+  onCardboardWishDelete: (cardboardWish: CardboardWish) => void
+  onRequirementDelete: (requirement: Requirement) => void
 }
 
 
@@ -26,14 +28,32 @@ export default class WishView extends React.Component<WishViewProps> {
         hidden: true,
       },
       {
-        dataField: 'cardboardName',
+        dataField: 'cardboard',
         text: 'Name',
+        editable: false,
       },
       {
         dataField: 'minimumAmount',
         text: 'Qty',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '2em', textAlign: 'center'};
+          return {width: '4em', textAlign: 'center'};
+        },
+        validator: (newValue: string, row: any, column: any): any => {
+          if (
+            /^\d+$/.exec(newValue)
+          ) {
+            if (parseInt(newValue) <= 0) {
+              return {
+                valid: false,
+                message: 'Value must be greater than zero',
+              }
+            }
+            return true
+          }
+          return {
+            valid: false,
+            message: 'Invalid number'
+          }
         },
       },
       {
@@ -41,29 +61,33 @@ export default class WishView extends React.Component<WishViewProps> {
         text: 'Requirements',
         headerStyle: (column: any, colIndex: number) => {
           return {width: '12em', textAlign: 'center'};
-        }
+        },
+        editable: false,
       },
       {
         dataField: 'createdAt',
         text: 'Created At',
         headerStyle: (column: any, colIndex: number) => {
           return {width: '12em', textAlign: 'center'};
-        }
+        },
+        editable: false,
       },
       {
         dataField: 'updatedAt',
         text: 'Updated At',
         headerStyle: (column: any, colIndex: number) => {
           return {width: '12em', textAlign: 'center'};
-        }
+        },
+        editable: false,
       },
       {
         dataField: 'delete',
         text: 'Delete',
         isDummyField: true,
+        editable: false,
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
           className="fa fa-times-circle"
-          onClick={() => console.log('clicked !!')}
+          onClick={() => this.props.onCardboardWishDelete(row.cardboardWish)}
         />,
         headerStyle: (column: any, colIndex: number) => {
           return {width: '2em', textAlign: 'center'};
@@ -74,12 +98,16 @@ export default class WishView extends React.Component<WishViewProps> {
     const data = this.props.wish.cardboardWishes.map(
       cardboardWish => {
         return {
+          cardboardWish: cardboardWish,
           id: cardboardWish.id,
-          cardboardName: cardboardWish.cardboardName,
+          cardboard: <CardboardListItem cardboard={cardboardWish.cardboard} multiplicity={1}/>,
           minimumAmount: cardboardWish.minimumAmount,
           createdAt: cardboardWish.createdAt,
           updatedAt: cardboardWish.updatedAt,
-          requirements: <RequirementsView cardboardWish={cardboardWish} />,
+          requirements: <RequirementsView
+            cardboardWish={cardboardWish}
+            onRequirementDelete={this.props.onRequirementDelete}
+          />,
         }
       }
     );
@@ -90,8 +118,26 @@ export default class WishView extends React.Component<WishViewProps> {
       columns={columns}
       bootstrap4
       condensed
-      // striped
       classes="hide-header light-table"
+      cellEdit={
+        cellEditFactory(
+          {
+            mode: 'click',
+            beforeSaveCell: (
+              (oldValue: any, newValue: any, row: any, column: any) => {
+                if (oldValue == newValue) {
+                  return;
+                }
+                this.props.onCardboardWishMinimumAmountChange(
+                  row.cardboardWish,
+                  parseInt(newValue),
+                );
+              }
+            ),
+            blurToSave: true,
+          }
+        )
+      }
     />
 
   }

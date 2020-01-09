@@ -1,7 +1,7 @@
 import React, {RefObject} from 'react';
 
 import queryString from 'query-string';
-import SearchView from "../views/search/SearchView";
+import {PrintingSearchView} from "../views/search/SearchView";
 import history from '../routing/history';
 
 
@@ -16,7 +16,7 @@ interface SearchPageState {
 
 
 export default class SearchPage extends React.Component<SearchPageProps, SearchPageState> {
-  searchViewRef: RefObject<SearchView>;
+  searchViewRef: RefObject<PrintingSearchView>;
   lastParams: { [p: string]: string };
 
   constructor(props: SearchPageProps) {
@@ -89,7 +89,7 @@ export default class SearchPage extends React.Component<SearchPageProps, SearchP
   }
 
   render() {
-    return <SearchView
+    return <PrintingSearchView
       ref={this.searchViewRef}
       handleSearchRequest={this.handleSearchRequest}
     />

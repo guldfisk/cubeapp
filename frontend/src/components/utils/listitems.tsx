@@ -1,8 +1,8 @@
 import React, {ComponentElement} from "react";
 import ReactTooltip from "react-tooltip";
 
-import {Cubeable, CubeChange, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
-import {CubeableImage} from "../images";
+import {Cardboard, Cubeable, CubeChange, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
+import {ImageableImage} from "../images";
 import ListGroup from "react-bootstrap/ListGroup";
 
 
@@ -54,8 +54,64 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
       id={props.printing.id.toString()}
       className="printing-list-tooltip"
     >
-      <CubeableImage
-        cubeable={props.printing}
+      <ImageableImage
+        imageable={props.printing}
+      />
+    </ReactTooltip>
+  </span>
+};
+
+
+interface CardboardListItemProps {
+  cardboard: Cardboard
+  multiplicity: number
+  onClick?: (cardboard: Cardboard, multiplicity: number) => void
+  noHover?: boolean
+}
+
+
+export const CardboardListItem: React.SFC<CardboardListItemProps> = (props: CardboardListItemProps) => {
+  const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
+    props.multiplicity.toString() + 'x '
+    : ''}${props.cardboard.name}`;
+
+  if (props.noHover) {
+    return <a
+      onClick={
+        props.onClick && (
+          () => {
+            props.onClick(props.cardboard, props.multiplicity);
+          }
+        )
+      }
+    >
+      {display_name}
+    </a>
+  }
+
+  return <span>
+    <a
+      data-tip=""
+      data-for={props.cardboard.id.toString()}
+      onClick={
+        props.onClick && (
+          () => {
+            props.onClick(props.cardboard, props.multiplicity);
+          }
+        )
+      }
+    >
+      {display_name}
+    </a>
+    <ReactTooltip
+      place="top"
+      type="dark"
+      effect="float"
+      id={props.cardboard.id.toString()}
+      className="printing-list-tooltip"
+    >
+      <ImageableImage
+        imageable={props.cardboard}
       />
     </ReactTooltip>
   </span>
@@ -93,12 +149,12 @@ const trap_representation = (
     >
       {
         trap === undefined ?
-          <span/> : <CubeableImage
-            cubeable={trap}
+          <span/> : <ImageableImage
+            imageable={trap}
           />
       }
-      <CubeableImage
-        cubeable={item}
+      <ImageableImage
+        imageable={item}
       />
     </ReactTooltip>
   </span>
@@ -194,6 +250,7 @@ interface CubeListItemProps {
   onClick?: (cubeable: Cubeable, multiplicity: number) => void
   noHover?: boolean
 }
+
 
 export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => {
   let content: string | ComponentElement<any, any> = "";

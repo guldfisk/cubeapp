@@ -19,7 +19,7 @@ import {
   Preview,
   Printing, Trap, VerbosePatch, Patch, User, EditEvent
 } from '../../models/models';
-import SearchView from "../../views/search/SearchView";
+import {PrintingSearchView} from "../../views/search/SearchView";
 import TrapParseView from "../../views/traps/TrapParseView";
 import {ConfirmationDialog} from "../../utils/dialogs";
 import PatchPreview from "../../views/patchview/PatchPreview";
@@ -406,8 +406,8 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                           <Tab eventKey='addPrinting' title='Printing'>
                             <Card>
                               <Card.Body>
-                                <SearchView
-                                  handleCardClicked={(printing: Printing) => this.handleUpdatePatch(printing, 1)}
+                                <PrintingSearchView
+                                  handleCubeableClicked={(printing: Printing) => this.handleUpdatePatch(printing, 1)}
                                   limit={3}
                                 />
                               </Card.Body>

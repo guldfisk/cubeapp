@@ -2,13 +2,14 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 
-import {CardboardWish} from '../../models/models';
+import {CardboardWish, Requirement} from '../../models/models';
 
 import '../../../styling/WishView.css';
 
 
 interface RequirementsViewProps {
   cardboardWish: CardboardWish;
+  onRequirementDelete: (requirement: Requirement) => void
 }
 
 
@@ -48,11 +49,24 @@ export default class RequirementsView extends React.Component<RequirementsViewPr
         dataField: 'value',
         text: 'Value',
       },
+      {
+        dataField: 'delete',
+        text: 'Delete',
+        isDummyField: true,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
+          className="fa fa-times-circle"
+          onClick={() => this.props.onRequirementDelete(row.requirement)}
+        />,
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '2em', textAlign: 'center'};
+        },
+      },
     ];
 
     const data = this.props.cardboardWish.requirements.map(
       requirement => {
         return {
+          requirement: requirement,
           id: requirement.id,
           type: requirement.name(),
           value: requirement.value(),
@@ -64,7 +78,12 @@ export default class RequirementsView extends React.Component<RequirementsViewPr
     return <>
       <i
         className="fa fa-times-circle"
-        onClick={() => this.setState({collapsed: true})}/>
+        onClick={() => this.setState({collapsed: true})}
+      />
+      <i
+        className="fa fa-plus-circle"
+        onClick={() => this.setState({collapsed: true})}
+      />
       <BootstrapTable
         keyField='id'
         data={data}

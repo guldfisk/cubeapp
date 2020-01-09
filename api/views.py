@@ -55,6 +55,7 @@ _IMAGE_TYPES_MAP = {
     'Trap': Trap,
     'Ticket': Ticket,
     'Purple': Purple,
+    'Cardboard': Cardboard,
 }
 
 _IMAGE_SIZE_MAP = {
@@ -94,7 +95,20 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
     if pictured_id == 'back':
         image = image_loader.get_default_image(size_slug = size_slug)
     else:
-        if pictured_type == Printing:
+        if pictured_type == Cardboard:
+            try:
+                cardboard = db.cardboards[pictured_id.replace('_', '/')]
+            except KeyError:
+                return HttpResponse(status = status.HTTP_404_NOT_FOUND)
+            image_request = ImageRequest(
+                sorted(
+                    cardboard.printings,
+                    key = lambda p: p.expansion.release_date
+                )[-1],
+                size_slug = size_slug
+            )
+
+        elif pictured_type == Printing:
             try:
                 _id = int(pictured_id)
             except ValueError:
@@ -104,7 +118,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
             except KeyError:
                 return HttpResponse(status = status.HTTP_404_NOT_FOUND)
             image_request = ImageRequest(printing, size_slug = size_slug)
-            # image = image_loader.get_image(db.printings[_id], size_slug = size_slug).get()
+
         else:
             image_request = ImageRequest(
                 picture_name = pictured_id,

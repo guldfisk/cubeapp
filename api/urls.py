@@ -12,7 +12,7 @@ urlpatterns = [
     path('cube-releases/<int:to_pk>/delta-from/<int:from_pk>/', views.release_delta),
     path('cube-releases/<int:pk>/sample-pack/<int:size>/', views.sample_pack),
 
-    path('images/<slug:pictured_id>/', views.image_view, name='image'),
+    path('images/<str:pictured_id>/', views.image_view, name='image'),
     path('search/', views.SearchView.as_view(), name='search'),
     path('printing/', views.printing_view, name='printing_view'),
 

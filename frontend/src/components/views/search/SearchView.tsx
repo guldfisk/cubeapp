@@ -1,7 +1,7 @@
 import axios from 'axios/index';
 import React from 'react';
 
-import {apiPath, Cubeable} from "../../models/models";
+import {apiPath, Cardboard, Cubeable, Imageable} from "../../models/models";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -10,12 +10,12 @@ import Table from "react-bootstrap/Table";
 import Form from "react-bootstrap/Form";
 
 import PaginationBar from '../../utils/PaginationBar';
-import {CubeableImage} from "../../images";
+import {ImageableImage} from "../../images";
 import Alert from "react-bootstrap/Alert";
 
 
-interface SearchViewProps {
-  handleCardClicked: (printing: Printing) => void
+interface SearchViewProps<T> {
+  handleCubeableClicked?: (card: T) => void
   handleSearchRequest?: ((query: string, orderBy: string, sortDirection: string, offset: number) => void) | undefined
   query: string
   orderBy: string
@@ -25,8 +25,8 @@ interface SearchViewProps {
 }
 
 
-interface SearchViewState {
-  searchResults: Printing[]
+interface SearchViewState<T> {
+  searchResults: T[]
   offset: number
   hits: number
   query: string
@@ -37,11 +37,10 @@ interface SearchViewState {
 }
 
 
-class SearchView extends React.Component<SearchViewProps, SearchViewState> {
+class SearchView<T extends Printing | Cardboard> extends React.Component<SearchViewProps<T>, SearchViewState<T>> {
 
   public static defaultProps = {
-    handleCardClicked: () => {
-    },
+    handleCardClicked: () => {},
     query: '',
     orderBy: 'name',
     sortDirection: 'ascending',
@@ -49,7 +48,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
     limit: 50,
   };
 
-  constructor(props: SearchViewProps) {
+  constructor(props: SearchViewProps<T>) {
     super(props);
     this.state = {
       searchResults: [],
@@ -77,6 +76,14 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
     )
   };
 
+  getCubeableType = (): typeof Printing | typeof Cardboard => {
+    return Printing
+  };
+
+  getSearchTarget = (): string => {
+    return 'printings'
+  };
+
   internalPerformSearch = (
     query: string,
     orderBy: string,
@@ -99,6 +106,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
           descending: sortDirection === "descending",
           offset,
           limit: this.props.limit,
+          search_target: this.getSearchTarget(),
         }
       }
     ).then(
@@ -106,7 +114,7 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
         this.setState(
           {
             searchResults: response.data.results.map(
-              (printing: any) => Printing.fromRemote(printing)
+              (cubeable: any) => this.getCubeableType().fromRemote(cubeable)
             ),
             hits: response.data.count,
             offset,
@@ -290,16 +298,16 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
                 <tbody>
                 {
                   this.state.searchResults.map(
-                    (printing: Printing) => {
+                    (cubeable: Printing | Cardboard) => {
                       return <tr>
                         <td>
-                          <CubeableImage
-                            cubeable={printing}
+                          <ImageableImage
+                            imageable={cubeable}
                             sizeSlug="thumbnail"
-                            onClick={this.props.handleCardClicked as (printing: Cubeable) => void}
+                            onClick={this.props.handleCubeableClicked as (cubeable: Imageable) => void}
                           />
                         </td>
-                        <td>{printing.name}</td>
+                        <td>{cubeable.name}</td>
                       </tr>
                     }
                   )
@@ -315,4 +323,18 @@ class SearchView extends React.Component<SearchViewProps, SearchViewState> {
 }
 
 
-export default SearchView;
+export class PrintingSearchView extends SearchView<Printing> {
+
+}
+
+export class CardboardSearchView extends SearchView<Cardboard> {
+
+  getCubeableType = (): typeof Printing | typeof Cardboard => {
+    return Cardboard
+  };
+
+  getSearchTarget = (): string => {
+    return 'cardboards'
+  };
+
+}

@@ -64,7 +64,7 @@ class CardboardWish(TimestampedModel, models.Model):
 
 
 class Requirement(TimestampedModel, TypedModel):
-    cardboard_wish = models.ForeignKey(CardboardWish, on_delete = models.CASCADE, related_name = 'requirements')
+    cardboard_wish = models.ForeignKey(CardboardWish, on_delete = models.DO_NOTHING, related_name = 'requirements')
 
     def serialize(self):
         return {
@@ -110,7 +110,7 @@ class IsMinimumCondition(Requirement):
     def serialize(self):
         return {
             **super().serialize(),
-            'condition': Condition.name,
+            'condition': self.condition.name,
         }
 
     @classmethod
