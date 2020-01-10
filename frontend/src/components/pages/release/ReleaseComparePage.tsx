@@ -1,12 +1,12 @@
 import React from 'react';
-import {CubeRelease, Patch, VerbosePatch} from "../models/models";
-import PatchMultiView from "../views/patchview/PatchMultiView";
-import {Loading} from "../utils/utils";
+import {CubeRelease, Patch, VerbosePatch} from "../../models/models";
+import PatchMultiView from "../../views/patchview/PatchMultiView";
+import {Loading} from "../../utils/utils";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
-import store from "../state/store";
+import store from "../../state/store";
 
 
 interface ReleaseComparePageProps {

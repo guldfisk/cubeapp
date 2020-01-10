@@ -2,8 +2,8 @@ import React from 'react';
 
 import {Redirect} from "react-router-dom";
 
-import {Loading} from '../utils/utils';
-import {Cube} from '../models/models';
+import {Loading} from '../../utils/utils';
+import {Cube} from '../../models/models';
 
 
 interface LatestReleasePageProps {

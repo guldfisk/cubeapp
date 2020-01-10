@@ -23,6 +23,8 @@ import Container from "react-bootstrap/Container";
 import {Modal} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {CardboardSearchView} from "../search/SearchView";
+import {signIn} from "../../auth/controller";
+import {connect} from "react-redux";
 
 
 interface RequirementCreatorProps {
@@ -117,6 +119,99 @@ class IsMinimumConditionCreator extends React.Component<RequirementCreatorProps,
 }
 
 
+interface IsLanguageCreatorState {
+  language: string
+}
+
+
+class IsLanguageCreator extends React.Component<RequirementCreatorProps, IsLanguageCreatorState> {
+
+  constructor(props: RequirementCreatorProps) {
+    super(props);
+    this.state = {
+      language: 'ENGLISH',
+    };
+  }
+
+  render() {
+    return <>
+      <select
+        value={this.state.language}
+        onChange={(event: any) => this.setState({language: event.target.value})}
+      >
+        <option value='ENGLISH'>english</option>
+        <option value='FRENCH'>french</option>
+        <option value='GERMAN'>german</option>
+        <option value='SPANISH'>spanish</option>
+        <option value='ITALIAN'>italian</option>
+        <option value='SIMPLIFIED_CHINESE'>simplified chinese</option>
+        <option value='JAPANESE'>japanese</option>
+        <option value='PORTUGUESE'>portuguese</option>
+        <option value='RUSSIAN'>russian</option>
+        <option value='KOREAN'>korean</option>
+        <option value='TRADITIONAL_CHINESE'>traditional chinese</option>
+      </select>
+      <Button
+        onClick={
+          () => {
+            this.props.onRequirementCreated(
+              new IsLanguage(null, null, null, this.state.language)
+            )
+          }
+        }
+      >
+        add
+      </Button>
+    </>
+  }
+
+}
+
+
+interface BinaryRequirementProps extends RequirementCreatorProps {
+  createRequirement: (value: boolean) => Requirement
+}
+
+interface BinaryRequirementState {
+  value: string
+}
+
+
+class BinaryRequirement extends React.Component<BinaryRequirementProps, BinaryRequirementState> {
+
+  constructor(props: BinaryRequirementProps) {
+    super(props);
+    this.state = {
+      value: 'false',
+    };
+  }
+
+  render() {
+    return <>
+      <select
+        value={this.state.value}
+        onChange={(event: any) => this.setState({value: event.target.value})}
+      >
+        <option value='true'>true</option>
+        <option value='false'>false</option>
+      </select>
+      <Button
+        onClick={
+          () => {
+            this.props.onRequirementCreated(
+              this.props.createRequirement(this.state.value === 'true')
+            )
+          }
+        }
+      >
+        add
+      </Button>
+    </>
+  }
+
+}
+
+
 interface RequirementSelectorProps {
   onRequirementSelected: (requirement: Requirement) => void
 }
@@ -142,6 +237,10 @@ class RequirementSelector extends React.Component<RequirementSelectorProps, Requ
     const defaultValueMap: { [key: string]: string } = {
       IsBorder: 'BLACK',
       IsMinimumCondition: 'GOOD',
+      IsLanguage: 'ENGLISH',
+      IsFoil: 'false',
+      IsAltered: 'false',
+      IsSigned: 'false',
     };
 
     this.setState(
@@ -152,20 +251,47 @@ class RequirementSelector extends React.Component<RequirementSelectorProps, Requ
     )
   };
 
-  onValueChange = (event: any): void => {
-    this.setState({value: event.target.value})
-  };
-
   render() {
-    let requriementCreator = <div/>;
+    let requirementCreator = <div/>;
 
     switch (this.state.requirementType) {
       case 'IsBorder':
-        requriementCreator = <IsBorderCreator onRequirementCreated={this.props.onRequirementSelected}/>;
+        requirementCreator = <IsBorderCreator onRequirementCreated={this.props.onRequirementSelected}/>;
         break;
 
       case 'IsMinimumCondition':
-        requriementCreator = <IsMinimumConditionCreator onRequirementCreated={this.props.onRequirementSelected}/>;
+        requirementCreator = <IsMinimumConditionCreator onRequirementCreated={this.props.onRequirementSelected}/>;
+        break;
+
+      case 'IsLanguage':
+        requirementCreator = <IsLanguageCreator onRequirementCreated={this.props.onRequirementSelected}/>;
+        break;
+
+      case 'IsFoil':
+        requirementCreator = <BinaryRequirement
+          onRequirementCreated={this.props.onRequirementSelected}
+          createRequirement={
+            value => new IsFoil(null, null, null, value.toString())
+          }
+        />;
+        break;
+
+      case 'IsAltered':
+        requirementCreator = <BinaryRequirement
+          onRequirementCreated={this.props.onRequirementSelected}
+          createRequirement={
+            value => new IsAltered(null, null, null, value.toString())
+          }
+        />;
+        break;
+
+      case 'IsSigned':
+        requirementCreator = <BinaryRequirement
+          onRequirementCreated={this.props.onRequirementSelected}
+          createRequirement={
+            value => new IsSigned(null, null, null, value.toString())
+          }
+        />;
         break;
 
     }
@@ -177,8 +303,12 @@ class RequirementSelector extends React.Component<RequirementSelectorProps, Requ
       >
         <option value='IsBorder'>is border</option>
         <option value='IsMinimumCondition'>is minimum condition</option>
+        <option value='IsLanguage'>is language</option>
+        <option value='IsFoil'>is foil</option>
+        <option value='IsAltered'>is altered</option>
+        <option value='IsSigned'>is signed</option>
       </select>
-      {requriementCreator}
+      {requirementCreator}
     </>
   }
 
@@ -302,15 +432,79 @@ class RequirementList extends React.Component<RequirementListProps, RequirementL
 }
 
 
+interface CardboardSelectorState {
+  cardboard: Cardboard | null
+  minimumAmount: number
+}
+
+
+interface CardboardSelector extends React.Component<any, CardboardSelectorState> {
+  requirementListRef: RefObject<RequirementList>;
+}
+
+
+const cardboardSelect = (parent: CardboardSelector): any => {
+  return <>
+    <Row>
+      <Col>
+        <label>
+          Cardboard:
+        </label>
+      </Col>
+      <Col>
+        <label>
+          {parent.state.cardboard === null ? "no cardboard selected" : parent.state.cardboard.name}
+        </label>
+      </Col>
+    </Row>
+    <Row>
+      <Col>
+        <label>
+          Minimum amount:
+        </label>
+      </Col>
+      <Col>
+        <input
+          type="number"
+          value={parent.state.minimumAmount}
+          onChange={(event: any) => parent.setState({minimumAmount: parseInt(event.target.value)})}
+        />
+      </Col>
+    </Row>
+    <Row>
+      <CardboardSearchView
+        handleCubeableClicked={
+          cardboard => parent.setState({cardboard})
+        }
+        limit={3}
+        resultView='list'
+      />
+    </Row>
+    <Row>
+      <RequirementList
+        initialRequirements={
+          [
+            new IsLanguage(null, null, null, 'ENGLISH'),
+            new IsFoil(null, null, null, 'false'),
+            new IsAltered(null, null, null, 'false'),
+            new IsSigned(null, null, null, 'false'),
+          ]
+        }
+        ref={parent.requirementListRef}
+      />
+    </Row>
+  </>
+};
+
+
 interface WishCreatorProps {
-  onWishCreated: (weight: number, cardboard: Cardboard, requirements: Requirement[]) => void
+  onWishCreated: (weight: number, minimumAmount: number, cardboard: Cardboard, requirements: Requirement[]) => void
   cancel: () => void
   show: boolean
 }
 
 
-interface WishCreatorState {
-  cardboard: Cardboard | null
+interface WishCreatorState extends CardboardSelectorState {
   weight: number
 }
 
@@ -324,6 +518,7 @@ class WishCreator extends React.Component<WishCreatorProps, WishCreatorState> {
     this.state = {
       cardboard: null,
       weight: 1,
+      minimumAmount: 1,
     }
   }
 
@@ -331,6 +526,7 @@ class WishCreator extends React.Component<WishCreatorProps, WishCreatorState> {
     if (this.state.cardboard !== null) {
       this.props.onWishCreated(
         this.state.weight,
+        this.state.minimumAmount,
         this.state.cardboard,
         this.requirementListRef.current.getRequirements(),
       )
@@ -347,9 +543,18 @@ class WishCreator extends React.Component<WishCreatorProps, WishCreatorState> {
       <Modal.Body>
         <Container>
           <Row>
+            <Button
+              variant="primary"
+              onClick={() => this.submit()}
+              disabled={this.state.cardboard === null}
+            >
+              Ok
+            </Button>
+          </Row>
+          <Row>
             <Col>
               <label>
-                {this.state.cardboard === null ? "no cardboard selected" : this.state.cardboard.name}
+                Weight:
               </label>
             </Col>
             <Col>
@@ -360,27 +565,9 @@ class WishCreator extends React.Component<WishCreatorProps, WishCreatorState> {
               />
             </Col>
           </Row>
-          <Row>
-            <RequirementList
-              initialRequirements={
-                [
-                  new IsLanguage(null, null, null, 'ENGLISH'),
-                  new IsFoil(null, null, null, 'false'),
-                  new IsAltered(null, null, null, 'false'),
-                  new IsSigned(null, null, null, 'false'),
-                ]
-              }
-              ref={this.requirementListRef}
-            />
-          </Row>
-          <Row>
-            <CardboardSearchView
-              handleCubeableClicked={
-                cardboard => this.setState({cardboard})
-              }
-              limit={3}
-            />
-          </Row>
+          {
+            cardboardSelect(this)
+          }
         </Container>
       </Modal.Body>
       <Modal.Footer>
@@ -399,8 +586,105 @@ class WishCreator extends React.Component<WishCreatorProps, WishCreatorState> {
 }
 
 
+interface CardboardWishCreatorProps {
+  onCardboardWishCreated: (minimumAmount: number, cardboard: Cardboard, requirements: Requirement[]) => void
+  cancel: () => void
+  show: boolean
+}
+
+
+class CardboardWishCreator extends React.Component<CardboardWishCreatorProps, CardboardSelectorState> {
+  requirementListRef: RefObject<RequirementList>;
+
+  constructor(props: CardboardWishCreatorProps) {
+    super(props);
+    this.requirementListRef = React.createRef();
+    this.state = {
+      cardboard: null,
+      minimumAmount: 1,
+    }
+  }
+
+  submit = (): void => {
+    if (this.state.cardboard !== null) {
+      this.props.onCardboardWishCreated(
+        this.state.minimumAmount,
+        this.state.cardboard,
+        this.requirementListRef.current.getRequirements(),
+      )
+    }
+  };
+
+  render() {
+    return <Modal
+      show={this.props.show}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Make a cardboard wish</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Container>
+          <Row>
+            <Button
+              variant="primary"
+              onClick={() => this.submit()}
+              disabled={this.state.cardboard === null}
+            >
+              Ok
+            </Button>
+          </Row>
+          {
+            cardboardSelect(this)
+          }
+        </Container>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => this.props.cancel()}>Cancel</Button>
+        <Button
+          variant="primary"
+          onClick={() => this.submit()}
+          disabled={this.state.cardboard === null}
+        >
+          Ok
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  }
+
+}
+
+
+interface RequirementCreatorDialogProps {
+  onRequirementCreated: (requirement: Requirement) => void
+  cancel: () => void
+  show: boolean
+}
+
+
+class RequirementCreatorDialog extends React.Component<RequirementCreatorDialogProps> {
+
+  render() {
+    return <Modal
+      show={this.props.show}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Create new requirement</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <RequirementSelector onRequirementSelected={this.props.onRequirementCreated}/>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => this.props.cancel()}>Cancel</Button>
+      </Modal.Footer>
+    </Modal>
+  }
+
+}
+
+
 interface WishListViewProps {
   wishlist: WishList;
+  authenticated: boolean;
 }
 
 
@@ -414,10 +698,13 @@ interface WishListViewState {
   sortAscending: boolean
   cardboardFilterSyntaxCorrect: boolean
   creatingNewWish: boolean
+  creatingNewCardboardWish: string | null
+  creatingNewRequirement: string | null
 }
 
 
-export default class WishListView extends React.Component<WishListViewProps, WishListViewState> {
+class WishListView extends React.Component
+  <WishListViewProps, WishListViewState> {
 
   constructor(props: WishListViewProps) {
     super(props);
@@ -431,6 +718,8 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
       sortAscending: false,
       cardboardFilterSyntaxCorrect: true,
       creatingNewWish: false,
+      creatingNewCardboardWish: null,
+      creatingNewRequirement: null,
     }
   }
 
@@ -551,7 +840,6 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
   };
 
   render() {
-
     const columns = [
       {
         dataField: 'id',
@@ -570,6 +858,19 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
         ),
         sort: true,
         editable: false,
+      },
+      {
+        dataField: 'add',
+        text: '',
+        isDummyField: true,
+        editable: false,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
+          className="fa fa-plus-circle"
+          onClick={() => this.setState({creatingNewCardboardWish: row.id})}
+        />,
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '2em', textAlign: 'center'};
+        },
       },
       {
         dataField: 'weight',
@@ -603,18 +904,12 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
         text: '',
         isDummyField: true,
         editable: false,
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <>
-          <i
-            className="fa fa-plus-circle"
-            onClick={() => null}
-          />
-          <i
-            className="fa fa-times-circle"
-            onClick={() => row.wish.delete().then(this.loadWishes)}
-          />
-        </>,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
+          className="fa fa-times-circle"
+          onClick={() => this.props.authenticated && row.wish.delete().then(this.loadWishes)}
+        />,
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '5em', textAlign: 'center'};
+          return {width: '2em', textAlign: 'center'};
         },
       },
     ];
@@ -626,7 +921,7 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
           weight: wish.weight,
           createdAt: wish.createdAt,
           updatedAt: wish.updatedAt,
-          cardboards: <WishView
+          cardboards: this.props.authenticated ? <WishView
             wish={wish}
             onCardboardWishMinimumAmountChange={
               (cardboardWish: CardboardWish, minimumAmount: number) => {
@@ -654,7 +949,10 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
                 )
               }
             }
-          />,
+            onAddRequirement={
+              cardboardWish => this.setState({creatingNewRequirement: cardboardWish.id})
+            }
+          /> : <WishView wish={wish}/>,
           wish: wish,
         }
       }
@@ -664,13 +962,11 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
       <WishCreator
         show={this.state.creatingNewWish}
         onWishCreated={
-          (weight: number, cardboard: Cardboard, requirements: Requirement[]) => {
-            console.log(weight);
-            console.log(cardboard);
-            console.log(requirements);
+          (weight: number, minimumAmount: number, cardboard: Cardboard, requirements: Requirement[]) => {
             this.setState({creatingNewWish: false});
             this.props.wishlist.createWish(
               weight,
+              minimumAmount,
               cardboard,
               requirements,
             ).then(
@@ -682,22 +978,57 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
           () => this.setState({creatingNewWish: false})
         }
       />
+      <CardboardWishCreator
+        show={this.state.creatingNewCardboardWish !== null}
+        onCardboardWishCreated={
+          (minimumAmount: number, cardboard: Cardboard, requirements: Requirement[]) => {
+            this.setState({creatingNewCardboardWish: null});
+            CardboardWish.create(
+              this.state.creatingNewCardboardWish,
+              {
+                cardboard: cardboard.name,
+                minimum_amount: minimumAmount.toString(),
+              },
+              requirements,
+            ).then(
+              () => this.loadWishes()
+            )
+          }
+        }
+        cancel={
+          () => this.setState({creatingNewCardboardWish: null})
+        }
+      />
+      <RequirementCreatorDialog
+        show={this.state.creatingNewRequirement !== null}
+        onRequirementCreated={
+          requirement => {
+            this.setState({creatingNewRequirement: null});
+            requirement.create(this.state.creatingNewRequirement).then(
+              () => this.loadWishes()
+            );
+          }
+        }
+        cancel={() => this.setState({creatingNewRequirement: null})}
+      />
       <Container fluid>
         <Row>
-          <Col sm={2}>
-            <Card>
-              <Card.Header>
-                Actions
-              </Card.Header>
-              <Card.Body>
-                <a
-                  onClick={() => this.setState({creatingNewWish: true})}
-                >
-                  Add wish
-                </a>
-              </Card.Body>
-            </Card>
-          </Col>
+          {
+            this.props.authenticated ? <Col sm={2}>
+              <Card>
+                <Card.Header>
+                  Actions
+                </Card.Header>
+                <Card.Body>
+                  <a
+                    onClick={() => this.setState({creatingNewWish: true})}
+                  >
+                    Add wish
+                  </a>
+                </Card.Body>
+              </Card>
+            </Col> : undefined
+          }
           <Col>
             <BootstrapTable
               remote
@@ -719,12 +1050,12 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
                 )
               }
               cellEdit={
-                cellEditFactory(
+                this.props.authenticated ? cellEditFactory(
                   {
                     mode: 'click',
                     blurToSave: true,
                   }
-                )
+                ) : undefined
               }
               onTableChange={this.handleTableChanged}
             />
@@ -735,3 +1066,22 @@ export default class WishListView extends React.Component<WishListViewProps, Wis
   }
 
 }
+
+
+const mapStateToProps = (state: any) => {
+  return {
+    authenticated: state.authenticated,
+  };
+};
+
+
+const mapDispatchToProps = (dispatch: any) => {
+  return {
+    signIn: (username: string, password: string) => {
+      return dispatch(signIn(username, password));
+    }
+  };
+};
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(WishListView);

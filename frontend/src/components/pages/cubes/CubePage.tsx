@@ -2,9 +2,9 @@ import React from 'react';
 
 import {Link} from "react-router-dom";
 
-import {Loading} from '../utils/utils';
-import CubeView from '../views/cubeview/CubeView';
-import {Cube} from '../models/models';
+import {Loading} from '../../utils/utils';
+import CubeView from '../../views/cubeview/CubeView';
+import {Cube} from '../../models/models';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";

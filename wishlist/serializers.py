@@ -94,4 +94,4 @@ class WishListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.WishList
-        fields = ('id', 'created_at', 'updated_at')
+        fields = ('id', 'created_at', 'updated_at', 'name')

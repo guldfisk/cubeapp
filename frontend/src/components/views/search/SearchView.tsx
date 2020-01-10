@@ -12,6 +12,7 @@ import Form from "react-bootstrap/Form";
 import PaginationBar from '../../utils/PaginationBar';
 import {ImageableImage} from "../../images";
 import Alert from "react-bootstrap/Alert";
+import {ImageableListItem} from "../../utils/listitems";
 
 
 interface SearchViewProps<T> {
@@ -22,6 +23,7 @@ interface SearchViewProps<T> {
   sortDirection: string
   offset: number
   limit: number
+  resultView: string
 }
 
 
@@ -40,12 +42,14 @@ interface SearchViewState<T> {
 class SearchView<T extends Printing | Cardboard> extends React.Component<SearchViewProps<T>, SearchViewState<T>> {
 
   public static defaultProps = {
-    handleCardClicked: () => {},
+    handleCardClicked: () => {
+    },
     query: '',
     orderBy: 'name',
     sortDirection: 'ascending',
     offset: 0,
     limit: 50,
+    resultView: 'images',
   };
 
   constructor(props: SearchViewProps<T>) {
@@ -286,33 +290,59 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
           }
         </Row>
         {
-          !this.state.searchResults.length ? undefined :
+          !this.state.searchResults.length ?
+            undefined :
             <Row>
               <Table>
-                <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Name</th>
-                </tr>
-                </thead>
-                <tbody>
                 {
-                  this.state.searchResults.map(
-                    (cubeable: Printing | Cardboard) => {
-                      return <tr>
-                        <td>
-                          <ImageableImage
-                            imageable={cubeable}
-                            sizeSlug="thumbnail"
-                            onClick={this.props.handleCubeableClicked as (cubeable: Imageable) => void}
-                          />
-                        </td>
-                        <td>{cubeable.name}</td>
+                  this.props.resultView === 'images' ?
+                    <>
+                      <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>Name</th>
                       </tr>
+                      </thead>
+                      <tbody>
+                      {
+                        this.state.searchResults.map(
+                          (cubeable: Printing | Cardboard) => {
+                            return <tr>
+                              <td>
+                                <ImageableImage
+                                  imageable={cubeable}
+                                  sizeSlug="thumbnail"
+                                  onClick={this.props.handleCubeableClicked as (cubeable: Imageable) => void}
+                                />
+                              </td>
+                              <td>{cubeable.name}</td>
+                            </tr>
+                          }
+                        )
+                      }
+                      </tbody>
+                    </>
+                    :
+                    <tbody>
+                    {
+                      this.state.searchResults.map(
+                        (cubeable: Printing | Cardboard) => {
+                          return <tr>
+                            <td>
+                              <ImageableListItem
+                                cubeable={cubeable}
+                                multiplicity={1}
+                                onClick={
+                                  (cubeable, multiplicity) => this.props.handleCubeableClicked(cubeable as T)
+                                }
+                              />
+                            </td>
+                          </tr>
+                        }
+                      )
                     }
-                  )
+                    </tbody>
                 }
-                </tbody>
               </Table>
             </Row>
         }

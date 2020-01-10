@@ -114,7 +114,7 @@ export class Printing extends Cubeable {
 
   public static fromRemote(remote: any): Printing {
     return new Printing(
-      remote.id.toString(),
+      remote.id,
       remote.name,
       Expansion.fromRemote(remote.expansion),
       remote.color,
@@ -1938,12 +1938,14 @@ export class Wish {
 
 export class WishList {
   id: string;
+  name: string;
   createdAt: string;
   updatedAt: string;
 
 
-  constructor(id: string, createdAt: string, updatedAt: string) {
+  constructor(id: string, name: string, createdAt: string, updatedAt: string) {
     this.id = id;
+    this.name = name;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -1951,16 +1953,36 @@ export class WishList {
   public static fromRemote(remote: any): WishList {
     return new WishList(
       remote.id,
+      remote.name,
       remote.created_at,
       remote.updated_at,
     )
   }
 
-  static get = (id: string): Promise<WishList> => {
+  public static get = (id: string): Promise<WishList> => {
     return axios.get(
       apiPath + 'wishlist/' + id + '/'
     ).then(
       response => WishList.fromRemote(response.data)
+    )
+  };
+
+  public static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<WishList>> => {
+    return axios.get(
+      apiPath + 'wishlist/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((wishlist: any) => WishList.fromRemote(wishlist)),
+          hits: response.data.count,
+        }
+      }
     )
   };
 
@@ -1996,6 +2018,7 @@ export class WishList {
 
   createWish(
     weight: number,
+    minimumAmount: number = 1,
     cardboard: Cardboard | null = null,
     requirements: Requirement[] | null = null,
   ): Promise<any> {
@@ -2018,7 +2041,14 @@ export class WishList {
     }
 
     return wishPromise.then(
-      response => CardboardWish.create(response.data.id, {cardboard: cardboard.name}, requirements)
+      response => CardboardWish.create(
+        response.data.id,
+        {
+          cardboard: cardboard.name,
+          minimum_amount: minimumAmount.toString(),
+        },
+        requirements,
+      )
     );
 
   };

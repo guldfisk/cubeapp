@@ -13,7 +13,7 @@ const imagesPath = '/api/images/';
 
 
 export function get_imageable_image_url(id: string, type = 'printing', size_slug = 'original') {
-  return imagesPath + id.replace(/\//g, '_') + '/?type=' + type + '&size_slug=' + size_slug
+  return imagesPath + id.toString().replace(/\//g, '_') + '/?type=' + type + '&size_slug=' + size_slug
 }
 
 export const get_cardback_image_url = (size_slug = 'original') => {

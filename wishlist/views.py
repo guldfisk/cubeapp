@@ -84,9 +84,9 @@ class ListWishes(generics.ListAPIView):
                 '=': '',
                 '!=': None,
                 '<': '__gt',
-                '<=': '__ge',
+                '<=': '__gte',
                 '>': '__lt',
-                '>=': '__le',
+                '>=': '__lte',
             }.get(
                 request.GET.get('weight_filter_comparator'),
                 '',
@@ -117,13 +117,11 @@ class ListWishes(generics.ListAPIView):
 
         queryset = queryset.prefetch_related('cardboard_wishes__requirements')
 
-        sort_key = self._allowed_sort_keys.get(request.GET.get('sort_key'), 'weight')
+        sort_key = [self._allowed_sort_keys.get(request.GET.get('sort_key'), 'weight')]
         ascending = strtobool(request.GET.get('ascending', 'false'))
 
-        if sort_key == self._allowed_sort_keys['cardboards']:
-           sort_key = [sort_key,]
-        else:
-            sort_key = [sort_key, self._allowed_sort_keys['cardboards']]
+        if sort_key[0] != self._allowed_sort_keys['cardboards']:
+            sort_key.append(self._allowed_sort_keys['cardboards'])
 
         if not ascending:
             sort_key[0] = '-' + sort_key[0]
@@ -131,6 +129,7 @@ class ListWishes(generics.ListAPIView):
         queryset = queryset.annotate(min_cardboard_name=Min('cardboard_wishes__cardboard_name')).order_by(*sort_key)
 
         page = self.paginate_queryset(queryset)
+
         if page is not None:
             serializer = self.get_serializer(page, many = True)
             return self.get_paginated_response(serializer.data)

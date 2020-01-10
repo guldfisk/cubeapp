@@ -4,7 +4,7 @@ import {ReactElement} from 'react';
 import Row from 'react-bootstrap/Row';
 
 import {CubeablesContainer, Cubeable, PrintingCounter, Printing} from "../../models/models";
-import {CubeableListItem} from "../../utils/listitems";
+import {ImageableListItem} from "../../utils/listitems";
 import ListGroup from "react-bootstrap/ListGroup";
 import Container from "react-bootstrap/Container";
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
@@ -134,7 +134,7 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
                 </ListGroup.Item>
                 {
                   items.map(
-                    ([cubeable, multiplicity]) => <CubeableListItem
+                    ([cubeable, multiplicity]) => <ImageableListItem
                       cubeable={cubeable}
                       multiplicity={multiplicity}
                       onClick={this.props.onCubeableClicked}

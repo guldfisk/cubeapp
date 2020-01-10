@@ -16,7 +16,6 @@ import {loadUser} from "./auth/controller";
 import {Loading} from "./utils/utils";
 import SignInPage from './pages/authentication/SignInPage';
 import store from './state/store';
-import PatchPage from "./pages/patches/PatchPage";
 
 
 interface RootProps {
@@ -105,6 +104,10 @@ class RootComponent extends React.Component<RootProps> {
 
             <LinkContainer to='/create-cube/'>
               <Nav.Link>Create Cube</Nav.Link>
+            </LinkContainer>
+
+            <LinkContainer to='/wishlists/'>
+              <Nav.Link>Wish Lists</Nav.Link>
             </LinkContainer>
 
             <LinkContainer to='/about/'>

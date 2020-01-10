@@ -63,7 +63,7 @@ class Command(BaseCommand):
             self._convert_cardboard_wish(cardboard_wish, _wish)
 
     def _convert_wish_list(self, wish_list: models.WishList) -> WishList:
-        _wish_list = WishList.objects.create()
+        _wish_list = WishList.objects.create(name = 'wishlist')
 
         for wish in wish_list.wishes:
             self._convert_wish(wish, _wish_list)

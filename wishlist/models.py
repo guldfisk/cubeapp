@@ -1,5 +1,5 @@
-import datetime
 import itertools
+
 from distutils.util import strtobool
 
 from django.db import models
@@ -7,9 +7,11 @@ from django.db import models
 from typedmodels.models import TypedModel
 
 from mtgorp.models.persistent.attributes.borders import Border
+
 from utils.fields import EnumField
 from utils.mixins import TimestampedModel
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
+
 from wishlist.values import Condition, Language
 
 
@@ -181,6 +183,6 @@ class IsSigned(Requirement):
     @classmethod
     def deserialize(cls, values):
         return cls(
-            is_foil = strtobool(values['is_signed'])
+            is_signed = strtobool(values['is_signed'])
         )
 

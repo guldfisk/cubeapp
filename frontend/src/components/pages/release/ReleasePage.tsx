@@ -4,16 +4,16 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container"
 
-import {Loading} from '../utils/utils';
-import {Cube, CubeRelease, CubeReleaseMeta} from '../models/models';
-import ReleaseMultiView from '../views/releaseview/ReleaseMultiView'
-import ConstrainedNodesView from '../views/constrainednodesview/ConstrainedNodesView';
+import {Loading} from '../../utils/utils';
+import {Cube, CubeRelease, CubeReleaseMeta} from '../../models/models';
+import ReleaseMultiView from '../../views/releaseview/ReleaseMultiView'
+import ConstrainedNodesView from '../../views/constrainednodesview/ConstrainedNodesView';
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import Button from "react-bootstrap/Button";
 import {Modal} from "react-bootstrap";
-import ReleasesView from "../views/releaseview/ReleasesView";
-import history from '../routing/history';
+import ReleasesView from "../../views/releaseview/ReleasesView";
+import history from '../../routing/history';
 import {Link} from "react-router-dom";
 
 

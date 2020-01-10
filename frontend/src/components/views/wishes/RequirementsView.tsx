@@ -9,7 +9,8 @@ import '../../../styling/WishView.css';
 
 interface RequirementsViewProps {
   cardboardWish: CardboardWish;
-  onRequirementDelete: (requirement: Requirement) => void
+  onRequirementDelete?: (requirement: Requirement) => void
+  onAddRequirement?: () => void
 }
 
 
@@ -55,7 +56,7 @@ export default class RequirementsView extends React.Component<RequirementsViewPr
         isDummyField: true,
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
           className="fa fa-times-circle"
-          onClick={() => this.props.onRequirementDelete(row.requirement)}
+          onClick={() => this.props.onRequirementDelete && this.props.onRequirementDelete(row.requirement)}
         />,
         headerStyle: (column: any, colIndex: number) => {
           return {width: '2em', textAlign: 'center'};
@@ -82,7 +83,7 @@ export default class RequirementsView extends React.Component<RequirementsViewPr
       />
       <i
         className="fa fa-plus-circle"
-        onClick={() => this.setState({collapsed: true})}
+        onClick={() => this.props.onAddRequirement && this.props.onAddRequirement()}
       />
       <BootstrapTable
         keyField='id'

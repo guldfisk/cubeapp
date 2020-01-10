@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {Loading} from '../utils/utils';
-import {WishList} from '../models/models';
-import WishListView from "../views/wishes/WishListView";
+import {Loading} from '../../utils/utils';
+import {WishList} from '../../models/models';
+import WishListView from "../../views/wishes/WishListView";
 
 
 interface WishListPageProps {

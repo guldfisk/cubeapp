@@ -12,9 +12,10 @@ import '../../../styling/WishView.css';
 
 interface WishViewProps {
   wish: Wish;
-  onCardboardWishMinimumAmountChange: (cardboardWish: CardboardWish, minimumAmount: number) => void
-  onCardboardWishDelete: (cardboardWish: CardboardWish) => void
-  onRequirementDelete: (requirement: Requirement) => void
+  onCardboardWishMinimumAmountChange?: (cardboardWish: CardboardWish, minimumAmount: number) => void
+  onCardboardWishDelete?: (cardboardWish: CardboardWish) => void
+  onRequirementDelete?: (requirement: Requirement) => void
+  onAddRequirement?: (cardboardWish: CardboardWish) => void
 }
 
 
@@ -87,7 +88,7 @@ export default class WishView extends React.Component<WishViewProps> {
         editable: false,
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
           className="fa fa-times-circle"
-          onClick={() => this.props.onCardboardWishDelete(row.cardboardWish)}
+          onClick={() => this.props.onCardboardWishDelete && this.props.onCardboardWishDelete(row.cardboardWish)}
         />,
         headerStyle: (column: any, colIndex: number) => {
           return {width: '2em', textAlign: 'center'};
@@ -107,6 +108,7 @@ export default class WishView extends React.Component<WishViewProps> {
           requirements: <RequirementsView
             cardboardWish={cardboardWish}
             onRequirementDelete={this.props.onRequirementDelete}
+            onAddRequirement={this.props.onAddRequirement && (() => this.props.onAddRequirement(cardboardWish))}
           />,
         }
       }
@@ -120,7 +122,7 @@ export default class WishView extends React.Component<WishViewProps> {
       condensed
       classes="hide-header light-table"
       cellEdit={
-        cellEditFactory(
+        this.props.onCardboardWishMinimumAmountChange ? cellEditFactory(
           {
             mode: 'click',
             beforeSaveCell: (
@@ -136,7 +138,7 @@ export default class WishView extends React.Component<WishViewProps> {
             ),
             blurToSave: true,
           }
-        )
+        ) : undefined
       }
     />
 

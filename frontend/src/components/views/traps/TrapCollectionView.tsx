@@ -3,7 +3,7 @@ import React from 'react';
 import {
   TrapCollection
 } from "../../models/models";
-import {CubeableListItem} from "../../utils/listitems";
+import {ImageableListItem} from "../../utils/listitems";
 import ListGroup from "react-bootstrap/ListGroup";
 
 
@@ -18,7 +18,7 @@ export default class TrapCollectionView extends React.Component<TrapCollectionVi
     return <ListGroup variant="flush">
       {
         Array.from(this.props.trapCollection.traps.items()).map(
-          ([trap, multiplicity]) => <CubeableListItem
+          ([trap, multiplicity]) => <ImageableListItem
             cubeable={trap}
             multiplicity={multiplicity}
             noHover={true}

@@ -252,7 +252,7 @@ interface CubeListItemProps {
 }
 
 
-export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (props) => {
+export const ImageableListItem: React.FunctionComponent<CubeListItemProps> = (props) => {
   let content: string | ComponentElement<any, any> = "";
 
   if (props.cubeable instanceof Printing) {
@@ -266,6 +266,14 @@ export const CubeableListItem: React.FunctionComponent<CubeListItemProps> = (pro
   } else if (props.cubeable instanceof Trap) {
     content = <TrapListItem
       trap={props.cubeable}
+      noHover={props.noHover}
+      onClick={props.onClick}
+      multiplicity={props.multiplicity}
+    />
+
+  } else if (props.cubeable instanceof Cardboard) {
+    content = <CardboardListItem
+      cardboard={props.cubeable}
       noHover={props.noHover}
       onClick={props.onClick}
       multiplicity={props.multiplicity}

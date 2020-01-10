@@ -1,11 +1,11 @@
 import React from 'react';
 
-import {Cube} from '../models/models';
+import {Cube} from '../../models/models';
 
-import CubesView from '../views/cubeview/CubesView';
+import CubesView from '../../views/cubeview/CubesView';
 
 import Col from "react-bootstrap/Col";
-import PaginationBar from "../utils/PaginationBar";
+import PaginationBar from "../../utils/PaginationBar";
 
 
 const pageSize: number = 10;

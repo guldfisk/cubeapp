@@ -1,8 +1,8 @@
 import React, {RefObject} from 'react';
 
 import queryString from 'query-string';
-import {PrintingSearchView} from "../views/search/SearchView";
-import history from '../routing/history';
+import {PrintingSearchView} from "../../views/search/SearchView";
+import history from '../../routing/history';
 
 
 interface SearchPageProps {
