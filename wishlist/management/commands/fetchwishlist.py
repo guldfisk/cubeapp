@@ -71,7 +71,7 @@ class Command(BaseCommand):
         return _wish_list
 
     def handle(self, *args, **options):
-        models.create(mkmcheck.engine)
+        # models.create(mkmcheck.engine)
         wish_list_fetcher = WishListFetcher(
             db = mkmcheck.db,
             spreadsheet_id = mkmcheck.SHEET_ID,
