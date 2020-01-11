@@ -767,7 +767,7 @@ class WishListView extends React.Component
         _filters.weight_filter_comparator = filters.weight.filterVal.comparator;
       }
       this.props.wishlist.getWishes(
-        (this.state.page - 1) * this.state.pageSize,
+        0,
         this.state.pageSize,
         this.state.sortField,
         this.state.sortAscending,
@@ -779,6 +779,7 @@ class WishListView extends React.Component
             wishes: paginatedResponse.objects,
             hits: paginatedResponse.hits,
             cardboardFilterSyntaxCorrect: true,
+            page: 1,
           }
         )
       ).catch(
