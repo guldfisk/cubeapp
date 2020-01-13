@@ -5,7 +5,7 @@ import cellEditFactory from 'react-bootstrap-table2-editor';
 
 import {CardboardWish, Requirement, Wish} from '../../models/models';
 import RequirementsView from "./RequirementsView";
-import {CardboardListItem} from "../../utils/listitems";
+import {CardboardListItem, DateListItem} from "../../utils/listitems";
 
 import '../../../styling/WishView.css';
 
@@ -69,7 +69,7 @@ export default class WishView extends React.Component<WishViewProps> {
         dataField: 'createdAt',
         text: 'Created At',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '12em', textAlign: 'center'};
+          return {width: '6em', textAlign: 'center'};
         },
         editable: false,
       },
@@ -77,7 +77,7 @@ export default class WishView extends React.Component<WishViewProps> {
         dataField: 'updatedAt',
         text: 'Updated At',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '12em', textAlign: 'center'};
+          return {width: '6em', textAlign: 'center'};
         },
         editable: false,
       },
@@ -103,8 +103,8 @@ export default class WishView extends React.Component<WishViewProps> {
           id: cardboardWish.id,
           cardboard: <CardboardListItem cardboard={cardboardWish.cardboard} multiplicity={1}/>,
           minimumAmount: cardboardWish.minimumAmount,
-          createdAt: cardboardWish.createdAt,
-          updatedAt: cardboardWish.updatedAt,
+          createdAt: <DateListItem date={cardboardWish.createdAt} />,
+          updatedAt: <DateListItem date={cardboardWish.updatedAt} />,
           requirements: <RequirementsView
             cardboardWish={cardboardWish}
             onRequirementDelete={this.props.onRequirementDelete}

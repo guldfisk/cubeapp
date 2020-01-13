@@ -34,6 +34,7 @@
     "bootstrap": "^4.3.1",
     "config-loader": "0.0.1",
     "css-loader": "^2.1.1",
+    "dateformat": "^3.0.3",
     "jquery": "^3.4.1",
     "jsclass": "^4.0.5",
     "prop-types": "^15.7.2",

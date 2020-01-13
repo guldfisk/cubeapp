@@ -1781,16 +1781,16 @@ export class CardboardWish {
   id: string;
   cardboard: Cardboard;
   minimumAmount: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   requirements: Requirement[];
 
   constructor(
     id: string,
     cardboard: Cardboard,
     minimumAmount: number,
-    createdAt: string,
-    updatedAt: string,
+    createdAt: Date,
+    updatedAt: Date,
     requirements: Requirement[],
   ) {
     this.id = id;
@@ -1806,8 +1806,8 @@ export class CardboardWish {
       remote.id,
       Cardboard.fromRemote(remote.cardboard),
       remote.minimum_amount,
-      remote.created_at,
-      remote.updated_at,
+      new Date(remote.created_at),
+      new Date(remote.updated_at),
       remote.requirements.map(
         (requirement: any) => Requirement.fromRemote(requirement)
       ),
@@ -1883,10 +1883,10 @@ export class Wish {
   id: string;
   weight: number;
   cardboardWishes: CardboardWish[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 
-  constructor(id: string, weight: number, cardboardWishes: CardboardWish[], createdAt: string, updatedAt: string) {
+  constructor(id: string, weight: number, cardboardWishes: CardboardWish[], createdAt: Date, updatedAt: Date) {
     this.id = id;
     this.weight = weight;
     this.cardboardWishes = cardboardWishes;
@@ -1901,8 +1901,8 @@ export class Wish {
       remote.cardboard_wishes.map(
         (cardboardWish: any) => CardboardWish.fromRemote(cardboardWish)
       ),
-      remote.created_at,
-      remote.updated_at,
+      new Date(remote.created_at),
+      new Date(remote.updated_at),
     )
   }
 

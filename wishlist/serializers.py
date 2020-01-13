@@ -23,7 +23,6 @@ class RequirementSerializer(serializers.Serializer):
 
     def run_validation(self, data: t.Union[t.Type[empty], t.Dict[str, t.Any]] = empty):
         cardboard_wish_id = data.get('cardboard_wish_id')
-        print('run validation :)', cardboard_wish_id)
 
         if cardboard_wish_id is None:
             raise ValidationError([])
@@ -38,22 +37,21 @@ class RequirementSerializer(serializers.Serializer):
                 {} if data is empty else data
             )
             requirement.cardboard_wish_id = cardboard_wish_id
-            print('validation successful', requirement)
             return requirement
 
         except KeyError as e:
             raise ValidationError([['some field', str(e)]])
 
     def save(self, **kwargs):
-        print('save requirement', self.validated_data, kwargs)
-        # return super().save(**kwargs)
+        for k, v in kwargs.items():
+            setattr(self.validated_data, k, v)
         self.validated_data.save()
 
     def update(self, instance, validated_data):
         raise NotImplemented()
 
     def create(self, validated_data):
-        print('requirement create', validated_data)
+        raise NotImplemented()
 
     def to_representation(self, instance: models.Requirement):
         return instance.serialize()

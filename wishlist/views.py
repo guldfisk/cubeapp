@@ -2,7 +2,6 @@ from distutils.util import strtobool
 
 from django.db.models import Min
 from rest_framework import generics, permissions, status
-from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from mtgorp.tools.parsing.exceptions import ParseException
@@ -22,16 +21,25 @@ class RequirementCreate(generics.CreateAPIView):
     serializer_class = serializers.RequirementSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
+    def perform_create(self, serializer):
+        serializer.save(updated_by = self.request.user)
+
 
 class CardboardWishDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CardboardWish.objects.all().prefetch_related('requirements')
     serializer_class = serializers.CardboardWishSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
+    def perform_update(self, serializer):
+        serializer.save(updated_by = self.request.user)
+
 
 class CardboardWishCreate(generics.CreateAPIView):
     serializer_class = serializers.CardboardWishSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def perform_create(self, serializer):
+        serializer.save(updated_by = self.request.user)
 
 
 class WishDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -42,10 +50,16 @@ class WishDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.WishSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
+    def perform_update(self, serializer):
+        serializer.save(updated_by = self.request.user)
+
 
 class WishCreate(generics.CreateAPIView):
     serializer_class = serializers.WishSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def perform_create(self, serializer):
+        serializer.save(updated_by = self.request.user)
 
 
 class ListWishes(generics.ListAPIView):
@@ -126,7 +140,7 @@ class ListWishes(generics.ListAPIView):
         if not ascending:
             sort_key[0] = '-' + sort_key[0]
 
-        queryset = queryset.annotate(min_cardboard_name=Min('cardboard_wishes__cardboard_name')).order_by(*sort_key)
+        queryset = queryset.annotate(min_cardboard_name = Min('cardboard_wishes__cardboard_name')).order_by(*sort_key)
 
         page = self.paginate_queryset(queryset)
 
@@ -148,26 +162,6 @@ class WishListDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
 
-# class FilteredWishlistSerializer(WishListDetail):
-#
-#     def get_object(self):
-#         queryset = self.filter_queryset(self.get_queryset())
-#
-#         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-#
-#         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-#         obj: models.WishList = get_object_or_404(queryset, **filter_kwargs)
-#
-#         self.check_object_permissions(self.request, obj)
-#
-#         obj.wishes = obj.wishes.all()[:5]
-#
-#         return obj
-#
-#     def retrieve(self, request, *args, **kwargs):
-#         return super().retrieve(request, *args, **kwargs)
-
-
 class WishListList(generics.ListCreateAPIView):
     queryset = models.WishList.objects.all().prefetch_related(
         'wishes',
@@ -176,3 +170,6 @@ class WishListList(generics.ListCreateAPIView):
     )
     serializer_class = serializers.WishListSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+    def perform_create(self, serializer):
+        serializer.save(owner = self.request.user)

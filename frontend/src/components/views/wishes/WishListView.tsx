@@ -2,7 +2,7 @@ import React, {RefObject} from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
-import filterFactory, {textFilter, numberFilter} from 'react-bootstrap-table2-filter';
+import filterFactory, {textFilter, numberFilter, Comparator} from 'react-bootstrap-table2-filter';
 import cellEditFactory from 'react-bootstrap-table2-editor';
 
 import {
@@ -25,6 +25,9 @@ import Button from "react-bootstrap/Button";
 import {CardboardSearchView} from "../search/SearchView";
 import {signIn} from "../../auth/controller";
 import {connect} from "react-redux";
+import {DateListItem} from "../../utils/listitems";
+
+import "../../../styling/WishList.css";
 
 
 interface RequirementCreatorProps {
@@ -877,16 +880,27 @@ class WishListView extends React.Component
         dataField: 'weight',
         text: 'Weight',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '12em', textAlign: 'center'};
+          return {width: '7em', textAlign: 'center'};
         },
-        filter: numberFilter(),
+        filter: numberFilter(
+          {
+            placeholder: '',
+            withoutEmptyComparatorOption: true,
+            comparators: [Comparator.EQ, Comparator.GT, Comparator.LT, Comparator.GE, Comparator.LE],
+            style: {display: 'inline-grid'},
+            defaultValue: {number: null, comparator: Comparator.GTE},
+            comparatorStyle: {width: '3em', padding: '0em', float: 'left'},
+            numberStyle: {width: '3em', padding: '0em', float: 'right'},
+
+          }
+        ),
         sort: true,
       },
       {
         dataField: 'createdAt',
         text: 'Created At',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '12em', textAlign: 'center'};
+          return {width: '8em', textAlign: 'center'};
         },
         sort: true,
         editable: false,
@@ -895,7 +909,7 @@ class WishListView extends React.Component
         dataField: 'updatedAt',
         text: 'Updated At',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '12em', textAlign: 'center'};
+          return {width: '8em', textAlign: 'center'};
         },
         sort: true,
         editable: false,
@@ -920,8 +934,8 @@ class WishListView extends React.Component
         return {
           id: wish.id,
           weight: wish.weight,
-          createdAt: wish.createdAt,
-          updatedAt: wish.updatedAt,
+          createdAt: <DateListItem date={wish.createdAt} />,
+          updatedAt: <DateListItem date={wish.updatedAt} />,
           cardboards: this.props.authenticated ? <WishView
             wish={wish}
             onCardboardWishMinimumAmountChange={

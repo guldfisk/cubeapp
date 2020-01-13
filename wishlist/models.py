@@ -2,6 +2,7 @@ import itertools
 
 from distutils.util import strtobool
 
+from django.contrib.auth import get_user_model
 from django.db import models
 
 from typedmodels.models import TypedModel
@@ -15,8 +16,12 @@ from utils.values import JAVASCRIPT_DATETIME_FORMAT
 from wishlist.values import Condition, Language
 
 
+User = get_user_model()
+
+
 class WishList(TimestampedModel, models.Model):
     name = models.CharField(max_length = 255)
+    owner = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'wishlists')
 
     @property
     def last_updated(self):
@@ -35,6 +40,8 @@ class WishList(TimestampedModel, models.Model):
 class Wish(TimestampedModel, models.Model):
     wish_list = models.ForeignKey(WishList, on_delete = models.CASCADE, related_name = 'wishes')
     weight = models.PositiveSmallIntegerField(default = 1)
+    comment = models.CharField(max_length = 255, default = '')
+    updated_by = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'modified_wishes')
 
     @property
     def last_updated(self):
@@ -54,6 +61,7 @@ class CardboardWish(TimestampedModel, models.Model):
     cardboard_name = models.CharField(max_length = 255)
     minimum_amount = models.PositiveSmallIntegerField(default = 1)
     wish = models.ForeignKey(Wish, on_delete = models.CASCADE, related_name = 'cardboard_wishes')
+    updated_by = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'modified_cardboard_wishes')
 
     @property
     def last_updated(self):
@@ -67,6 +75,7 @@ class CardboardWish(TimestampedModel, models.Model):
 
 class Requirement(TimestampedModel, TypedModel):
     cardboard_wish = models.ForeignKey(CardboardWish, on_delete = models.DO_NOTHING, related_name = 'requirements')
+    updated_by = models.ForeignKey(User, on_delete = models.DO_NOTHING, related_name = 'modified_requirements')
 
     def serialize(self):
         return {

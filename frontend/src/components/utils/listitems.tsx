@@ -1,9 +1,38 @@
 import React, {ComponentElement} from "react";
 import ReactTooltip from "react-tooltip";
+import dateFormat from 'dateformat';
 
 import {Cardboard, Cubeable, CubeChange, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
 import {ImageableImage} from "../images";
 import ListGroup from "react-bootstrap/ListGroup";
+
+
+interface DateListItemProps {
+  date: Date
+}
+
+
+export const DateListItem: React.SFC<DateListItemProps> = (props: DateListItemProps) => {
+  const short = dateFormat(props.date, 'dd/mm/yy');
+  const long = props.date.toUTCString();
+  return <span>
+    <a
+      data-tip=""
+      data-for={long}
+    >
+      {short}
+    </a>
+    <ReactTooltip
+      place="top"
+      type="dark"
+      effect="float"
+      id={long}
+      className="date-list-tooltip"
+    >
+      {long}
+    </ReactTooltip>
+  </span>
+};
 
 
 interface PrintingListItemProps {
