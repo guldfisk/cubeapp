@@ -835,8 +835,8 @@ class WishListView extends React.Component
         )
       )
     } else if (type == 'cellEdit') {
-      if (cellEdit.dataField == 'weight') {
-        Wish.update(cellEdit.rowId.toString(), {'weight': cellEdit.newValue}).then(
+      if (['wight', 'comment'].includes(cellEdit.dataField)) {
+        Wish.update(cellEdit.rowId.toString(), {[cellEdit.dataField]: cellEdit.newValue}).then(
           wish => this.loadWishes()
         )
       }
@@ -898,21 +898,28 @@ class WishListView extends React.Component
       },
       {
         dataField: 'createdAt',
-        text: 'Created At',
+        text: 'Created',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '8em', textAlign: 'center'};
+          return {width: '7em', textAlign: 'center'};
         },
         sort: true,
         editable: false,
       },
       {
         dataField: 'updatedAt',
-        text: 'Updated At',
+        text: 'Updated',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '8em', textAlign: 'center'};
+          return {width: '7em', textAlign: 'center'};
         },
         sort: true,
         editable: false,
+      },
+      {
+        dataField: 'comment',
+        text: 'Comment',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '10em', textAlign: 'center'};
+        },
       },
       {
         dataField: 'delete',
@@ -969,6 +976,7 @@ class WishListView extends React.Component
             }
           /> : <WishView wish={wish}/>,
           wish: wish,
+          comment: wish.comment,
         }
       }
     );

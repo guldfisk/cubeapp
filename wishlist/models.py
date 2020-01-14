@@ -19,6 +19,10 @@ from wishlist.values import Condition, Language
 User = get_user_model()
 
 
+# class Order(TimestampedModel, models.Model):
+#     owner = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'orders')
+
+
 class WishList(TimestampedModel, models.Model):
     name = models.CharField(max_length = 255)
     owner = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'wishlists')

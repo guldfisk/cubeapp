@@ -10,13 +10,27 @@ from django.conf import settings
 
 from proxypdf.write import ProxyWriter
 
+from mtgorp.db.create import update_database
+from mtgorp.managejson.update import check_and_update
+
 from mtgimg.interface import SizeSlug
 
 from magiccube.collections.laps import TrapCollection
 
 from api import models
+from api.mail import mail_me
 
 from resources.staticimageloader import image_loader
+
+
+@shared_task()
+def check_mtg_json():
+    if check_and_update():
+        update_database()
+        mail_me(
+            'new mtgjson',
+            'lmao',
+        )
 
 
 @shared_task()

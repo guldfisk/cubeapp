@@ -83,7 +83,7 @@ class WishSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Wish
-        fields = ('id', 'weight', 'cardboard_wishes', 'created_at', 'updated_at', 'wish_list_id')
+        fields = ('id', 'weight', 'cardboard_wishes', 'created_at', 'updated_at', 'wish_list_id', 'comment')
 
 
 class WishListSerializer(serializers.ModelSerializer):

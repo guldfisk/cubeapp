@@ -18,6 +18,8 @@ DATABASE_HOST = _config_parser['client']['host']
 MAILGUN_KEY = _config_parser['default']['mailgun_key']
 MAILGUN_DOMAIN = _config_parser['default']['mailgun_domain']
 
+OWNER_EMAIL = _config_parser['default']['owner_email']
+
 SPACES_PUBLIC_KEY = _config_parser['default']['spaces_public_key']
 SPACES_SECRET_KEY = _config_parser['default']['spaces_secret_key']
 

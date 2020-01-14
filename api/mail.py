@@ -23,3 +23,9 @@ def send_mail(
         },
     )
 
+
+def mail_me(
+    subject: str,
+    content: str,
+):
+    return send_mail(subject, content, [settings.OWNER_EMAIL])

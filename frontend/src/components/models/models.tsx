@@ -1875,7 +1875,6 @@ export class CardboardWish {
     )
   };
 
-
 }
 
 
@@ -1885,13 +1884,22 @@ export class Wish {
   cardboardWishes: CardboardWish[];
   createdAt: Date;
   updatedAt: Date;
+  comment: string;
 
-  constructor(id: string, weight: number, cardboardWishes: CardboardWish[], createdAt: Date, updatedAt: Date) {
+  constructor(
+    id: string,
+    weight: number,
+    cardboardWishes: CardboardWish[],
+    createdAt: Date,
+    updatedAt: Date,
+    comment: string,
+    ) {
     this.id = id;
     this.weight = weight;
     this.cardboardWishes = cardboardWishes;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.comment = comment;
   }
 
   public static fromRemote(remote: any): Wish {
@@ -1903,6 +1911,7 @@ export class Wish {
       ),
       new Date(remote.created_at),
       new Date(remote.updated_at),
+      remote.comment,
     )
   }
 
