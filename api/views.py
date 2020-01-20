@@ -406,8 +406,8 @@ class VersionedCubesList(generics.ListCreateAPIView):
                 versioned_cube = versioned_cube,
             )
             models.ConstrainedNodes.objects.create(
-                constrained_nodes_content = JsonId.serialize(NodeCollection(())),
-                group_map_content = JsonId.serialize(GroupMap({})),
+                constrained_nodes = NodeCollection(()),
+                group_map = GroupMap({}),
                 release = release,
             )
 

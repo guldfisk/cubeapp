@@ -16,6 +16,7 @@ interface SamplePackPageProps {
 
 interface SamplePackPageState {
   pack: CubeablesContainer | null
+  packSize: number
 }
 
 class SamplePackPage extends React.Component<SamplePackPageProps, SamplePackPageState> {
@@ -24,13 +25,14 @@ class SamplePackPage extends React.Component<SamplePackPageProps, SamplePackPage
     super(props);
     this.state = {
       pack: null,
+      packSize: 12,
     };
   }
 
   getSamplePack = (): void => {
     CubeRelease.samplePack(
       this.props.match.params.id,
-      12,
+      this.state.packSize,
     ).then(
       pack => {
         this.setState({pack})
@@ -61,6 +63,11 @@ class SamplePackPage extends React.Component<SamplePackPageProps, SamplePackPage
         >
           New pack
         </Button>
+        <input
+          type='number'
+          defaultValue={this.state.packSize.toString()}
+          onChange={event => this.setState({packSize: parseInt(event.target.value)})}
+        />
       </Row>
       <Row>
         <Col>
