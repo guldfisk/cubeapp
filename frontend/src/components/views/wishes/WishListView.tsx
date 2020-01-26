@@ -835,7 +835,7 @@ class WishListView extends React.Component
         )
       )
     } else if (type == 'cellEdit') {
-      if (['wight', 'comment'].includes(cellEdit.dataField)) {
+      if (['weight', 'comment'].includes(cellEdit.dataField)) {
         Wish.update(cellEdit.rowId.toString(), {[cellEdit.dataField]: cellEdit.newValue}).then(
           wish => this.loadWishes()
         )
@@ -1073,7 +1073,7 @@ class WishListView extends React.Component
                 )
               }
               cellEdit={
-                this.props.authenticated ? cellEditFactory(
+                true ? cellEditFactory(
                   {
                     mode: 'click',
                     blurToSave: true,

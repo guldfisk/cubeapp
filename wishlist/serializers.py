@@ -80,6 +80,7 @@ class WishSerializer(serializers.ModelSerializer):
     updated_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     cardboard_wishes = CardboardWishSerializer(many = True, read_only = True)
     wish_list_id = fields.IntegerField(write_only = True)
+    comment = serializers.CharField(allow_blank = True)
 
     class Meta:
         model = models.Wish
