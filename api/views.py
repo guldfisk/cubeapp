@@ -49,7 +49,6 @@ from api.mail import send_mail
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 
-
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
     'Trap': Trap,
@@ -138,16 +137,25 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
 
 
 class SearchView(generics.ListAPIView):
-    _search_target_map: t.Dict[str, t.Tuple[t.Type[ExtractionStrategy], orpserialize.ModelSerializer]] = {
-        'printings': (PrintingStrategy, orpserialize.FullPrintingSerializer),
-        'cardboards': (CardboardStrategy, orpserialize.MinimalCardboardSerializer),
+    _search_target_map: t.Dict[
+        t.Tuple[str, bool],
+        t.Tuple[t.Type[ExtractionStrategy], orpserialize.ModelSerializer],
+    ] = {
+        ('printings', False): (PrintingStrategy, orpserialize.FullPrintingSerializer),
+        ('cardboards', False): (CardboardStrategy, orpserialize.MinimalCardboardSerializer),
+        ('printings', True): (PrintingStrategy, orpserialize.PrintingIdSerializer),
+        ('cardboards', True): (CardboardStrategy, orpserialize.CardboardIdSerializer),
     }
 
     def list(self, request, *args, **kwargs):
         try:
             query = self.request.query_params['query']
+            native = strtobool(self.request.query_params.get('native', 'False'))
             strategy, serializer = self._search_target_map[
-                self.request.query_params.get('search_target', 'printings')
+                (
+                    self.request.query_params.get('search_target', 'printings'),
+                    native,
+                )
             ]
 
             _sort_keys: t.Dict[str, t.Callable[[t.Union[Printing, Cardboard]], t.Any]] = {

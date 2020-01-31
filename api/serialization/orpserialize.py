@@ -32,6 +32,20 @@ class ModelSerializer(t.Generic[T]):
         pass
 
 
+class PrintingIdSerializer(object):
+
+    @classmethod
+    def serialize(cls, printing: Printing) -> int:
+        return printing.id
+
+
+class CardboardIdSerializer(object):
+
+    @classmethod
+    def serialize(cls, cardboard: Cardboard) -> str:
+        return cardboard.name
+
+
 class ExpansionSerializer(ModelSerializer[Expansion]):
 
     @classmethod
