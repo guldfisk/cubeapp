@@ -371,6 +371,13 @@ export class Purple extends Cubeable {
     return 'Purple';
   };
 
+  serialize = (): any => {
+    return {
+      name: this.name,
+      description: '',
+    }
+  }
+
 }
 
 
@@ -1007,9 +1014,10 @@ export class ReleasePatch extends Atomic {
   }
 
   private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): any {
-    let cubeDelta: { printings: [any, number][], traps: [any, number][] } = {
+    let cubeDelta: { [key: string]: any[]} = {
       printings: [],
       traps: [],
+      purples: [],
     };
     let nodeDelta: any = {nodes: []};
     let groupDelta: { groups: [string, number][] } = {groups: []};
@@ -1027,6 +1035,13 @@ export class ReleasePatch extends Atomic {
         );
       } else if (update instanceof Trap) {
         cubeDelta.traps.push(
+          [
+            update.serialize(),
+            multiplicity,
+          ]
+        );
+      } else if (update instanceof Purple) {
+        cubeDelta.purples.push(
           [
             update.serialize(),
             multiplicity,
