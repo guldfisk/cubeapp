@@ -46,6 +46,7 @@ class SealedSession(models.Model):
                 user = user,
                 pool = Cube(cubeables[i * pool_size: (i + 1) * pool_size]),
                 key = key,
+                session = sealed_session,
             )
 
         return sealed_session
@@ -53,5 +54,6 @@ class SealedSession(models.Model):
 
 class Pool(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete = models.CASCADE, related_name = 'sealed_pools')
+    session = models.ForeignKey(SealedSession, on_delete = models.CASCADE, related_name = 'pools')
     pool: Cube = OrpField(model_type = Cube)
     key = models.CharField(max_length = 63)

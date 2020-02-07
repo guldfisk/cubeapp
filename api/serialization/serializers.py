@@ -55,18 +55,21 @@ class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'created_at', 'author', 'description')
 
 
-class MinimalCubeReleaseSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only=True)
-    created_at = serializers.DateTimeField(read_only=True, format = JAVASCRIPT_DATETIME_FORMAT)
-    name = serializers.CharField(read_only=True)
-    checksum = serializers.CharField(read_only=True)
-    intended_size = serializers.IntegerField(read_only=True)
+class NameCubeReleaseSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only = True)
+    name = serializers.CharField(read_only = True)
 
     def update(self, instance, validated_data):
         raise NotImplemented()
 
     def create(self, validated_data):
         raise NotImplemented()
+
+
+class MinimalCubeReleaseSerializer(NameCubeReleaseSerializer):
+    created_at = serializers.DateTimeField(read_only=True, format = JAVASCRIPT_DATETIME_FORMAT)
+    checksum = serializers.CharField(read_only=True)
+    intended_size = serializers.IntegerField(read_only=True)
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):

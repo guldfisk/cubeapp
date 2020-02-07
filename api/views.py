@@ -279,7 +279,7 @@ class SignupEndpoint(generics.GenericAPIView):
     serializer_class = serializers.SignupSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data = request.data)  # type: serializers.SignupSerializer
+        serializer: serializers.SignupSerializer = self.get_serializer(data = request.data)
         serializer.is_valid(raise_exception = True)
 
         token_hash = hashlib.sha3_256()

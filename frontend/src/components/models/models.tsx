@@ -2078,3 +2078,19 @@ export class WishList {
   };
 
 }
+
+
+export class SealedPool extends Atomic {
+  createdAt: string;
+  poolSize: number;
+  release: CubeReleaseMeta;
+
+  constructor(id: string, createdAt: string, poolSize: number, release: CubeReleaseMeta) {
+    super(id);
+    this.createdAt = createdAt;
+    this.poolSize = poolSize;
+    this.release = release;
+  }
+
+
+}

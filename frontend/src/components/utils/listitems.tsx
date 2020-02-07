@@ -284,7 +284,7 @@ interface PurpleListItemProps {
 export const PurpleListItem: React.SFC<PurpleListItemProps> = (props) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
     props.multiplicity.toString() + 'x '
-    : ''}${props.purple.name}` + ' XD';
+    : ''}${props.purple.name}`;
 
   return <a
     onClick={
