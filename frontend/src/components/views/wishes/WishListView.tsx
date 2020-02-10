@@ -1073,12 +1073,12 @@ class WishListView extends React.Component
                 )
               }
               cellEdit={
-                true ? cellEditFactory(
+                cellEditFactory(
                   {
                     mode: 'click',
                     blurToSave: true,
                   }
-                ) : undefined
+                )
               }
               onTableChange={this.handleTableChanged}
             />

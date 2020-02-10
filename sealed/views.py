@@ -1,9 +1,8 @@
 from django.db.models import Prefetch
 from rest_framework import generics, permissions
-from rest_framework.request import Request
-from rest_framework.response import Response
 
 from api.models import CubeRelease
+
 from sealed import models, serializers
 
 
@@ -25,14 +24,3 @@ class PoolList(generics.ListAPIView):
             'session',
             Prefetch('session__release', queryset = CubeRelease.objects.all().only('name')),
         ).order_by('-session__created_at')
-
-    # def list(self, request, *args, **kwargs):
-    #     return self.get_paginated_response(
-    #         [
-    #             serializers.PoolSerializer(pool).data
-    #             for pool in
-    #             self.paginate_queryset(
-    #
-    #             )
-    #         ]
-    #     )

@@ -515,15 +515,30 @@ export class Cube extends MinimalCube {
 }
 
 
-export class CubeReleaseMeta extends Atomic {
+export class CubeReleaseName extends Atomic {
   name: string;
+
+  constructor(id: string, name: string) {
+    super(id);
+    this.name = name
+  }
+
+  public static fromRemote(remote: any): CubeReleaseName {
+    return new CubeReleaseName(
+      remote.id,
+      remote.name,
+    )
+  }
+}
+
+
+export class CubeReleaseMeta extends CubeReleaseName {
   createdAt: string;
   createAtTimestamp: number;
   intendedSize: string;
 
   constructor(id: string, name: string, createdAt: string, intendedSize: string) {
-    super(id);
-    this.name = name;
+    super(id, name);
     this.createdAt = createdAt;
     this.createAtTimestamp = Date.parse(createdAt);
     this.intendedSize = intendedSize;
@@ -597,81 +612,6 @@ export class PrintingCounter extends Counter<Printing> {
   };
 
 }
-
-
-// export class PrintingCollection extends MultiplicityList<Printing> {
-//
-//   constructor(items: [Printing, number][] = []) {
-//     super(items);
-//     this.items.sort(
-//       alphabeticalPropertySortMethodFactory(
-//         ([printing, _]: [Printing, number]) => printing.name.toString()
-//       )
-//     );
-//   }
-//
-//   public static collectFromIterable<T>(printings: IterableIterator<Printing>): PrintingCollection {
-//     let collector: Record<string, [Printing, number]> = {};
-//     for (const printing of printings) {
-//       let key = printing.id.toString();
-//       if (collector[key] === undefined) {
-//         collector[key] = [printing, 1]
-//       } else {
-//         collector[key][1] += 1
-//       }
-//     }
-//     return new PrintingCollection(
-//       Object.values(collector)
-//     )
-//   }
-//
-//   printings_of_color = (color: string): [Printing, number][] => {
-//     return this.items.filter(
-//       ([printing, _]: [Printing, number]) =>
-//         !printing.types.includes('Land')
-//         && printing.color.length === 1
-//         && printing.color[0] === color
-//     )
-//   };
-//
-//   gold_printings = (): [Printing, number][] => {
-//     return this.items.filter(
-//       ([printing, _]: [Printing, number]) =>
-//         !printing.types.includes('Land')
-//         && printing.color.length > 1
-//     )
-//   };
-//
-//   colorless_printings = (): [Printing, number][] => {
-//     return this.items.filter(
-//       ([printing, _]: [Printing, number]) =>
-//         !printing.types.includes('Land')
-//         && printing.color.length === 0
-//     )
-//   };
-//
-//   land_printings = (): [Printing, number][] => {
-//     return this.items.filter(
-//       ([printing, _]: [Printing, number]) =>
-//         printing.types.includes('Land')
-//     )
-//   };
-//
-//   grouped_printings = (): [Printing, number][][] => {
-//     return [
-//       this.printings_of_color('W'),
-//       this.printings_of_color('U'),
-//       this.printings_of_color('B'),
-//       this.printings_of_color('R'),
-//       this.printings_of_color('G'),
-//       this.gold_printings(),
-//       this.colorless_printings(),
-//       this.land_printings(),
-//     ]
-//   };
-//
-// }
-
 
 export class CubeablesContainer {
   printings: PrintingCounter;
@@ -1014,7 +954,7 @@ export class ReleasePatch extends Atomic {
   }
 
   private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): any {
-    let cubeDelta: { [key: string]: any[]} = {
+    let cubeDelta: { [key: string]: any[] } = {
       printings: [],
       traps: [],
       purples: [],
@@ -1908,7 +1848,7 @@ export class Wish {
     createdAt: Date,
     updatedAt: Date,
     comment: string,
-    ) {
+  ) {
     this.id = id;
     this.weight = weight;
     this.cardboardWishes = cardboardWishes;
@@ -2080,17 +2020,79 @@ export class WishList {
 }
 
 
-export class SealedPool extends Atomic {
-  createdAt: string;
+export class SealedPoolMeta extends Atomic {
+  createdAt: Date;
   poolSize: number;
-  release: CubeReleaseMeta;
+  release: CubeReleaseName;
 
-  constructor(id: string, createdAt: string, poolSize: number, release: CubeReleaseMeta) {
+  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName) {
     super(id);
     this.createdAt = createdAt;
     this.poolSize = poolSize;
     this.release = release;
   }
 
+  public static fromRemote(remote: any): SealedPoolMeta {
+    return new SealedPoolMeta(
+      remote.key,
+      new Date(remote.created_at),
+      remote.pool_size,
+      CubeReleaseName.fromRemote(remote.release),
+    )
+  }
+
+  public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedPoolMeta>> {
+    return axios.get(
+      apiPath + 'sealed/pools/',
+      {
+        params: {
+          offset,
+          limit,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (pool: any) => SealedPoolMeta.fromRemote(pool)
+          ),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+}
+
+
+export class SealedPool extends SealedPoolMeta {
+  pool: CubeablesContainer;
+
+  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName, pool: CubeablesContainer) {
+    super(id, createdAt, poolSize, release);
+    this.pool = pool;
+  }
+
+  public static fromRemote(remote: any): SealedPool {
+    return new SealedPool(
+      remote.key,
+      new Date(remote.created_at),
+      remote.pool_size,
+      CubeReleaseName.fromRemote(remote.release),
+      CubeablesContainer.fromRemote(remote.pool),
+    )
+  }
+
+  public static get(key: string): Promise<SealedPool> {
+    return axios.get(
+      apiPath + 'sealed/' + key + '/',
+    ).then(
+      response => SealedPool.fromRemote(response.data)
+    )
+  }
 
 }

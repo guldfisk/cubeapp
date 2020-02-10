@@ -1,13 +1,13 @@
 import React from 'react';
-import {ReactElement} from 'react';
 
 import Row from 'react-bootstrap/Row';
 
-import {CubeablesContainer, Cubeable, PrintingCounter, Printing} from "../../models/models";
-import {ImageableListItem} from "../../utils/listitems";
 import ListGroup from "react-bootstrap/ListGroup";
 import Container from "react-bootstrap/Container";
+
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
+import {CubeablesContainer, Cubeable, PrintingCounter} from "../../models/models";
+import {ImageableListItem} from "../../utils/listitems";
 
 
 interface RawCubeListViewProps {
