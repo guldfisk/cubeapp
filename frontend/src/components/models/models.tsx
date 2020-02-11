@@ -2024,12 +2024,14 @@ export class SealedPoolMeta extends Atomic {
   createdAt: Date;
   poolSize: number;
   release: CubeReleaseName;
+  players: User[];
 
-  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName) {
+  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName, players: User[]) {
     super(id);
     this.createdAt = createdAt;
     this.poolSize = poolSize;
     this.release = release;
+    this.players = players;
   }
 
   public static fromRemote(remote: any): SealedPoolMeta {
@@ -2038,6 +2040,7 @@ export class SealedPoolMeta extends Atomic {
       new Date(remote.created_at),
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
+      remote.players.map((player: any) => User.fromRemote(player)),
     )
   }
 
@@ -2072,8 +2075,15 @@ export class SealedPoolMeta extends Atomic {
 export class SealedPool extends SealedPoolMeta {
   pool: CubeablesContainer;
 
-  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName, pool: CubeablesContainer) {
-    super(id, createdAt, poolSize, release);
+  constructor(
+    id: string,
+    createdAt: Date,
+    poolSize: number,
+    release: CubeReleaseName,
+    players: User[],
+    pool: CubeablesContainer,
+  ) {
+    super(id, createdAt, poolSize, release, players);
     this.pool = pool;
   }
 
@@ -2083,6 +2093,7 @@ export class SealedPool extends SealedPoolMeta {
       new Date(remote.created_at),
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
+      remote.players.map((player: any) => User.fromRemote(player)),
       CubeablesContainer.fromRemote(remote.pool),
     )
   }

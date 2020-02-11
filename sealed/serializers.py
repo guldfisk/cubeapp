@@ -8,6 +8,15 @@ from utils.values import JAVASCRIPT_DATETIME_FORMAT
 from sealed import models
 
 
+class PoolUserField(serializers.RelatedField):
+
+    def to_representation(self, value: models.Pool):
+        return UserSerializer(value.user).data
+
+    def to_internal_value(self, data):
+        pass
+
+
 class MinimalPoolSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
     created_at = serializers.DateTimeField(
@@ -17,10 +26,11 @@ class MinimalPoolSerializer(serializers.ModelSerializer):
     )
     pool_size = serializers.IntegerField(source = 'session.pool_size', read_only = True)
     release = NameCubeReleaseSerializer(source = 'session.release', read_only = True)
+    players = PoolUserField(source = 'session.pools', read_only = True, many = True)
 
     class Meta:
         model = models.Pool
-        fields = ('key', 'user', 'created_at', 'pool_size', 'release')
+        fields = ('key', 'user', 'created_at', 'pool_size', 'release', 'players')
 
 
 class PoolSerializer(MinimalPoolSerializer):
@@ -30,4 +40,4 @@ class PoolSerializer(MinimalPoolSerializer):
 
     class Meta:
         model = models.Pool
-        fields = ('key', 'user', 'created_at', 'pool_size', 'release', 'pool')
+        fields = ('key', 'user', 'created_at', 'pool_size', 'release', 'players', 'pool')

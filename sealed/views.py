@@ -1,4 +1,6 @@
 from django.db.models import Prefetch
+from django.contrib.auth import get_user_model
+
 from rest_framework import generics, permissions
 
 from api.models import CubeRelease
@@ -23,4 +25,5 @@ class PoolList(generics.ListAPIView):
         ).prefetch_related(
             'session',
             Prefetch('session__release', queryset = CubeRelease.objects.all().only('name')),
+            Prefetch('session__pools__user', queryset = get_user_model().objects.all().only('username')),
         ).order_by('-session__created_at')

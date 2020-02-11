@@ -3,7 +3,7 @@ import React from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 
-import {SealedPoolMeta} from '../../models/models';
+import {SealedPoolMeta, User} from '../../models/models';
 
 import Col from "react-bootstrap/Col";
 
@@ -113,6 +113,17 @@ export default class PoolsPage extends React.Component<null, PoolsPageState> {
         </Link>,
         headerStyle: (column: any, colIndex: number) => {
           return {width: '5em', textAlign: 'center'};
+        },
+      },
+      {
+        dataField: 'players',
+        text: 'Players',
+        editable: false,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.map(
+          (player: User) => player.username
+        ).join(', '),
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '7em', textAlign: 'center'};
         },
       },
       {
