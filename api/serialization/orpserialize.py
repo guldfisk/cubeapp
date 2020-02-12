@@ -1,6 +1,7 @@
 import typing as t
 from abc import abstractmethod
 
+from mtgorp.models.collections.deck import Deck
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.expansion import Expansion
@@ -17,7 +18,6 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
-
 
 T = t.TypeVar('T')
 
@@ -217,7 +217,7 @@ class TrapSerializer(ModelSerializer[Trap]):
             'node': NodeSerializer.serialize(trap.node),
             'intention_type': trap.intention_type.name,
             'type': 'trap',
-            'string_representation': trap.node.get_minimal_string(identified_by_id=False),
+            'string_representation': trap.node.get_minimal_string(identified_by_id = False),
         }
 
 
@@ -434,4 +434,28 @@ class TrapCollectionSerializer(ModelSerializer[TrapCollection]):
                 for trap, multiplicity in
                 serializeable.traps.items()
             ]
+        }
+
+
+class DeckSerializer(ModelSerializer[Deck]):
+
+    @classmethod
+    def serialize(cls, serializeable: Deck) -> compacted_model:
+        return {
+            'maindeck': [
+                (
+                    PrintingSerializer.serialize(printing),
+                    multiplicity,
+                )
+                for printing, multiplicity in
+                serializeable.maindeck.items()
+            ],
+            'sideboard': [
+                (
+                    PrintingSerializer.serialize(printing),
+                    multiplicity,
+                )
+                for printing, multiplicity in
+                serializeable.sideboard.items()
+            ],
         }

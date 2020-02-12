@@ -22,8 +22,10 @@ import SearchPage from "../pages/search/SearchPage";
 import SamplePackPage from "../pages/SamplePackPage";
 import WishListPage from "../pages/wishes/WishListPage";
 import WishListsPage from "../pages/wishes/WishListsPage";
-import PoolsPage from "../pages/sealed/PoolsPage";
-import PoolPage from "../pages/sealed/PoolPage";
+// import PoolsPage from "../pages/sealed/PoolsPage";
+// import PoolPage from "../pages/sealed/PoolPage";
+import SessionsPage from "../pages/sealed/SessionsPage";
+import SessionPage from "../pages/sealed/SessionPage";
 
 
 export const routes: [
@@ -31,7 +33,7 @@ export const routes: [
   (typeof React.Component) | React.FunctionComponent,
   boolean,
   { [key: string]: any }
-][] = [
+  ][] = [
   ['/', CubesPage, false, {exact: true}],
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
@@ -48,8 +50,10 @@ export const routes: [
   ['/patches', PatchesPage, false, {}],
   ['/syntax', SearchSyntaxPage, false, {}],
   ['/search', SearchPage, false, {}],
-  ['/pools', PoolsPage, true, {}],
-  ['/pools/:key([a-z0-9\\-]+)', PoolPage, true, {}],
+  // ['/pools', PoolsPage, true, {}],
+  ['/sealed/:id(\\d+)', SessionPage, false, {}],
+  ['/sealed', SessionsPage, false, {}],
+  // ['/pools/:key([a-z0-9\\-]+)', PoolPage, true, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [
     '/patch/:id(\\d+)', PatchPage, false,

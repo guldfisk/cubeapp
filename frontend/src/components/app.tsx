@@ -110,7 +110,7 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Wish Lists</Nav.Link>
             </LinkContainer>
 
-            <LinkContainer to='/pools/'>
+            <LinkContainer to='/sealed/'>
               <Nav.Link>Sealed</Nav.Link>
             </LinkContainer>
 

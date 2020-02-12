@@ -2020,48 +2020,58 @@ export class WishList {
 }
 
 
-export class SealedPoolMeta extends Atomic {
+export class SealedSession extends Atomic {
+  format: string;
   createdAt: Date;
   poolSize: number;
   release: CubeReleaseName;
   players: User[];
+  state: string;
 
-  constructor(id: string, createdAt: Date, poolSize: number, release: CubeReleaseName, players: User[]) {
+  constructor(
+    id: string,
+    format: string,
+    createdAt: Date,
+    poolSize: number,
+    release: CubeReleaseName,
+    players: User[],
+    state: string,
+  ) {
     super(id);
+    this.format = format;
     this.createdAt = createdAt;
     this.poolSize = poolSize;
     this.release = release;
     this.players = players;
+    this.state = state;
   }
 
-  public static fromRemote(remote: any): SealedPoolMeta {
-    return new SealedPoolMeta(
-      remote.key,
+  public static fromRemote(remote: any): SealedSession {
+    return new SealedSession(
+      remote.id,
+      remote.format,
       new Date(remote.created_at),
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
+      remote.state,
     )
   }
 
-  public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedPoolMeta>> {
+  public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedSession>> {
     return axios.get(
-      apiPath + 'sealed/pools/',
+      apiPath + 'sealed/sessions/',
       {
         params: {
           offset,
           limit,
         },
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
       },
     ).then(
       response => {
         return {
           objects: response.data.results.map(
-            (pool: any) => SealedPoolMeta.fromRemote(pool)
+            (session: any) => SealedSession.fromRemote(session)
           ),
           hits: response.data.count,
         }
@@ -2071,39 +2081,127 @@ export class SealedPoolMeta extends Atomic {
 
 }
 
+export class SealedPoolMeta extends Atomic {
+  user: User;
+  decks: string[];
 
-export class SealedPool extends SealedPoolMeta {
-  pool: CubeablesContainer;
+  constructor(id: string, user: User, decks: string[]) {
+    super(id);
+    this.user = user;
+    this.decks = decks;
+  }
+
+  public static fromRemote(remote: any): SealedPoolMeta {
+    return new SealedPoolMeta(
+      remote.key,
+      User.fromRemote(remote.user),
+      remote.decks,
+    )
+  }
+
+  // public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedPoolMeta>> {
+  //   return axios.get(
+  //     apiPath + 'sealed/pools/',
+  //     {
+  //       params: {
+  //         offset,
+  //         limit,
+  //       },
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Token ${store.getState().token}`,
+  //       }
+  //     },
+  //   ).then(
+  //     response => {
+  //       return {
+  //         objects: response.data.results.map(
+  //           (pool: any) => SealedPoolMeta.fromRemote(pool)
+  //         ),
+  //         hits: response.data.count,
+  //       }
+  //     }
+  //   )
+  // }
+
+}
+
+export class FullSealedSession extends SealedSession {
+  pools: SealedPoolMeta[];
 
   constructor(
     id: string,
+    format: string,
     createdAt: Date,
     poolSize: number,
     release: CubeReleaseName,
     players: User[],
-    pool: CubeablesContainer,
+    state: string,
+    pools: SealedPoolMeta[],
   ) {
-    super(id, createdAt, poolSize, release, players);
-    this.pool = pool;
+    super(id, format, createdAt, poolSize, release, players, state);
+    this.pools = pools;
   }
 
-  public static fromRemote(remote: any): SealedPool {
-    return new SealedPool(
-      remote.key,
+  public static fromRemote(remote: any): FullSealedSession {
+    return new FullSealedSession(
+      remote.id,
+      remote.format,
       new Date(remote.created_at),
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
-      CubeablesContainer.fromRemote(remote.pool),
+      remote.state,
+      remote.pools.map(
+        (pool: any) => SealedPoolMeta.fromRemote(pool)
+      ),
     )
   }
 
-  public static get(key: string): Promise<SealedPool> {
+  public static get(id: string): Promise<FullSealedSession> {
     return axios.get(
-      apiPath + 'sealed/' + key + '/',
+      apiPath + 'sealed/sessions/' + id + '/',
     ).then(
-      response => SealedPool.fromRemote(response.data)
+      response => FullSealedSession.fromRemote(response.data)
     )
   }
+
+
+}
+
+
+export class SealedPool extends SealedPoolMeta {
+  pool: CubeablesContainer;
+
+  // constructor(
+  //   id: string,
+  //   createdAt: Date,
+  //   poolSize: number,
+  //   release: CubeReleaseName,
+  //   players: User[],
+  //   pool: CubeablesContainer,
+  // ) {
+  //   super(id, createdAt, poolSize, release, players);
+  //   this.pool = pool;
+  // }
+  //
+  // public static fromRemote(remote: any): SealedPool {
+  //   return new SealedPool(
+  //     remote.key,
+  //     new Date(remote.created_at),
+  //     remote.pool_size,
+  //     CubeReleaseName.fromRemote(remote.release),
+  //     remote.players.map((player: any) => User.fromRemote(player)),
+  //     CubeablesContainer.fromRemote(remote.pool),
+  //   )
+  // }
+  //
+  // public static get(key: string): Promise<SealedPool> {
+  //   return axios.get(
+  //     apiPath + 'sealed/' + key + '/',
+  //   ).then(
+  //     response => SealedPool.fromRemote(response.data)
+  //   )
+  // }
 
 }

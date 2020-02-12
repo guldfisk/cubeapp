@@ -870,7 +870,7 @@ class WishListView extends React.Component
         editable: false,
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
           className="fa fa-plus-circle"
-          onClick={() => this.setState({creatingNewCardboardWish: row.id})}
+          onClick={() => this.props.authenticated && this.setState({creatingNewCardboardWish: row.id})}
         />,
         headerStyle: (column: any, colIndex: number) => {
           return {width: '2em', textAlign: 'center'};
