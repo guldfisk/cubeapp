@@ -26,15 +26,27 @@ from sealed import models, serializers
 from sealed.formats import Format
 
 
+class PoolDetailPermissions(BasePermission):
+
+    def has_permission(self, request, view):
+        return True
+
+    def has_object_permission(self, request, view, obj: models.Pool):
+        return (
+            obj.session.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
+            or request.user == obj.user
+        )
+
+
 class PoolDetail(generics.RetrieveDestroyAPIView):
     queryset = models.Pool.objects.all().select_related(
         'user',
     ).prefetch_related(
-        Prefetch('decks', queryset = models.PoolDeck.objects.all().order_by('-created_at').only('id')),
+        'decks'
+        # Prefetch('decks', queryset = models.PoolDeck.objects.all().order_by('-created_at').only('id')),
     )
-    lookup_field = 'key'
     serializer_class = serializers.PoolSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+    permission_classes = [PoolDetailPermissions, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         try:
@@ -80,6 +92,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
             deck = models.PoolDeck.objects.create(
                 deck = deck,
                 pool = pool,
+                name = request.data.get('name', 'deck'),
             )
 
             if all(models.Pool.objects.filter(session = pool.session).values_list(Count('decks'), flat = True)):
@@ -133,7 +146,10 @@ class SessionDetailPermissions(BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj: models.SealedSession):
-        return obj.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
+        return (
+            obj.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
+            or request.user in (pool.user for pool in obj.pools.all())
+        )
 
 
 class SessionDetail(generics.RetrieveAPIView):

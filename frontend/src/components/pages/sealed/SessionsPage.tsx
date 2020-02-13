@@ -103,6 +103,13 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         hidden: true,
       },
       {
+        dataField: 'name',
+        text: 'Name',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '5em', textAlign: 'center'};
+        },
+      },
+      {
         dataField: 'format',
         text: 'Format',
         headerStyle: (column: any, colIndex: number) => {

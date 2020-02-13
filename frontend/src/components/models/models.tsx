@@ -2023,6 +2023,7 @@ export class WishList {
 export class SealedSession extends Atomic {
   format: string;
   createdAt: Date;
+  name: string;
   poolSize: number;
   release: CubeReleaseName;
   players: User[];
@@ -2032,6 +2033,7 @@ export class SealedSession extends Atomic {
     id: string,
     format: string,
     createdAt: Date,
+    name: string,
     poolSize: number,
     release: CubeReleaseName,
     players: User[],
@@ -2040,6 +2042,7 @@ export class SealedSession extends Atomic {
     super(id);
     this.format = format;
     this.createdAt = createdAt;
+    this.name = name;
     this.poolSize = poolSize;
     this.release = release;
     this.players = players;
@@ -2051,6 +2054,7 @@ export class SealedSession extends Atomic {
       remote.id,
       remote.format,
       new Date(remote.created_at),
+      remote.name,
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
@@ -2093,7 +2097,7 @@ export class SealedPoolMeta extends Atomic {
 
   public static fromRemote(remote: any): SealedPoolMeta {
     return new SealedPoolMeta(
-      remote.key,
+      remote.id,
       User.fromRemote(remote.user),
       remote.decks,
     )
@@ -2133,13 +2137,14 @@ export class FullSealedSession extends SealedSession {
     id: string,
     format: string,
     createdAt: Date,
+    name: string,
     poolSize: number,
     release: CubeReleaseName,
     players: User[],
     state: string,
     pools: SealedPoolMeta[],
   ) {
-    super(id, format, createdAt, poolSize, release, players, state);
+    super(id, format, createdAt, name, poolSize, release, players, state);
     this.pools = pools;
   }
 
@@ -2148,6 +2153,7 @@ export class FullSealedSession extends SealedSession {
       remote.id,
       remote.format,
       new Date(remote.created_at),
+      remote.name,
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),

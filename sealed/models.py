@@ -14,6 +14,7 @@ from api.fields.orp import OrpField
 from api.models import CubeRelease
 from mtgorp.models.collections.deck import Deck
 from utils.fields import EnumField
+from utils.methods import get_random_name
 
 
 class GenerateSealedPoolException(Exception):
@@ -27,6 +28,7 @@ class SealedSession(models.Model):
         FINISHED = 2
 
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
+    name = models.CharField(max_length = 255, default = get_random_name)
     state = EnumField(SealedSessionState, default = SealedSessionState.DECK_BUILDING)
     pool_size = models.PositiveSmallIntegerField()
     release = models.ForeignKey(CubeRelease, on_delete = models.CASCADE, related_name = 'sealed_sessions')
@@ -36,7 +38,7 @@ class SealedSession(models.Model):
     def generate(
         cls,
         release: CubeRelease,
-        users: t.Iterable[t.Tuple[AbstractUser, str]],
+        users: t.Iterable[AbstractUser],
         pool_size: int,
     ) -> SealedSession:
         users = list(users)
@@ -51,11 +53,10 @@ class SealedSession(models.Model):
             pool_size = pool_size,
         )
 
-        for i, (user, key) in enumerate(users):
+        for i, user in enumerate(users):
             Pool.objects.create(
                 user = user,
                 pool = Cube(cubeables[i * pool_size: (i + 1) * pool_size]),
-                key = key,
                 session = sealed_session,
             )
 
@@ -66,7 +67,6 @@ class Pool(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete = models.CASCADE, related_name = 'sealed_pools')
     session = models.ForeignKey(SealedSession, on_delete = models.CASCADE, related_name = 'pools')
     pool: Cube = OrpField(model_type = Cube)
-    key = models.CharField(max_length = 63, unique = True)
 
     class Meta:
         unique_together = ('session', 'user')
@@ -74,5 +74,6 @@ class Pool(models.Model):
 
 class PoolDeck(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
+    name = models.CharField(max_length = 255)
     deck = OrpField(Deck)
     pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'decks')

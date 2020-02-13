@@ -24,34 +24,25 @@ class PoolDeckSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'created_at', 'deck')
+        fields = ('id', 'name', 'created_at', 'deck')
 
 
 class MinimalPoolSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
-    # created_at = serializers.DateTimeField(
-    #     source = 'session.created_at',
-    #     read_only = True,
-    #     format = JAVASCRIPT_DATETIME_FORMAT,
-    # )
-    # pool_size = serializers.IntegerField(source = 'session.pool_size', read_only = True)
-    # release = NameCubeReleaseSerializer(source = 'session.release', read_only = True)
-    # format = serializers.CharField(source = 'session.format', read_only = True)
-    # players = PoolUserField(source = 'session.pools', read_only = True, many = True)
     decks = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
 
     class Meta:
         model = models.Pool
-        # fields = ('key', 'format', 'user', 'created_at', 'pool_size', 'release', 'players', 'decks')
-        fields = ('key', 'user', 'decks')
+        fields = ('id', 'user', 'decks')
 
 
 class PoolSerializer(MinimalPoolSerializer):
     pool = OrpSerializerField(model_serializer = orpserialize.CubeSerializer)
+    decks = PoolDeckSerializer(many = True)
 
     class Meta:
         model = models.Pool
-        fields = ('key', 'user', 'decks', 'pool')
+        fields = ('id', 'user', 'decks', 'pool')
 
 
 class SealedSessionSerializer(serializers.ModelSerializer):
@@ -64,7 +55,7 @@ class SealedSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.SealedSession
-        fields = ('id', 'format', 'release', 'created_at', 'pool_size', 'players', 'state')
+        fields = ('id', 'name', 'format', 'release', 'created_at', 'pool_size', 'players', 'state')
 
 
 class FullSealedSessionSerializer(SealedSessionSerializer):
@@ -72,4 +63,4 @@ class FullSealedSessionSerializer(SealedSessionSerializer):
 
     class Meta:
         model = models.SealedSession
-        fields = ('id', 'format', 'release', 'created_at', 'pool_size', 'players', 'state', 'pools')
+        fields = ('id', 'name', 'format', 'release', 'created_at', 'pool_size', 'players', 'state', 'pools')
