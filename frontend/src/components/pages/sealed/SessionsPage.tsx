@@ -2,6 +2,7 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
+import filterFactory, {textFilter, numberFilter, selectFilter, Comparator} from 'react-bootstrap-table2-filter';
 
 import {SealedSession, User} from '../../models/models';
 
@@ -32,11 +33,11 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
     super(props);
     this.state = {
       page: 1,
-      pageSize: 10,
+      pageSize: 20,
       sessions: [],
       hits: 0,
       filters: {},
-      sortField: 'createdAt',
+      sortField: 'created_at',
       sortAscending: false,
     };
   }
@@ -74,7 +75,33 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       },
   ) => {
     if (type == 'filter') {
-
+      console.log(filters);
+      const _filters: { [key: string]: string } = {};
+      for (const value of ['name', 'release', 'players', 'format', 'state']) {
+        if (filters[value]) {
+          _filters[value + '_filter'] = filters[value].filterVal;
+        }
+      }
+      if (filters.poolSize) {
+        _filters.pool_size_filter = filters.poolSize.filterVal.number;
+        _filters.pool_size_filter_comparator = filters.poolSize.filterVal.comparator;
+      }
+      SealedSession.all(
+        0,
+        this.state.pageSize,
+        this.state.sortField,
+        this.state.sortAscending,
+        _filters,
+      ).then(
+        paginatedResponse => this.setState(
+          {
+            filters: _filters,
+            sessions: paginatedResponse.objects,
+            hits: paginatedResponse.hits,
+            page: 1,
+          }
+        )
+      )
     } else if (type == 'pagination') {
       SealedSession.all(
         (page - 1) * sizePerPage,
@@ -90,6 +117,32 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         )
       )
     } else if (type == 'sort') {
+      const sortFieldMap: { [key: string]: string } = {
+        name: 'name',
+        format: 'format',
+        state: 'state',
+        createdAt: 'created_at',
+        playingAt: 'playing_at',
+        finishedAt: 'finished_at',
+      };
+      const mappedSortField = sortFieldMap[sortField];
+      const sortAscending = sortOrder == 'asc';
+      SealedSession.all(
+        (this.state.page - 1) * this.state.pageSize,
+        this.state.pageSize,
+        mappedSortField,
+        sortAscending,
+        this.state.filters,
+      ).then(
+        paginatedResponse => this.setState(
+          {
+            sortField: mappedSortField,
+            sortAscending,
+            sessions: paginatedResponse.objects,
+            hits: paginatedResponse.hits,
+          }
+        )
+      )
     } else if (type == 'cellEdit') {
     }
   };
@@ -108,6 +161,8 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         headerStyle: (column: any, colIndex: number) => {
           return {width: '5em', textAlign: 'center'};
         },
+        sort: true,
+        filter: textFilter(),
       },
       {
         dataField: 'format',
@@ -115,6 +170,14 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         headerStyle: (column: any, colIndex: number) => {
           return {width: '3em', textAlign: 'center'};
         },
+        sort: true,
+        filter: selectFilter(
+          {
+            options: {
+              sealed: 'sealed',
+            },
+          }
+        ),
       },
       {
         dataField: 'state',
@@ -122,6 +185,16 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         headerStyle: (column: any, colIndex: number) => {
           return {width: '3em', textAlign: 'center'};
         },
+        sort: true,
+                filter: selectFilter(
+          {
+            options: {
+              DECK_BUILDING: 'DECK_BUILDING',
+              PLAYING: 'PLAYING',
+              FINISHED: 'FINISHED',
+            },
+          }
+        ),
       },
       {
         dataField: 'release',
@@ -133,8 +206,10 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           {cell.name}
         </Link>,
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '5em', textAlign: 'center'};
+          return {width: '3em', textAlign: 'center'};
         },
+        sort: true,
+        filter: textFilter(),
       },
       {
         dataField: 'players',
@@ -146,6 +221,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         headerStyle: (column: any, colIndex: number) => {
           return {width: '7em', textAlign: 'center'};
         },
+        filter: textFilter(),
       },
       {
         dataField: 'poolSize',
@@ -154,24 +230,58 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         headerStyle: (column: any, colIndex: number) => {
           return {width: '3em', textAlign: 'center'};
         },
+        sort: true,
+        filter: numberFilter(
+          {
+            placeholder: '',
+            withoutEmptyComparatorOption: true,
+            comparators: [Comparator.EQ, Comparator.GT, Comparator.LT, Comparator.GE, Comparator.LE],
+            style: {display: 'inline-grid'},
+            defaultValue: {number: null, comparator: Comparator.GTE},
+            comparatorStyle: {width: '3em', padding: '0em', float: 'left'},
+            numberStyle: {width: '3em', padding: '0em', float: 'right'},
+
+          }
+        ),
       },
       {
         dataField: 'createdAt',
         text: 'Created',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '7em', textAlign: 'center'};
+          return {width: '3em', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <DateListItem
           date={cell}
         />,
         sort: true,
-        editable: false,
+      },
+      {
+        dataField: 'playingAt',
+        text: 'Playing',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '3em', textAlign: 'center'};
+        },
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
+          date={cell}
+        />,
+        sort: true,
+      },
+      {
+        dataField: 'finishedAt',
+        text: 'Finished',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '3em', textAlign: 'center'};
+        },
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
+          date={cell}
+        />,
+        sort: true,
       },
       {
         dataField: 'view',
         text: '',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '2em', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
           to={'/sealed/' + row.id + '/'}
@@ -179,7 +289,6 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           view
         </Link>,
         sort: false,
-        editable: false,
       },
     ];
 
@@ -202,6 +311,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
             columns={columns}
             bootstrap4
             condensed
+            filter={filterFactory()}
             pagination={
               paginationFactory(
                 {

@@ -28,6 +28,8 @@ class SealedSession(models.Model):
         FINISHED = 2
 
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
+    playing_at = models.DateTimeField(null = True)
+    finished_at = models.DateTimeField(null = True)
     name = models.CharField(max_length = 255, default = get_random_name)
     state = EnumField(SealedSessionState, default = SealedSessionState.DECK_BUILDING)
     pool_size = models.PositiveSmallIntegerField()

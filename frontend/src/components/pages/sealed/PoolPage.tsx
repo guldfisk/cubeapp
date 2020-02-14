@@ -23,7 +23,7 @@ export default class PoolPage extends React.Component<PoolPageProps, PoolPageSta
   }
 
   componentDidMount() {
-    SealedPool.get(this.props.match.params.key).then(
+    SealedPool.get(this.props.match.params.id).then(
       pool => {
         this.setState({pool});
       }

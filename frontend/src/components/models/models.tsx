@@ -3,7 +3,7 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import wu from 'wu';
-import {string} from "prop-types";
+import {array, string} from "prop-types";
 
 
 export const apiPath = '/api/';
@@ -598,7 +598,7 @@ export class PrintingCounter extends Counter<Printing> {
     )
   };
 
-  grouped_printings = (): IterableIterator<[Printing, number]>[] => {
+  color_grouped_printings = (): IterableIterator<[Printing, number]>[] => {
     return [
       this.printings_of_color('W'),
       this.printings_of_color('U'),
@@ -610,6 +610,44 @@ export class PrintingCounter extends Counter<Printing> {
       this.land_printings(),
     ]
   };
+
+  type_grouped_printings = (
+    filters: [string, string[]][],
+    restName: string,
+  ): [string, [Printing, number][]][] => {
+  // ): any => {
+    const groups: { [key: string]: [Printing, number][] } = {};
+
+    for (const [filter_name, filter_types] of filters) {
+      groups[filter_name] = []
+    }
+
+    groups[restName] = [];
+
+    for (const [printing, multiplicity] of this.items()) {
+      let match = false;
+      for (const [filter_name, filter_types] of filters) {
+        if (
+          filter_types.some(
+            filter => printing.types.includes(filter)
+          )
+        ) {
+          match = true;
+          groups[filter_name].push([printing, multiplicity]);
+          break
+        }
+      }
+      if (!match) {
+        groups[restName].push([printing, multiplicity]);
+      }
+    }
+    const result: [string, [Printing, number][]][] = filters.map(
+      ([filter_name, filters]) => [filter_name, groups[filter_name]]
+    );
+    result.push([restName, groups[restName]]);
+    return result;
+
+  }
 
 }
 
@@ -635,22 +673,22 @@ export class CubeablesContainer {
     return new CubeablesContainer(
       new PrintingCounter(
         remote.printings.map(
-          ([printing, multiplicity]: [Trap, number]) => [Printing.fromRemote(printing), multiplicity]
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
         )
       ),
       new Counter(
         remote.traps.map(
-          ([trap, multiplicity]: [Trap, number]) => [Trap.fromRemote(trap), multiplicity]
+          ([trap, multiplicity]: [any, number]) => [Trap.fromRemote(trap), multiplicity]
         )
       ),
       new Counter(
         remote.tickets.map(
-          ([ticket, multiplicity]: [Trap, number]) => [Ticket.fromRemote(ticket), multiplicity]
+          ([ticket, multiplicity]: [any, number]) => [Ticket.fromRemote(ticket), multiplicity]
         )
       ),
       new Counter(
         remote.purples.map(
-          ([purple, multiplicity]: [Trap, number]) => [Purple.fromRemote(purple), multiplicity]
+          ([purple, multiplicity]: [any, number]) => [Purple.fromRemote(purple), multiplicity]
         )
       ),
     )
@@ -699,7 +737,7 @@ export class CubeablesContainer {
 
   grouped_cubeables = (): IterableIterator<[Cubeable, number]>[] => {
     return (
-      this.printings.grouped_printings() as IterableIterator<[Cubeable, number]>[]
+      this.printings.color_grouped_printings() as IterableIterator<[Cubeable, number]>[]
     ).concat(
       this.grouped_laps(),
     )
@@ -2023,6 +2061,8 @@ export class WishList {
 export class SealedSession extends Atomic {
   format: string;
   createdAt: Date;
+  playingAt: Date | null;
+  finishedAt: Date | null;
   name: string;
   poolSize: number;
   release: CubeReleaseName;
@@ -2033,6 +2073,8 @@ export class SealedSession extends Atomic {
     id: string,
     format: string,
     createdAt: Date,
+    playingAt: Date,
+    finishedAt: Date,
     name: string,
     poolSize: number,
     release: CubeReleaseName,
@@ -2042,6 +2084,8 @@ export class SealedSession extends Atomic {
     super(id);
     this.format = format;
     this.createdAt = createdAt;
+    this.playingAt = playingAt;
+    this.finishedAt = finishedAt;
     this.name = name;
     this.poolSize = poolSize;
     this.release = release;
@@ -2054,6 +2098,8 @@ export class SealedSession extends Atomic {
       remote.id,
       remote.format,
       new Date(remote.created_at),
+      remote.playing_at && new Date(remote.playing_at),
+      remote.finished_at && new Date(remote.finished_at),
       remote.name,
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
@@ -2062,13 +2108,22 @@ export class SealedSession extends Atomic {
     )
   }
 
-  public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedSession>> {
+  public static all(
+    offset: number = 0,
+    limit: number = 50,
+    sortField: string = 'created_at',
+    sortAscending: boolean = false,
+    filters: { [key: string]: string } = {},
+  ): Promise<PaginationResponse<SealedSession>> {
     return axios.get(
       apiPath + 'sealed/sessions/',
       {
         params: {
           offset,
           limit,
+          sort_key: sortField,
+          ascending: sortAscending,
+          ...filters,
         },
       },
     ).then(
@@ -2137,6 +2192,8 @@ export class FullSealedSession extends SealedSession {
     id: string,
     format: string,
     createdAt: Date,
+    playingAt: Date,
+    finishedAt: Date,
     name: string,
     poolSize: number,
     release: CubeReleaseName,
@@ -2144,7 +2201,7 @@ export class FullSealedSession extends SealedSession {
     state: string,
     pools: SealedPoolMeta[],
   ) {
-    super(id, format, createdAt, name, poolSize, release, players, state);
+    super(id, format, createdAt, playingAt, finishedAt, name, poolSize, release, players, state);
     this.pools = pools;
   }
 
@@ -2153,6 +2210,8 @@ export class FullSealedSession extends SealedSession {
       remote.id,
       remote.format,
       new Date(remote.created_at),
+      remote.playing_at && new Date(remote.playing_at),
+      remote.finished_at && new Date(remote.finished_at),
       remote.name,
       remote.pool_size,
       CubeReleaseName.fromRemote(remote.release),
@@ -2172,42 +2231,87 @@ export class FullSealedSession extends SealedSession {
     )
   }
 
+}
+
+
+export class Deck extends Atomic {
+  name: string;
+  maindeck: PrintingCounter;
+  sideboard: PrintingCounter;
+
+  constructor(
+    id: string,
+    name: string,
+    maindeck: PrintingCounter,
+    sideboard: PrintingCounter,
+  ) {
+    super(id);
+    this.name = name;
+    this.maindeck = maindeck;
+    this.sideboard = sideboard;
+  }
+
+  public static fromRemote(remote: any): Deck {
+    return new Deck(
+      remote.id,
+      remote.name,
+      new PrintingCounter(
+        remote.deck.maindeck.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+      new PrintingCounter(
+        remote.deck.sideboard.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+    )
+  }
 
 }
 
 
-export class SealedPool extends SealedPoolMeta {
+export class SealedPool extends Atomic {
+  user: User;
+  decks: Deck[];
+  session: SealedSession;
   pool: CubeablesContainer;
 
-  // constructor(
-  //   id: string,
-  //   createdAt: Date,
-  //   poolSize: number,
-  //   release: CubeReleaseName,
-  //   players: User[],
-  //   pool: CubeablesContainer,
-  // ) {
-  //   super(id, createdAt, poolSize, release, players);
-  //   this.pool = pool;
-  // }
-  //
-  // public static fromRemote(remote: any): SealedPool {
-  //   return new SealedPool(
-  //     remote.key,
-  //     new Date(remote.created_at),
-  //     remote.pool_size,
-  //     CubeReleaseName.fromRemote(remote.release),
-  //     remote.players.map((player: any) => User.fromRemote(player)),
-  //     CubeablesContainer.fromRemote(remote.pool),
-  //   )
-  // }
-  //
-  // public static get(key: string): Promise<SealedPool> {
-  //   return axios.get(
-  //     apiPath + 'sealed/' + key + '/',
-  //   ).then(
-  //     response => SealedPool.fromRemote(response.data)
-  //   )
-  // }
+  constructor(
+    id: string,
+    user: User,
+    decks: Deck[],
+    session: SealedSession,
+    pool: CubeablesContainer,
+  ) {
+    super(id);
+    this.user = user;
+    this.decks = decks;
+    this.session = session;
+    this.pool = pool;
+  }
+
+  public static fromRemote(remote: any): SealedPool {
+    return new SealedPool(
+      remote.id,
+      User.fromRemote(remote.user),
+      remote.decks.map((deck: any) => Deck.fromRemote(deck)),
+      SealedSession.fromRemote(remote.session),
+      CubeablesContainer.fromRemote(remote.pool),
+    )
+  }
+
+  public static get(id: string): Promise<SealedPool> {
+    return axios.get(
+      apiPath + 'sealed/pools/' + id + '/',
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
+    ).then(
+      response => SealedPool.fromRemote(response.data)
+    )
+  }
 
 }

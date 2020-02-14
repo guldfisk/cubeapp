@@ -1,4 +1,5 @@
 import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess} from "./actions";
+import {User} from "../models/models";
 
 
 const initialState = {
@@ -23,7 +24,7 @@ export default function authReducer(state=initialState, action) {
       return {
         ...state,
         token: action.data.token,
-        user: action.data.user,
+        user: User.fromRemote(action.data.user),
         authenticated: true,
         loading: false,
         errorMessage: null,

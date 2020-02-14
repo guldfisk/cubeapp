@@ -23,7 +23,7 @@ import SamplePackPage from "../pages/SamplePackPage";
 import WishListPage from "../pages/wishes/WishListPage";
 import WishListsPage from "../pages/wishes/WishListsPage";
 // import PoolsPage from "../pages/sealed/PoolsPage";
-// import PoolPage from "../pages/sealed/PoolPage";
+import PoolPage from "../pages/sealed/PoolPage";
 import SessionsPage from "../pages/sealed/SessionsPage";
 import SessionPage from "../pages/sealed/SessionPage";
 
@@ -53,7 +53,7 @@ export const routes: [
   // ['/pools', PoolsPage, true, {}],
   ['/sealed/:id(\\d+)', SessionPage, false, {}],
   ['/sealed', SessionsPage, false, {}],
-  // ['/pools/:key([a-z0-9\\-]+)', PoolPage, true, {}],
+  ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [
     '/patch/:id(\\d+)', PatchPage, false,

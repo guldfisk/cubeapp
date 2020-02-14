@@ -97,10 +97,10 @@ class ListWishes(generics.ListAPIView):
             comparator = {
                 '=': '',
                 '!=': None,
-                '<': '__gt',
-                '<=': '__gte',
-                '>': '__lt',
-                '>=': '__lte',
+                '<': '__lt',
+                '<=': '__lte',
+                '>': '__gt',
+                '>=': '__gte',
             }.get(
                 request.GET.get('weight_filter_comparator'),
                 '',

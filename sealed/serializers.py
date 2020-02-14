@@ -36,17 +36,10 @@ class MinimalPoolSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'decks')
 
 
-class PoolSerializer(MinimalPoolSerializer):
-    pool = OrpSerializerField(model_serializer = orpserialize.CubeSerializer)
-    decks = PoolDeckSerializer(many = True)
-
-    class Meta:
-        model = models.Pool
-        fields = ('id', 'user', 'decks', 'pool')
-
-
 class SealedSessionSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+    playing_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+    finished_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     pool_size = serializers.IntegerField(read_only = True)
     release = NameCubeReleaseSerializer(read_only = True)
     format = serializers.CharField(read_only = True)
@@ -55,7 +48,20 @@ class SealedSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.SealedSession
-        fields = ('id', 'name', 'format', 'release', 'created_at', 'pool_size', 'players', 'state')
+        fields = (
+            'id', 'name', 'format', 'release', 'created_at', 'playing_at', 'finished_at', 'pool_size', 'players',
+            'state',
+        )
+
+
+class PoolSerializer(MinimalPoolSerializer):
+    pool = OrpSerializerField(model_serializer = orpserialize.CubeSerializer)
+    decks = PoolDeckSerializer(many = True)
+    session = SealedSessionSerializer()
+
+    class Meta:
+        model = models.Pool
+        fields = ('id', 'user', 'session', 'decks', 'pool')
 
 
 class FullSealedSessionSerializer(SealedSessionSerializer):

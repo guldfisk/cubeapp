@@ -395,7 +395,6 @@ class RequirementList extends React.Component<RequirementListProps, RequirementL
         },
       },
       {
-        dataField: 'delete',
         text: '',
         isDummyField: true,
         editable: false,
@@ -864,7 +863,6 @@ class WishListView extends React.Component
         editable: false,
       },
       {
-        dataField: 'add',
         text: '',
         isDummyField: true,
         editable: false,
@@ -922,7 +920,6 @@ class WishListView extends React.Component
         },
       },
       {
-        dataField: 'delete',
         text: '',
         isDummyField: true,
         editable: false,
