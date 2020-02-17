@@ -174,7 +174,8 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         filter: selectFilter(
           {
             options: {
-              sealed: 'sealed',
+              limited_sideboard: 'limited_sideboard',
+              limited_15_sideboard: 'limited_15_sideboard',
             },
           }
         ),

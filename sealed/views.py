@@ -232,11 +232,11 @@ class SessionList(generics.ListAPIView):
                     return Response(f'invalid release filter {release_filter}', status = status.HTTP_400_BAD_REQUEST)
                 queryset = queryset.filter(release__name__contains = release_filter)
 
-        player_filter = request.GET.get('player_filter')
-        if player_filter:
-            if not isinstance(player_filter, str):
-                return Response(f'invalid player filter {player_filter}', status = status.HTTP_400_BAD_REQUEST)
-            queryset = queryset.filter(pools__user__username = player_filter)
+        players_filter = request.GET.get('players_filter')
+        if players_filter:
+            if not isinstance(players_filter, str):
+                return Response(f'invalid player filter {players_filter}', status = status.HTTP_400_BAD_REQUEST)
+            queryset = queryset.filter(pools__user__username = players_filter)
 
         sort_key = [self._allowed_sort_keys.get(request.GET.get('sort_key'), 'created_at')]
         ascending = strtobool(request.GET.get('ascending', 'false'))

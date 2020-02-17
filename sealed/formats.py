@@ -28,8 +28,8 @@ class Format(object, metaclass = _FormatMeta):
         pass
 
 
-class Sealed(Format):
-    name = 'sealed'
+class LimitedSideboard(Format):
+    name = 'limited_sideboard'
 
     @classmethod
     def deckcheck(cls, deck: Deck) -> t.Tuple[bool, t.List[str]]:
@@ -42,3 +42,20 @@ class Sealed(Format):
             errors.append(f'sideboard size {len(deck.sideboard)} does not match required 15')
 
         return not errors, errors
+
+
+class Limited15Sideboard(Format):
+    name = 'limited_15_sideboard'
+
+    @classmethod
+    def deckcheck(cls, deck: Deck) -> t.Tuple[bool, t.List[str]]:
+        errors = []
+
+        if len(deck.maindeck) != 15:
+            errors.append(f'deck size {len(deck.maindeck)} does not match required 15')
+
+        if not len(deck.sideboard) == 7:
+            errors.append(f'sideboard size {len(deck.sideboard)} does not match required 7')
+
+        return not errors, errors
+

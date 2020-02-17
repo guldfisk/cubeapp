@@ -194,12 +194,12 @@ class Lobby(object):
 
         return options
 
-    def set_options(self,user: AbstractUser,  options: t.Any) -> None:
+    def set_options(self, user: AbstractUser, options: t.Any) -> None:
         if user != self._owner:
             raise SetOptionsException('only lobby owner can modify lobby options')
 
         if self._state != LobbyState.PRE_GAME:
-            raise StartGameException('cannot modify options after pre-game')
+            raise SetOptionsException('cannot modify options after pre-game')
 
         with self._lock:
             self._options = self._validate_options(options)
@@ -234,14 +234,17 @@ class Lobby(object):
                 },
             )
 
-            if self._options.get('game_type') == 'draft':
+            game_type = self._options.get('game_type')
+
+            if game_type == 'draft':
                 keys = DRAFT_COORDINATOR.start_draft(self._users, release.cube)
                 self._keys = {
                     user: str(drafter.key)
                     for user, drafter in
                     keys
                 }
-            else:
+
+            elif game_type == 'sealed':
                 self._keys = {
                     user: str(uuid.uuid4())
                     for user in
@@ -252,6 +255,10 @@ class Lobby(object):
                     self._keys.items(),
                     90,
                 )
+
+            else:
+                raise StartGameException(f'unknown game type: "{game_type}"')
+
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
