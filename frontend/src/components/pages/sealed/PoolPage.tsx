@@ -3,34 +3,41 @@ import React from 'react';
 import {Loading} from '../../utils/utils';
 import {SealedPool} from '../../models/models';
 import PoolView from "../../views/sealed/PoolView";
+import {connect} from "react-redux";
 
 
 interface PoolPageProps {
   match: any
+  loading: boolean
 }
+
 
 interface PoolPageState {
   pool: SealedPool | null
 }
 
-export default class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
+
+class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
+  requested: boolean;
 
   constructor(props: PoolPageProps) {
     super(props);
+    this.requested = false;
     this.state = {
       pool: null,
     };
   }
 
-  componentDidMount() {
-    SealedPool.get(this.props.match.params.id).then(
-      pool => {
-        this.setState({pool});
-      }
-    );
-  }
-
   render() {
+    if (!this.requested && !this.props.loading) {
+      this.requested = true;
+      SealedPool.get(this.props.match.params.id).then(
+        pool => {
+          this.setState({pool});
+        }
+      );
+    }
+
     let pool = <Loading/>;
     if (this.state.pool !== null) {
       pool = <PoolView
@@ -42,3 +49,18 @@ export default class PoolPage extends React.Component<PoolPageProps, PoolPageSta
   }
 
 }
+
+
+const mapStateToProps = (state: any) => {
+  return {
+    loading: state.loading,
+  }
+};
+
+
+const mapDispatchToProps = (dispatch: any) => {
+  return {}
+};
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(PoolPage);

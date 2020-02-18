@@ -2302,6 +2302,9 @@ export class SealedPool extends Atomic {
   }
 
   public static get(id: string): Promise<SealedPool> {
+    console.log(store.getState().authenticated);
+    console.log(store.getState().token);
+    console.log(store.getState());
     return axios.get(
       apiPath + 'sealed/pools/' + id + '/',
       {

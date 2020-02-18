@@ -3,7 +3,7 @@ import {User} from "../models/models";
 
 
 const initialState = {
-  token: localStorage.getItem("token"),
+  token: null,
   authenticated: null,
   errorMessage: null,
   loading: true,
@@ -31,7 +31,14 @@ export default function authReducer(state=initialState, action) {
       };
 
     case reSignInSuccess:
-      return {...state, user: action.data, authenticated: true, loading: false, errorMessage: null};
+      return {
+        ...state,
+        user: action.data,
+        token: action.token,
+        authenticated: true,
+        loading: false,
+        errorMessage: null,
+      };
 
     case signOutSuccess:
       localStorage.removeItem("token");

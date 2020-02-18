@@ -21,7 +21,7 @@ export default class PoolView extends React.Component<PoolViewProps> {
     >
       <Row>
         {
-          this.props.pool.decks && <DeckView deck={this.props.pool.decks[this.props.pool.decks.length - 1]}/>
+          this.props.pool.decks.length > 0 && <DeckView deck={this.props.pool.decks[this.props.pool.decks.length - 1]}/>
         }
       </Row>
       <Row>

@@ -34,7 +34,6 @@ class PoolDetailPermissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj: models.Pool):
-        print('check has obj perm', request.user, obj.user, obj.session.state)
         return (
             obj.session.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
             or request.user == obj.user
@@ -46,12 +45,13 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
         'user',
     ).prefetch_related(
         'decks'
-        # Prefetch('decks', queryset = models.PoolDeck.objects.all().order_by('-created_at').only('id')),
     )
     serializer_class = serializers.PoolSerializer
     permission_classes = [PoolDetailPermissions, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
+        print(request, request.data, request.POST)
+
         try:
             pool = models.Pool.objects.select_related('session').get(id = kwargs['pk'], user = request.user)
         except models.Pool.DoesNotExist:
@@ -92,7 +92,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 return Response({'errors': errors}, status = status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
-            deck = models.PoolDeck.objects.create(
+            pool_deck = models.PoolDeck.objects.create(
                 deck = deck,
                 pool = pool,
                 name = request.data.get('name', 'deck'),
@@ -104,7 +104,9 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 pool.session.save(update_fields = ('state', 'playing_at'))
 
         return Response(
-            serializers.PoolDeckSerializer(deck).data,
+            # RawStrategy.serialize(deck)
+            # if strtobool(request.query_params.get('native', 'false')) else
+            serializers.PoolDeckSerializer(pool_deck, context = {'request': request}).data,
             status = status.HTTP_201_CREATED,
         )
 

@@ -37,7 +37,7 @@ export const signUp = ({username, email, password, inviteToken}) => {
 
 export const loadUser = () => {
   return (dispatch, getState) => {
-    const token = getState().token;
+    const token = localStorage.getItem("token");
     if (!token) {
       dispatch({type: authFailed});
       return;
@@ -55,7 +55,7 @@ export const loadUser = () => {
       },
     ).then(
       response => {
-        dispatch({type: reSignInSuccess, data: response.data});
+        dispatch({type: reSignInSuccess, data: response.data, token: token});
       }
     ).catch(
       exception => {
