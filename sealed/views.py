@@ -104,8 +104,6 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 pool.session.save(update_fields = ('state', 'playing_at'))
 
         return Response(
-            # RawStrategy.serialize(deck)
-            # if strtobool(request.query_params.get('native', 'false')) else
             serializers.PoolDeckSerializer(pool_deck, context = {'request': request}).data,
             status = status.HTTP_201_CREATED,
         )

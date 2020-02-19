@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import typing as t
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from django.contrib.auth.models import AbstractUser
 
@@ -9,7 +11,25 @@ class OptionsValidationError(Exception):
     pass
 
 
-class Game(ABC):
+class _GameMeta(ABCMeta):
+    games_map: t.MutableMapping[str, t.Type[Game]] = {}
+
+    def __new__(mcs, classname, base_classes, attributes):
+        klass = type.__new__(mcs, classname, base_classes, attributes)
+
+        if 'name' in attributes:
+            mcs.games_map[attributes['name']] = klass
+
+        return klass
+
+
+class Game(object, metaclass=_GameMeta):
+    name: str
+
+    @classmethod
+    @abstractmethod
+    def get_default_options(cls) -> t.Mapping[str, t.Any]:
+        pass
 
     @classmethod
     @abstractmethod
@@ -21,5 +41,5 @@ class Game(ABC):
         self,
         options: t.Mapping[str, t.Any],
         players: t.AbstractSet[AbstractUser],
-    ) -> t.Mapping[AbstractUser, t.Mapping[str, t.Any]]:
+    ) -> t.Mapping[AbstractUser, str]:
         pass

@@ -13,6 +13,7 @@ from magiccube.collections.cube import Cube
 from api.fields.orp import OrpField
 from api.models import CubeRelease
 from mtgorp.models.collections.deck import Deck
+from sealed.formats import Format
 from utils.fields import EnumField
 from utils.methods import get_random_name
 
@@ -42,10 +43,13 @@ class SealedSession(models.Model):
         release: CubeRelease,
         users: t.Iterable[AbstractUser],
         pool_size: int,
+        game_format: Format,
     ) -> SealedSession:
         users = list(users)
         if len(users) * pool_size > len(release.cube):
-            raise GenerateSealedPoolException('not enough cubeables')
+            raise GenerateSealedPoolException(
+                f'not enough cubeables, needs {len(users) * pool_size}, only has {len(release.cube)}'
+            )
 
         cubeables = list(release.cube.cubeables)
         random.shuffle(cubeables)
@@ -53,6 +57,7 @@ class SealedSession(models.Model):
         sealed_session = cls.objects.create(
             release = release,
             pool_size = pool_size,
+            format = game_format.name,
         )
 
         for i, user in enumerate(users):

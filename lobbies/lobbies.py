@@ -16,37 +16,15 @@ from django.contrib.auth.models import AbstractUser
 
 from api import models
 from draft.coordinator import DRAFT_COORDINATOR
-from sealed.models import SealedSession
+from lobbies.exceptions import CreateLobbyException, ReadyException, SetOptionsException, StartGameException, \
+    JoinLobbyException
+from lobbies.games.games import OptionsValidationError, Game
 
 
 class LobbyState(Enum):
     PRE_GAME = 'pre-game'
     GAME = 'game'
     POST_GAME = 'post-game'
-
-
-class LobbyException(Exception):
-    pass
-
-
-class CreateLobbyException(LobbyException):
-    pass
-
-
-class JoinLobbyException(LobbyException):
-    pass
-
-
-class ReadyException(LobbyException):
-    pass
-
-
-class StartGameException(LobbyException):
-    pass
-
-
-class SetOptionsException(LobbyException):
-    pass
 
 
 class LobbyManager(object):
@@ -82,7 +60,7 @@ class LobbyManager(object):
             if lobby.state != LobbyState.GAME and user in lobby.users:
                 lobby.leave(user)
 
-    def create_lobby(self, name: str, user: AbstractUser, size: int) -> Lobby:
+    def create_lobby(self, name: str, user: AbstractUser, size: int, game_type: t.Type[Game]) -> Lobby:
         if size not in range(1, 64):
             raise CreateLobbyException('illegal lobby size')
 
@@ -90,7 +68,13 @@ class LobbyManager(object):
             if name in self._lobbies:
                 raise CreateLobbyException('lobby already exists')
 
-            lobby = Lobby(self, name, user, size)
+            lobby = Lobby(
+                manager = self,
+                name = name,
+                owner = user,
+                size = size,
+                game_type = game_type,
+            )
             self._lobbies[name] = lobby
 
             async_to_sync(self._channel_layer.group_send)(
@@ -107,14 +91,21 @@ class LobbyManager(object):
 
 class Lobby(object):
 
-    def __init__(self, manager: LobbyManager, name: str, owner: AbstractUser, size: int, options: t.Any = None):
+    def __init__(
+        self,
+        manager: LobbyManager,
+        name: str,
+        owner: AbstractUser,
+        size: int,
+        game_type: t.Type[Game],
+        # options: t.Any = None,
+    ):
         self._manager = manager
         self._name = name
         self._owner = owner
         self._size = size
-        self._options = self._validate_options(
-            {} if options is None else options
-        )
+        self._game_type = game_type
+        self._options = dict(game_type.get_default_options())
 
         self._state: LobbyState = LobbyState.PRE_GAME
         self._users: t.MutableMapping[AbstractUser, bool] = {}
@@ -155,6 +146,7 @@ class Lobby(object):
             'state': self._state.value,
             'size': self._size,
             'users': list(map(self._serialize_user, self._users)),
+            'game_type': self._game_type.name,
             'options': self._options,
         }
 
@@ -181,18 +173,22 @@ class Lobby(object):
                     },
                 )
 
-    def _validate_options(self, options: t.Any):
-        # TODO this should be an external setting or something. Maybe just have an abstract data model.
-        if not isinstance(options, t.MutableMapping):
-            raise SetOptionsException('invalid options type')
+    def set_game_type(self, user: AbstractUser, game_type: t.Type[Game]) -> None:
+        if user != self._owner:
+            raise SetOptionsException('only lobby owner can modify game_type')
 
-        if 'game_type' in options:
-            if not options['game_type'] in ('draft', 'sealed'):
-                raise SetOptionsException('invalid value for option "game_type"')
-        else:
-            options['game_type'] = 'draft'
+        if self._state != LobbyState.PRE_GAME:
+            raise SetOptionsException('cannot modify game_type after pre-game')
 
-        return options
+        with self._lock:
+            self._game_type = game_type
+            async_to_sync(self._manager.channel_layer.group_send)(
+                self._manager.group_name,
+                {
+                    'type': 'lobby_update',
+                    'lobby': self.serialize(),
+                },
+            )
 
     def set_options(self, user: AbstractUser, options: t.Any) -> None:
         if user != self._owner:
@@ -202,7 +198,7 @@ class Lobby(object):
             raise SetOptionsException('cannot modify options after pre-game')
 
         with self._lock:
-            self._options = self._validate_options(options)
+            self._options.update(self._game_type.validate_options(options))
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -224,8 +220,6 @@ class Lobby(object):
 
             self._state = LobbyState.GAME
 
-            release = models.CubeRelease.objects.get(pk = 14)
-
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -237,24 +231,16 @@ class Lobby(object):
             game_type = self._options.get('game_type')
 
             if game_type == 'draft':
-                keys = DRAFT_COORDINATOR.start_draft(self._users, release.cube)
-                self._keys = {
-                    user: str(drafter.key)
-                    for user, drafter in
-                    keys
-                }
+                # keys = DRAFT_COORDINATOR.start_draft(self._users, release.cube)
+                # self._keys = {
+                #     user: str(drafter.key)
+                #     for user, drafter in
+                #     keys
+                # }
+                raise StartGameException('draft not available yet')
 
             elif game_type == 'sealed':
-                self._keys = {
-                    user: str(uuid.uuid4())
-                    for user in
-                    self._users
-                }
-                SealedSession.generate(
-                    release,
-                    self._keys.items(),
-                    90,
-                )
+                self._keys = self._game_type().start(self._options, self._users.keys())
 
             else:
                 raise StartGameException(f'unknown game type: "{game_type}"')

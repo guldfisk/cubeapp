@@ -1,6 +1,5 @@
 import re
 import typing as t
-from distutils.util import strtobool
 
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
@@ -8,8 +7,10 @@ from django.contrib.auth import get_user_model
 from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from lobbies.lobbies import LOBBY_MANAGER, LobbyManager, Lobby, CreateLobbyException, JoinLobbyException, \
-    ReadyException, StartGameException, SetOptionsException
+from lobbies.games.games import Game
+from lobbies.lobbies import (
+    LOBBY_MANAGER, CreateLobbyException, JoinLobbyException, ReadyException, StartGameException, SetOptionsException
+)
 
 
 class MessageConsumer(JsonWebsocketConsumer):
@@ -108,11 +109,29 @@ class LobbyConsumer(AuthenticatedConsumer):
     def _receive_message(self, message_type: str, content: t.Any) -> None:
         if message_type == 'create':
             name = content.get('name')
-            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
-                self._send_error('invalid request')
-                return
+            game_type = content.get('game_type', 'sealed')
+            lobby_size = content.get('lobby_size', 8)
+
             try:
-                LOBBY_MANAGER.create_lobby(name, self.scope['user'], 8)
+                lobby_size = int(lobby_size)
+            except ValueError:
+                self._send_error(f'invalid lobby size "{lobby_size}"')
+                return
+
+            if (
+                name is None
+                or not re.match('[a-z0-9_]', name, re.IGNORECASE)
+            ):
+                self._send_error(f'invalid name "{name}"')
+                return
+
+            try:
+                game_type = Game.games_map[game_type]
+            except KeyError:
+                self._send_error(f'invalid game type "{game_type}"')
+
+            try:
+                LOBBY_MANAGER.create_lobby(name, self.scope['user'], lobby_size, game_type)
             except CreateLobbyException as e:
                 self._send_error(str(e))
 
@@ -179,6 +198,23 @@ class LobbyConsumer(AuthenticatedConsumer):
             except StartGameException as e:
                 self._send_error(str(e))
                 return
+
+        elif message_type == 'game_type':
+            name = content.get('name')
+            if name is None or not re.match('[a-z0-9_]', name, re.IGNORECASE):
+                self._send_error('invalid request')
+                return
+            lobby = LOBBY_MANAGER.get_lobby(name)
+            if lobby is None:
+                self._send_error('no lobby with that name')
+                return
+            game_type = content.get('game_type')
+            try:
+                game_type = Game.games_map[game_type]
+            except KeyError:
+                self._send_error(f'invalid game type "{game_type}"')
+                return
+            lobby.set_game_type(self.scope['user'], game_type)
 
         elif message_type == 'options':
             name = content.get('name')
