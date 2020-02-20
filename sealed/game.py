@@ -48,9 +48,9 @@ class Sealed(Game):
                 _release = int(_release)
             except ValueError:
                 raise OptionsValidationError(f'Invalid release "{_release}"')
-            if not CubeRelease.objects.exists(pk=_release):
+            if not CubeRelease.objects.filter(pk=_release).exists():
                 raise OptionsValidationError(f'Invalid release "{_release}"')
-            validated['relase'] = _release
+            validated['release'] = _release
 
         return validated
 

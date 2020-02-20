@@ -7,10 +7,14 @@ from django.contrib.auth import get_user_model
 from knox.auth import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from lobbies.exceptions import LeaveLobbyException
 from lobbies.games.games import Game
 from lobbies.lobbies import (
     LOBBY_MANAGER, CreateLobbyException, JoinLobbyException, ReadyException, StartGameException, SetOptionsException
 )
+
+from sealed.game import Sealed
+from draft.game import Draft
 
 
 class MessageConsumer(JsonWebsocketConsumer):
@@ -161,7 +165,7 @@ class LobbyConsumer(AuthenticatedConsumer):
                 return
             try:
                 lobby.leave(self.scope['user'])
-            except JoinLobbyException as e:
+            except LeaveLobbyException as e:
                 self._send_error(str(e))
                 return
 

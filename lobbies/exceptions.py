@@ -20,3 +20,7 @@ class StartGameException(LobbyException):
 
 class SetOptionsException(LobbyException):
     pass
+
+
+class LeaveLobbyException(LobbyException):
+    pass

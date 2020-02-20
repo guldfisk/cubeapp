@@ -1,3 +1,4 @@
+asgiref
 Django
 djangorestframework>=3.9
 -e git+https://github.com/guldfisk/proxypdf.git#egg=proxypdf

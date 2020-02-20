@@ -3,22 +3,19 @@ from __future__ import annotations
 import typing as t
 
 import copy
-import uuid
-from enum import Enum
 
+from enum import Enum
 from threading import Lock
 
 from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer, BaseChannelLayer
+from channels.layers import get_channel_layer
 from channels_redis.core import RedisChannelLayer
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 
-from api import models
-from draft.coordinator import DRAFT_COORDINATOR
-from lobbies.exceptions import CreateLobbyException, ReadyException, SetOptionsException, StartGameException, \
-    JoinLobbyException
-from lobbies.games.games import OptionsValidationError, Game
+from lobbies.exceptions import (
+    CreateLobbyException, ReadyException, SetOptionsException, StartGameException, JoinLobbyException,
+    LeaveLobbyException)
+from lobbies.games.games import Game
 
 
 class LobbyState(Enum):
@@ -98,7 +95,6 @@ class Lobby(object):
         owner: AbstractUser,
         size: int,
         game_type: t.Type[Game],
-        # options: t.Any = None,
     ):
         self._manager = manager
         self._name = name
@@ -182,6 +178,9 @@ class Lobby(object):
 
         with self._lock:
             self._game_type = game_type
+            self._options = self._game_type.get_default_options()
+            for user in self._users:
+                self._users[user] = False
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -199,6 +198,8 @@ class Lobby(object):
 
         with self._lock:
             self._options.update(self._game_type.validate_options(options))
+            for user in self._users:
+                self._users[user] = False
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -228,22 +229,7 @@ class Lobby(object):
                 },
             )
 
-            game_type = self._options.get('game_type')
-
-            if game_type == 'draft':
-                # keys = DRAFT_COORDINATOR.start_draft(self._users, release.cube)
-                # self._keys = {
-                #     user: str(drafter.key)
-                #     for user, drafter in
-                #     keys
-                # }
-                raise StartGameException('draft not available yet')
-
-            elif game_type == 'sealed':
-                self._keys = self._game_type().start(self._options, self._users.keys())
-
-            else:
-                raise StartGameException(f'unknown game type: "{game_type}"')
+            self._keys = self._game_type().start(self._options, self._users.keys())
 
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
@@ -281,10 +267,8 @@ class Lobby(object):
 
     def leave(self, user: AbstractUser) -> None:
         with self._lock:
-            # async_to_sync(self._channel_layer.group_discard)(
-            #     self._group_name,
-            #     channel_name,
-            # )
+            if user not in self._users:
+                raise LeaveLobbyException('cannot leave lobby without being in it')
             del self._users[user]
             if self._users and self._owner in self._users:
                 async_to_sync(self._manager.channel_layer.group_send)(

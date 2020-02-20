@@ -1,27 +1,24 @@
 import datetime
-import json
+
 from distutils.util import strtobool
 from json import JSONDecodeError
 
 from django.db import transaction
 from django.db.models import Prefetch, Count
 from django.contrib.auth import get_user_model
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404
-from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from magiccube.tools.subset import check_deck_subset_pool
-from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.models import CubeRelease
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+
+from api.models import CubeRelease
+
 from resources.staticdb import db
 
 from sealed import models, serializers
@@ -50,8 +47,6 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [PoolDetailPermissions, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
-        print(request, request.data, request.POST)
-
         try:
             pool = models.Pool.objects.select_related('session').get(id = kwargs['pk'], user = request.user)
         except models.Pool.DoesNotExist:
@@ -119,22 +114,6 @@ class DeckDetail(generics.RetrieveAPIView):
     queryset = models.PoolDeck.objects.all()
     serializer_class = serializers.PoolDeckSerializer
     permission_classes = [DeckPermissions]
-
-
-# class PoolList(generics.ListAPIView):
-#     permission_classes = [permissions.IsAuthenticated]
-#     serializer_class = serializers.MinimalPoolSerializer
-#
-#     def get_queryset(self):
-#         return models.Pool.objects.filter(
-#             user = self.request.user,
-#         ).select_related(
-#             'session',
-#         ).prefetch_related(
-#             Prefetch('session__release', queryset = CubeRelease.objects.all().only('name')),
-#             Prefetch('session__pools__user', queryset = get_user_model().objects.all().only('username')),
-#             Prefetch('decks', queryset = models.PoolDeck.objects.all().order_by('-created_at').only('id')),
-#         ).order_by('-session__created_at')
 
 
 class SessionList(generics.ListAPIView):
@@ -259,22 +238,9 @@ class SessionList(generics.ListAPIView):
         return Response(serializer.data)
 
 
-# class SessionDetailPermissions(BasePermission):
-#
-#     def has_permission(self, request, view):
-#         return True
-#
-#     def has_object_permission(self, request, view, obj: models.SealedSession):
-#         return (
-#             obj.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
-#             or request.user in (pool.user for pool in obj.pools.all())
-#         )
-
-
 class SessionDetail(generics.RetrieveAPIView):
     serializer_class = serializers.FullSealedSessionSerializer
     queryset = models.SealedSession.objects.all().prefetch_related(
         Prefetch('pools__decks', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
     )
-    # permission_classes = [SessionDetailPermissions]
