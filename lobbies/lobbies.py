@@ -208,6 +208,18 @@ class Lobby(object):
                 },
             )
 
+    def _game_finished(self) -> None:
+        with self._lock:
+            self._state = LobbyState.POST_GAME
+
+            async_to_sync(self._manager.channel_layer.group_send)(
+                self._manager.group_name,
+                {
+                    'type': 'lobby_update',
+                    'lobby': self.serialize(),
+                },
+            )
+
     def start_game(self, user: AbstractUser) -> None:
         with self._lock:
             if user != self._owner:
@@ -221,15 +233,26 @@ class Lobby(object):
 
             self._state = LobbyState.GAME
 
-            async_to_sync(self._manager.channel_layer.group_send)(
-                self._manager.group_name,
-                {
-                    'type': 'lobby_update',
-                    'lobby': self.serialize(),
-                },
+            # async_to_sync(self._manager.channel_layer.group_send)(
+            #     self._manager.group_name,
+            #     {
+            #         'type': 'lobby_update',
+            #         'lobby': self.serialize(),
+            #     },
+            # )
+            print('starting game...')
+
+            game = self._game_type(
+                self._options,
+                self._users.keys(),
+                self._game_finished,
             )
 
-            self._keys = self._game_type().start(self._options, self._users.keys())
+            self._keys = game.keys
+
+            print('keys', self._keys)
+
+            print('self serialized', self.serialize())
 
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
@@ -243,6 +266,10 @@ class Lobby(object):
                     },
                 },
             )
+
+            print('game started sent')
+
+        game.start()
 
     def join(self, user: AbstractUser) -> None:
         with self._lock:

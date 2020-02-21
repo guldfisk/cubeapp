@@ -168,7 +168,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         dataField: 'format',
         text: 'Format',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '4em', textAlign: 'center'};
         },
         sort: true,
         filter: selectFilter(
@@ -187,7 +187,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           return {width: '3em', textAlign: 'center'};
         },
         sort: true,
-                filter: selectFilter(
+        filter: selectFilter(
           {
             options: {
               DECK_BUILDING: 'DECK_BUILDING',
@@ -207,7 +207,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           {cell.name}
         </Link>,
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '5em', textAlign: 'center'};
         },
         sort: true,
         filter: textFilter(),
@@ -294,40 +294,27 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
     ];
 
     return <Container fluid>
-      <Row>
-        <Col sm={2}>
-          <Card>
-            <Card.Header>
-              Actions
-            </Card.Header>
-            <Card.Body>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col>
-          <BootstrapTable
-            remote
-            keyField='id'
-            data={this.state.sessions}
-            columns={columns}
-            bootstrap4
-            condensed
-            filter={filterFactory()}
-            pagination={
-              paginationFactory(
-                {
-                  hidePageListOnlyOnePage: true,
-                  showTotal: true,
-                  page: this.state.page,
-                  sizePerPage: this.state.pageSize,
-                  totalSize: this.state.hits,
-                }
-              )
+      <BootstrapTable
+        remote
+        keyField='id'
+        data={this.state.sessions}
+        columns={columns}
+        bootstrap4
+        condensed
+        filter={filterFactory()}
+        pagination={
+          paginationFactory(
+            {
+              hidePageListOnlyOnePage: true,
+              showTotal: true,
+              page: this.state.page,
+              sizePerPage: this.state.pageSize,
+              totalSize: this.state.hits,
             }
-            onTableChange={this.handleTableChanged}
-          />
-        </Col>
-      </Row>
+          )
+        }
+        onTableChange={this.handleTableChanged}
+      />
     </Container>
   }
 

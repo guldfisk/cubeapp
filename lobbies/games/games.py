@@ -23,8 +23,23 @@ class _GameMeta(ABCMeta):
         return klass
 
 
-class Game(object, metaclass=_GameMeta):
+class Game(object, metaclass = _GameMeta):
     name: str
+
+    def __init__(
+        self,
+        options: t.Mapping[str, t.Any],
+        players: t.AbstractSet[AbstractUser],
+        callback: t.Callable[[], None],
+    ):
+        self._options = options
+        self._players = players
+        self._finished_callback = callback
+
+    @property
+    @abstractmethod
+    def keys(self) -> t.Mapping[AbstractUser, t.Union[str, int]]:
+        pass
 
     @classmethod
     @abstractmethod
@@ -37,9 +52,5 @@ class Game(object, metaclass=_GameMeta):
         pass
 
     @abstractmethod
-    def start(
-        self,
-        options: t.Mapping[str, t.Any],
-        players: t.AbstractSet[AbstractUser],
-    ) -> t.Mapping[AbstractUser, str]:
+    def start(self) -> None:
         pass

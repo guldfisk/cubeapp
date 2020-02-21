@@ -14,13 +14,40 @@ from sealed.models import SealedSession, GenerateSealedPoolException
 class Sealed(Game):
     name = 'sealed'
 
+    def __init__(
+        self,
+        options: t.Mapping[str, t.Any],
+        players: t.AbstractSet[AbstractUser],
+        callback: t.Callable[[], None],
+    ):
+        print('sealed init')
+        super().__init__(options, players, callback)
+        try:
+            self._keys = {
+                pool.user: str(pool.id)
+                for pool in
+                SealedSession.generate(
+                    release = CubeRelease.objects.get(pk = self._options['release']),
+                    users = self._players,
+                    pool_size = int(self._options['pool_size']),
+                    game_format = Format.formats_map[self._options['format']],
+                ).pools.all()
+            }
+        except GenerateSealedPoolException as e:
+            raise StartGameException(e)
+        print('sealed init done')
+
+    @property
+    def keys(self) -> t.Mapping[AbstractUser, t.Union[str, int]]:
+        return self._keys
+
     @classmethod
     def get_default_options(cls) -> t.Mapping[str, t.Any]:
         return {
             'pool_size': 90,
             'format': 'limited_sideboard',
             'release': CubeRelease.objects.filter(
-                versioned_cube_id=1,
+                versioned_cube_id = 1,
             ).order_by(
                 'created_at',
             ).values_list('id', flat = True).last(),
@@ -48,27 +75,11 @@ class Sealed(Game):
                 _release = int(_release)
             except ValueError:
                 raise OptionsValidationError(f'Invalid release "{_release}"')
-            if not CubeRelease.objects.filter(pk=_release).exists():
+            if not CubeRelease.objects.filter(pk = _release).exists():
                 raise OptionsValidationError(f'Invalid release "{_release}"')
             validated['release'] = _release
 
         return validated
 
-    def start(
-        self,
-        options: t.Mapping[str, t.Any],
-        players: t.AbstractSet[AbstractUser],
-    ) -> t.Mapping[AbstractUser, str]:
-        try:
-            return {
-                pool.user: str(pool.id)
-                for pool in
-                SealedSession.generate(
-                    release = CubeRelease.objects.get(pk = options['release']),
-                    users = players,
-                    pool_size = int(options['pool_size']),
-                    game_format = Format.formats_map[options['format']],
-                ).pools.all()
-            }
-        except GenerateSealedPoolException as e:
-            raise StartGameException(e)
+    def start(self) -> None:
+        self._finished_callback()
