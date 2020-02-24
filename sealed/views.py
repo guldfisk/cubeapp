@@ -61,7 +61,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
             return Response({'errors': ['invalid deck definition']}, status = status.HTTP_400_BAD_REQUEST)
 
         valid, error = check_deck_subset_pool(
-            pool.session.release.cube,
+            pool.pool,
             deck.seventy_five,
             {
                 db.cardboards[name]
