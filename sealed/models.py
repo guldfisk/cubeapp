@@ -8,12 +8,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from mtgorp.models.collections.deck import Deck
+from mtgorp.models.formats.format import Format
+
 from magiccube.collections.cube import Cube
 
 from api.fields.orp import OrpField
 from api.models import CubeRelease
-from mtgorp.models.collections.deck import Deck
-from sealed.formats import Format
+
 from utils.fields import EnumField
 from utils.methods import get_random_name
 

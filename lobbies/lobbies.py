@@ -233,15 +233,6 @@ class Lobby(object):
 
             self._state = LobbyState.GAME
 
-            # async_to_sync(self._manager.channel_layer.group_send)(
-            #     self._manager.group_name,
-            #     {
-            #         'type': 'lobby_update',
-            #         'lobby': self.serialize(),
-            #     },
-            # )
-            print('starting game...')
-
             game = self._game_type(
                 self._options,
                 self._users.keys(),
@@ -249,10 +240,6 @@ class Lobby(object):
             )
 
             self._keys = game.keys
-
-            print('keys', self._keys)
-
-            print('self serialized', self.serialize())
 
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
@@ -267,8 +254,6 @@ class Lobby(object):
                 },
             )
 
-            print('game started sent')
-
         game.start()
 
     def join(self, user: AbstractUser) -> None:
@@ -279,10 +264,6 @@ class Lobby(object):
             if len(self._users) >= self._size:
                 raise JoinLobbyException('lobby is full')
 
-            # async_to_sync(self._channel_layer.group_add)(
-            #     self._group_name,
-            #     channel_name,
-            # )
             self._users[user] = False
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
@@ -306,7 +287,6 @@ class Lobby(object):
                     },
                 )
             else:
-                print('lobby abandoned')
                 with self._manager._lock:
                     del self._manager._lobbies[self._name]
                     async_to_sync(self._manager.channel_layer.group_send)(

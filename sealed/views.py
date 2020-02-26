@@ -7,6 +7,8 @@ from django.db import transaction
 from django.db.models import Prefetch, Count
 from django.contrib.auth import get_user_model
 
+from mtgorp.models.formats.format import Format
+
 from magiccube.tools.subset import check_deck_subset_pool
 
 from rest_framework import generics, permissions, status
@@ -22,7 +24,6 @@ from api.models import CubeRelease
 from resources.staticdb import db
 
 from sealed import models, serializers
-from sealed.formats import Format
 
 
 class PoolDetailPermissions(permissions.BasePermission):

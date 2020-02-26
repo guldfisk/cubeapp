@@ -2,12 +2,13 @@ import typing as t
 
 from django.contrib.auth.models import AbstractUser
 
+from mtgorp.models.formats.format import Format
+
 from api.models import CubeRelease
 
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game, OptionsValidationError
 
-from sealed.formats import Format
 from sealed.models import SealedSession, GenerateSealedPoolException
 
 
@@ -20,7 +21,6 @@ class Sealed(Game):
         players: t.AbstractSet[AbstractUser],
         callback: t.Callable[[], None],
     ):
-        print('sealed init')
         super().__init__(options, players, callback)
         try:
             self._keys = {
@@ -35,7 +35,6 @@ class Sealed(Game):
             }
         except GenerateSealedPoolException as e:
             raise StartGameException(e)
-        print('sealed init done')
 
     @property
     def keys(self) -> t.Mapping[AbstractUser, t.Union[str, int]]:
