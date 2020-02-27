@@ -2,14 +2,15 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 
-import {CubeReleaseName, FullSealedSession, User} from "../../models/models";
+import {FullSealedSession, User} from "../../models/models";
 import {Link} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {DateListItem} from "../../utils/listitems";
-import {signIn} from "../../auth/controller";
 import {connect} from "react-redux";
+
+import '../../../styling/SessionsView.css';
 
 
 interface SessionViewProps {
@@ -58,17 +59,14 @@ class SessionView extends React.Component<SessionViewProps, null> {
       },
     ];
 
+    console.log(this.props.session);
+
     return <Container>
       <Row><h3>{this.props.session.name}</h3></Row>
       <Row>
         <Col>
           <label
-            style={
-              {
-                display: 'inline-block',
-                margin: '1em',
-              }
-            }
+            className='explain-label'
           >
             State
           </label>
@@ -76,12 +74,7 @@ class SessionView extends React.Component<SessionViewProps, null> {
         </Col>
         <Col>
           <label
-            style={
-              {
-                display: 'inline-block',
-                margin: '1em',
-              }
-            }
+            className='explain-label'
           >
             Format
           </label>
@@ -89,12 +82,7 @@ class SessionView extends React.Component<SessionViewProps, null> {
         </Col>
         <Col>
           <label
-            style={
-              {
-                display: 'inline-block',
-                margin: '1em',
-              }
-            }
+            className='explain-label'
           >
             Created
           </label>
@@ -102,16 +90,29 @@ class SessionView extends React.Component<SessionViewProps, null> {
         </Col>
         <Col>
           <label
-            style={
-              {
-                display: 'inline-block',
-                margin: '1em',
-              }
-            }
+            className='explain-label'
           >
             Release
           </label>
           <Link to={'/release/' + this.props.session.release.id + '/'}>{this.props.session.release.name}</Link>
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <label
+            className='explain-label'
+          >
+            Open decks
+          </label>
+          <label>{this.props.session.openDecks.toString()}</label>
+        </Col>
+        <Col>
+          <label
+            className='explain-label'
+          >
+            Allow pool intersection
+          </label>
+          <label>{this.props.session.allowPoolIntersection.toString()}</label>
         </Col>
       </Row>
       <Row>

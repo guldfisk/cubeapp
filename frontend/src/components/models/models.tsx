@@ -615,7 +615,7 @@ export class PrintingCounter extends Counter<Printing> {
     filters: [string, string[]][],
     restName: string,
   ): [string, [Printing, number][]][] => {
-  // ): any => {
+    // ): any => {
     const groups: { [key: string]: [Printing, number][] } = {};
 
     for (const [filter_name, filter_types] of filters) {
@@ -2068,6 +2068,8 @@ export class SealedSession extends Atomic {
   release: CubeReleaseName;
   players: User[];
   state: string;
+  openDecks: boolean;
+  allowPoolIntersection: boolean;
 
   constructor(
     id: string,
@@ -2080,6 +2082,8 @@ export class SealedSession extends Atomic {
     release: CubeReleaseName,
     players: User[],
     state: string,
+    openDecks: boolean,
+    allowPoolIntersection: boolean,
   ) {
     super(id);
     this.format = format;
@@ -2091,6 +2095,8 @@ export class SealedSession extends Atomic {
     this.release = release;
     this.players = players;
     this.state = state;
+    this.openDecks = openDecks;
+    this.allowPoolIntersection = allowPoolIntersection;
   }
 
   public static fromRemote(remote: any): SealedSession {
@@ -2105,6 +2111,8 @@ export class SealedSession extends Atomic {
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
+      remote.open_decks,
+      remote.allow_pool_intersection,
     )
   }
 
@@ -2158,31 +2166,6 @@ export class SealedPoolMeta extends Atomic {
     )
   }
 
-  // public static all(offset: number = 0, limit: number = 50): Promise<PaginationResponse<SealedPoolMeta>> {
-  //   return axios.get(
-  //     apiPath + 'sealed/pools/',
-  //     {
-  //       params: {
-  //         offset,
-  //         limit,
-  //       },
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "Authorization": `Token ${store.getState().token}`,
-  //       }
-  //     },
-  //   ).then(
-  //     response => {
-  //       return {
-  //         objects: response.data.results.map(
-  //           (pool: any) => SealedPoolMeta.fromRemote(pool)
-  //         ),
-  //         hits: response.data.count,
-  //       }
-  //     }
-  //   )
-  // }
-
 }
 
 export class FullSealedSession extends SealedSession {
@@ -2199,9 +2182,24 @@ export class FullSealedSession extends SealedSession {
     release: CubeReleaseName,
     players: User[],
     state: string,
+    openDecks: boolean,
+    allowPoolIntersection: boolean,
     pools: SealedPoolMeta[],
   ) {
-    super(id, format, createdAt, playingAt, finishedAt, name, poolSize, release, players, state);
+    super(
+      id,
+      format,
+      createdAt,
+      playingAt,
+      finishedAt,
+      name,
+      poolSize,
+      release,
+      players,
+      state,
+      openDecks,
+      allowPoolIntersection,
+    );
     this.pools = pools;
   }
 
@@ -2217,6 +2215,8 @@ export class FullSealedSession extends SealedSession {
       CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
+      remote.open_decks,
+      remote.allow_pool_intersection,
       remote.pools.map(
         (pool: any) => SealedPoolMeta.fromRemote(pool)
       ),
@@ -2302,9 +2302,6 @@ export class SealedPool extends Atomic {
   }
 
   public static get(id: string): Promise<SealedPool> {
-    console.log(store.getState().authenticated);
-    console.log(store.getState().token);
-    console.log(store.getState());
     return axios.get(
       apiPath + 'sealed/pools/' + id + '/',
       {

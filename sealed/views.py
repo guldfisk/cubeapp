@@ -33,8 +33,12 @@ class PoolDetailPermissions(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj: models.Pool):
         return (
-            obj.session.state.value > models.SealedSession.SealedSessionState.DECK_BUILDING.value
-            or request.user == obj.user
+            request.user == obj.user
+            or obj.session.state.value > models.SealedSession.SealedSessionState.PLAYING.value
+            or (
+                obj.session.state == models.SealedSession.SealedSessionState.DECK_BUILDING
+                and obj.session.open_decks
+            )
         )
 
 

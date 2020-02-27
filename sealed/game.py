@@ -1,4 +1,5 @@
 import typing as t
+from distutils.util import strtobool
 
 from django.contrib.auth.models import AbstractUser
 
@@ -31,6 +32,8 @@ class Sealed(Game):
                     users = self._players,
                     pool_size = int(self._options['pool_size']),
                     game_format = Format.formats_map[self._options['format']],
+                    open_decks = options['open_decks'],
+                    allow_pool_intersection = options['allow_pool_intersection'],
                 ).pools.all()
             }
         except GenerateSealedPoolException as e:
@@ -50,6 +53,8 @@ class Sealed(Game):
             ).order_by(
                 'created_at',
             ).values_list('id', flat = True).last(),
+            'open_decks': False,
+            'allow_pool_intersection': False,
         }
 
     @classmethod
@@ -77,6 +82,22 @@ class Sealed(Game):
             if not CubeRelease.objects.filter(pk = _release).exists():
                 raise OptionsValidationError(f'Invalid release "{_release}"')
             validated['release'] = _release
+
+        _open_decks = options.get('open_decks')
+        if _open_decks is not None:
+            try:
+                _open_decks = strtobool(str(_open_decks))
+            except ValueError:
+                raise OptionsValidationError(f'Invalid value for "open_decks": "{_open_decks}"')
+            validated['open_decks'] = _open_decks
+
+        _allow_intersection = options.get('allow_pool_intersection')
+        if _allow_intersection is not None:
+            try:
+                _allow_intersection = strtobool(str(_allow_intersection))
+            except ValueError:
+                raise OptionsValidationError(f'Invalid value for "allow_pool_intersection": "{_allow_intersection}"')
+            validated['allow_pool_intersection'] = _allow_intersection
 
         return validated
 

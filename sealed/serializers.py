@@ -50,7 +50,7 @@ class SealedSessionSerializer(serializers.ModelSerializer):
         model = models.SealedSession
         fields = (
             'id', 'name', 'format', 'release', 'created_at', 'playing_at', 'finished_at', 'pool_size', 'players',
-            'state',
+            'state', 'open_decks', 'allow_pool_intersection',
         )
 
 
@@ -69,4 +69,7 @@ class FullSealedSessionSerializer(SealedSessionSerializer):
 
     class Meta:
         model = models.SealedSession
-        fields = ('id', 'name', 'format', 'release', 'created_at', 'pool_size', 'players', 'state', 'pools')
+        fields = (
+            'id', 'name', 'format', 'release', 'created_at', 'playing_at', 'finished_at', 'pool_size', 'players',
+            'state', 'open_decks', 'allow_pool_intersection', 'pools',
+        )

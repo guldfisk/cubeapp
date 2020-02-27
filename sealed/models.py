@@ -38,6 +38,8 @@ class SealedSession(models.Model):
     pool_size = models.PositiveSmallIntegerField()
     release = models.ForeignKey(CubeRelease, on_delete = models.CASCADE, related_name = 'sealed_sessions')
     format = models.CharField(max_length = 255)
+    open_decks = models.BooleanField()
+    allow_pool_intersection = models.BooleanField()
 
     @classmethod
     def generate(
@@ -46,28 +48,45 @@ class SealedSession(models.Model):
         users: t.Iterable[AbstractUser],
         pool_size: int,
         game_format: Format,
+        open_decks: bool = True,
+        allow_pool_intersection: bool = False,
     ) -> SealedSession:
         users = list(users)
-        if len(users) * pool_size > len(release.cube):
-            raise GenerateSealedPoolException(
-                f'not enough cubeables, needs {len(users) * pool_size}, only has {len(release.cube)}'
-            )
 
-        cubeables = list(release.cube.cubeables)
-        random.shuffle(cubeables)
+        required_cube_size = pool_size if allow_pool_intersection else len(users) * pool_size
+
+        if required_cube_size > len(release.cube):
+            raise GenerateSealedPoolException(
+                f'not enough cubeables, needs {required_cube_size}, only has {len(release.cube)}'
+            )
 
         sealed_session = cls.objects.create(
             release = release,
             pool_size = pool_size,
             format = game_format.name,
+            open_decks = open_decks,
+            allow_pool_intersection = allow_pool_intersection,
         )
 
-        for i, user in enumerate(users):
-            Pool.objects.create(
-                user = user,
-                pool = Cube(cubeables[i * pool_size: (i + 1) * pool_size]),
-                session = sealed_session,
-            )
+        cubeables = list(release.cube.cubeables)
+
+        if allow_pool_intersection:
+            for user in users:
+                Pool.objects.create(
+                    user = user,
+                    pool = Cube(random.sample(cubeables, pool_size)),
+                    session = sealed_session,
+                )
+
+        else:
+            random.shuffle(cubeables)
+
+            for i, user in enumerate(users):
+                Pool.objects.create(
+                    user = user,
+                    pool = Cube(cubeables[i * pool_size: (i + 1) * pool_size]),
+                    session = sealed_session,
+                )
 
         return sealed_session
 
