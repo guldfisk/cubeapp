@@ -16,6 +16,7 @@ from lobbies.exceptions import (
     CreateLobbyException, ReadyException, SetOptionsException, StartGameException, JoinLobbyException,
     LeaveLobbyException)
 from lobbies.games.games import Game
+from lobbies.games.options import OptionsValidationError
 
 
 class LobbyState(Enum):
@@ -50,11 +51,11 @@ class LobbyManager(object):
         with self._lock:
             return self._lobbies.get(name)
 
-    def leave_all_lobbies(self, user: AbstractUser):
+    def leave_all_lobbies(self, user: AbstractUser, force: bool = False):
         with self._lock:
             lobbies = list(self._lobbies.values())
         for lobby in lobbies:
-            if lobby.state != LobbyState.GAME and user in lobby.users:
+            if (lobby.state != LobbyState.GAME or force) and user in lobby.users:
                 lobby.leave(user)
 
     def create_lobby(self, name: str, user: AbstractUser, size: int, game_type: t.Type[Game]) -> Lobby:
@@ -189,7 +190,7 @@ class Lobby(object):
                 },
             )
 
-    def set_options(self, user: AbstractUser, options: t.Any) -> None:
+    def set_options(self, user: AbstractUser, options: t.Mapping[str, t.Any]) -> None:
         if user != self._owner:
             raise SetOptionsException('only lobby owner can modify lobby options')
 

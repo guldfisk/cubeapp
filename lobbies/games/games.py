@@ -6,15 +6,24 @@ from abc import abstractmethod, ABCMeta
 
 from django.contrib.auth.models import AbstractUser
 
-
-class OptionsValidationError(Exception):
-    pass
+from lobbies.games.options import Option
 
 
 class _GameMeta(ABCMeta):
     games_map: t.MutableMapping[str, t.Type[Game]] = {}
+    options_meta: t.Mapping[str, Option]
 
     def __new__(mcs, classname, base_classes, attributes):
+        options = {}
+
+        for key, attribute in attributes.items():
+            if isinstance(attribute, Option):
+                if attribute._name is None:
+                    attribute._name = key
+                options[attribute._name] = attribute
+
+        attributes['options_meta'] = options
+
         klass = type.__new__(mcs, classname, base_classes, attributes)
 
         if 'name' in attributes:
@@ -42,14 +51,21 @@ class Game(object, metaclass = _GameMeta):
         pass
 
     @classmethod
-    @abstractmethod
     def get_default_options(cls) -> t.Mapping[str, t.Any]:
-        pass
+        return {
+            name: value.default
+            for name, value in
+            cls.options_meta.items()
+        }
 
     @classmethod
-    @abstractmethod
     def validate_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
-        pass
+        return {
+            option: cls.options_meta[option].validate(value)
+            for option, value in
+            options.items()
+            if option in cls.options_meta
+        }
 
     @abstractmethod
     def start(self) -> None:
