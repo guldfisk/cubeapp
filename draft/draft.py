@@ -228,7 +228,7 @@ class DraftInterface(object):
 
             print(
                 'new booster arrived at {}: {}'.format(
-                    self._drafter.name,
+                    self._drafter.user.username,
                     self._current_booster.cubeables,
                 )
             )
@@ -241,7 +241,7 @@ class DraftInterface(object):
 
                 print(
                     '{} picked {}'.format(
-                        self._drafter.name,
+                        self._drafter.user.username,
                         pick,
                     )
                 )
