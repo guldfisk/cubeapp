@@ -53,6 +53,13 @@ class DraftConsumer(MessageConsumer):
 
         self._draft_interface = draft_interface
         self.accept()
+        if self._draft_interface.messages:
+            self.send(
+                {
+                    'type': 'previous_messages',
+                    'messages': self._draft_interface.messages,
+                }
+            )
         self._message_consumer = QueueConsumer(
             self._draft_interface.out_queue,
             self._handle_interface_message,
@@ -67,7 +74,5 @@ class DraftConsumer(MessageConsumer):
             self._message_consumer.stop()
 
     def _handle_interface_message(self, message) -> None:
-        print('handle interface message')
-        self.send_json(
-            message
-        )
+        self._draft_interface.messages.append(message)
+        self.send_json(message)

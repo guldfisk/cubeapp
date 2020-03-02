@@ -8,9 +8,12 @@ import uuid
 from queue import Queue, Empty
 
 from channels.generic.websocket import WebsocketConsumer
+from django.contrib.auth.models import AbstractUser
 
-from magiccube.collections import cubeable
+from api.models import CubeRelease
+from api.serialization.serializers import UserSerializer
 from magiccube.collections.cube import Cube
+from magiccube.collections.cubeable import Cubeable
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
@@ -19,18 +22,21 @@ from mtgorp.models.serilization.serializeable import Serializeable, serializatio
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
 from ring import Ring
-from yeetlong.multiset import Multiset
+
+
+def serialize_cubeable(cubeable: Cubeable) -> t.Any:
+    return cubeable.id if isinstance(cubeable, Printing) else RawStrategy.serialize(cubeable)
 
 
 class Drafter(object):
 
-    def __init__(self, name: str, key: str):
-        self._name = name
+    def __init__(self, user: AbstractUser, key: str):
+        self._user = user
         self._key = key
 
     @property
-    def name(self) -> str:
-        return self._name
+    def user(self) -> AbstractUser:
+        return self._user
 
     @property
     def key(self) -> str:
@@ -48,7 +54,7 @@ class Drafter(object):
     def __repr__(self) -> str:
         return '{}({}, {})'.format(
             self.__class__.__name__,
-            self._name,
+            self._user.username,
             self._key,
         )
 
@@ -69,6 +75,10 @@ class Booster(Serializeable):
     @property
     def cubeables(self) -> Cube:
         return self._cubeables
+
+    @cubeables.setter
+    def cubeables(self, cube: Cube) -> None:
+        self._cubeables = cube
 
     @property
     def booster_id(self) -> str:
@@ -108,6 +118,10 @@ class DraftInterface(object):
         self._drafter = drafter
         self._draft = draft
 
+        self._pool = Cube()
+
+        self._messages: t.List[t.Mapping[str, t.Any]] = []
+
         self.boost_out_queue = Queue()
 
         self._booster_queue = Queue()
@@ -124,6 +138,10 @@ class DraftInterface(object):
         self._connect_lock = threading.Lock()
         self._consumer: t.Optional[WebsocketConsumer] = None
 
+    @property
+    def messages(self) -> t.List[t.Mapping[str, t.Any]]:
+        return self._messages
+
     def connect(self, consumer: WebsocketConsumer) -> None:
         with self._connect_lock:
             if self._consumer is not None:
@@ -136,12 +154,23 @@ class DraftInterface(object):
                 raise self.ConnectionException('no consumer connected')
             self._consumer = None
 
+    def send_message(self, message_type: str, **kwargs):
+        self.out_queue.put(
+            {
+                'type': message_type,
+                **kwargs,
+            }
+        )
+
+    def send_error(self, error_type: str, **kwargs):
+        self.send_message('error', error_type = error_type, **kwargs)
+
     @property
     def booster_queue(self) -> Queue[Booster]:
         return self._booster_queue
 
     @property
-    def pick_queue(self) -> Queue[cubeable]:
+    def pick_queue(self) -> Queue[Cubeable]:
         return self._pick_queue
 
     @property
@@ -154,7 +183,7 @@ class DraftInterface(object):
         if message_type == 'pick':
             pick = message.get('pick')
             if pick is None:
-                # TODO error
+                self.send_error('empty_pick')
                 return
 
             try:
@@ -167,7 +196,7 @@ class DraftInterface(object):
                     )
                 )
             except KeyError:
-                #TODO error
+                self.send_error('misconstrued_pick')
                 return
 
             self._pick_queue.put(pick)
@@ -176,6 +205,10 @@ class DraftInterface(object):
             pass
 
     def start(self) -> None:
+        self.send_message(
+            'started',
+            draft = self._draft.serialize(),
+        )
         self._booster_pusher.start()
 
     def stop(self) -> None:
@@ -191,12 +224,7 @@ class DraftInterface(object):
             with self._current_booster_lock:
                 self._current_booster = booster
 
-            self._out_queue.put(
-                {
-                    'type': 'booster',
-                    'booster': RawStrategy.serialize(self._current_booster),
-                }
-            )
+            self.send_message('booster', booster = RawStrategy.serialize(self._current_booster))
 
             print(
                 'new booster arrived at {}: {}'.format(
@@ -219,11 +247,14 @@ class DraftInterface(object):
                 )
 
                 if pick not in self._current_booster.cubeables:
-                    # TODO error
+                    self.send_error('invalid_pick', pick = serialize_cubeable(pick))
                     continue
 
-                self._current_booster.cubeables.remove(pick, 1)
-                # TODO put pick in pool
+                _pick = Cube((pick,))
+                self._current_booster.cubeables -= _pick
+                self._pool += _pick
+                self.send_message('pick', pick = serialize_cubeable(pick))
+
                 if self._current_booster.cubeables:
                     self.boost_out_queue.put(self._current_booster)
                     print('pack sent on')
@@ -240,19 +271,28 @@ class Draft(object):
         self,
         key: str,
         drafters: Ring[Drafter],
-        cube: Cube,
+        release: CubeRelease,
         pack_amount: int,
         pack_size: int,
         draft_format: str,
+        finished_callback: t.Callable[[Draft], None],
     ):
         self._key = key
 
         self._drafters = drafters
-        self._cube = cube
+        self._release = release
+        self._draft_format = draft_format
+
+        self._finished_callback = finished_callback
+
+        self._active_boosters: t.MutableMapping[Booster, bool] = {}
+        self._active_boosters_lock = threading.Lock()
+
+        self._clockwise = True
 
         cubeables = random.sample(
-            self._cube.cubeables,
-            len(self._cube.cubeables),
+            self._release.cube.cubeables,
+            len(self._release.cube.cubeables),
         )
 
         self._pack_amount = pack_amount
@@ -266,7 +306,7 @@ class Draft(object):
                     range(self._pack_size)
                 )
             ) for _ in
-            range(self._pack_amount)
+            range(int(self._pack_amount * len(self._drafters)))
         ]
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
@@ -279,8 +319,24 @@ class Draft(object):
     def key(self) -> str:
         return self._key
 
+    def serialize(self) -> t.Mapping[str, t.Any]:
+        return {
+            'drafters': [
+                UserSerializer(drafter.user).data
+                for drafter in
+                self._drafters.all
+            ],
+            'pack_amount': self._pack_amount,
+            'pack_size': self._pack_size,
+            'draft_format': self._draft_format,
+            'release': self._release.id,
+        }
+
     def booster_empty(self, booster: Booster) -> None:
-        pass
+        with self._active_boosters_lock:
+            self._active_boosters[booster] = True
+            if all(self._active_boosters.values()):
+                self._administer_boosters()
 
     # @classmethod
     # def get_booster_size_amount(cls, cube_size: int, amount_players: int) -> t.Tuple[int, int]:
@@ -294,19 +350,34 @@ class Draft(object):
     def get_draft_interface(self, drafter: Drafter) -> DraftInterface:
         return self._drafter_interfaces[drafter]
 
-    def _chain_booster_queue(self, clockwise: bool) -> None:
-        for drafter, interface in self._drafter_interfaces.items():
-            interface.boost_out_queue = self._drafter_interfaces[
-                self._drafters.after(
-                    drafter
-                )
-            ].booster_queue
+    def _chain_booster_queues(self) -> None:
+        with self._active_boosters_lock:
+            for drafter, interface in self._drafter_interfaces.items():
+                interface.boost_out_queue = self._drafter_interfaces[
+                    self._drafters.after(drafter)
+                    if self._clockwise else
+                    self._drafters.before(drafter)
+                ].booster_queue
+
+            self._clockwise = not self._clockwise
 
     def _administer_boosters(self) -> None:
+        if not self._boosters:
+            self.completed()
+            return
+
+        self._chain_booster_queues()
+
+        self._active_boosters.clear()
         for interface in self._drafter_interfaces.values():
-            interface.booster_queue.put(
-                self._boosters.pop()
-            )
+            booster = self._boosters.pop()
+            self._active_boosters[booster] = False
+            interface.booster_queue.put(booster)
+
+    def completed(self) -> None:
+        self._finished_callback(self)
+        for interface in self._drafter_interfaces.values():
+            interface.send_message('completed')
 
     def start(self) -> None:
         print('draft start')
@@ -321,7 +392,7 @@ class Draft(object):
         for interface in self._drafter_interfaces.values():
             interface.start()
 
-        self._chain_booster_queue(True)
+        # self._chain_booster_queue(True)
         self._administer_boosters()
         print('draft started')
 

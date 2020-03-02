@@ -22,8 +22,6 @@ class DraftCoordinator(object):
         self._lock = threading.Lock()
 
     def get_draft_interface(self, key: str) -> t.Optional[DraftInterface]:
-        print('get drafter interface from draft coordinator', key, self._drafters)
-        print(key in self._drafters, type(key), list(map(type, self._drafters.keys())))
         with self._lock:
             return self._drafters.get(key)
 
@@ -41,7 +39,7 @@ class DraftCoordinator(object):
             (
                 user,
                 Drafter(
-                    user.username,
+                    user,
                     str(uuid.uuid4()),
                 ),
             )
@@ -59,10 +57,11 @@ class DraftCoordinator(object):
         draft = Draft(
             key = str(uuid.uuid4()),
             drafters = drafters_ring,
-            cube = release.cube,
+            release = release,
             pack_amount = pack_amount,
             pack_size = pack_size,
             draft_format = draft_format,
+            finished_callback = self.draft_complete,
         )
 
         draft.start()
