@@ -54,11 +54,9 @@ class DraftConsumer(MessageConsumer):
         self._draft_interface = draft_interface
         self.accept()
         if self._draft_interface.messages:
-            self.send(
-                {
-                    'type': 'previous_messages',
-                    'messages': self._draft_interface.messages,
-                }
+            self._send_message(
+                'previous_messages',
+                messages = self._draft_interface.messages,
             )
         self._message_consumer = QueueConsumer(
             self._draft_interface.out_queue,

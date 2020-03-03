@@ -15,6 +15,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/sheetclient.git#egg=sheetclient
 -e git+https://github.com/guldfisk/mkmcheck.git#egg=mkmcheck
 -e git+https://github.com/guldfisk/django-typed-models.git#egg=django-typed-models
+-e git+https://github.com/guldfisk/mtgdraft.git#egg=mtgdraft
 lazy-property
 multiset
 appdirs
@@ -23,6 +24,7 @@ requests
 antlr4-python3-runtime
 promise
 pillow
+sqlalchemy
 sqlalchemy
 numpy
 httplib2

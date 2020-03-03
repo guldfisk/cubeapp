@@ -1,27 +1,31 @@
 from __future__ import annotations
 
-import random
 import typing as t
+import random
 import threading
-
-import uuid
 from queue import Queue, Empty
 
 from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AbstractUser
 
-from api.models import CubeRelease
-from api.serialization.serializers import UserSerializer
+
+from ring import Ring
+
+from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
-from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.serializeable import Serializeable, serialization_model, Inflator
-from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from mtgdraft.models import Booster
+
+from api.models import CubeRelease
+from api.serialization.serializers import UserSerializer
+
 from resources.staticdb import db
-from ring import Ring
 
 
 def serialize_cubeable(cubeable: Cubeable) -> t.Any:
@@ -64,47 +68,6 @@ _deserialize_type_map = {
     'Ticket': Ticket,
     'Purple': Purple,
 }
-
-
-class Booster(Serializeable):
-
-    def __init__(self, cubeables: Cube, booster_id: t.Optional[str] = None):
-        self._cubeables = cubeables
-        self._booster_id = str(uuid.uuid4()) if booster_id is None else booster_id
-
-    @property
-    def cubeables(self) -> Cube:
-        return self._cubeables
-
-    @cubeables.setter
-    def cubeables(self, cube: Cube) -> None:
-        self._cubeables = cube
-
-    @property
-    def booster_id(self) -> str:
-        return self._booster_id
-
-    def serialize(self) -> serialization_model:
-        return {
-            'booster_id': self._booster_id,
-            'cubeables': self._cubeables.serialize(),
-        }
-
-    @classmethod
-    def deserialize(cls, value: serialization_model, inflator: Inflator) -> Booster:
-        return cls(
-            booster_id = value['booster_id'],
-            cubeables = Cube.deserialize(value['cubeables'], inflator),
-        )
-
-    def __hash__(self) -> int:
-        return hash(self._booster_id)
-
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._booster_id == other._booster_id
-        )
 
 
 class DraftInterface(object):
@@ -207,7 +170,7 @@ class DraftInterface(object):
     def start(self) -> None:
         self.send_message(
             'started',
-            draft = self._draft.serialize(),
+            **self._draft.serialize(),
         )
         self._booster_pusher.start()
 
@@ -252,6 +215,7 @@ class DraftInterface(object):
 
                 _pick = Cube((pick,))
                 self._current_booster.cubeables -= _pick
+                self._current_booster.pick += 1
                 self._pool += _pick
                 self.send_message('pick', pick = serialize_cubeable(pick))
 
@@ -289,6 +253,7 @@ class Draft(object):
         self._active_boosters_lock = threading.Lock()
 
         self._clockwise = True
+        self._pack_counter = 0
 
         cubeables = random.sample(
             self._release.cube.cubeables,
@@ -351,15 +316,14 @@ class Draft(object):
         return self._drafter_interfaces[drafter]
 
     def _chain_booster_queues(self) -> None:
-        with self._active_boosters_lock:
-            for drafter, interface in self._drafter_interfaces.items():
-                interface.boost_out_queue = self._drafter_interfaces[
-                    self._drafters.after(drafter)
-                    if self._clockwise else
-                    self._drafters.before(drafter)
-                ].booster_queue
+        for drafter, interface in self._drafter_interfaces.items():
+            interface.boost_out_queue = self._drafter_interfaces[
+                self._drafters.after(drafter)
+                if self._clockwise else
+                self._drafters.before(drafter)
+            ].booster_queue
 
-            self._clockwise = not self._clockwise
+        self._clockwise = not self._clockwise
 
     def _administer_boosters(self) -> None:
         if not self._boosters:
@@ -369,7 +333,17 @@ class Draft(object):
         self._chain_booster_queues()
 
         self._active_boosters.clear()
+
+        self._pack_counter += 1
+
         for interface in self._drafter_interfaces.values():
+            interface.send_message(
+                'round',
+                round = {
+                    'pack': self._pack_counter,
+                    'clockwise': self._clockwise,
+                },
+            )
             booster = self._boosters.pop()
             self._active_boosters[booster] = False
             interface.booster_queue.put(booster)
@@ -392,7 +366,6 @@ class Draft(object):
         for interface in self._drafter_interfaces.values():
             interface.start()
 
-        # self._chain_booster_queue(True)
         self._administer_boosters()
         print('draft started')
 
