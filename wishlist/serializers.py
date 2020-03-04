@@ -58,7 +58,7 @@ class RequirementSerializer(serializers.Serializer):
 
 
 def _validate_cardboard_name(cardboard_name: str) -> None:
-    if not cardboard_name in db.cardboards:
+    if cardboard_name not in db.cardboards:
         raise ValidationError('Invalid cardboard name')
 
 

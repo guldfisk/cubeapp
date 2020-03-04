@@ -235,9 +235,9 @@ class Lobby(object):
             self._state = LobbyState.GAME
 
             game = self._game_type(
-                self._options,
-                self._users.keys(),
-                self._game_finished,
+                options = self._options,
+                players = self._users.keys(),
+                callback = self._game_finished,
             )
 
             self._keys = game.keys

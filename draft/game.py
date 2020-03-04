@@ -37,6 +37,7 @@ class Draft(Game):
                 pack_amount = options['pack_amount'],
                 pack_size = options['pack_size'],
                 draft_format = options['draft_format'],
+                finished_callback = self._finished_callback,
             )
         }
 

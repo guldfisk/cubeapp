@@ -32,6 +32,7 @@ class DraftCoordinator(object):
         pack_amount: int,
         pack_size: int,
         draft_format: str,
+        finished_callback: t.Callable[[], None],
     ) -> t.Tuple[t.Tuple[AbstractUser, Drafter], ...]:
         print('start draft')
 
@@ -54,6 +55,11 @@ class DraftCoordinator(object):
             for _, drafter in
             drafters
         )
+
+        def _finished_callback(_draft: Draft):
+            self.draft_complete(_draft)
+            finished_callback()
+
         draft = Draft(
             key = str(uuid.uuid4()),
             drafters = drafters_ring,
@@ -61,7 +67,7 @@ class DraftCoordinator(object):
             pack_amount = pack_amount,
             pack_size = pack_size,
             draft_format = draft_format,
-            finished_callback = self.draft_complete,
+            finished_callback = _finished_callback,
         )
 
         draft.start()

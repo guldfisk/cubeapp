@@ -39,16 +39,14 @@ INSTALLED_APPS = [
     'knox',
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
-    'draft.apps.ApiConfig',
+    'draft.apps.DraftConfig',
     'sealed.apps.SealedConfig',
     'frontend.apps.FrontendConfig',
     'wishlist.apps.WishListConfig',
-    # 'corsheaders',
-    # 'django.contrib.admin',
+    'limited.apps.LimitedConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    # 'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
 

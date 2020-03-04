@@ -10,7 +10,7 @@ from api.models import CubeRelease
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
 
-from sealed.models import SealedSession, GenerateSealedPoolException
+# from sealed.models import SealedSession, GenerateSealedPoolException
 
 
 class Sealed(Game):
