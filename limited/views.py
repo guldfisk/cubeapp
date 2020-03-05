@@ -125,13 +125,13 @@ class SessionList(generics.ListAPIView):
     serializer_class = serializers.SealedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
-        Prefetch('release', queryset = CubeRelease.objects.all().only('name')),
         'pool_specification__specifications',
     )
 
     _allowed_sort_keys = {
         'name': 'name',
         'format': 'format',
+        'game_type': 'game_type',
         'state': 'state',
         'created_at': 'created_at',
         'playing_at': 'playing_at',
@@ -155,6 +155,10 @@ class SessionList(generics.ListAPIView):
             except KeyError:
                 return Response(f'invalid format filter {format_filter}', status = status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(format = game_format.name)
+
+        game_type_filter = request.GET.get('game_type_filter')
+        if game_type_filter:
+            queryset = queryset.filter(game_type=game_type_filter)
 
         state_filter = request.GET.get('state_filter')
         if state_filter:

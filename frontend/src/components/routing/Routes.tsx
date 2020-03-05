@@ -23,9 +23,9 @@ import SamplePackPage from "../pages/SamplePackPage";
 import WishListPage from "../pages/wishes/WishListPage";
 import WishListsPage from "../pages/wishes/WishListsPage";
 // import PoolsPage from "../pages/sealed/PoolsPage";
-import PoolPage from "../pages/sealed/PoolPage";
-import SessionsPage from "../pages/sealed/SessionsPage";
-import SessionPage from "../pages/sealed/SessionPage";
+import PoolPage from "../pages/limited/PoolPage";
+import SessionsPage from "../pages/limited/SessionsPage";
+import SessionPage from "../pages/limited/SessionPage";
 
 
 export const routes: [
@@ -51,8 +51,8 @@ export const routes: [
   ['/syntax', SearchSyntaxPage, false, {}],
   ['/search', SearchPage, false, {}],
   // ['/pools', PoolsPage, true, {}],
-  ['/sealed/:id(\\d+)', SessionPage, false, {}],
-  ['/sealed', SessionsPage, false, {}],
+  ['/limited/:id(\\d+)', SessionPage, false, {}],
+  ['/limited', SessionsPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [

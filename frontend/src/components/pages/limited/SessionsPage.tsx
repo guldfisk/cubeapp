@@ -2,24 +2,22 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
-import filterFactory, {textFilter, numberFilter, selectFilter, Comparator} from 'react-bootstrap-table2-filter';
+import filterFactory, {textFilter, selectFilter} from 'react-bootstrap-table2-filter';
 
-import {SealedSession, User} from '../../models/models';
+import {LimitedSession, User} from '../../models/models';
 
-import Col from "react-bootstrap/Col";
 
 import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Card from "react-bootstrap/Card";
 
 import {Link} from "react-router-dom";
 import {DateListItem} from "../../utils/listitems";
+import PoolSpecificationView from "../../views/limited/PoolSpecificationView";
 
 
 interface SessionsPageState {
   page: number
   pageSize: number
-  sessions: SealedSession[]
+  sessions: LimitedSession[]
   hits: number
   filters: { [key: string]: string }
   sortField: string
@@ -47,7 +45,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
   }
 
   fetchSessions = () => {
-    SealedSession.all(
+    LimitedSession.all(
       (this.state.page - 1) * this.state.pageSize,
       this.state.pageSize,
     ).then(
@@ -75,18 +73,20 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       },
   ) => {
     if (type == 'filter') {
-      console.log(filters);
       const _filters: { [key: string]: string } = {};
-      for (const value of ['name', 'release', 'players', 'format', 'state']) {
-        if (filters[value]) {
-          _filters[value + '_filter'] = filters[value].filterVal;
+      const filterMap: { [key: string]: string } = {
+        name: 'name',
+        gameType: 'game_type',
+        players: 'players',
+        format: 'format',
+        state: 'state',
+      };
+      for (const [key, value] of Object.entries(filterMap)) {
+        if (filters[key]) {
+          _filters[value + '_filter'] = filters[key].filterVal;
         }
       }
-      if (filters.poolSize) {
-        _filters.pool_size_filter = filters.poolSize.filterVal.number;
-        _filters.pool_size_filter_comparator = filters.poolSize.filterVal.comparator;
-      }
-      SealedSession.all(
+      LimitedSession.all(
         0,
         this.state.pageSize,
         this.state.sortField,
@@ -103,7 +103,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         )
       )
     } else if (type == 'pagination') {
-      SealedSession.all(
+      LimitedSession.all(
         (page - 1) * sizePerPage,
         sizePerPage,
       ).then(
@@ -119,6 +119,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
     } else if (type == 'sort') {
       const sortFieldMap: { [key: string]: string } = {
         name: 'name',
+        gameType: 'game_type',
         format: 'format',
         state: 'state',
         createdAt: 'created_at',
@@ -127,7 +128,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       };
       const mappedSortField = sortFieldMap[sortField];
       const sortAscending = sortOrder == 'asc';
-      SealedSession.all(
+      LimitedSession.all(
         (this.state.page - 1) * this.state.pageSize,
         this.state.pageSize,
         mappedSortField,
@@ -159,16 +160,37 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         dataField: 'name',
         text: 'Name',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '5em', textAlign: 'center'};
+          return {width: '10%', textAlign: 'center'};
         },
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
+          to={'/limited/' + row.id + '/'}
+        >
+          {cell}
+        </Link>,
         sort: true,
         filter: textFilter(),
+      },
+      {
+        dataField: 'gameType',
+        text: 'Game Type',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '7%', textAlign: 'center'};
+        },
+        sort: true,
+        filter: selectFilter(
+          {
+            options: {
+              draft: 'draft',
+              sealed: 'sealed',
+            },
+          }
+        ),
       },
       {
         dataField: 'format',
         text: 'Format',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '4em', textAlign: 'center'};
+          return {width: '8%', textAlign: 'center'};
         },
         sort: true,
         filter: selectFilter(
@@ -184,7 +206,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         dataField: 'state',
         text: 'State',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '8%', textAlign: 'center'};
         },
         sort: true,
         filter: selectFilter(
@@ -198,21 +220,6 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         ),
       },
       {
-        dataField: 'release',
-        text: 'Release',
-        editable: false,
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
-          to={'/release/' + cell.id}
-        >
-          {cell.name}
-        </Link>,
-        headerStyle: (column: any, colIndex: number) => {
-          return {width: '5em', textAlign: 'center'};
-        },
-        sort: true,
-        filter: textFilter(),
-      },
-      {
         dataField: 'players',
         text: 'Players',
         editable: false,
@@ -220,36 +227,26 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           (player: User) => player.username
         ).join(', '),
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '7em', textAlign: 'center'};
+          return {width: '10%', textAlign: 'center'};
         },
         filter: textFilter(),
       },
       {
-        dataField: 'poolSize',
-        text: 'Pool Size',
+        dataField: 'poolSpecification',
+        text: 'Pool Specification',
         editable: false,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <PoolSpecificationView
+          specification={cell}
+        />,
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {textAlign: 'center'};
         },
-        sort: true,
-        filter: numberFilter(
-          {
-            placeholder: '',
-            withoutEmptyComparatorOption: true,
-            comparators: [Comparator.EQ, Comparator.GT, Comparator.LT, Comparator.GE, Comparator.LE],
-            style: {display: 'inline-grid'},
-            defaultValue: {number: null, comparator: Comparator.GTE},
-            comparatorStyle: {width: '3em', padding: '0em', float: 'left'},
-            numberStyle: {width: '3em', padding: '0em', float: 'right'},
-
-          }
-        ),
       },
       {
         dataField: 'createdAt',
         text: 'Created',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '5%', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <DateListItem
           date={cell}
@@ -260,7 +257,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         dataField: 'playingAt',
         text: 'Playing',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '5%', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
           date={cell}
@@ -271,25 +268,12 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
         dataField: 'finishedAt',
         text: 'Finished',
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+          return {width: '5%', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
           date={cell}
         />,
         sort: true,
-      },
-      {
-        dataField: 'view',
-        text: '',
-        headerStyle: (column: any, colIndex: number) => {
-          return {width: '2em', textAlign: 'center'};
-        },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
-          to={'/sealed/' + row.id + '/'}
-        >
-          view
-        </Link>,
-        sort: false,
       },
     ];
 
@@ -314,6 +298,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
           )
         }
         onTableChange={this.handleTableChanged}
+        classes='dark-table'
       />
     </Container>
   }

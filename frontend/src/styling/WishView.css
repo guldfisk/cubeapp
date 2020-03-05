@@ -1,6 +1,9 @@
 .hide-header thead {
     visibility: collapse;
 }
+.show-header thead {
+    visibility: visible;
+}
 .light-table {
     background-color: #333333;
 }

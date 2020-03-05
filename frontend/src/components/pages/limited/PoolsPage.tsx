@@ -3,7 +3,7 @@ import React from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 
-import {SealedPoolMeta, User} from '../../models/models';
+import {PoolMeta, User} from '../../models/models';
 
 import Col from "react-bootstrap/Col";
 
@@ -18,7 +18,7 @@ import {DateListItem} from "../../utils/listitems";
 interface PoolsPageState {
   page: number
   pageSize: number
-  pools: SealedPoolMeta[]
+  pools: PoolMeta[]
   hits: number
   filters: { [key: string]: string }
   sortField: string
@@ -46,7 +46,7 @@ export default class PoolsPage extends React.Component<null, PoolsPageState> {
   }
 
   fetchPools = () => {
-    SealedPoolMeta.all(
+    PoolMeta.all(
       (this.state.page - 1) * this.state.pageSize,
       this.state.pageSize,
     ).then(
@@ -76,7 +76,7 @@ export default class PoolsPage extends React.Component<null, PoolsPageState> {
     if (type == 'filter') {
 
     } else if (type == 'pagination') {
-      SealedPoolMeta.all(
+      PoolMeta.all(
         (page - 1) * sizePerPage,
         sizePerPage,
       ).then(

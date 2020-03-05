@@ -1,16 +1,22 @@
-import random
+from __future__ import annotations
+
 import typing as t
+import random
+
 from enum import Enum
 
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from typedmodels.models import TypedModel
+
+from mtgorp.models.collections.deck import Deck
+
+from magiccube.collections.cube import Cube
+
 from api.fields.orp import OrpField
 from api.models import CubeRelease
 from api.serialization.serializers import NameCubeReleaseSerializer
-from magiccube.collections.cube import Cube
-from mtgorp.models.collections.deck import Deck
-from typedmodels.models import TypedModel
 from utils.fields import EnumField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
@@ -24,14 +30,28 @@ class PoolSpecification(models.Model):
 
     def get_boosters(self, player_amount: int) -> t.Iterable[t.List[Cube]]:
         players = [[] for _ in range(player_amount)]
-        for specification in self.specifications.all().order_by('sequence_number'):
-            for player, booster in zip(players, specification.get_boosters(player_amount)):
-                player.append(booster)
+
+        specifications = list(self.specifications.all())
+        random.shuffle(specifications)
+
+        for specification in sorted(specifications, key = lambda s: s.sequence_number):
+            for _ in range(specification.amount):
+                for player, booster in zip(players, specification.get_boosters(player_amount)):
+                    player.append(booster)
+
         return players
+
+    @classmethod
+    def from_options(cls, options: t.Sequence[t.Mapping[str: t.Any]]) -> PoolSpecification:
+        pool_specification = PoolSpecification.objects.create()
+        for idx, booster_options in enumerate(options):
+            BoosterSpecification.from_options(booster_options, idx)
+        return pool_specification
 
 
 class BoosterSpecification(TypedModel):
-    sequence_number = models.IntegerField()
+    sequence_number = models.IntegerField(default = 0)
+    amount = models.PositiveSmallIntegerField(default = 1)
     pool_specification = models.ForeignKey(
         PoolSpecification,
         related_name = 'specifications',
@@ -47,12 +67,25 @@ class BoosterSpecification(TypedModel):
     def serialize(self):
         return {
             'id': self.id,
+            'sequence_number': self.sequence_number,
+            'amount': self.amount,
             'type': self.__class__.__name__,
         }
 
     @classmethod
-    def deserialize(cls, values):
-        return cls._typedmodels_simple_registry[values['type']].deserialize(values)
+    def from_options(cls, options: t.Mapping[str: t.Any], sequence_number: int) -> BoosterSpecification:
+        specification_type = cls._typedmodels_simple_registry[options['type']]
+        specification = specification_type(
+            sequence_number = sequence_number,
+            amount = options['amount'],
+            **specification_type.values_from_options(options)
+        )
+        specification.save()
+        return specification
+
+    @classmethod
+    def values_from_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        return {}
 
 
 class ExpansionBoosterSpecification(BoosterSpecification):
@@ -65,10 +98,10 @@ class ExpansionBoosterSpecification(BoosterSpecification):
         }
 
     @classmethod
-    def deserialize(cls, values):
-        return cls(
-            expansion_code = values['expansion_code'],
-        )
+    def values_from_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        return {
+            'expansion_code': options['expansion_code'],
+        }
 
 
 class AllCardsRespectRarityBoosterSpecification(BoosterSpecification):
@@ -114,12 +147,13 @@ class CubeBoosterSpecification(BoosterSpecification):
         }
 
     @classmethod
-    def deserialize(cls, values):
-        return cls(
-            size = values['size'],
-            allow_intersection = values['allow_intersection'],
-            allow_repeat = values['allow_repeat'],
-        )
+    def values_from_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        return {
+            'release_id': options['release'],
+            'size': options['size'],
+            'allow_intersection': options['allow_intersection'],
+            'allow_repeat': options['allow_repeat'],
+        }
 
 
 class LimitedSession(models.Model):

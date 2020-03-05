@@ -1,8 +1,8 @@
 import React from 'react';
 
 import {Loading} from '../../utils/utils';
-import {SealedPool} from '../../models/models';
-import PoolView from "../../views/sealed/PoolView";
+import {Pool} from '../../models/models';
+import PoolView from "../../views/limited/PoolView";
 import {connect} from "react-redux";
 
 
@@ -13,7 +13,7 @@ interface PoolPageProps {
 
 
 interface PoolPageState {
-  pool: SealedPool | null
+  pool: Pool | null
 }
 
 
@@ -31,7 +31,7 @@ class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
   render() {
     if (!this.requested && !this.props.loading) {
       this.requested = true;
-      SealedPool.get(this.props.match.params.id).then(
+      Pool.get(this.props.match.params.id).then(
         pool => {
           this.setState({pool});
         }

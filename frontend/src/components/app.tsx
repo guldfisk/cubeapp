@@ -110,8 +110,8 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Wish Lists</Nav.Link>
             </LinkContainer>
 
-            <LinkContainer to='/sealed/'>
-              <Nav.Link>Sealed</Nav.Link>
+            <LinkContainer to='/limited/'>
+              <Nav.Link>Limited</Nav.Link>
             </LinkContainer>
 
             <LinkContainer to='/about/'>

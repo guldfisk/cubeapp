@@ -2,7 +2,7 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 
-import {FullSealedSession, User} from "../../models/models";
+import {FullLimitedSession, User} from "../../models/models";
 import {Link} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -11,10 +11,11 @@ import {DateListItem} from "../../utils/listitems";
 import {connect} from "react-redux";
 
 import '../../../styling/SessionsView.css';
+import PoolSpecificationView from "./PoolSpecificationView";
 
 
 interface SessionViewProps {
-  session: FullSealedSession;
+  session: FullLimitedSession;
   authenticated: boolean;
   user: User | null;
 }
@@ -69,18 +70,28 @@ class SessionView extends React.Component<SessionViewProps, null> {
           <label
             className='explain-label'
           >
-            State
+            Format
           </label>
-          <label>{this.props.session.state}</label>
+          <label>{this.props.session.format}</label>
         </Col>
         <Col>
           <label
             className='explain-label'
           >
-            Format
+            Game Type
           </label>
-          <label>{this.props.session.format}</label>
+          <label>{this.props.session.gameType}</label>
         </Col>
+        <Col>
+          <label
+            className='explain-label'
+          >
+            State
+          </label>
+          <label>{this.props.session.state}</label>
+        </Col>
+      </Row>
+      <Row>
         <Col>
           <label
             className='explain-label'
@@ -93,9 +104,17 @@ class SessionView extends React.Component<SessionViewProps, null> {
           <label
             className='explain-label'
           >
-            Release
+            Playing
           </label>
-          <Link to={'/release/' + this.props.session.release.id + '/'}>{this.props.session.release.name}</Link>
+          {this.props.session.playingAt ? <DateListItem date={this.props.session.playingAt}/> : undefined}
+        </Col>
+        <Col>
+          <label
+            className='explain-label'
+          >
+            Finished
+          </label>
+          {this.props.session.finishedAt ? <DateListItem date={this.props.session.finishedAt}/> : undefined}
         </Col>
       </Row>
       <Row>
@@ -107,14 +126,9 @@ class SessionView extends React.Component<SessionViewProps, null> {
           </label>
           <label>{this.props.session.openDecks.toString()}</label>
         </Col>
-        <Col>
-          <label
-            className='explain-label'
-          >
-            Allow pool intersection
-          </label>
-          <label>{this.props.session.allowPoolIntersection.toString()}</label>
-        </Col>
+      </Row>
+      <Row>
+        <PoolSpecificationView specification={this.props.session.poolSpecification}/>
       </Row>
       <Row>
         <BootstrapTable

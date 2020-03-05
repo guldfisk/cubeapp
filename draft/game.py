@@ -4,6 +4,7 @@ import typing as t
 from django.contrib.auth.models import AbstractUser
 
 from api.models import CubeRelease
+from limited.options import CubeReleaseOption
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
 from lobbies.games.games import Game
@@ -19,7 +20,7 @@ class Draft(Game):
     pack_amount = metaoptions.IntegerOption(min = 1, max = 32, default = 7)
     format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
     draft_format = metaoptions.OptionsOption(options = {'single_pick', 'burn'}, default = 'single_pick')
-    release = metaoptions.CubeReleaseOption()
+    release = CubeReleaseOption()
 
     def __init__(
         self,

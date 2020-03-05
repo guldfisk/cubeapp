@@ -31,11 +31,11 @@ class BoosterSpecificationSerializer(serializers.Serializer):
 
 
 class PoolSpecificationSerializer(serializers.ModelSerializer):
-    booster_specifications = BoosterSpecificationSerializer(many = True, read_only = True)
+    specifications = BoosterSpecificationSerializer(many = True, read_only = True)
 
     class Meta:
         model = models.PoolSpecification
-        fields = ('id', 'booster_specifications')
+        fields = ('id', 'specifications')
 
 
 class PoolUserField(serializers.RelatedField):
@@ -73,12 +73,13 @@ class SealedSessionSerializer(serializers.ModelSerializer):
     game_type = serializers.CharField(read_only = True)
     players = PoolUserField(source = 'pools', read_only = True, many = True)
     state = EnumSerializerField(models.LimitedSession.LimitedSessionState)
+    pool_specification = PoolSpecificationSerializer(read_only = True)
 
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type',
+            'game_type', 'pool_specification',
         )
 
 
@@ -99,5 +100,5 @@ class FullSealedSessionSerializer(SealedSessionSerializer):
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type', 'pools'
+            'game_type', 'pool_specification', 'pools',
         )

@@ -1,9 +1,12 @@
+import React from 'react';
+
 import axios from 'axios';
 
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import wu from 'wu';
 import {array, string} from "prop-types";
+import {Link} from "react-router-dom";
 
 
 export const apiPath = '/api/';
@@ -2058,61 +2061,169 @@ export class WishList {
 }
 
 
-export class SealedSession extends Atomic {
+export class BoosterSpecification extends Atomic {
+  sequenceNumber: number;
+  amount: number;
+
+  constructor(
+    id: string,
+    sequenceNumber: number,
+    amount: number,
+  ) {
+    super(id);
+    this.sequenceNumber = sequenceNumber;
+    this.amount = amount;
+  }
+
+  name = (): string => {
+    return 'Booster Specification'
+  };
+
+  values = (): [string, any][] => {
+    return []
+  };
+
+  public static fromRemote(remote: any): BoosterSpecification {
+    return boosterSpecificationTypeMap[remote.type].fromRemote(remote)
+  }
+}
+
+
+export class CubeBoosterSpecification extends BoosterSpecification {
+  release: CubeReleaseName;
+  size: number;
+  allowIntersection: boolean;
+  allowRepeat: boolean;
+
+  constructor(
+    id: string,
+    sequenceNumber: number,
+    amount: number,
+    release: CubeReleaseName,
+    size: number,
+    allowIntersection: boolean,
+    allowRepeat: boolean,
+  ) {
+    super(id, sequenceNumber, amount);
+    this.release = release;
+    this.size = size;
+    this.allowIntersection = allowIntersection;
+    this.allowRepeat = allowRepeat;
+  }
+
+  name = (): string => {
+    return 'Cube Booster'
+  };
+
+  values = (): [string, any][] => {
+    return [
+      ['id', this.id],
+      [
+        'release',
+        <Link
+          to={'/release/' + this.release.id + '/'}
+        >
+          {this.release.name}
+        </Link>,
+      ],
+      ['size', this.size,],
+      ['intersection', this.allowIntersection],
+      ['repeat', this.allowRepeat],
+    ]
+  };
+
+  public static fromRemote(remote: any): CubeBoosterSpecification {
+    return new CubeBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      CubeReleaseName.fromRemote(remote.release),
+      remote.size,
+      remote.allow_intersection,
+      remote.allow_repeat,
+    )
+  }
+}
+
+
+export const boosterSpecificationTypeMap: { [key: string]: Remoteable<BoosterSpecification> } = {
+  CubeBoosterSpecification: CubeBoosterSpecification,
+};
+
+
+export class PoolSpecification extends Atomic {
+  boosterSpecifications: BoosterSpecification[];
+
+  constructor(
+    id: string,
+    boosterSpecifications: BoosterSpecification[],
+  ) {
+    super(id);
+    this.boosterSpecifications = boosterSpecifications;
+  }
+
+  public static fromRemote(remote: any): PoolSpecification {
+    return new PoolSpecification(
+      remote.id,
+      remote.specifications.map(
+        (boosterSpecification: any) => BoosterSpecification.fromRemote(boosterSpecification)
+      ),
+    )
+  }
+
+}
+
+export class LimitedSession extends Atomic {
   format: string;
+  gameType: string;
   createdAt: Date;
   playingAt: Date | null;
   finishedAt: Date | null;
   name: string;
-  poolSize: number;
-  release: CubeReleaseName;
   players: User[];
   state: string;
   openDecks: boolean;
-  allowPoolIntersection: boolean;
+  poolSpecification: PoolSpecification;
 
   constructor(
     id: string,
     format: string,
+    gameType: string,
     createdAt: Date,
     playingAt: Date,
     finishedAt: Date,
     name: string,
-    poolSize: number,
-    release: CubeReleaseName,
     players: User[],
     state: string,
     openDecks: boolean,
-    allowPoolIntersection: boolean,
+    poolSpecification: PoolSpecification,
   ) {
     super(id);
     this.format = format;
+    this.gameType = gameType;
     this.createdAt = createdAt;
     this.playingAt = playingAt;
     this.finishedAt = finishedAt;
     this.name = name;
-    this.poolSize = poolSize;
-    this.release = release;
     this.players = players;
     this.state = state;
     this.openDecks = openDecks;
-    this.allowPoolIntersection = allowPoolIntersection;
+    this.poolSpecification = poolSpecification;
   }
 
-  public static fromRemote(remote: any): SealedSession {
-    return new SealedSession(
+  public static fromRemote(remote: any): LimitedSession {
+    return new LimitedSession(
       remote.id,
       remote.format,
+      remote.game_type,
       new Date(remote.created_at),
       remote.playing_at && new Date(remote.playing_at),
       remote.finished_at && new Date(remote.finished_at),
       remote.name,
-      remote.pool_size,
-      CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
       remote.open_decks,
-      remote.allow_pool_intersection,
+      PoolSpecification.fromRemote(remote.pool_specification),
     )
   }
 
@@ -2122,9 +2233,9 @@ export class SealedSession extends Atomic {
     sortField: string = 'created_at',
     sortAscending: boolean = false,
     filters: { [key: string]: string } = {},
-  ): Promise<PaginationResponse<SealedSession>> {
+  ): Promise<PaginationResponse<LimitedSession>> {
     return axios.get(
-      apiPath + 'sealed/sessions/',
+      apiPath + 'limited/sessions/',
       {
         params: {
           offset,
@@ -2138,7 +2249,7 @@ export class SealedSession extends Atomic {
       response => {
         return {
           objects: response.data.results.map(
-            (session: any) => SealedSession.fromRemote(session)
+            (session: any) => LimitedSession.fromRemote(session)
           ),
           hits: response.data.count,
         }
@@ -2148,7 +2259,7 @@ export class SealedSession extends Atomic {
 
 }
 
-export class SealedPoolMeta extends Atomic {
+export class PoolMeta extends Atomic {
   user: User;
   decks: string[];
 
@@ -2158,8 +2269,8 @@ export class SealedPoolMeta extends Atomic {
     this.decks = decks;
   }
 
-  public static fromRemote(remote: any): SealedPoolMeta {
-    return new SealedPoolMeta(
+  public static fromRemote(remote: any): PoolMeta {
+    return new PoolMeta(
       remote.id,
       User.fromRemote(remote.user),
       remote.decks,
@@ -2168,66 +2279,63 @@ export class SealedPoolMeta extends Atomic {
 
 }
 
-export class FullSealedSession extends SealedSession {
-  pools: SealedPoolMeta[];
+export class FullLimitedSession extends LimitedSession {
+  pools: PoolMeta[];
 
   constructor(
     id: string,
     format: string,
+    gameType: string,
     createdAt: Date,
     playingAt: Date,
     finishedAt: Date,
     name: string,
-    poolSize: number,
-    release: CubeReleaseName,
     players: User[],
     state: string,
     openDecks: boolean,
-    allowPoolIntersection: boolean,
-    pools: SealedPoolMeta[],
+    poolSpecification: PoolSpecification,
+    pools: PoolMeta[],
   ) {
     super(
       id,
       format,
+      gameType,
       createdAt,
       playingAt,
       finishedAt,
       name,
-      poolSize,
-      release,
       players,
       state,
       openDecks,
-      allowPoolIntersection,
+      poolSpecification,
     );
     this.pools = pools;
   }
 
-  public static fromRemote(remote: any): FullSealedSession {
-    return new FullSealedSession(
+  public static fromRemote(remote: any): FullLimitedSession {
+    return new FullLimitedSession(
       remote.id,
       remote.format,
+      remote.game_type,
       new Date(remote.created_at),
       remote.playing_at && new Date(remote.playing_at),
       remote.finished_at && new Date(remote.finished_at),
       remote.name,
-      remote.pool_size,
-      CubeReleaseName.fromRemote(remote.release),
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
       remote.open_decks,
-      remote.allow_pool_intersection,
+      PoolSpecification.fromRemote(remote.pool_specification),
       remote.pools.map(
-        (pool: any) => SealedPoolMeta.fromRemote(pool)
+        (pool: any) => PoolMeta.fromRemote(pool)
       ),
     )
   }
 
-  public static get(id: string): Promise<FullSealedSession> {
+  public static get(id: string): Promise<FullLimitedSession> {
     return axios.get(
-      apiPath + 'sealed/sessions/' + id + '/',
+      apiPath + 'limited/sessions/' + id + '/',
     ).then(
-      response => FullSealedSession.fromRemote(response.data)
+      response => FullLimitedSession.fromRemote(response.data)
     )
   }
 
@@ -2271,17 +2379,17 @@ export class Deck extends Atomic {
 }
 
 
-export class SealedPool extends Atomic {
+export class Pool extends Atomic {
   user: User;
   decks: Deck[];
-  session: SealedSession;
+  session: LimitedSession;
   pool: CubeablesContainer;
 
   constructor(
     id: string,
     user: User,
     decks: Deck[],
-    session: SealedSession,
+    session: LimitedSession,
     pool: CubeablesContainer,
   ) {
     super(id);
@@ -2291,26 +2399,26 @@ export class SealedPool extends Atomic {
     this.pool = pool;
   }
 
-  public static fromRemote(remote: any): SealedPool {
-    return new SealedPool(
+  public static fromRemote(remote: any): Pool {
+    return new Pool(
       remote.id,
       User.fromRemote(remote.user),
       remote.decks.map((deck: any) => Deck.fromRemote(deck)),
-      SealedSession.fromRemote(remote.session),
+      LimitedSession.fromRemote(remote.session),
       CubeablesContainer.fromRemote(remote.pool),
     )
   }
 
-  public static get(id: string): Promise<SealedPool> {
+  public static get(id: string): Promise<Pool> {
     return axios.get(
-      apiPath + 'sealed/pools/' + id + '/',
+      apiPath + 'limited/pools/' + id + '/',
       {
         headers: store.getState().authenticated && {
           "Authorization": `Token ${store.getState().token}`,
         },
       },
     ).then(
-      response => SealedPool.fromRemote(response.data)
+      response => Pool.fromRemote(response.data)
     )
   }
 

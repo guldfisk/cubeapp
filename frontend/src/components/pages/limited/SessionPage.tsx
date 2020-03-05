@@ -1,8 +1,8 @@
 import React from 'react';
 
 import {Loading} from '../../utils/utils';
-import {FullSealedSession} from '../../models/models';
-import SessionView from "../../views/sealed/SessionView";
+import {FullLimitedSession} from '../../models/models';
+import SessionView from "../../views/limited/SessionView";
 
 
 interface sessionPageProps {
@@ -10,7 +10,7 @@ interface sessionPageProps {
 }
 
 interface SessionPageState {
-  session: FullSealedSession | null
+  session: FullLimitedSession | null
 }
 
 export default class SessionPage extends React.Component<sessionPageProps, SessionPageState> {
@@ -23,7 +23,7 @@ export default class SessionPage extends React.Component<sessionPageProps, Sessi
   }
 
   componentDidMount() {
-    FullSealedSession.get(this.props.match.params.id).then(
+    FullLimitedSession.get(this.props.match.params.id).then(
       session => {
         this.setState({session});
       }

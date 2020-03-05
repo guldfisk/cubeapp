@@ -2,6 +2,7 @@ import typing as t
 
 from django.contrib.auth.models import AbstractUser
 
+from limited.options import PoolSpecificationOption, CubeReleaseOption
 from lobbies.games import options as metaoptions
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
@@ -18,9 +19,18 @@ class Sealed(Game):
 
     pool_size = metaoptions.IntegerOption(min = 1, max = 360, default = 90)
     format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
-    release = metaoptions.CubeReleaseOption()
     open_decks = metaoptions.BooleanOption(default = False)
-    allow_pool_intersection = metaoptions.BooleanOption(default = False)
+    pool_specification = PoolSpecificationOption(
+        {
+            'CubeBoosterSpecification': {
+                'release': CubeReleaseOption(),
+                'size': metaoptions.IntegerOption(min = 1, max = 360, default = 90),
+                'allow_intersection': metaoptions.BooleanOption(default = False),
+                'allow_repeat': metaoptions.BooleanOption(default = False),
+            }
+        },
+        default_booster_specification = 'CubeBoosterSpecification',
+    )
 
     def __init__(
         self,
