@@ -1,23 +1,21 @@
 import typing as t
 
 from django.contrib.auth.models import AbstractUser
+from django.db import transaction
+from mtgorp.models.limited.boostergen import GenerateBoosterException
 
+from limited.models import PoolSpecification, LimitedSession, Pool
 from limited.options import PoolSpecificationOption, CubeReleaseOption
 from lobbies.games import options as metaoptions
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
-from api.models import CubeRelease
-
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
-
-# from sealed.models import SealedSession, GenerateSealedPoolException
 
 
 class Sealed(Game):
     name = 'sealed'
 
-    pool_size = metaoptions.IntegerOption(min = 1, max = 360, default = 90)
     format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
     open_decks = metaoptions.BooleanOption(default = False)
     pool_specification = PoolSpecificationOption(
@@ -39,21 +37,27 @@ class Sealed(Game):
         callback: t.Callable[[], None],
     ):
         super().__init__(options, players, callback)
-        try:
-            self._keys = {
-                pool.user: str(pool.id)
-                for pool in
-                SealedSession.generate(
-                    release = CubeRelease.objects.get(pk = self._options['release']),
-                    users = self._players,
-                    pool_size = int(self._options['pool_size']),
-                    game_format = Format.formats_map[self._options['format']],
-                    open_decks = options['open_decks'],
-                    allow_pool_intersection = options['allow_pool_intersection'],
-                ).pools.all()
-            }
-        except GenerateSealedPoolException as e:
-            raise StartGameException(e)
+        with transaction.atomic():
+            pool_specification = PoolSpecification.from_options(self._options['pool_specification'])
+            session = LimitedSession.objects.create(
+                game_type = 'sealed',
+                format = self._options['format'],
+                open_decks = self._options['open_decks'],
+                pool_specification = pool_specification,
+            )
+
+            self._keys = {}
+
+            try:
+                for player, pool in zip(players, pool_specification.get_pools(len(players))):
+                    self._keys[player] = Pool.objects.create(
+                        user = player,
+                        session = session,
+                        pool = pool,
+                    ).id
+            except GenerateBoosterException as e:
+                self._keys = {}
+                raise StartGameException(str(e))
 
     @property
     def keys(self) -> t.Mapping[AbstractUser, t.Union[str, int]]:

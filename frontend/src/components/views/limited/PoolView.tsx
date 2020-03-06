@@ -42,8 +42,6 @@ export default class PoolView extends React.Component<PoolViewProps> {
             />
           </Card.Body>
         </ Card>
-        }
-
       </Row>
     </Container>
 

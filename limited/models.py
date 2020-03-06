@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import functools
 import typing as t
 import random
+import operator
 
 from enum import Enum
 
@@ -35,17 +37,25 @@ class PoolSpecification(models.Model):
         random.shuffle(specifications)
 
         for specification in sorted(specifications, key = lambda s: s.sequence_number):
+            boosters = list(specification.get_boosters(player_amount * specification.amount))
             for _ in range(specification.amount):
-                for player, booster in zip(players, specification.get_boosters(player_amount)):
-                    player.append(booster)
+                for player in players:
+                    player.append(boosters.pop())
 
         return players
+
+    def get_pools(self, player_amount: int) -> t.Iterable[Cube]:
+        return (
+            functools.reduce(operator.add, boosters)
+            for boosters in
+            self.get_boosters(player_amount)
+        )
 
     @classmethod
     def from_options(cls, options: t.Sequence[t.Mapping[str: t.Any]]) -> PoolSpecification:
         pool_specification = PoolSpecification.objects.create()
         for idx, booster_options in enumerate(options):
-            BoosterSpecification.from_options(booster_options, idx)
+            BoosterSpecification.from_options(booster_options, idx, pool_specification)
         return pool_specification
 
 
@@ -73,11 +83,17 @@ class BoosterSpecification(TypedModel):
         }
 
     @classmethod
-    def from_options(cls, options: t.Mapping[str: t.Any], sequence_number: int) -> BoosterSpecification:
+    def from_options(
+        cls,
+        options: t.Mapping[str: t.Any],
+        sequence_number: int,
+        pool_specification: PoolSpecification,
+    ) -> BoosterSpecification:
         specification_type = cls._typedmodels_simple_registry[options['type']]
         specification = specification_type(
             sequence_number = sequence_number,
             amount = options['amount'],
+            pool_specification = pool_specification,
             **specification_type.values_from_options(options)
         )
         specification.save()
@@ -126,7 +142,7 @@ class CubeBoosterSpecification(BoosterSpecification):
 
         if self.allow_repeat:
             for _ in range(amount):
-                yield Cube(random.choice(cubeables, k = self.size))
+                yield Cube(random.choices(cubeables, k = self.size))
 
         elif self.allow_intersection:
             for _ in range(amount):

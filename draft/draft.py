@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import typing as t
-import random
 import threading
 from queue import Queue, Empty
 
 from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AbstractUser
 
-
+from limited.models import PoolSpecification
+from limited.serializers import PoolSpecificationSerializer
 from ring import Ring
 
 from mtgorp.models.persistent.printing import Printing
@@ -22,7 +22,6 @@ from magiccube.laps.traps.trap import Trap
 
 from mtgdraft.models import Booster
 
-from api.models import CubeRelease
 from api.serialization.serializers import UserSerializer
 
 from resources.staticdb import db
@@ -104,6 +103,10 @@ class DraftInterface(object):
     @property
     def messages(self) -> t.List[t.Mapping[str, t.Any]]:
         return self._messages
+
+    @property
+    def pool(self) -> Cube:
+        return self._pool
 
     def connect(self, consumer: WebsocketConsumer) -> None:
         with self._connect_lock:
@@ -235,16 +238,14 @@ class Draft(object):
         self,
         key: str,
         drafters: Ring[Drafter],
-        release: CubeRelease,
-        pack_amount: int,
-        pack_size: int,
+        pool_specification: PoolSpecification,
         draft_format: str,
         finished_callback: t.Callable[[Draft], None],
     ):
         self._key = key
 
         self._drafters = drafters
-        self._release = release
+        self._pool_specification = pool_specification
         self._draft_format = draft_format
 
         self._finished_callback = finished_callback
@@ -255,23 +256,20 @@ class Draft(object):
         self._clockwise = True
         self._pack_counter = 0
 
-        cubeables = random.sample(
-            self._release.cube.cubeables,
-            len(self._release.cube.cubeables),
+        self._pack_amount = sum(
+            booster_specification.amount
+            for booster_specification in
+            self._pool_specification.specifications.all()
         )
 
-        self._pack_amount = pack_amount
-        self._pack_size = pack_size
-
         self._boosters = [
-            Booster(
-                Cube(
-                    cubeables.pop()
-                    for _ in
-                    range(self._pack_size)
-                )
-            ) for _ in
-            range(int(self._pack_amount * len(self._drafters)))
+            [
+                Booster(booster)
+                for booster in
+                player_boosters
+            ]
+            for player_boosters in
+            self._pool_specification.get_boosters(len(self._drafters))
         ]
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
@@ -284,6 +282,10 @@ class Draft(object):
     def key(self) -> str:
         return self._key
 
+    @property
+    def interfaces(self) -> t.Mapping[Drafter, DraftInterface]:
+        return self._drafter_interfaces
+
     def serialize(self) -> t.Mapping[str, t.Any]:
         return {
             'drafters': [
@@ -292,9 +294,8 @@ class Draft(object):
                 self._drafters.all
             ],
             'pack_amount': self._pack_amount,
-            'pack_size': self._pack_size,
             'draft_format': self._draft_format,
-            'release': self._release.id,
+            'pool_specification': PoolSpecificationSerializer(self._pool_specification).data,
         }
 
     def booster_empty(self, booster: Booster) -> None:
@@ -302,15 +303,6 @@ class Draft(object):
             self._active_boosters[booster] = True
             if all(self._active_boosters.values()):
                 self._administer_boosters()
-
-    # @classmethod
-    # def get_booster_size_amount(cls, cube_size: int, amount_players: int) -> t.Tuple[int, int]:
-    #     # amount_cards_per_player = 90 - (amount_players - 2) * (45 / 6)
-    #     # pack_size = amount_players * 2 - 1
-    #     # amount_packs = amount_cards_per_player // pack_size
-    #     # amount_packs -= max(((amount_packs * pack_size) - cube_size) // pack_size, 0)
-    #     # return int(amount_packs), int(pack_size)
-    #     return 2, 2
 
     def get_draft_interface(self, drafter: Drafter) -> DraftInterface:
         return self._drafter_interfaces[drafter]
@@ -326,7 +318,7 @@ class Draft(object):
         self._clockwise = not self._clockwise
 
     def _administer_boosters(self) -> None:
-        if not self._boosters:
+        if any(not boosters for boosters in self._boosters):
             self.completed()
             return
 
@@ -336,7 +328,7 @@ class Draft(object):
 
         self._pack_counter += 1
 
-        for interface in self._drafter_interfaces.values():
+        for interface, player_boosters in zip(self._drafter_interfaces.values(), self._boosters):
             interface.send_message(
                 'round',
                 round = {
@@ -344,7 +336,7 @@ class Draft(object):
                     'clockwise': self._clockwise,
                 },
             )
-            booster = self._boosters.pop()
+            booster = player_boosters.pop()
             self._active_boosters[booster] = False
             interface.booster_queue.put(booster)
 

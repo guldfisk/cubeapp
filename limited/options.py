@@ -28,12 +28,13 @@ class PoolSpecificationOption(Option):
         self,
         allowed_booster_specifications: t.Mapping[str, t.MutableMapping[str, Option]],
         default_booster_specification: t.Optional[str] = None,
+        default_amount: int = 1,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._allowed_booster_specifications = allowed_booster_specifications
         for booster_specification in self._allowed_booster_specifications.values():
-            booster_specification['amount'] = IntegerOption(min = 1, max = 127, default = 1)
+            booster_specification['amount'] = IntegerOption(min = 1, max = 127, default = default_amount)
 
         self._default_booster_specification = (
             self._allowed_booster_specifications.keys().__iter__().__next__()
@@ -75,6 +76,9 @@ class PoolSpecificationOption(Option):
                 raise OptionsValidationError(
                     f'invalid value for {self._name}: invalid specification type "{specification_type}'
                 )
+
+            if not specification.keys() >= specification_options.keys():
+                raise OptionsValidationError(f'invalid value for {self._name}: missing keys')
 
             specification_options = {
                 option: specification_options[option].validate(value)
