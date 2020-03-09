@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 import threading
+from abc import ABC, abstractmethod
 from queue import Queue, Empty
 
 from channels.generic.websocket import WebsocketConsumer
@@ -69,10 +70,13 @@ _deserialize_type_map = {
 }
 
 
-class DraftInterface(object):
+class DraftInterface(ABC):
     _current_booster: t.Optional[Booster]
 
     class ConnectionException(Exception):
+        pass
+
+    class PickSerializationException(Exception):
         pass
 
     def __init__(self, drafter: Drafter, draft: Draft):
@@ -143,6 +147,21 @@ class DraftInterface(object):
     def out_queue(self):
         return self._out_queue
 
+    @classmethod
+    def _deserialize_cubeable(cls, cubeable: t.Any) -> Cubeable:
+        return (
+            db.printings[cubeable]
+            if isinstance(cubeable, int) else
+            _deserialize_type_map[cubeable['type']].deserialize(
+                cubeable,
+                RawStrategy(db)
+            )
+        )
+
+    @abstractmethod
+    def deserialize_pick(self, pick: t.Any) -> t.Any:
+        pass
+
     def receive_message(self, message: t.Any) -> None:
         message_type = message.get('type')
 
@@ -153,15 +172,8 @@ class DraftInterface(object):
                 return
 
             try:
-                pick = (
-                    db.printings[pick]
-                    if isinstance(pick, int) else
-                    _deserialize_type_map[pick['type']].deserialize(
-                        pick,
-                        RawStrategy(db)
-                    )
-                )
-            except KeyError:
+                pick = self.deserialize_pick(pick)
+            except self.PickSerializationException:
                 self.send_error('misconstrued_pick')
                 return
 
@@ -179,6 +191,10 @@ class DraftInterface(object):
 
     def stop(self) -> None:
         self._terminating.set()
+
+    @abstractmethod
+    def perform_pick(self, pick: t.Any) -> bool:
+        pass
 
     def _booster_loop(self) -> None:
         while not self._terminating.is_set():
@@ -212,15 +228,10 @@ class DraftInterface(object):
                     )
                 )
 
-                if pick not in self._current_booster.cubeables:
-                    self.send_error('invalid_pick', pick = serialize_cubeable(pick))
+                if not self.perform_pick(pick):
                     continue
 
-                _pick = Cube((pick,))
-                self._current_booster.cubeables -= _pick
                 self._current_booster.pick += 1
-                self._pool += _pick
-                self.send_message('pick', pick = serialize_cubeable(pick))
 
                 if self._current_booster.cubeables:
                     self.boost_out_queue.put(self._current_booster)
@@ -230,6 +241,58 @@ class DraftInterface(object):
                     print('pack empty; returned')
                 self._current_booster = None
                 break
+
+
+class SinglePickInterface(DraftInterface):
+
+    def deserialize_pick(self, pick: t.Any) -> t.Any:
+        try:
+            return self._deserialize_cubeable(pick)
+        except KeyError:
+            raise self.PickSerializationException()
+
+    def perform_pick(self, pick: t.Any) -> bool:
+        if pick not in self._current_booster.cubeables:
+            self.send_error('invalid_pick', pick = serialize_cubeable(pick))
+            return False
+
+        _pick = Cube((pick,))
+        self._current_booster.cubeables -= _pick
+        self._pool += _pick
+        self.send_message('pick', pick = serialize_cubeable(pick))
+
+        return True
+
+
+class BurnInterface(DraftInterface):
+
+    def deserialize_pick(self, pick: t.Any) -> t.Any:
+        try:
+            return (
+                self._deserialize_cubeable(pick['pick']),
+                self._deserialize_cubeable(pick['burn']),
+            )
+        except KeyError:
+            raise self.PickSerializationException()
+
+    def perform_pick(self, pick: t.Any) -> bool:
+        _pick, burn = pick
+        serialized_pick = {
+            'pick': serialize_cubeable(_pick),
+            'burn': serialize_cubeable(burn),
+        }
+        if _pick not in self._current_booster.cubeables or burn not in self._current_booster.cubeables:
+            self.send_error(
+                'invalid_pick',
+                pick = serialized_pick,
+            )
+            return False
+
+        self._current_booster.cubeables -= Cube((_pick, burn))
+        self._pool += _pick
+        self.send_message('pick', pick = serialized_pick)
+
+        return True
 
 
 class Draft(object):
@@ -310,9 +373,9 @@ class Draft(object):
     def _chain_booster_queues(self) -> None:
         for drafter, interface in self._drafter_interfaces.items():
             interface.boost_out_queue = self._drafter_interfaces[
-                self._drafters.after(drafter)
-                if self._clockwise else
                 self._drafters.before(drafter)
+                if self._clockwise else
+                self._drafters.after(drafter)
             ].booster_queue
 
         self._clockwise = not self._clockwise
@@ -345,10 +408,18 @@ class Draft(object):
         for interface in self._drafter_interfaces.values():
             interface.send_message('completed')
 
+    _draft_format_map = {
+        'single_pick': SinglePickInterface,
+        'burn': BurnInterface,
+    }
+
     def start(self) -> None:
         print('draft start')
+
+        interface_type = self._draft_format_map[self._draft_format]
+
         self._drafter_interfaces = {
-            drafter: DraftInterface(
+            drafter: interface_type(
                 drafter = drafter,
                 draft = self,
             )
