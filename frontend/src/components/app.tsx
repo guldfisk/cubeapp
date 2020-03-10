@@ -114,6 +114,10 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Limited</Nav.Link>
             </LinkContainer>
 
+            <LinkContainer to='/art-game/'>
+              <Nav.Link>Art Game</Nav.Link>
+            </LinkContainer>
+
             <LinkContainer to='/about/'>
               <Nav.Link>About</Nav.Link>
             </LinkContainer>

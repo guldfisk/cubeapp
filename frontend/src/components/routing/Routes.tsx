@@ -26,6 +26,7 @@ import WishListsPage from "../pages/wishes/WishListsPage";
 import PoolPage from "../pages/limited/PoolPage";
 import SessionsPage from "../pages/limited/SessionsPage";
 import SessionPage from "../pages/limited/SessionPage";
+import ArtGamePage from "../pages/ArtGamePage";
 
 
 export const routes: [
@@ -65,6 +66,7 @@ export const routes: [
   ],
   ['/wishlists/', WishListsPage, false, {}],
   ['/wishlist/:id(\\d+)/', WishListPage, false, {}],
+  ['/art-game/', ArtGamePage, false, {}],
   ['/about', AboutPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];

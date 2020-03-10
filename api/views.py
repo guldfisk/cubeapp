@@ -24,7 +24,6 @@ from magiccube.collections.meta import MetaCube
 from magiccube.update.report import UpdateReport
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.tools.parsing.search.parse import SearchParser, ParseException
 from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, ExtractionStrategy
@@ -91,8 +90,10 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
         SizeSlug.ORIGINAL,
     )
 
+    cropped = strtobool(request.GET.get('cropped', '0'))
+
     if pictured_id == 'back':
-        image = image_loader.get_default_image(size_slug = size_slug)
+        image = image_loader.get_default_image(size_slug = size_slug, crop = cropped)
     else:
         if pictured_type == Cardboard:
             try:
@@ -104,7 +105,8 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
                     cardboard.printings,
                     key = lambda p: p.expansion.release_date
                 )[-1],
-                size_slug = size_slug
+                size_slug = size_slug,
+                crop = cropped,
             )
 
         elif pictured_type == Printing:
@@ -116,13 +118,14 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
                 printing = db.printings[_id]
             except KeyError:
                 return HttpResponse(status = status.HTTP_404_NOT_FOUND)
-            image_request = ImageRequest(printing, size_slug = size_slug)
+            image_request = ImageRequest(printing, size_slug = size_slug, crop = cropped)
 
         else:
             image_request = ImageRequest(
                 picture_name = pictured_id,
                 pictured_type = pictured_type,
                 size_slug = size_slug,
+                crop = cropped,
             )
         try:
             image = image_loader.get_image(
@@ -721,6 +724,25 @@ class ParseTrapEndpoint(generics.GenericAPIView):
             status = status.HTTP_200_OK,
             content_type = 'application/json'
         )
+
+
+@api_view(['GET'])
+def random_printing(request: Request) -> Response:
+    # exclude_basics = strtobool(request.DATA.get('exclude_basics', '0'))
+    return Response(
+        data = orpserialize.FullPrintingSerializer.serialize(
+            random.choice(
+                list(
+                    random.choice(
+                        list(
+                            db.cardboards.values()
+                        )
+                    ).printings
+                )
+            )
+        ),
+        status = status.HTTP_200_OK,
+    )
 
 # @api_view(['GET', ])
 # def printing_strings(request: Request) -> Response:

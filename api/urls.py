@@ -38,6 +38,7 @@ urlpatterns = [
 
     path('service/parse-trap/', views.ParseTrapEndpoint.as_view()),
     path('service/parse-constrained-node/', views.ParseConstrainedNodeEndpoint.as_view()),
+    path('service/random-printing/', views.random_printing),
     # path('service/sample-pack')
     # path('services/printing-strings/', views.printing_strings),
 

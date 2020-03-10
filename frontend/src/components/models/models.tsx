@@ -137,6 +137,14 @@ export class Printing extends Cubeable {
     return this.name + '|' + this.expansion.code;
   };
 
+  public static random(): Promise<Printing> {
+    return axios.get(
+      apiPath + 'service/random-printing/'
+    ).then(
+      response => Printing.fromRemote(response.data)
+    )
+  }
+
 }
 
 
