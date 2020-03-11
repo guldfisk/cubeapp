@@ -2,13 +2,13 @@ import typing as t
 
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
-from mtgorp.models.limited.boostergen import GenerateBoosterException
 
-from limited.models import PoolSpecification, LimitedSession, Pool
-from limited.options import PoolSpecificationOption, CubeReleaseOption
-from lobbies.games import options as metaoptions
+from mtgorp.models.limited.boostergen import GenerateBoosterException
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
+from limited.models import PoolSpecification, LimitedSession, Pool
+from limited.options import PoolSpecificationOption, CubeReleaseOption, ExpansionOption
+from lobbies.games import options as metaoptions
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
 
@@ -25,7 +25,10 @@ class Sealed(Game):
                 'size': metaoptions.IntegerOption(min = 1, max = 360, default = 90),
                 'allow_intersection': metaoptions.BooleanOption(default = False),
                 'allow_repeat': metaoptions.BooleanOption(default = False),
-            }
+            },
+            'ExpansionBoosterSpecification': {
+                'expansion_code': ExpansionOption(),
+            },
         },
         default_booster_specification = 'CubeBoosterSpecification',
     )

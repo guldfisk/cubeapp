@@ -10,9 +10,11 @@ from enum import Enum
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from resources.staticdb import db
 from typedmodels.models import TypedModel
 
 from mtgorp.models.collections.deck import Deck
+from mtgorp.models.limited.boostergen import GenerateBoosterException
 
 from magiccube.collections.cube import Cube
 
@@ -22,10 +24,6 @@ from api.serialization.serializers import NameCubeReleaseSerializer
 from utils.fields import EnumField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
-
-
-class GenerateBoostersException(Exception):
-    pass
 
 
 class PoolSpecification(models.Model):
@@ -106,6 +104,14 @@ class BoosterSpecification(TypedModel):
 
 class ExpansionBoosterSpecification(BoosterSpecification):
     expansion_code = models.CharField(max_length = 15, null = True)
+
+    def get_boosters(self, amount: int) -> t.Iterator[Cube]:
+        expansion = db.expansions[self.expansion_code]
+        return (
+            Cube(expansion.generate_booster())
+            for _ in
+            range(amount)
+        )
 
     def serialize(self):
         return {

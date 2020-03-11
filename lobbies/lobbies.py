@@ -16,7 +16,6 @@ from lobbies.exceptions import (
     CreateLobbyException, ReadyException, SetOptionsException, StartGameException, JoinLobbyException,
     LeaveLobbyException)
 from lobbies.games.games import Game
-from lobbies.games.options import OptionsValidationError
 
 
 class LobbyState(Enum):
@@ -232,8 +231,6 @@ class Lobby(object):
             if not all(self._users.values()):
                 raise StartGameException('not allowed: not all users ready')
 
-            self._state = LobbyState.GAME
-
             game = self._game_type(
                 options = self._options,
                 players = self._users.keys(),
@@ -241,6 +238,8 @@ class Lobby(object):
             )
 
             self._keys = game.keys
+
+            self._state = LobbyState.GAME
 
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,

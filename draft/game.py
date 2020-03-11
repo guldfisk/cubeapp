@@ -7,7 +7,7 @@ from draft.draft import Draft
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
 from limited.models import PoolSpecification, LimitedSession, Pool
-from limited.options import CubeReleaseOption, PoolSpecificationOption
+from limited.options import CubeReleaseOption, PoolSpecificationOption, ExpansionOption
 
 from lobbies.games.games import Game
 from lobbies.games import options as metaoptions
@@ -27,7 +27,10 @@ class DraftGame(Game):
                 'size': metaoptions.IntegerOption(min = 1, max = 360, default = 7),
                 'allow_intersection': metaoptions.BooleanOption(default = False),
                 'allow_repeat': metaoptions.BooleanOption(default = False),
-            }
+            },
+            'ExpansionBoosterSpecification': {
+                'expansion_code': ExpansionOption(),
+            },
         },
         default_booster_specification = 'CubeBoosterSpecification',
         default_amount = 11,

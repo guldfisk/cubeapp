@@ -8,6 +8,9 @@ from queue import Queue, Empty
 from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AbstractUser
 
+from lobbies.exceptions import StartGameException
+from mtgorp.models.limited.boostergen import GenerateBoosterException
+
 from limited.models import PoolSpecification
 from limited.serializers import PoolSpecificationSerializer
 from ring import Ring
@@ -71,7 +74,7 @@ _deserialize_type_map = {
 
 
 class DraftInterface(ABC):
-    _current_booster: t.Optional[Booster]
+    boost_out_queue: Queue
 
     class ConnectionException(Exception):
         pass
@@ -87,19 +90,17 @@ class DraftInterface(ABC):
         self._pool = Cube()
 
         self._messages: t.List[t.Mapping[str, t.Any]] = []
-
-        self.boost_out_queue = Queue()
+        self._pick_counter = 0
 
         self._booster_queue = Queue()
         self._pick_queue = Queue()
         self._out_queue = Queue()
 
-        self._current_booster_lock = threading.Lock()
         self._current_booster: t.Optional[Booster] = None
 
         self._terminating = threading.Event()
 
-        self._booster_pusher = threading.Thread(target = self._booster_loop)
+        self._booster_pusher = threading.Thread(target = self._draft_loop)
 
         self._connect_lock = threading.Lock()
         self._consumer: t.Optional[WebsocketConsumer] = None
@@ -180,7 +181,7 @@ class DraftInterface(ABC):
             self._pick_queue.put(pick)
 
         else:
-            pass
+            self.send_error('unknown_message_type', message_type = message_type)
 
     def start(self) -> None:
         self.send_message(
@@ -193,18 +194,17 @@ class DraftInterface(ABC):
         self._terminating.set()
 
     @abstractmethod
-    def perform_pick(self, pick: t.Any) -> bool:
+    def perform_pick(self, pick: t.Any) -> t.Any:
         pass
 
-    def _booster_loop(self) -> None:
+    def _draft_loop(self) -> None:
         while not self._terminating.is_set():
             try:
                 booster = self._booster_queue.get(timeout = 2)
             except Empty:
                 continue
 
-            with self._current_booster_lock:
-                self._current_booster = booster
+            self._current_booster = booster
 
             self.send_message('booster', booster = RawStrategy.serialize(self._current_booster))
 
@@ -228,17 +228,20 @@ class DraftInterface(ABC):
                     )
                 )
 
-                if not self.perform_pick(pick):
+                serialized_pick = self.perform_pick(pick)
+                if serialized_pick is None:
                     continue
+
+                self._pick_counter += 1
+
+                self.send_message('pick', pick = serialized_pick, pick_number = self._pick_counter)
 
                 self._current_booster.pick += 1
 
                 if self._current_booster.cubeables:
                     self.boost_out_queue.put(self._current_booster)
-                    print('pack sent on')
                 else:
                     self._draft.booster_empty(self._current_booster)
-                    print('pack empty; returned')
                 self._current_booster = None
                 break
 
@@ -251,17 +254,16 @@ class SinglePickInterface(DraftInterface):
         except KeyError:
             raise self.PickSerializationException()
 
-    def perform_pick(self, pick: t.Any) -> bool:
+    def perform_pick(self, pick: t.Any) -> t.Any:
         if pick not in self._current_booster.cubeables:
             self.send_error('invalid_pick', pick = serialize_cubeable(pick))
-            return False
+            return None
 
         _pick = Cube((pick,))
         self._current_booster.cubeables -= _pick
         self._pool += _pick
-        self.send_message('pick', pick = serialize_cubeable(pick))
 
-        return True
+        return serialize_cubeable(pick)
 
 
 class BurnInterface(DraftInterface):
@@ -275,7 +277,7 @@ class BurnInterface(DraftInterface):
         except KeyError:
             raise self.PickSerializationException()
 
-    def perform_pick(self, pick: t.Any) -> bool:
+    def perform_pick(self, pick: t.Any) -> t.Any:
         _pick, burn = pick
         serialized_pick = {
             'pick': serialize_cubeable(_pick),
@@ -286,13 +288,12 @@ class BurnInterface(DraftInterface):
                 'invalid_pick',
                 pick = serialized_pick,
             )
-            return False
+            return None
 
         self._current_booster.cubeables -= Cube((_pick, burn))
         self._pool += _pick
-        self.send_message('pick', pick = serialized_pick)
 
-        return True
+        return serialized_pick
 
 
 class Draft(object):
@@ -325,15 +326,18 @@ class Draft(object):
             self._pool_specification.specifications.all()
         )
 
-        self._boosters = [
-            [
-                Booster(booster)
-                for booster in
-                player_boosters
+        try:
+            self._boosters = [
+                [
+                    Booster(booster)
+                    for booster in
+                    player_boosters
+                ]
+                for player_boosters in
+                self._pool_specification.get_boosters(len(self._drafters))
             ]
-            for player_boosters in
-            self._pool_specification.get_boosters(len(self._drafters))
-        ]
+        except GenerateBoosterException:
+            raise StartGameException('Cannot generate required boosters')
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
 
