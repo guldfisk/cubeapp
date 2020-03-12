@@ -20,8 +20,7 @@ from rest_framework.response import Response
 
 from knox.models import AuthToken
 
-from magiccube.collections.meta import MetaCube
-from magiccube.update.report import UpdateReport
+from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.strategies.raw import RawStrategy
@@ -30,6 +29,8 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 
 from mtgimg.interface import SizeSlug, ImageFetchException, ImageRequest
 
+from magiccube.collections.meta import MetaCube
+from magiccube.update.report import UpdateReport
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
@@ -47,6 +48,7 @@ from api.mail import send_mail
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
+
 
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
@@ -728,39 +730,19 @@ class ParseTrapEndpoint(generics.GenericAPIView):
 
 @api_view(['GET'])
 def random_printing(request: Request) -> Response:
-    # exclude_basics = strtobool(request.DATA.get('exclude_basics', '0'))
     return Response(
         data = orpserialize.FullPrintingSerializer.serialize(
             random.choice(
                 list(
                     random.choice(
-                        list(
-                            db.cardboards.values()
-                        )
+                        [
+                            cardboard
+                            for cardboard in db.cardboards.values()
+                            if cardboard.latest_printing.expansion.expansion_type != ExpansionType.FUNNY
+                        ]
                     ).printings
                 )
             )
         ),
         status = status.HTTP_200_OK,
     )
-
-# @api_view(['GET', ])
-# def printing_strings(request: Request) -> Response:
-#     return Response(
-#         [
-#             printing.full_name()
-#             for printing in
-#             db.printings.values()
-#         ]
-#     )
-#
-#
-# # TODO
-# class CreateRevertPatchEndpoint(generics.GenericAPIView):
-#     permission_classes = [permissions.IsAuthenticated, ]
-#
-#     def post(self, request, pk: int, *args, **kwargs):
-#         try:
-#             patch = models.CubePatch.objects.get(pk = pk)
-#         except models.CubePatch.DoesNotExist:
-#             return Response(status = status.HTTP_404_NOT_FOUND)

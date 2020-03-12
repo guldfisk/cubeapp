@@ -2154,8 +2154,82 @@ export class CubeBoosterSpecification extends BoosterSpecification {
 }
 
 
+export class ExpansionBoosterSpecification extends BoosterSpecification {
+  expansionCode: string;
+
+  constructor(
+    id: string,
+    sequenceNumber: number,
+    amount: number,
+    expansionCode: string,
+  ) {
+    super(id, sequenceNumber, amount);
+    this.expansionCode = expansionCode;
+  }
+
+  name = (): string => {
+    return 'Expansion Booster'
+  };
+
+  values = (): [string, any][] => {
+    return [
+      ['id', this.id],
+      ['code', this.expansionCode],
+    ]
+  };
+
+  public static fromRemote(remote: any): ExpansionBoosterSpecification {
+    return new ExpansionBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      remote.expansion_code,
+    )
+  }
+
+}
+
+
+export class AllCardsBoosterSpecification extends BoosterSpecification {
+  respectPrintings: string;
+
+  constructor(
+    id: string,
+    sequenceNumber: number,
+    amount: number,
+    respectPrintings: string,
+  ) {
+    super(id, sequenceNumber, amount);
+    this.respectPrintings = respectPrintings;
+  }
+
+  name = (): string => {
+    return 'Expansion Booster'
+  };
+
+  values = (): [string, any][] => {
+    return [
+      ['id', this.id],
+      ['respect printings', this.respectPrintings],
+    ]
+  };
+
+  public static fromRemote(remote: any): AllCardsBoosterSpecification {
+    return new AllCardsBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      remote.respect_printings,
+    )
+  }
+
+}
+
+
 export const boosterSpecificationTypeMap: { [key: string]: Remoteable<BoosterSpecification> } = {
   CubeBoosterSpecification: CubeBoosterSpecification,
+  ExpansionBoosterSpecification: ExpansionBoosterSpecification,
+  AllCardsBoosterSpecification: AllCardsBoosterSpecification,
 };
 
 

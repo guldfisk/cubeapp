@@ -10,11 +10,13 @@ from enum import Enum
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from resources.staticdb import db
 from typedmodels.models import TypedModel
 
 from mtgorp.models.collections.deck import Deck
-from mtgorp.models.limited.boostergen import GenerateBoosterException
+from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey, RARE_MYTHIC_SLOT, UNCOMMON_SLOT, \
+    COMMON_SLOT
 
 from magiccube.collections.cube import Cube
 
@@ -126,8 +128,44 @@ class ExpansionBoosterSpecification(BoosterSpecification):
         }
 
 
-class AllCardsRespectRarityBoosterSpecification(BoosterSpecification):
-    pass
+class AllCardsBoosterSpecification(BoosterSpecification):
+    respect_printings = models.BooleanField(null = True)
+
+    def get_boosters(self, amount: int) -> t.Iterator[Cube]:
+        booster_map = BoosterKey(
+            (RARE_MYTHIC_SLOT,)
+            + (UNCOMMON_SLOT,) * 3
+            + (COMMON_SLOT,) * 11
+        ).get_booster_map(
+            [
+                printing
+                for printing in
+                db.printings.values()
+                if printing.cardboard.latest_printing.expansion.expansion_type != ExpansionType.FUNNY
+            ] if self.respect_printings else [
+                cardboard.latest_printing
+                for cardboard in
+                db.cardboards.values()
+                if cardboard.latest_printing.expansion.expansion_type != ExpansionType.FUNNY
+            ]
+        )
+        return (
+            Cube(booster_map.generate_booster())
+            for _ in
+            range(amount)
+        )
+
+    def serialize(self):
+        return {
+            **super().serialize(),
+            'respect_printings': self.respect_printings,
+        }
+
+    @classmethod
+    def values_from_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        return {
+            'respect_printings': options['respect_printings'],
+        }
 
 
 class CubeBoosterSpecification(BoosterSpecification):
@@ -140,7 +178,7 @@ class CubeBoosterSpecification(BoosterSpecification):
         if not self.allow_repeat:
             required_cube_size = self.size * (1 if self.allow_intersection else amount)
             if required_cube_size > len(self.release.cube):
-                raise GenerateBoostersException(
+                raise GenerateBoosterException(
                     f'not enough cubeables, needs {required_cube_size}, only has {len(self.release.cube)}'
                 )
 

@@ -1,5 +1,7 @@
 import typing as t
 
+from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+
 from api.models import CubeRelease
 from lobbies.games.options import Option, OptionsValidationError, IntegerOption
 from resources.staticdb import db
@@ -12,7 +14,8 @@ class ExpansionOption(Option):
         return max(db.expansions.values(), key = lambda e: e.release_date).code
 
     def validate(self, value: t.Any) -> t.Any:
-        if value not in db.expansions:
+        expansion = db.expansions.get(value)
+        if expansion is None or expansion.expansion_type != ExpansionType.SET:
             OptionsValidationError(f'invalid value "{value}" for {self._name}')
         return value
 

@@ -31,6 +31,9 @@ class DraftGame(Game):
             'ExpansionBoosterSpecification': {
                 'expansion_code': ExpansionOption(),
             },
+            'AllCardsBoosterSpecification': {
+                'respect_printings': metaoptions.BooleanOption(default = True),
+            },
         },
         default_booster_specification = 'CubeBoosterSpecification',
         default_amount = 11,

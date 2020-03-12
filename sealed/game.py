@@ -29,6 +29,9 @@ class Sealed(Game):
             'ExpansionBoosterSpecification': {
                 'expansion_code': ExpansionOption(),
             },
+            'AllCardsBoosterSpecification': {
+                'respect_printings': metaoptions.BooleanOption(default = True),
+            },
         },
         default_booster_specification = 'CubeBoosterSpecification',
     )

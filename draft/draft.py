@@ -272,26 +272,39 @@ class BurnInterface(DraftInterface):
         try:
             return (
                 self._deserialize_cubeable(pick['pick']),
-                self._deserialize_cubeable(pick['burn']),
+                self._deserialize_cubeable(pick['burn']) if pick['burn'] is not None else None,
             )
-        except KeyError:
+        except (KeyError, ValueError):
             raise self.PickSerializationException()
 
     def perform_pick(self, pick: t.Any) -> t.Any:
         _pick, burn = pick
+
         serialized_pick = {
             'pick': serialize_cubeable(_pick),
-            'burn': serialize_cubeable(burn),
+            'burn': serialize_cubeable(burn) if burn is not None else None,
         }
-        if _pick not in self._current_booster.cubeables or burn not in self._current_booster.cubeables:
+
+        if len(self._current_booster.cubeables) > 1 and burn is None:
+            print('cant be non when more than one left', self._current_booster.cubeables)
             self.send_error(
                 'invalid_pick',
                 pick = serialized_pick,
             )
             return None
 
-        self._current_booster.cubeables -= Cube((_pick, burn))
-        self._pool += _pick
+        pick_remove = Cube((_pick, burn)) if burn is not None else Cube((_pick,))
+
+        if not pick_remove.cubeables <= self._current_booster.cubeables.cubeables:
+            print('not a subset', pick_remove.cubeables, self._current_booster.cubeables.cubeables)
+            self.send_error(
+                'invalid_pick',
+                pick = serialized_pick,
+            )
+            return None
+
+        self._current_booster.cubeables -= pick_remove
+        self._pool += Cube((_pick,))
 
         return serialized_pick
 
