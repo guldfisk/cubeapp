@@ -6,13 +6,18 @@ import filterFactory, {textFilter, selectFilter} from 'react-bootstrap-table2-fi
 
 import {LimitedSession, User} from '../../models/models';
 
-
 import Container from "react-bootstrap/Container";
 
 import {Link} from "react-router-dom";
 import {DateListItem} from "../../utils/listitems";
 import PoolSpecificationView from "../../views/limited/PoolSpecificationView";
+import {connect} from "react-redux";
+import {ConfirmationDialog} from "../../utils/dialogs";
 
+
+interface SessionsPageProps {
+  authenticated: boolean
+}
 
 interface SessionsPageState {
   page: number
@@ -22,12 +27,13 @@ interface SessionsPageState {
   filters: { [key: string]: string }
   sortField: string
   sortAscending: boolean
+  deleting: LimitedSession | null
 }
 
 
-export default class SessionsPage extends React.Component<null, SessionsPageState> {
+class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState> {
 
-  constructor(props: null) {
+  constructor(props: SessionsPageProps) {
     super(props);
     this.state = {
       page: 1,
@@ -37,6 +43,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       filters: {},
       sortField: 'created_at',
       sortAscending: false,
+      deleting: null,
     };
   }
 
@@ -48,6 +55,9 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
     LimitedSession.all(
       (this.state.page - 1) * this.state.pageSize,
       this.state.pageSize,
+      this.state.sortField,
+      this.state.sortAscending,
+      this.state.filters,
     ).then(
       ({objects, hits}) => {
         this.setState(
@@ -59,6 +69,7 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       }
     );
   };
+
   handleTableChanged = (
     type: string,
     {page, sizePerPage, filters, sortField, sortOrder, data, cellEdit}:
@@ -148,9 +159,18 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
     }
   };
 
+  deleteSession = (): void => {
+    if (!this.state.deleting) {
+      return
+    }
+    this.state.deleting.delete().then(
+      () => this.setState({deleting: null}, this.fetchSessions)
+    )
+  };
+
   render() {
 
-    const columns = [
+    const columns: { [key: string]: any } = [
       {
         dataField: 'id',
         text: 'ID',
@@ -277,30 +297,68 @@ export default class SessionsPage extends React.Component<null, SessionsPageStat
       },
     ];
 
-    return <Container fluid>
-      <BootstrapTable
-        remote
-        keyField='id'
-        data={this.state.sessions}
-        columns={columns}
-        bootstrap4
-        condensed
-        filter={filterFactory()}
-        pagination={
-          paginationFactory(
-            {
-              hidePageListOnlyOnePage: true,
-              showTotal: true,
-              page: this.state.page,
-              sizePerPage: this.state.pageSize,
-              totalSize: this.state.hits,
-            }
-          )
+    if (this.props.authenticated) {
+      columns.push(
+        {
+          text: '',
+          isDummyField: true,
+          editable: false,
+          formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
+            className="fa fa-times-circle"
+            onClick={() => this.setState({deleting: row})}
+          />,
+          headerStyle: (column: any, colIndex: number) => {
+            return {width: '4%', textAlign: 'center'};
+          },
         }
-        onTableChange={this.handleTableChanged}
-        classes='dark-table'
+      )
+    }
+
+    return <>
+      <ConfirmationDialog
+        show={!!this.state.deleting}
+        callback={this.deleteSession}
+        cancel={() => this.setState({deleting: null})}
       />
-    </Container>
+      <Container fluid>
+        <BootstrapTable
+          remote
+          keyField='id'
+          data={this.state.sessions}
+          columns={columns}
+          bootstrap4
+          condensed
+          filter={filterFactory()}
+          pagination={
+            paginationFactory(
+              {
+                hidePageListOnlyOnePage: true,
+                showTotal: true,
+                page: this.state.page,
+                sizePerPage: this.state.pageSize,
+                totalSize: this.state.hits,
+              }
+            )
+          }
+          onTableChange={this.handleTableChanged}
+          classes='dark-table'
+        />
+      </Container>
+    </>
   }
 
 }
+
+const mapStateToProps = (state: any) => {
+  return {
+    authenticated: state.authenticated,
+  };
+};
+
+
+const mapDispatchToProps = (dispatch: any) => {
+  return {};
+};
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(SessionsPage);

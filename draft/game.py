@@ -71,6 +71,9 @@ class DraftGame(Game):
             pool_specification = self._pool_specification,
         )
 
+        draft.draft_session.limited_session = session
+        draft.draft_session.save(update_fields = ('limited_session',))
+
         for drafter, interface in draft.interfaces.items():
             pool = Pool.objects.create(
                 user = drafter.user,

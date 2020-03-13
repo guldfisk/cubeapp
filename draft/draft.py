@@ -5,34 +5,26 @@ import threading
 from abc import ABC, abstractmethod
 from queue import Queue, Empty
 
-from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AbstractUser
+from channels.generic.websocket import WebsocketConsumer
 
-from lobbies.exceptions import StartGameException
-from mtgorp.models.limited.boostergen import GenerateBoosterException
-
-from limited.models import PoolSpecification
-from limited.serializers import PoolSpecificationSerializer
+from draft.models import DraftSession, DraftParticipant, DraftPick
 from ring import Ring
 
-from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.serilization.serializeable import SerializationException
+from mtgorp.models.limited.boostergen import GenerateBoosterException
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
-from magiccube.laps.purples.purple import Purple
-from magiccube.laps.tickets.ticket import Ticket
-from magiccube.laps.traps.trap import Trap
 
-from mtgdraft.models import Booster
+from mtgdraft.models import Booster, Pick, SinglePickPick, BurnPick
 
 from api.serialization.serializers import UserSerializer
-
+from lobbies.exceptions import StartGameException
+from limited.models import PoolSpecification
+from limited.serializers import PoolSpecificationSerializer
 from resources.staticdb import db
-
-
-def serialize_cubeable(cubeable: Cubeable) -> t.Any:
-    return cubeable.id if isinstance(cubeable, Printing) else RawStrategy.serialize(cubeable)
 
 
 class Drafter(object):
@@ -66,26 +58,18 @@ class Drafter(object):
         )
 
 
-_deserialize_type_map = {
-    'Trap': Trap,
-    'Ticket': Ticket,
-    'Purple': Purple,
-}
-
-
 class DraftInterface(ABC):
     boost_out_queue: Queue
+    pick_type: t.Type[Pick]
 
     class ConnectionException(Exception):
         pass
 
-    class PickSerializationException(Exception):
-        pass
-
-    def __init__(self, drafter: Drafter, draft: Draft):
+    def __init__(self, drafter: Drafter, draft: Draft, draft_participant: DraftParticipant):
         super().__init__()
         self._drafter = drafter
         self._draft = draft
+        self._draft_participant = draft_participant
 
         self._pool = Cube()
 
@@ -148,21 +132,6 @@ class DraftInterface(ABC):
     def out_queue(self):
         return self._out_queue
 
-    @classmethod
-    def _deserialize_cubeable(cls, cubeable: t.Any) -> Cubeable:
-        return (
-            db.printings[cubeable]
-            if isinstance(cubeable, int) else
-            _deserialize_type_map[cubeable['type']].deserialize(
-                cubeable,
-                RawStrategy(db)
-            )
-        )
-
-    @abstractmethod
-    def deserialize_pick(self, pick: t.Any) -> t.Any:
-        pass
-
     def receive_message(self, message: t.Any) -> None:
         message_type = message.get('type')
 
@@ -173,8 +142,8 @@ class DraftInterface(ABC):
                 return
 
             try:
-                pick = self.deserialize_pick(pick)
-            except self.PickSerializationException:
+                pick = RawStrategy(db).deserialize(self.pick_type, pick)
+            except SerializationException:
                 self.send_error('misconstrued_pick')
                 return
 
@@ -194,7 +163,7 @@ class DraftInterface(ABC):
         self._terminating.set()
 
     @abstractmethod
-    def perform_pick(self, pick: t.Any) -> t.Any:
+    def perform_pick(self, pick: Pick) -> bool:
         pass
 
     def _draft_loop(self) -> None:
@@ -208,33 +177,35 @@ class DraftInterface(ABC):
 
             self.send_message('booster', booster = RawStrategy.serialize(self._current_booster))
 
-            print(
-                'new booster arrived at {}: {}'.format(
-                    self._drafter.user.username,
-                    self._current_booster.cubeables,
-                )
-            )
-
             while not self._terminating.is_set():
                 try:
                     pick = self._pick_queue.get(timeout = 2)
                 except Empty:
                     continue
 
-                print(
-                    '{} picked {}'.format(
-                        self._drafter.user.username,
-                        pick,
+                if not self.perform_pick(pick):
+                    self.send_error(
+                        'invalid_pick',
+                        pick = pick.serialize(),
                     )
-                )
-
-                serialized_pick = self.perform_pick(pick)
-                if serialized_pick is None:
                     continue
 
                 self._pick_counter += 1
 
-                self.send_message('pick', pick = serialized_pick, pick_number = self._pick_counter)
+                self.send_message(
+                    'pick',
+                    pick = pick.serialize(),
+                    booster = RawStrategy.serialize(self._current_booster),
+                    pick_number = self._pick_counter,
+                )
+
+                DraftPick.objects.create(
+                    drafter = self._draft_participant,
+                    pack_number = self._draft.pack_counter,
+                    pick_number = self._current_booster.pick,
+                    pack = self._current_booster,
+                    pick = pick,
+                )
 
                 self._current_booster.pick += 1
 
@@ -247,66 +218,35 @@ class DraftInterface(ABC):
 
 
 class SinglePickInterface(DraftInterface):
+    pick_type = SinglePickPick
 
-    def deserialize_pick(self, pick: t.Any) -> t.Any:
-        try:
-            return self._deserialize_cubeable(pick)
-        except KeyError:
-            raise self.PickSerializationException()
+    def perform_pick(self, pick: SinglePickPick) -> bool:
+        if pick.cubeable not in self._current_booster.cubeables:
+            return False
 
-    def perform_pick(self, pick: t.Any) -> t.Any:
-        if pick not in self._current_booster.cubeables:
-            self.send_error('invalid_pick', pick = serialize_cubeable(pick))
-            return None
-
-        _pick = Cube((pick,))
+        _pick = Cube((pick.cubeable,))
         self._current_booster.cubeables -= _pick
         self._pool += _pick
 
-        return serialize_cubeable(pick)
+        return True
 
 
 class BurnInterface(DraftInterface):
+    pick_type = BurnPick
 
-    def deserialize_pick(self, pick: t.Any) -> t.Any:
-        try:
-            return (
-                self._deserialize_cubeable(pick['pick']),
-                self._deserialize_cubeable(pick['burn']) if pick['burn'] is not None else None,
-            )
-        except (KeyError, ValueError):
-            raise self.PickSerializationException()
+    def perform_pick(self, pick: BurnPick) -> bool:
+        if len(self._current_booster.cubeables) > 1 and pick.burn is None:
+            return False
 
-    def perform_pick(self, pick: t.Any) -> t.Any:
-        _pick, burn = pick
-
-        serialized_pick = {
-            'pick': serialize_cubeable(_pick),
-            'burn': serialize_cubeable(burn) if burn is not None else None,
-        }
-
-        if len(self._current_booster.cubeables) > 1 and burn is None:
-            print('cant be non when more than one left', self._current_booster.cubeables)
-            self.send_error(
-                'invalid_pick',
-                pick = serialized_pick,
-            )
-            return None
-
-        pick_remove = Cube((_pick, burn)) if burn is not None else Cube((_pick,))
+        pick_remove = Cube((pick.pick, pick.burn)) if pick.burn is not None else Cube((pick.pick,))
 
         if not pick_remove.cubeables <= self._current_booster.cubeables.cubeables:
-            print('not a subset', pick_remove.cubeables, self._current_booster.cubeables.cubeables)
-            self.send_error(
-                'invalid_pick',
-                pick = serialized_pick,
-            )
-            return None
+            return False
 
         self._current_booster.cubeables -= pick_remove
-        self._pool += Cube((_pick,))
+        self._pool += Cube((pick.pick,))
 
-        return serialized_pick
+        return True
 
 
 class Draft(object):
@@ -353,6 +293,7 @@ class Draft(object):
             raise StartGameException('Cannot generate required boosters')
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
+        self._draft_session: t.Optional[DraftSession] = None
 
     @property
     def drafters(self) -> t.Iterable[Drafter]:
@@ -365,6 +306,14 @@ class Draft(object):
     @property
     def interfaces(self) -> t.Mapping[Drafter, DraftInterface]:
         return self._drafter_interfaces
+
+    @property
+    def draft_session(self) -> DraftSession:
+        return self._draft_session
+
+    @property
+    def pack_counter(self) -> int:
+        return self._pack_counter
 
     def serialize(self) -> t.Mapping[str, t.Any]:
         return {
@@ -421,6 +370,8 @@ class Draft(object):
             interface.booster_queue.put(booster)
 
     def completed(self) -> None:
+        self._draft_session.state = DraftSession.DraftState.COMPLETED
+        self._draft_session.save(update_fields = ('state',))
         self._finished_callback(self)
         for interface in self._drafter_interfaces.values():
             interface.send_message('completed')
@@ -431,24 +382,28 @@ class Draft(object):
     }
 
     def start(self) -> None:
-        print('draft start')
-
         interface_type = self._draft_format_map[self._draft_format]
+
+        self._draft_session = DraftSession.objects.create(
+            key = self._key,
+            draft_format = self._draft_format,
+            pool_specification = self._pool_specification,
+        )
 
         self._drafter_interfaces = {
             drafter: interface_type(
                 drafter = drafter,
                 draft = self,
+                draft_participant = DraftParticipant.objects.create(
+                    user = drafter.user,
+                    session = self._draft_session,
+                    sequence_number = idx,
+                ),
             )
-            for drafter in
-            self._drafters.all
+            for idx, drafter in
+            enumerate(self._drafters.all)
         }
         for interface in self._drafter_interfaces.values():
             interface.start()
 
         self._administer_boosters()
-        print('draft started')
-
-
-class ConnectionInterface(object):
-    pass

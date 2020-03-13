@@ -2339,6 +2339,18 @@ export class LimitedSession extends Atomic {
     )
   }
 
+  delete = (): Promise<any> => {
+    return axios.delete(
+      apiPath + 'limited/sessions/' + this.id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
 }
 
 export class PoolMeta extends Atomic {

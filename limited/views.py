@@ -19,8 +19,6 @@ from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
-from api.models import CubeRelease
-
 from resources.staticdb import db
 
 from limited import models, serializers
@@ -36,7 +34,7 @@ class PoolDetailPermissions(permissions.BasePermission):
             request.user == obj.user
             or obj.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
             or (
-                obj.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING
+                obj.session.state == models.LimitedSession.LimitedSessionState.PLAYING
                 and obj.session.open_decks
             )
         )
@@ -126,6 +124,9 @@ class SessionList(generics.ListAPIView):
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
         'pool_specification__specifications',
+        'results',
+        'results__players',
+        Prefetch('results__players__user', queryset = get_user_model().objects.all().only('username')),
     )
 
     _allowed_sort_keys = {
@@ -158,7 +159,7 @@ class SessionList(generics.ListAPIView):
 
         game_type_filter = request.GET.get('game_type_filter')
         if game_type_filter:
-            queryset = queryset.filter(game_type=game_type_filter)
+            queryset = queryset.filter(game_type = game_type_filter)
 
         state_filter = request.GET.get('state_filter')
         if state_filter:
@@ -248,9 +249,39 @@ class SessionList(generics.ListAPIView):
         return Response(serializer.data)
 
 
-class SessionDetail(generics.RetrieveAPIView):
+class SessionDetail(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.FullSealedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__decks', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
+        'results',
+        'results__players',
+        Prefetch('results__players__user', queryset = get_user_model().objects.all().only('username')),
     )
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+
+
+class SessionCompletePermissions(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return True
+
+    def has_object_permission(self, request, view, obj: models.LimitedSession):
+        return obj.pools.filter(user_id = request.user.id).exists()
+
+
+class CompleteSession(generics.GenericAPIView):
+    queryset = models.LimitedSession.objects.all()
+    permission_classes = [SessionCompletePermissions, ]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        instance: models.LimitedSession = self.get_object()
+        if not instance.state == models.LimitedSession.LimitedSessionState.PLAYING:
+            return Response(
+                'Cannot complete limited session that is not playing',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+        instance.state = models.LimitedSession.LimitedSessionState.FINISHED
+        instance.finished_at = datetime.datetime.now()
+        instance.save(update_fields = ('state', 'finished_at'))
+        return Response(status = status.HTTP_200_OK)

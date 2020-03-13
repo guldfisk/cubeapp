@@ -1,5 +1,6 @@
 import React from "react";
 import Table from "react-bootstrap/Table";
+import Container from "react-bootstrap/Container";
 
 
 interface SearchLinkProps {
@@ -19,7 +20,7 @@ const SearchLink: React.FunctionComponent<SearchLinkProps> = (
 
 
 const SearchSyntaxPage: React.FunctionComponent = () =>
-  <div>
+  <Container>
     <h3>Index</h3>
     <ul>
       <li><a href="#operators">How works</a></li>
@@ -65,11 +66,11 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
       <tbody>
       <tr>
         <td>||</td>
-        <td>Or</td>
+        <td>or</td>
       </tr>
       <tr>
         <td>&</td>
-        <td>And</td>
+        <td>and</td>
       </tr>
       <tr>
         <td>!</td>
@@ -77,7 +78,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
       </tr>
       <tr>
         <td>()</td>
-        <td>Parenthesis</td>
+        <td>parenthesis</td>
       </tr>
       </tbody>
     </Table>
@@ -103,7 +104,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
     <p>All cards with the type "creature"</p>
     <p>Example: <SearchLink query="t;crea huma"/></p>
     <p>All cards with the type "creature" and "human"</p>
-    <p>Example: <SearchLink query="t;crea artifa constr"/></p>
+    <p>Example: <SearchLink query="t=crea artifa constr"/></p>
     <p>All cards with the exact types "Artifact Creature - Construct</p>
     <p>Example: <SearchLink query="t;sorc n;hum"/></p>
     <p>All cards with the sype "sorcery" and "hum" in the name. This could also be achived with "hum t;sorc"</p>
@@ -278,7 +279,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
     <p>code: block</p>
     <p>Search for block using soft match of name etc.</p>
 
-  </div>
+  </Container>
 ;
 
 export default SearchSyntaxPage;

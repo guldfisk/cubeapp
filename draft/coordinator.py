@@ -31,7 +31,6 @@ class DraftCoordinator(object):
         draft_format: str,
         finished_callback: t.Callable[[Draft], None],
     ) -> t.Tuple[t.Tuple[AbstractUser, Drafter], ...]:
-        print('start draft')
 
         drafters = tuple(
             (
@@ -64,15 +63,12 @@ class DraftCoordinator(object):
         )
 
         draft.start()
-        print('started', draft)
 
         with self._lock:
             self._drafts.add(draft)
 
             for drafter in drafters_ring.all:
                 self._drafters[drafter.key] = draft.get_draft_interface(drafter)
-
-            print(self._drafters)
 
         return drafters
 
