@@ -120,7 +120,7 @@ class DeckDetail(generics.RetrieveAPIView):
 
 
 class SessionList(generics.ListAPIView):
-    serializer_class = serializers.SealedSessionSerializer
+    serializer_class = serializers.LimitedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
         'pool_specification__specifications',
@@ -250,7 +250,7 @@ class SessionList(generics.ListAPIView):
 
 
 class SessionDetail(generics.RetrieveDestroyAPIView):
-    serializer_class = serializers.FullSealedSessionSerializer
+    serializer_class = serializers.FullLimitedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__decks', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
@@ -261,7 +261,7 @@ class SessionDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
 
-class SessionCompletePermissions(permissions.BasePermission):
+class SessionResultsPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return True
@@ -272,7 +272,7 @@ class SessionCompletePermissions(permissions.BasePermission):
 
 class CompleteSession(generics.GenericAPIView):
     queryset = models.LimitedSession.objects.all()
-    permission_classes = [SessionCompletePermissions, ]
+    permission_classes = [SessionResultsPermission, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         instance: models.LimitedSession = self.get_object()
@@ -284,4 +284,25 @@ class CompleteSession(generics.GenericAPIView):
         instance.state = models.LimitedSession.LimitedSessionState.FINISHED
         instance.finished_at = datetime.datetime.now()
         instance.save(update_fields = ('state', 'finished_at'))
+        return Response(status = status.HTTP_200_OK)
+
+
+class SubmitResult(generics.GenericAPIView):
+    queryset = models.LimitedSession.objects.all()
+    permission_classes = [SessionResultsPermission, ]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        instance: models.LimitedSession = self.get_object()
+        if not instance.state == models.LimitedSession.LimitedSessionState.PLAYING:
+            return Response(
+                'Session in invalid state for submitting results',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = serializers.MatchResultSerializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        print(serializer.validated_data)
+
+        # serializer.save()
+
         return Response(status = status.HTTP_200_OK)

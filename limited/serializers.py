@@ -65,7 +65,23 @@ class MinimalPoolSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'decks')
 
 
-class SealedSessionSerializer(serializers.ModelSerializer):
+class MatchPlayerSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only = True)
+
+    class Meta:
+        model = models.MatchPlayer
+        fields = ('id', 'user', 'wins')
+
+
+class MatchResultSerializer(serializers.ModelSerializer):
+    players = MatchPlayerSerializer(many = True)
+
+    class Meta:
+        model = models.MatchResult
+        fields = ('id', 'players', 'draws')
+
+
+class LimitedSessionSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     playing_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     finished_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
@@ -74,31 +90,32 @@ class SealedSessionSerializer(serializers.ModelSerializer):
     players = PoolUserField(source = 'pools', read_only = True, many = True)
     state = EnumSerializerField(models.LimitedSession.LimitedSessionState)
     pool_specification = PoolSpecificationSerializer(read_only = True)
+    results = MatchResultSerializer(many = True, read_only = True)
 
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type', 'pool_specification',
+            'game_type', 'pool_specification', 'results'
         )
 
 
 class PoolSerializer(MinimalPoolSerializer):
     pool = OrpSerializerField(model_serializer = orpserialize.CubeSerializer)
     decks = PoolDeckSerializer(many = True)
-    session = SealedSessionSerializer()
+    session = LimitedSessionSerializer()
 
     class Meta:
         model = models.Pool
         fields = ('id', 'user', 'session', 'decks', 'pool')
 
 
-class FullSealedSessionSerializer(SealedSessionSerializer):
+class FullLimitedSessionSerializer(LimitedSessionSerializer):
     pools = MinimalPoolSerializer(many = True)
 
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type', 'pool_specification', 'pools',
+            'game_type', 'pool_specification', 'pools', 'results',
         )
