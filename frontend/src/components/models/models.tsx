@@ -5,7 +5,6 @@ import axios from 'axios';
 import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import wu from 'wu';
-import {array, string} from "prop-types";
 import {Link} from "react-router-dom";
 
 
@@ -2255,6 +2254,50 @@ export class PoolSpecification extends Atomic {
 
 }
 
+
+export class MatchPlayer extends Atomic {
+  user: User;
+  wins: number;
+
+  constructor(id: string, user: User, wins: number) {
+    super(id);
+    this.user = user;
+    this.wins = wins;
+  }
+
+  public static fromRemote(remote: any): MatchPlayer {
+    return new MatchPlayer(
+      remote.id,
+      User.fromRemote(remote.user),
+      remote.wins,
+    )
+  }
+
+}
+
+
+export class MatchResult extends Atomic {
+  draws: number;
+  players: MatchPlayer[];
+
+  constructor(id: string, draws: number, players: MatchPlayer[]) {
+    super(id);
+    this.draws = draws;
+    this.players = players;
+  }
+
+  public static fromRemote(remote: any): MatchResult {
+    return new MatchResult(
+      remote.id,
+      remote.draws,
+      remote.players.map(
+        (player: any) => MatchPlayer.fromRemote(player)
+      ),
+    )
+  }
+
+}
+
 export class LimitedSession extends Atomic {
   format: string;
   gameType: string;
@@ -2266,6 +2309,7 @@ export class LimitedSession extends Atomic {
   state: string;
   openDecks: boolean;
   poolSpecification: PoolSpecification;
+  results: MatchResult[];
 
   constructor(
     id: string,
@@ -2279,6 +2323,7 @@ export class LimitedSession extends Atomic {
     state: string,
     openDecks: boolean,
     poolSpecification: PoolSpecification,
+    results: MatchResult[],
   ) {
     super(id);
     this.format = format;
@@ -2291,6 +2336,7 @@ export class LimitedSession extends Atomic {
     this.state = state;
     this.openDecks = openDecks;
     this.poolSpecification = poolSpecification;
+    this.results = results;
   }
 
   public static fromRemote(remote: any): LimitedSession {
@@ -2306,6 +2352,9 @@ export class LimitedSession extends Atomic {
       remote.state,
       remote.open_decks,
       PoolSpecification.fromRemote(remote.pool_specification),
+      remote.results.map(
+        (result: any) => MatchResult.fromRemote(result)
+      ),
     )
   }
 
@@ -2388,6 +2437,7 @@ export class FullLimitedSession extends LimitedSession {
     state: string,
     openDecks: boolean,
     poolSpecification: PoolSpecification,
+    results: MatchResult[],
     pools: PoolMeta[],
   ) {
     super(
@@ -2402,6 +2452,7 @@ export class FullLimitedSession extends LimitedSession {
       state,
       openDecks,
       poolSpecification,
+      results,
     );
     this.pools = pools;
   }
@@ -2419,6 +2470,9 @@ export class FullLimitedSession extends LimitedSession {
       remote.state,
       remote.open_decks,
       PoolSpecification.fromRemote(remote.pool_specification),
+      remote.results.map(
+        (result: any) => MatchResult.fromRemote(result)
+      ),
       remote.pools.map(
         (pool: any) => PoolMeta.fromRemote(pool)
       ),

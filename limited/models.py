@@ -259,3 +259,6 @@ class MatchPlayer(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete = models.PROTECT)
     wins = models.PositiveSmallIntegerField()
     match_result = models.ForeignKey(MatchResult, on_delete = models.CASCADE, related_name = 'players')
+
+    class Meta:
+        unique_together = ('user', 'match_result')

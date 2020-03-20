@@ -67,10 +67,11 @@ class MinimalPoolSerializer(serializers.ModelSerializer):
 
 class MatchPlayerSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
+    user_id = serializers.IntegerField(write_only = True)
 
     class Meta:
         model = models.MatchPlayer
-        fields = ('id', 'user', 'wins')
+        fields = ('id', 'user', 'wins', 'user_id')
 
 
 class MatchResultSerializer(serializers.ModelSerializer):

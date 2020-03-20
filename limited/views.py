@@ -292,8 +292,9 @@ class SubmitResult(generics.GenericAPIView):
     permission_classes = [SessionResultsPermission, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
-        instance: models.LimitedSession = self.get_object()
-        if not instance.state == models.LimitedSession.LimitedSessionState.PLAYING:
+        limited_session: models.LimitedSession = self.get_object()
+
+        if not limited_session.state == models.LimitedSession.LimitedSessionState.PLAYING:
             return Response(
                 'Session in invalid state for submitting results',
                 status = status.HTTP_400_BAD_REQUEST,
@@ -301,8 +302,48 @@ class SubmitResult(generics.GenericAPIView):
 
         serializer = serializers.MatchResultSerializer(data = request.data)
         serializer.is_valid(raise_exception = True)
+
         print(serializer.validated_data)
 
-        # serializer.save()
+        if len(serializer.validated_data['players']) <= 1:
+            return Response(
+                'Match result must include more than one player',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_ids = [player['user_id'] for player in serializer.validated_data['players']]
+        user_id_set = set(user_ids)
+        if (
+            not len(user_ids) == len(user_id_set)
+            or not user_id_set <= set(limited_session.pools.all().values_list('user_id', flat = True))
+        ):
+            return Response(
+                'Invalid users',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
+        if any(
+            user_id_set == set(_match_result.players.all().values_list('user_id', flat = True))
+            for _match_result in
+            models.MatchResult.objects.filter(session = limited_session).prefetch_related(
+                Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
+            )
+        ):
+            return Response(
+                'Result already posted for this match',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            match_result = models.MatchResult.objects.create(
+                session = limited_session,
+                draws = serializer.validated_data['draws']
+            )
+            for player in serializer.validated_data['players']:
+                models.MatchPlayer.objects.create(
+                    user_id = player['user_id'],
+                    wins = player['wins'],
+                    match_result = match_result,
+                )
 
         return Response(status = status.HTTP_200_OK)
