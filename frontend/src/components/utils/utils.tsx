@@ -80,7 +80,7 @@ export class UserGroup {
 
 }
 
-export const getEditDistance = (a: string, b: string) => {
+export const getEditDistance = (a: string, b: string): number => {
   if (a.length == 0) return b.length;
   if (b.length == 0) return a.length;
 
@@ -109,4 +109,20 @@ export const getEditDistance = (a: string, b: string) => {
   }
 
   return matrix[b.length][a.length];
+};
+
+export const factorial = (n: number): number => {
+  let resultValue = 1;
+  for (let i = 2; i <= n; i++) {
+    resultValue = resultValue * i;
+  }
+  return resultValue;
+};
+
+
+export const sizeTwoSetCombinations = (n: number): number => {
+  if (n <= 1) {
+    return 0
+  }
+  return factorial(n) / (2 * factorial(n - 2))
 };

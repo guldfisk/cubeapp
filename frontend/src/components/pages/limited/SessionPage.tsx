@@ -22,12 +22,16 @@ export default class SessionPage extends React.Component<sessionPageProps, Sessi
     };
   }
 
-  componentDidMount() {
+  refresh = (): void => {
     FullLimitedSession.get(this.props.match.params.id).then(
       session => {
         this.setState({session});
       }
     );
+  };
+
+  componentDidMount() {
+    this.refresh()
   }
 
   render() {
@@ -35,6 +39,7 @@ export default class SessionPage extends React.Component<sessionPageProps, Sessi
     if (this.state.session !== null) {
       sessionView = <SessionView
         session={this.state.session}
+        onResultSubmitted={this.refresh}
       />
     }
 
