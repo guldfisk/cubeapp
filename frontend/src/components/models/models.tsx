@@ -2358,10 +2358,23 @@ export class LimitedSession extends Atomic {
     )
   }
 
-  submitResult = (result: { players: { user_id: number, wins: number }[], draws: number }): Promise<any> => {
+  submitResult = (result: { players: { user_id: number, wins: number }[], draws: number }): Promise<void> => {
     return axios.post(
       apiPath + 'limited/sessions/' + this.id + '/submit-result/',
       result,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
+  complete = (): Promise<void> => {
+    return axios.post(
+      apiPath + 'limited/sessions/' + this.id + '/completed/',
+      {},
       {
         headers: {
           "Content-Type": "application/json",
