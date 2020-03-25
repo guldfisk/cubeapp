@@ -9,4 +9,5 @@ urlpatterns = [
     path('sessions/<int:pk>/submit-result/', views.SubmitResult.as_view()),
     path('pools/<str:pk>/', views.PoolDetail.as_view()),
     path('decks/<int:pk>/', views.DeckDetail.as_view()),
+    path('decks/<int:pk>/export/', views.DeckExport.as_view()),
 ]

@@ -6,6 +6,7 @@ import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import wu from 'wu';
 import {Link} from "react-router-dom";
+import fileDownload from "js-file-download";
 
 
 export const apiPath = '/api/';
@@ -2549,6 +2550,22 @@ export class Deck extends Atomic {
       ),
     )
   }
+
+  download = (extension: string = 'dec'): Promise<void> => {
+    return axios.get(
+      '/api/limited/decks/' + this.id + '/export/',
+      {
+        params: {
+          extension
+        },
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
+    ).then(
+      response => fileDownload(response.data, this.name + '.' + extension)
+    )
+  };
 
 }
 

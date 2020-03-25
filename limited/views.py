@@ -3,6 +3,7 @@ import datetime
 from distutils.util import strtobool
 from json import JSONDecodeError
 
+from django.contrib.auth.models import AbstractUser
 from django.db import transaction
 from django.db.models import Prefetch, Count
 from django.contrib.auth import get_user_model
@@ -18,10 +19,22 @@ from rest_framework.response import Response
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.tools.deckio import DeckSerializer
 
 from resources.staticdb import db
 
 from limited import models, serializers
+
+
+def _user_has_pool_permission(user: AbstractUser, pool: models.Pool):
+    return (
+        user == pool.user
+        or pool.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
+        or (
+            pool.session.state == models.LimitedSession.LimitedSessionState.PLAYING
+            and pool.session.open_decks
+        )
+    )
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -30,14 +43,7 @@ class PoolDetailPermissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj: models.Pool):
-        return (
-            request.user == obj.user
-            or obj.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
-            or (
-                obj.session.state == models.LimitedSession.LimitedSessionState.PLAYING
-                and obj.session.open_decks
-            )
-        )
+        return _user_has_pool_permission(request.user, obj)
 
 
 class PoolDetail(generics.RetrieveDestroyAPIView):
@@ -109,14 +115,37 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
 
 class DeckPermissions(permissions.IsAuthenticated):
 
+    def has_permission(self, request, view):
+        return True
+
     def has_object_permission(self, request, view, obj: models.PoolDeck):
-        return obj.pool.user == request.user
+        return _user_has_pool_permission(request.user, obj.pool)
 
 
 class DeckDetail(generics.RetrieveAPIView):
     queryset = models.PoolDeck.objects.all()
     serializer_class = serializers.PoolDeckSerializer
     permission_classes = [DeckPermissions]
+
+
+class DeckExport(generics.GenericAPIView):
+    queryset = models.PoolDeck.objects.all()
+    permission_classes = [DeckPermissions]
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        try:
+            serializer = DeckSerializer.extension_to_serializer[request.query_params.get('extension', 'dec')]
+        except KeyError:
+            return Response(
+                data = 'Invalid extension',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            status = status.HTTP_200_OK,
+            content_type = 'application/txt',
+            data = serializer.serialize(self.get_object().deck),
+        )
 
 
 class SessionList(generics.ListAPIView):
@@ -137,7 +166,6 @@ class SessionList(generics.ListAPIView):
         'created_at': 'created_at',
         'playing_at': 'playing_at',
         'finished_at': 'finished_at',
-        # 'pool_size': 'pool_size',
     }
 
     def list(self, request, *args, **kwargs):
