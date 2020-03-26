@@ -6,6 +6,7 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import DeckView from "./DeckView";
 import Card from "react-bootstrap/Card";
+import Button from "react-bootstrap/Button";
 
 
 interface PoolViewProps {
@@ -32,8 +33,20 @@ export default class PoolView extends React.Component<PoolViewProps> {
             }
           }
         >
-          <Card.Header>
+          <Card.Header
+            className="d-flex justify-content-between"
+
+          >
             Pool
+            <a
+              href={this.props.pool.getDownloadUrl()}
+              title="Export"
+              download={"pool_" + this.props.pool.id + ".json"}
+            >
+              <Button>
+                Export
+              </Button>
+            </a>
           </Card.Header>
           <Card.Body>
             <CubeablesCollectionListView

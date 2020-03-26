@@ -2600,6 +2600,10 @@ export class Pool extends Atomic {
     )
   }
 
+  getDownloadUrl = (): string => {
+    return apiPath + 'limited/pools/' + this.id + '/export/'
+  };
+
   public static get(id: string): Promise<Pool> {
     return axios.get(
       apiPath + 'limited/pools/' + id + '/',

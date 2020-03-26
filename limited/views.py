@@ -8,18 +8,18 @@ from django.db import transaction
 from django.db.models import Prefetch, Count
 from django.contrib.auth import get_user_model
 
-from mtgorp.models.formats.format import Format
-
-from magiccube.tools.subset import check_deck_subset_pool
-
 from rest_framework import generics, permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+from mtgorp.models.formats.format import Format
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.tools.deckio import DeckSerializer
+
+from magiccube.tools.subset import check_deck_subset_pool
 
 from resources.staticdb import db
 
@@ -113,6 +113,18 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
         )
 
 
+class PoolExport(generics.GenericAPIView):
+    queryset = models.Pool.objects.all()
+    permission_classes = [PoolDetailPermissions]
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return Response(
+            status = status.HTTP_200_OK,
+            content_type = 'application/text',
+            data = RawStrategy.serialize(self.get_object().pool),
+        )
+
+
 class DeckPermissions(permissions.IsAuthenticated):
 
     def has_permission(self, request, view):
@@ -143,7 +155,7 @@ class DeckExport(generics.GenericAPIView):
 
         return Response(
             status = status.HTTP_200_OK,
-            content_type = 'application/txt',
+            content_type = 'application/octet-stream',
             data = serializer.serialize(self.get_object().deck),
         )
 
@@ -330,8 +342,6 @@ class SubmitResult(generics.GenericAPIView):
 
         serializer = serializers.MatchResultSerializer(data = request.data)
         serializer.is_valid(raise_exception = True)
-
-        print(serializer.validated_data)
 
         if len(serializer.validated_data['players']) <= 1:
             return Response(
