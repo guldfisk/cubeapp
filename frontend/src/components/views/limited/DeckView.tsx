@@ -50,7 +50,7 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
           onChange={(event: any) => this.setState({extension: event.target.value})}
         >
           <option value="dec">.dec</option>
-          <option value="mwDec">.mwDec</option>
+          <option value="mwDeck">.mwDeck</option>
           <option value="json">.json</option>
           <option value="cod">.cod</option>
         </select>

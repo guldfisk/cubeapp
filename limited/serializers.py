@@ -82,7 +82,16 @@ class MatchResultSerializer(serializers.ModelSerializer):
         fields = ('id', 'players', 'draws')
 
 
-class LimitedSessionSerializer(serializers.ModelSerializer):
+class LimitedSessionNameSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.LimitedSession
+        fields = (
+            'id', 'name',
+        )
+
+
+class LimitedSessionSerializer(LimitedSessionNameSerializer):
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     playing_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     finished_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)

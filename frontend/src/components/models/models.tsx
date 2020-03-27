@@ -2299,13 +2299,31 @@ export class MatchResult extends Atomic {
 
 }
 
-export class LimitedSession extends Atomic {
+
+export class LimitedSessionName extends Atomic {
+  name: string;
+
+  constructor(id: string, name: string) {
+    super(id);
+    this.name = name;
+  }
+
+  public static fromRemote(remote: any): LimitedSessionName {
+    return new LimitedSessionName(
+      remote.id,
+      remote.name,
+    )
+  }
+
+}
+
+
+export class LimitedSession extends LimitedSessionName {
   format: string;
   gameType: string;
   createdAt: Date;
   playingAt: Date | null;
   finishedAt: Date | null;
-  name: string;
   players: User[];
   state: string;
   openDecks: boolean;
@@ -2326,13 +2344,12 @@ export class LimitedSession extends Atomic {
     poolSpecification: PoolSpecification,
     results: MatchResult[],
   ) {
-    super(id);
+    super(id, name);
     this.format = format;
     this.gameType = gameType;
     this.createdAt = createdAt;
     this.playingAt = playingAt;
     this.finishedAt = finishedAt;
-    this.name = name;
     this.players = players;
     this.state = state;
     this.openDecks = openDecks;
@@ -2614,6 +2631,111 @@ export class Pool extends Atomic {
       },
     ).then(
       response => Pool.fromRemote(response.data)
+    )
+  }
+
+}
+
+
+export class DraftSeat extends Atomic {
+  user: User;
+
+  constructor(id: string, user: User) {
+    super(id);
+    this.user = user;
+  }
+
+  public static fromRemote(remote: any): DraftSeat {
+    return new DraftSeat(
+      remote.id,
+      User.fromRemote(remote.user),
+    )
+  }
+
+}
+
+
+export class DraftSession extends Atomic {
+  name: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  state: string;
+  draftFormat: string;
+  seats: DraftSeat[];
+  poolSpecification: PoolSpecification;
+  limitedSession: LimitedSessionName | null;
+
+  constructor(
+    id: string,
+    name: string,
+    startedAt: Date,
+    endedAt: Date | null,
+    state: string,
+    draftFormat: string,
+    seats: DraftSeat[],
+    poolSpecification: PoolSpecification,
+    limitedSession: LimitedSessionName | null,
+  ) {
+    super(id);
+    this.name = name;
+    this.startedAt = startedAt;
+    this.endedAt = endedAt;
+    this.state = state;
+    this.draftFormat = draftFormat;
+    this.seats = seats;
+    this.poolSpecification = poolSpecification;
+    this.limitedSession = limitedSession;
+  }
+
+  public static fromRemote(remote: any): DraftSession {
+    return new DraftSession(
+      remote.id,
+      remote.key,
+      new Date(remote.started_at),
+      remote.ended_at && new Date(remote.ended_at),
+      remote.state,
+      remote.draft_format,
+      remote.seats.map((seat: any) => DraftSeat.fromRemote(seat)),
+      PoolSpecification.fromRemote(remote.pool_specification),
+      remote.limited_session && LimitedSessionName.fromRemote(remote.limited_session),
+    )
+  }
+
+  public static all(
+    offset: number = 0,
+    limit: number = 50,
+    sortField: string = 'created_at',
+    sortAscending: boolean = false,
+    filters: { [key: string]: string } = {},
+  ): Promise<PaginationResponse<DraftSession>> {
+    return axios.get(
+      apiPath + 'draft/',
+      {
+        params: {
+          offset,
+          limit,
+          sort_key: sortField,
+          ascending: sortAscending,
+          ...filters,
+        },
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (session: any) => DraftSession.fromRemote(session)
+          ),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+  public static get(id: string): Promise<DraftSession> {
+    return axios.get(
+      apiPath + 'draft/' + id + '/',
+    ).then(
+      response => DraftSession.fromRemote(response.data)
     )
   }
 

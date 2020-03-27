@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import typing as t
 import threading
 from abc import ABC, abstractmethod
@@ -8,7 +9,7 @@ from queue import Queue, Empty
 from django.contrib.auth.models import AbstractUser
 from channels.generic.websocket import WebsocketConsumer
 
-from draft.models import DraftSession, DraftParticipant, DraftPick
+from draft.models import DraftSession, DraftSeat, DraftPick
 from ring import Ring
 
 from mtgorp.models.serilization.serializeable import SerializationException
@@ -65,11 +66,11 @@ class DraftInterface(ABC):
     class ConnectionException(Exception):
         pass
 
-    def __init__(self, drafter: Drafter, draft: Draft, draft_participant: DraftParticipant):
+    def __init__(self, drafter: Drafter, draft: Draft, draft_seat: DraftSeat):
         super().__init__()
         self._drafter = drafter
         self._draft = draft
-        self._draft_participant = draft_participant
+        self._draft_seat = draft_seat
 
         self._pool = Cube()
 
@@ -200,7 +201,7 @@ class DraftInterface(ABC):
                 )
 
                 DraftPick.objects.create(
-                    drafter = self._draft_participant,
+                    seat = self._draft_seat,
                     pack_number = self._draft.pack_counter,
                     pick_number = self._current_booster.pick,
                     pack = self._current_booster,
@@ -371,7 +372,8 @@ class Draft(object):
 
     def completed(self) -> None:
         self._draft_session.state = DraftSession.DraftState.COMPLETED
-        self._draft_session.save(update_fields = ('state',))
+        self._draft_session.ended_at = datetime.datetime.now()
+        self._draft_session.save(update_fields = ('state', 'ended_at'))
         self._finished_callback(self)
         for interface in self._drafter_interfaces.values():
             interface.send_message('completed')
@@ -394,7 +396,7 @@ class Draft(object):
             drafter: interface_type(
                 drafter = drafter,
                 draft = self,
-                draft_participant = DraftParticipant.objects.create(
+                draft_seat = DraftSeat.objects.create(
                     user = drafter.user,
                     session = self._draft_session,
                     sequence_number = idx,

@@ -39,16 +39,23 @@ class DraftSession(models.Model):
         null = True,
     )
 
+    @property
+    def users(self):
+        return (seat.user for seat in self.seats.all())
 
-class DraftParticipant(models.Model):
+
+class DraftSeat(models.Model):
     sequence_number = models.PositiveSmallIntegerField()
-    user = models.ForeignKey(get_user_model(), on_delete = models.PROTECT, related_name = 'drafters')
-    session = models.ForeignKey(DraftSession, on_delete = models.CASCADE, related_name = 'drafters')
+    user = models.ForeignKey(get_user_model(), on_delete = models.PROTECT, related_name = 'seats')
+    session = models.ForeignKey(DraftSession, on_delete = models.CASCADE, related_name = 'seats')
+
+    class Meta:
+        ordering = ['sequence_number']
 
 
 class DraftPick(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
-    drafter = models.ForeignKey(DraftParticipant, on_delete = models.CASCADE, related_name = 'picks')
+    seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
     pack = OrpField(Booster)

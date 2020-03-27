@@ -22,11 +22,12 @@ import SearchPage from "../pages/search/SearchPage";
 import SamplePackPage from "../pages/SamplePackPage";
 import WishListPage from "../pages/wishes/WishListPage";
 import WishListsPage from "../pages/wishes/WishListsPage";
-// import PoolsPage from "../pages/sealed/PoolsPage";
 import PoolPage from "../pages/limited/PoolPage";
 import SessionsPage from "../pages/limited/SessionsPage";
 import SessionPage from "../pages/limited/SessionPage";
 import ArtGamePage from "../pages/ArtGamePage";
+import DraftsPage from "../pages/draft/DraftsPage";
+import DraftPage from "../pages/draft/DraftPage";
 
 
 export const routes: [
@@ -51,9 +52,10 @@ export const routes: [
   ['/patches', PatchesPage, false, {}],
   ['/syntax', SearchSyntaxPage, false, {}],
   ['/search', SearchPage, false, {}],
-  // ['/pools', PoolsPage, true, {}],
   ['/limited/:id(\\d+)', SessionPage, false, {}],
   ['/limited', SessionsPage, false, {}],
+  ['/drafts', DraftsPage, false, {}],
+  ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [
