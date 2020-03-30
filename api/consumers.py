@@ -467,7 +467,6 @@ class PatchEditConsumer(AuthenticatedConsumer):
                         update,
                     )
                 except (KeyError, AttributeError) as e:
-                    print('deserialize update', e)
                     self._send_error('bad request')
                     return
 

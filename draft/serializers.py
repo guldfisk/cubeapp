@@ -1,8 +1,22 @@
 import typing as t
 
+from abc import abstractmethod
+
 from rest_framework import serializers
 
+from api.serialization.orpserialize import T
+from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.serilization.serializeable import compacted_model
+
+from magiccube.collections.cubeable import Cubeable
+from magiccube.laps.purples.purple import Purple
+from magiccube.laps.tickets.ticket import Ticket
+from magiccube.laps.traps.trap import Trap
+
+from mtgdraft.models import Pick, SinglePickPick, BurnPick, Booster
+
 from api.serialization.serializers import OrpSerializerField, UserSerializer
+from api.serialization import orpserialize
 
 from limited.serializers import PoolSpecificationSerializer, LimitedSessionNameSerializer
 
@@ -10,6 +24,60 @@ from utils.serialization.fields import EnumSerializerField
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 from draft import models
+
+
+class PickSerializer(orpserialize.ModelSerializer[Pick]):
+    _serializer_map: t.Mapping[t.Type[Cubeable], t.Type[orpserialize.ModelSerializer]] = {
+        Printing: orpserialize.PrintingSerializer,
+        Trap: orpserialize.TrapSerializer,
+        Ticket: orpserialize.TicketSerializer,
+        Purple: orpserialize.PurpleSerializer,
+    }
+
+    @classmethod
+    def serialize_cubeable(cls, cubeable: Cubeable) -> compacted_model:
+        return cls._serializer_map[cubeable.__class__].serialize(cubeable)
+
+    @classmethod
+    @abstractmethod
+    def serialize(cls, serializeable: Pick) -> compacted_model:
+        return _PICK_SERIALIZER_MAP[serializeable.__class__].serialize(serializeable)
+
+
+class SinglePickSerializer(PickSerializer):
+
+    @classmethod
+    def serialize(cls, serializeable: SinglePickPick) -> compacted_model:
+        return cls.serialize_cubeable(serializeable.cubeable)
+
+
+class BurnPickSerializer(PickSerializer):
+
+    @classmethod
+    def serialize(cls, serializeable: BurnPick) -> compacted_model:
+        return {
+            'pick': cls.serialize_cubeable(serializeable.pick),
+            'burn': cls.serialize_cubeable(serializeable.burn),
+        }
+
+
+class BoosterSerializer(orpserialize.ModelSerializer[Booster]):
+
+    @classmethod
+    def serialize(cls, booster: Booster) -> compacted_model:
+        return {
+            'booster_id': booster.booster_id,
+            'pick': booster.pick,
+            'cubeables': orpserialize.CubeSerializer.serialize(
+                booster.cubeables
+            ),
+        }
+
+
+_PICK_SERIALIZER_MAP = {
+    SinglePickPick: SinglePickSerializer,
+    BurnPick: BurnPickSerializer,
+}
 
 
 class DraftSeatSerializer(serializers.ModelSerializer):
@@ -35,3 +103,12 @@ class DraftSessionSerializer(serializers.ModelSerializer):
             'id', 'key', 'started_at', 'ended_at', 'state', 'draft_format', 'seats', 'pool_specification',
             'limited_session',
         )
+
+
+class DraftPickSerializer(serializers.ModelSerializer):
+    pick = OrpSerializerField(model_serializer = PickSerializer)
+    pack = OrpSerializerField(model_serializer = BoosterSerializer)
+
+    class Meta:
+        model = models.DraftPick
+        fields = ('id', 'created_at', 'pack_number', 'pick_number', 'pick', 'pack')

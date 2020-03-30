@@ -1,8 +1,11 @@
+import itertools
 from distutils.util import strtobool
 
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from api.serialization.orpserialize import CubeSerializer
+from magiccube.collections.cube import Cube
 from mtgdraft.client import draft_format_map
 
 from draft import models, serializers
@@ -63,6 +66,24 @@ class DraftSessionDetail(generics.RetrieveAPIView):
 
 
 class SeatView(generics.GenericAPIView):
+    queryset = models.DraftSeat.objects.all()
 
     def get(self, request, *args, **kwargs):
-        pass
+        seat: models.DraftSeat = self.get_object()
+        picks = list(seat.picks.all().order_by('pack_number', 'pick_number')[:int(kwargs['pick']) + 1])
+        return Response(
+            {
+                'pool': CubeSerializer.serialize(
+                    Cube(
+                        itertools.chain(
+                            *(
+                                pick.pick.added_cubeables
+                                for pick in
+                                picks[:-1]
+                            )
+                        )
+                    )
+                ),
+                'pick': serializers.DraftPickSerializer(picks[-1]).data,
+            }
+        )
