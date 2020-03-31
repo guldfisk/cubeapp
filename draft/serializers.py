@@ -39,7 +39,6 @@ class PickSerializer(orpserialize.ModelSerializer[Pick]):
         return cls._serializer_map[cubeable.__class__].serialize(cubeable)
 
     @classmethod
-    @abstractmethod
     def serialize(cls, serializeable: Pick) -> compacted_model:
         return _PICK_SERIALIZER_MAP[serializeable.__class__].serialize(serializeable)
 
@@ -48,7 +47,10 @@ class SinglePickSerializer(PickSerializer):
 
     @classmethod
     def serialize(cls, serializeable: SinglePickPick) -> compacted_model:
-        return cls.serialize_cubeable(serializeable.cubeable)
+        return {
+            'pick': cls.serialize_cubeable(serializeable.cubeable),
+            'type': 'single_pick',
+        }
 
 
 class BurnPickSerializer(PickSerializer):
@@ -57,7 +59,8 @@ class BurnPickSerializer(PickSerializer):
     def serialize(cls, serializeable: BurnPick) -> compacted_model:
         return {
             'pick': cls.serialize_cubeable(serializeable.pick),
-            'burn': cls.serialize_cubeable(serializeable.burn),
+            'burn': cls.serialize_cubeable(serializeable.burn) if serializeable.burn else None,
+            'type': 'burn',
         }
 
 

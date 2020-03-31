@@ -28,6 +28,7 @@ import SessionPage from "../pages/limited/SessionPage";
 import ArtGamePage from "../pages/ArtGamePage";
 import DraftsPage from "../pages/draft/DraftsPage";
 import DraftPage from "../pages/draft/DraftPage";
+import SeatPage from "../pages/draft/SeatPage";
 
 
 export const routes: [
@@ -56,6 +57,7 @@ export const routes: [
   ['/limited', SessionsPage, false, {}],
   ['/drafts', DraftsPage, false, {}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
+  ['/seat/:id(\\d+)', SeatPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [

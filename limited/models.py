@@ -232,6 +232,16 @@ class LimitedSession(models.Model):
     open_decks = models.BooleanField()
     pool_specification = models.ForeignKey(PoolSpecification, on_delete = models.CASCADE, related_name = 'sessions')
 
+    @property
+    def decks_public(self):
+        return (
+            self.state.value > self.LimitedSessionState.PLAYING.value
+            or (
+                self.state == self.LimitedSessionState.PLAYING
+                and self.open_decks
+            )
+        )
+
 
 class Pool(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete = models.CASCADE, related_name = 'sealed_pools')

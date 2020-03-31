@@ -1,7 +1,7 @@
 import itertools
 from distutils.util import strtobool
 
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 
 from api.serialization.orpserialize import CubeSerializer
@@ -65,8 +65,21 @@ class DraftSessionDetail(generics.RetrieveAPIView):
     serializer_class = serializers.DraftSessionSerializer
 
 
+class SeatPermissions(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return True
+
+    def has_object_permission(self, request, view, obj: models.DraftSeat):
+        return (
+            request.user == obj.user
+            or obj.session.limited_session and obj.session.limited_session.decks_public
+        )
+
+
 class SeatView(generics.GenericAPIView):
     queryset = models.DraftSeat.objects.all()
+    permission_classes = [SeatPermissions]
 
     def get(self, request, *args, **kwargs):
         seat: models.DraftSeat = self.get_object()
@@ -84,6 +97,7 @@ class SeatView(generics.GenericAPIView):
                         )
                     )
                 ),
-                'pick': serializers.DraftPickSerializer(picks[-1]).data,
+                'pick': serializers.DraftPickSerializer(picks[-1]).data if picks else None,
+                'pick_count': seat.picks.all().count(),
             }
         )

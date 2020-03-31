@@ -50,6 +50,10 @@ export class Cubeable extends Imageable {
     return '';
   };
 
+  public static fromRemote(remote: any): Cubeable {
+    return cubeablesMap[remote['type']].fromRemote(remote)
+  }
+
 }
 
 
@@ -390,6 +394,14 @@ export class Purple extends Cubeable {
   }
 
 }
+
+
+const cubeablesMap: { [key: string]: Remoteable<Cubeable> } = {
+  printing: Printing,
+  trap: Trap,
+  ticket: Ticket,
+  purple: Purple,
+};
 
 
 export class User extends Atomic {
@@ -2736,6 +2748,106 @@ export class DraftSession extends Atomic {
       apiPath + 'draft/' + id + '/',
     ).then(
       response => DraftSession.fromRemote(response.data)
+    )
+  }
+
+}
+
+
+export class Booster extends Atomic {
+  pick: number;
+  cubeables: CubeablesContainer;
+
+  constructor(id: string, pick: number, cubeables: CubeablesContainer) {
+    super(id);
+    this.pick = pick;
+    this.cubeables = cubeables;
+  }
+
+  public static fromRemote(remote: any): Booster {
+    return new Booster(
+      remote.id,
+      remote.pick,
+      CubeablesContainer.fromRemote(remote.cubeables),
+    )
+  }
+
+}
+
+
+export class Pick {
+
+  public static fromRemote(remote: any): Pick {
+    return picksMap[remote['type']].fromRemote(remote)
+  }
+}
+
+
+export class SinglePick extends Pick {
+  pick: Cubeable;
+
+  constructor(pick: Cubeable) {
+    super();
+    this.pick = pick;
+  }
+
+  public static fromRemote(remote: any): SinglePick {
+    return new SinglePick(
+      Cubeable.fromRemote(remote.pick),
+    )
+  }
+}
+
+
+export class BurnPick extends Pick {
+  pick: Cubeable;
+  burn: Cubeable | null;
+
+  constructor(pick: Cubeable, burn: Cubeable | null) {
+    super();
+    this.pick = pick;
+    this.burn = burn;
+  }
+
+  public static fromRemote(remote: any): BurnPick {
+    return new BurnPick(
+      Cubeable.fromRemote(remote.pick),
+      remote.burn ? Cubeable.fromRemote(remote.burn) : null,
+    )
+  }
+}
+
+
+const picksMap: { [key: string]: Remoteable<Pick> } = {
+  single_pick: SinglePick,
+  burn: BurnPick,
+};
+
+
+export class DraftPick extends Atomic {
+  createdAt: Date;
+  packNumber: number;
+  pickNumber: number;
+  pick: Pick;
+  pack: Booster;
+
+  constructor(id: string, createdAt: Date, packNumber: number, pickNumber: number, pick: Pick, pack: Booster) {
+    super(id);
+    this.createdAt = createdAt;
+    this.packNumber = packNumber;
+    this.pickNumber = pickNumber;
+    this.pick = pick;
+    this.pack = pack;
+  }
+
+  public static fromRemote(remote: any): DraftPick {
+    return new DraftPick(
+      remote.id,
+      new Date(remote.created_at),
+      remote.pack_number,
+      remote.pick_number,
+      Pick.fromRemote(remote.pick),
+      Booster.fromRemote(remote.pack),
     )
   }
 

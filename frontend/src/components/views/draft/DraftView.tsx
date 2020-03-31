@@ -8,7 +8,7 @@ import Col from "react-bootstrap/Col";
 import {DateListItem} from "../../utils/listitems";
 import {connect} from "react-redux";
 
-import {DraftSession, User} from "../../models/models";
+import {DraftSeat, DraftSession, User} from "../../models/models";
 import '../../../styling/SessionsView.css';
 import PoolSpecificationView from "../limited/PoolSpecificationView";
 import {Link} from "react-router-dom";
@@ -40,8 +40,8 @@ class DraftView extends React.Component<DraftViewProps, null> {
         headerStyle: (column: any, colIndex: number) => {
           return {width: '3em', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
-          to='#'
+        formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => <Link
+          to={'/seat/' + row.id + '/'}
         >
           view
         </Link>,

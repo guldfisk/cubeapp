@@ -26,15 +26,15 @@ from resources.staticdb import db
 from limited import models, serializers
 
 
-def _user_has_pool_permission(user: AbstractUser, pool: models.Pool):
-    return (
-        user == pool.user
-        or pool.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
-        or (
-            pool.session.state == models.LimitedSession.LimitedSessionState.PLAYING
-            and pool.session.open_decks
-        )
-    )
+# def user_has_pool_permission(user: AbstractUser, pool: models.Pool):
+#     return (
+#         user == pool.user
+#         or pool.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
+#         or (
+#             pool.session.state == models.LimitedSession.LimitedSessionState.PLAYING
+#             and pool.session.open_decks
+#         )
+#     )
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -43,7 +43,10 @@ class PoolDetailPermissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj: models.Pool):
-        return _user_has_pool_permission(request.user, obj)
+        return (
+            request.user == obj.user
+            or obj.session.decks_public
+        )
 
 
 class PoolDetail(generics.RetrieveDestroyAPIView):
@@ -131,7 +134,10 @@ class DeckPermissions(permissions.IsAuthenticated):
         return True
 
     def has_object_permission(self, request, view, obj: models.PoolDeck):
-        return _user_has_pool_permission(request.user, obj.pool)
+        return (
+            request.user == obj.pool.user
+            or obj.pool.session.decks_public
+        )
 
 
 class DeckDetail(generics.RetrieveAPIView):

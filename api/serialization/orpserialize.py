@@ -19,6 +19,7 @@ from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
 
+
 T = t.TypeVar('T')
 
 DATETIME_FORMAT = '%Y %M/%d'
