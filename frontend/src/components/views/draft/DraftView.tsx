@@ -17,6 +17,7 @@ import {Link} from "react-router-dom";
 interface DraftViewProps {
   draft: DraftSession;
   authenticated: boolean;
+  user: User | null;
 }
 
 
@@ -25,29 +26,34 @@ class DraftView extends React.Component<DraftViewProps, null> {
   render() {
 
     const columns = [
-      {
-        dataField: 'id',
-        text: 'ID',
-        hidden: true,
-      },
-      {
-        dataField: 'user',
-        text: 'Seat',
-        formatter: (cell: User, row: any, rowIndex: number, formatExtraData: any) => cell.username,
-      },
-      {
-        text: '',
-        headerStyle: (column: any, colIndex: number) => {
-          return {width: '3em', textAlign: 'center'};
+        {
+          dataField: 'id',
+          text: 'ID',
+          hidden: true,
         },
-        formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => <Link
-          to={'/seat/' + row.id + '/'}
-        >
-          view
-        </Link>,
-        isDummyField: true,
-      },
-    ];
+        {
+          dataField: 'user',
+          text: 'Seat',
+          formatter: (cell: User, row: any, rowIndex: number, formatExtraData: any) => cell.username,
+        },
+        {
+          text: '',
+          headerStyle: (column: any, colIndex: number) => {
+            return {width: '3em', textAlign: 'center'};
+          },
+          formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => {
+            console.log(this.props.draft.limitedSession, this.props.draft.limitedSession.isPublic());
+            return this.props.draft.limitedSession && this.props.draft.limitedSession.isPublic()
+            || this.props.authenticated && this.props.user.id == row.user.id ? <Link
+              to={'/seat/' + row.id + '/'}
+            >
+              view
+            </Link> : undefined
+          },
+          isDummyField: true,
+        },
+      ]
+    ;
 
     return <Container>
       <Row><h3>{this.props.draft.name}</h3></Row>
@@ -74,7 +80,7 @@ class DraftView extends React.Component<DraftViewProps, null> {
           <label
             className='explain-label'
           >
-            started
+            Started
           </label>
           <DateListItem date={this.props.draft.startedAt}/>
         </Col>
@@ -82,11 +88,26 @@ class DraftView extends React.Component<DraftViewProps, null> {
           <label
             className='explain-label'
           >
-            ended
+            Ended
           </label>
           {this.props.draft.endedAt && <DateListItem date={this.props.draft.endedAt}/>}
         </Col>
       </Row>
+      {
+        this.props.draft.limitedSession ? <Row>
+          <Col>
+            <label
+              className='explain-label'
+            >
+              Limited Session
+            </label>
+            <Link to={'/limited/' + this.props.draft.limitedSession.id + '/'}>
+              {this.props.draft.limitedSession.name}
+            </Link>
+          </Col>
+
+        </Row> : undefined
+      }
       <Row>
         <PoolSpecificationView specification={this.props.draft.poolSpecification}/>
       </Row>

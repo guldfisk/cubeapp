@@ -9,6 +9,7 @@ import Row from "react-bootstrap/Row";
 import CubeablesCollectionSpoilerView from "../../views/cubeablescollectionview/CubeablesCollectionSpoilerView";
 import PaginationBar from "../../utils/PaginationBar";
 import DraftPickView from "../../views/draft/DraftPickView";
+import store from "../../state/store";
 
 
 interface SeatPageProps {
@@ -38,7 +39,12 @@ export default class SeatPage extends React.Component<SeatPageProps, SeatPageSta
 
   getPick = (pickNumber: number): void => {
     axios.get(
-      apiPath + 'draft/seat/' + this.props.match.params.id + '/' + pickNumber + '/'
+      apiPath + 'draft/seat/' + this.props.match.params.id + '/' + pickNumber + '/',
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
     ).then(
       response => this.setState(
         {

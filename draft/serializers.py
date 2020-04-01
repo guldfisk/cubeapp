@@ -1,10 +1,7 @@
 import typing as t
 
-from abc import abstractmethod
-
 from rest_framework import serializers
 
-from api.serialization.orpserialize import T
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 
@@ -18,7 +15,7 @@ from mtgdraft.models import Pick, SinglePickPick, BurnPick, Booster
 from api.serialization.serializers import OrpSerializerField, UserSerializer
 from api.serialization import orpserialize
 
-from limited.serializers import PoolSpecificationSerializer, LimitedSessionNameSerializer
+from limited.serializers import PoolSpecificationSerializer, LimitedSessionSerializer
 
 from utils.serialization.fields import EnumSerializerField
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
@@ -98,7 +95,7 @@ class DraftSessionSerializer(serializers.ModelSerializer):
     draft_format = serializers.CharField(read_only = True)
     seats = DraftSeatSerializer(read_only = True, many = True)
     pool_specification = PoolSpecificationSerializer(read_only = True)
-    limited_session = LimitedSessionNameSerializer(read_only = True)
+    limited_session = LimitedSessionSerializer(read_only = True)
 
     class Meta:
         model = models.DraftSession

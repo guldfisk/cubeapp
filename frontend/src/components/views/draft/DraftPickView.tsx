@@ -18,21 +18,16 @@ export default class DraftPickView extends React.Component<DraftPickViewProps, n
   render() {
 
 
-    return <Col>
-      <Row>
-        <PickView pick={this.props.pick.pick}/>
-      </Row>
-      <Row>
-        <Col>
-          <h5>Pack</h5>
-          <CubeablesCollectionSpoilerView
-            cubeableType="Cubeables"
-            cubeablesContainer={this.props.pick.pack.cubeables}
-          />
-        </Col>
-      </Row>
-    </Col>
-
+    return <Row>
+      <PickView pick={this.props.pick.pick}/>
+      <Col>
+        <h5>Pack</h5>
+        <CubeablesCollectionSpoilerView
+          cubeableType="Cubeables"
+          cubeablesContainer={this.props.pick.pack.cubeables}
+        />
+      </Col>
+    </Row>
   }
 
 }

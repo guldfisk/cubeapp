@@ -2,7 +2,6 @@ import React from 'react';
 
 import {Pick, SinglePick, BurnPick} from "../../models/models";
 import {ImageableImage} from "../../images";
-import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 
@@ -15,19 +14,15 @@ export default class PickView extends React.Component<PickViewProps, null> {
 
   render() {
     if (this.props.pick instanceof SinglePick) {
-      return <Row>
-        <Col>
+      return <Col>
           <h5>Pick</h5>
-        </Col>
-        <Col>
           <ImageableImage
             imageable={this.props.pick.pick}
             sizeSlug="small"
           />
         </Col>
-      </Row>
     } else if (this.props.pick instanceof BurnPick) {
-      return <Row>
+      return <>
         <Col>
           <h5>Pick</h5>
           <ImageableImage
@@ -44,7 +39,7 @@ export default class PickView extends React.Component<PickViewProps, null> {
             />
           </Col> : undefined
         }
-      </Row>
+      </>
     }
 
   }

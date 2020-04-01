@@ -268,8 +268,7 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
           return {width: '3em', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => (
-          this.props.session.state == 'FINISHED'
-          || this.props.session.state == 'PLAYING' && this.props.session.openDecks
+          this.props.session.isPublic()
           || this.props.authenticated && this.props.user.id == row.user.id
         ) ? <Link
           to={'/pools/' + row.id + '/'}

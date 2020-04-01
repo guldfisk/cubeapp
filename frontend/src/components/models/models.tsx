@@ -2388,6 +2388,13 @@ export class LimitedSession extends LimitedSessionName {
     )
   }
 
+  isPublic = (): boolean => {
+    return (
+      this.state == 'FINISHED'
+      || this.state == 'PLAYING' && this.openDecks
+    )
+  };
+
   submitResult = (result: { players: { user_id: number, wins: number }[], draws: number }): Promise<void> => {
     return axios.post(
       apiPath + 'limited/sessions/' + this.id + '/submit-result/',
@@ -2675,7 +2682,7 @@ export class DraftSession extends Atomic {
   draftFormat: string;
   seats: DraftSeat[];
   poolSpecification: PoolSpecification;
-  limitedSession: LimitedSessionName | null;
+  limitedSession: LimitedSession | null;
 
   constructor(
     id: string,
@@ -2686,7 +2693,7 @@ export class DraftSession extends Atomic {
     draftFormat: string,
     seats: DraftSeat[],
     poolSpecification: PoolSpecification,
-    limitedSession: LimitedSessionName | null,
+    limitedSession: LimitedSession | null,
   ) {
     super(id);
     this.name = name;
@@ -2709,7 +2716,7 @@ export class DraftSession extends Atomic {
       remote.draft_format,
       remote.seats.map((seat: any) => DraftSeat.fromRemote(seat)),
       PoolSpecification.fromRemote(remote.pool_specification),
-      remote.limited_session && LimitedSessionName.fromRemote(remote.limited_session),
+      remote.limited_session && LimitedSession.fromRemote(remote.limited_session),
     )
   }
 
