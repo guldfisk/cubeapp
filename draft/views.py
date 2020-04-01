@@ -86,6 +86,7 @@ class SeatView(generics.GenericAPIView):
         picks = list(seat.picks.all().order_by('pack_number', 'pick_number')[:int(kwargs['pick']) + 1])
         return Response(
             {
+                'seat': serializers.DraftSeatSerializer(seat, context = {'request': request}).data,
                 'pool': CubeSerializer.serialize(
                     Cube(
                         itertools.chain(
@@ -97,7 +98,10 @@ class SeatView(generics.GenericAPIView):
                         )
                     )
                 ),
-                'pick': serializers.DraftPickSerializer(picks[-1]).data if picks else None,
+                'pick': serializers.DraftPickSerializer(
+                    picks[-1],
+                    context = {'request': request},
+                ).data if picks else None,
                 'pick_count': seat.picks.all().count(),
             }
         )
