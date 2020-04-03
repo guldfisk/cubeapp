@@ -65,6 +65,12 @@ _IMAGE_SIZE_MAP = {
 }
 
 
+# @api_view(['POST', ])
+# def test(request: HttpRequest) -> HttpResponse:
+#     print(request.POST)
+#     return HttpResponse('ok')
+
+
 class CubeReleasesList(generics.ListAPIView):
     queryset = models.CubeRelease.objects.all()
     serializer_class = serializers.CubeReleaseSerializer

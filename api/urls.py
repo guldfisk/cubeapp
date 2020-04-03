@@ -6,6 +6,8 @@ from api import views
 urlpatterns = [
     path('', views.CubeReleasesList.as_view(), name = 'index'),
 
+    # path('test/', views.test),
+
     path('cube-releases/', views.CubeReleasesList.as_view()),
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),

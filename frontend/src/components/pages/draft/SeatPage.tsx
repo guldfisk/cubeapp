@@ -9,12 +9,15 @@ import Row from "react-bootstrap/Row";
 import CubeablesCollectionSpoilerView from "../../views/cubeablescollectionview/CubeablesCollectionSpoilerView";
 import PaginationBar from "../../utils/PaginationBar";
 import DraftPickView from "../../views/draft/DraftPickView";
-import store from "../../state/store";
 import Col from "react-bootstrap/Col";
+import {connect} from "react-redux";
+import history from "../../routing/history";
 
 
 interface SeatPageProps {
-  match: any
+  match: any;
+  authenticated: boolean;
+  token: string;
 }
 
 
@@ -24,10 +27,11 @@ interface SeatPageState {
   pool: CubeablesContainer | null;
   pickNumber: number;
   pickCount: number;
+  requiresAuthenticated: boolean;
 }
 
 
-export default class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
+class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
 
   constructor(props: SeatPageProps) {
     super(props);
@@ -35,18 +39,18 @@ export default class SeatPage extends React.Component<SeatPageProps, SeatPageSta
       seat: null,
       pick: null,
       pool: null,
-      pickNumber: props.match.params.seat || 0,
+      pickNumber: props.match.params.seat,
       pickCount: 0,
+      requiresAuthenticated: false,
     };
   }
 
-  getPick = (pickNumber: number): void => {
-    console.log(store.getState().authenticated);
-    axios.get(
+  getPick = (pickNumber: number): Promise<void> => {
+    return axios.get(
       apiPath + 'draft/seat/' + this.props.match.params.id + '/' + pickNumber + '/',
       {
-        headers: store.getState().authenticated && {
-          "Authorization": `Token ${store.getState().token}`,
+        headers: this.props.authenticated && {
+          "Authorization": `Token ${this.props.token}`,
         },
       },
     ).then(
@@ -62,12 +66,36 @@ export default class SeatPage extends React.Component<SeatPageProps, SeatPageSta
     )
   };
 
+  pickClicked = (pickNumber: number): void => {
+    history.push(
+      {
+        pathname: '/seat/' + this.props.match.params.id + '/' + pickNumber + '/',
+      }
+    );
+  };
+
+  onUpdateOrMount = (): void => {
+    console.log('update', this.props.match.params.seat, this.state.pickNumber, this.state.seat, this.props.authenticated, this.state.requiresAuthenticated);
+
+    if (
+      !this.state.seat && !this.state.requiresAuthenticated && !this.props.authenticated
+      || this.props.authenticated && !this.state.seat
+      || this.props.match.params.seat != this.state.pickNumber
+    ) {
+      this.getPick(this.props.match.params.seat || 0).catch(() => this.setState({requiresAuthenticated: true}))
+    }
+  };
+
   componentDidMount(): void {
-    this.getPick(this.state.pickNumber)
+    console.log('component did mount');
+    this.onUpdateOrMount();
+  }
+
+  componentDidUpdate(prevProps: Readonly<SeatPageProps>, prevState: Readonly<SeatPageState>, snapshot?: any): void {
+    this.onUpdateOrMount();
   }
 
   render() {
-
     return <Container>
       {
         this.state.seat ? <Row>
@@ -85,7 +113,7 @@ export default class SeatPage extends React.Component<SeatPageProps, SeatPageSta
         <PaginationBar
           hits={this.state.pickCount}
           offset={this.state.pickNumber}
-          handleNewOffset={this.getPick}
+          handleNewOffset={this.pickClicked}
           pageSize={1}
           maxPageDisplay={10}
         />
@@ -108,3 +136,19 @@ export default class SeatPage extends React.Component<SeatPageProps, SeatPageSta
   }
 
 }
+
+
+const mapStateToProps = (state: any) => {
+  return {
+    authenticated: state.authenticated,
+    token: state.token,
+  };
+};
+
+
+const mapDispatchToProps = (dispatch: any) => {
+  return {};
+};
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(SeatPage);

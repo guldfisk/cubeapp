@@ -1,7 +1,7 @@
 import axios from 'axios/index';
 import React from 'react';
 
-import {apiPath, Cardboard, Cubeable, Imageable} from "../../models/models";
+import {apiPath, Cardboard, Imageable} from "../../models/models";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -42,8 +42,7 @@ interface SearchViewState<T> {
 class SearchView<T extends Printing | Cardboard> extends React.Component<SearchViewProps<T>, SearchViewState<T>> {
 
   public static defaultProps = {
-    handleCardClicked: () => {
-    },
+    handleCardClicked: () => {},
     query: '',
     orderBy: 'name',
     sortDirection: 'ascending',
@@ -290,8 +289,7 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
           }
         </Row>
         {
-          !this.state.searchResults.length ?
-            undefined :
+          !this.state.searchResults.length ? undefined :
             <Row>
               <Table>
                 {
@@ -321,8 +319,7 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
                         )
                       }
                       </tbody>
-                    </>
-                    :
+                    </> :
                     <tbody>
                     {
                       this.state.searchResults.map(

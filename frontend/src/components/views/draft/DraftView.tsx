@@ -41,15 +41,14 @@ class DraftView extends React.Component<DraftViewProps, null> {
           headerStyle: (column: any, colIndex: number) => {
             return {width: '3em', textAlign: 'center'};
           },
-          formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => {
-            console.log(this.props.draft.limitedSession, this.props.draft.limitedSession.isPublic());
-            return this.props.draft.limitedSession && this.props.draft.limitedSession.isPublic()
-            || this.props.authenticated && this.props.user.id == row.user.id ? <Link
-              to={'/seat/' + row.id + '/'}
-            >
-              view
-            </Link> : undefined
-          },
+          formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => (
+            this.props.draft.limitedSession && this.props.draft.limitedSession.isPublic()
+            || this.props.authenticated && this.props.user.id == row.user.id
+          ) ? <Link
+            to={'/seat/' + row.id + '/0/'}
+          >
+            view
+          </Link> : undefined,
           isDummyField: true,
         },
       ]

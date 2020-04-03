@@ -58,7 +58,6 @@ export const routes: [
   ['/drafts', DraftsPage, false, {}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/seat/:id(\\d+)/:seat(\\d+)', SeatPage, false, {}],
-  ['/seat/:id(\\d+)', SeatPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [
