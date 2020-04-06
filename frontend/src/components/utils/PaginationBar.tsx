@@ -72,7 +72,6 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
       }
     }
 
-
     return <Pagination>
       <Pagination.Prev
         onClick={

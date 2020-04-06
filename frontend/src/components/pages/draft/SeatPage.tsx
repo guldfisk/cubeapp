@@ -39,7 +39,7 @@ class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
       seat: null,
       pick: null,
       pool: null,
-      pickNumber: props.match.params.seat,
+      pickNumber: parseInt(props.match.params.seat),
       pickCount: 0,
       requiresAuthenticated: false,
     };
@@ -75,19 +75,16 @@ class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
   };
 
   onUpdateOrMount = (): void => {
-    console.log('update', this.props.match.params.seat, this.state.pickNumber, this.state.seat, this.props.authenticated, this.state.requiresAuthenticated);
-
     if (
       !this.state.seat && !this.state.requiresAuthenticated && !this.props.authenticated
       || this.props.authenticated && !this.state.seat
       || this.props.match.params.seat != this.state.pickNumber
     ) {
-      this.getPick(this.props.match.params.seat || 0).catch(() => this.setState({requiresAuthenticated: true}))
+      this.getPick(parseInt(this.props.match.params.seat)).catch(() => this.setState({requiresAuthenticated: true}))
     }
   };
 
   componentDidMount(): void {
-    console.log('component did mount');
     this.onUpdateOrMount();
   }
 

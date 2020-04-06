@@ -71,9 +71,9 @@ _IMAGE_SIZE_MAP = {
 #     return HttpResponse('ok')
 
 
-class CubeReleasesList(generics.ListAPIView):
-    queryset = models.CubeRelease.objects.all()
-    serializer_class = serializers.CubeReleaseSerializer
+# class CubeReleasesList(generics.ListAPIView):
+#     queryset = models.CubeRelease.objects.all()
+#     serializer_class = serializers.CubeReleaseSerializer
 
 
 class CubeReleaseView(generics.RetrieveAPIView):
@@ -437,6 +437,28 @@ class VersionedCubeDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
 
+class ForkVersionedCube(generics.CreateAPIView):
+    queryset = models.VersionedCube.objects.all()
+    serializer_class = serializers.VersionedCubeSerializer
+    permission_classes = [permissions.IsAuthenticated, ]
+
+    def perform_create(self, serializer):
+        forked_versioned_cube: models.VersionedCube = self.get_object()
+
+        with transaction.atomic():
+            new_versioned_cube = serializer.save(author = self.request.user, forked_from=forked_versioned_cube)
+
+            release = models.CubeRelease.create(
+                cube = forked_versioned_cube.latest_release.cube,
+                versioned_cube = new_versioned_cube,
+            )
+            models.ConstrainedNodes.objects.create(
+                constrained_nodes = forked_versioned_cube.latest_release.constrained_nodes.constrained_nodes,
+                group_map = forked_versioned_cube.latest_release.constrained_nodes.group_map,
+                release = release,
+            )
+
+
 class UserList(generics.ListAPIView):
     queryset = get_user_model().objects.all()
     serializer_class = serializers.UserSerializer
@@ -584,6 +606,7 @@ class ForkPatch(generics.GenericAPIView):
                     patch = patch_model.patch,
                     versioned_cube = patch_model.versioned_cube,
                     author = request.user,
+                    forked_from = patch_model,
                 )
             ).data,
             status = status.HTTP_201_CREATED,

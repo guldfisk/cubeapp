@@ -41,7 +41,14 @@ export const routes: [
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],
-  ['/cube/:id(\\d+)', CubePage, false, {}],
+  [
+    '/cube/:id(\\d+)', CubePage, false,
+    {
+      render: (
+        (props: any) => <CubePage {...props} key={props.match.params.id}/>
+      )
+    }
+  ],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
   ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],

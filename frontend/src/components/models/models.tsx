@@ -7,6 +7,7 @@ import store from '../state/store';
 import wu from 'wu';
 import {Link} from "react-router-dom";
 import fileDownload from "js-file-download";
+import {promises} from "fs";
 
 
 export const apiPath = '/api/';
@@ -462,6 +463,46 @@ export class MinimalCube extends Atomic {
     )
   }
 
+  static create = (name: string, description: string): Promise<MinimalCube> => {
+    return axios.post(
+      "/api/versioned-cubes/",
+      {name, description},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
+  fork = (name: string, description: string): Promise<MinimalCube> => {
+    return axios.post(
+      apiPath + 'versioned-cubes/' + this.id + '/fork/',
+      {name, description},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => MinimalCube.fromRemote(response.data)
+    )
+  };
+
+  delete = (): Promise<void> => {
+    return axios.delete(
+      apiPath + 'versioned-cubes/' + this.id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
 }
 
 
@@ -812,17 +853,6 @@ export class CubeRelease extends CubeReleaseMeta {
         VerbosePatch.fromRemote(response.data.verbose_patch),
         response.data.pdf_url,
       ]
-    )
-  };
-
-  public static all = (): Promise<CubeRelease[]> => {
-    // TODO pagination lol
-    return axios.get(
-      apiPath + 'cube-releases/'
-    ).then(
-      response => response.data.results.map(
-        (release: any) => CubeRelease.fromRemote(release)
-      )
     )
   };
 

@@ -7,55 +7,19 @@ import Container from "react-bootstrap/Container"
 
 import {Redirect} from "react-router-dom";
 
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
 import {connect} from "react-redux";
-
-
-interface CreateCubeFormProps {
-  handleSubmit: ({name, description}: {name: string, description: string}) => void
-}
-
-
-class CreateCubeForm extends React.Component<CreateCubeFormProps> {
-
-  handleSubmit = (event: any) => {
-    this.props.handleSubmit(
-      {
-        name: event.target.elements.name.value,
-        description: event.target.elements.description.value,
-      }
-    );
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  render() {
-    return <Form
-      onSubmit={this.handleSubmit}
-    >
-      <Form.Group controlId="name">
-        <Form.Label>Name</Form.Label>
-        <Form.Control type="text"/>
-      </Form.Group>
-      <Form.Group controlId="description">
-        <Form.Label>Description</Form.Label>
-        <Form.Control type="text"/>
-      </Form.Group>
-      <Button type="submit">Create Cube</Button>
-    </Form>
-  }
-
-}
+import CreateCubeForm from "../../views/cubeview/CreateCubeForm";
 
 
 interface CreateCubePageProps {
   token: string
 }
 
+
 interface CreateCubePageState {
   success: boolean
 }
+
 
 class CreateCubePage extends React.Component<CreateCubePageProps, CreateCubePageState> {
 

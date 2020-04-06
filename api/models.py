@@ -14,17 +14,23 @@ from magiccube.update.cubeupdate import CubePatch as Patch
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
 
 from api.fields.orp import OrpField
-
+from utils import mixins
 from utils.methods import get_random_name
 
 
-class VersionedCube(models.Model):
+class VersionedCube(mixins.SoftDeletionModel, models.Model):
     created_at = models.DateTimeField(default = now)
     name = models.CharField(max_length = 128)
     description = models.TextField()
     author = models.ForeignKey(
         get_user_model(),
         on_delete = models.CASCADE,
+    )
+    forked_from = models.ForeignKey(
+        'VersionedCube',
+        related_name = 'forks',
+        null = True,
+        on_delete = models.SET_NULL,
     )
 
     @property
