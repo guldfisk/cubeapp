@@ -14,6 +14,7 @@ import {ConfirmationDialog} from "../../utils/dialogs";
 import {Modal} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import CreateCubeForm from "../../views/cubeview/CreateCubeForm";
+import {connect} from "react-redux";
 
 
 interface ForkCubeDialogProps {
@@ -48,6 +49,7 @@ export const ForkCubeDialog: React.SFC<ForkCubeDialogProps> = (props: ForkCubeDi
 
 interface CubePageProps {
   match: any
+  authenticated: boolean
 }
 
 
@@ -59,7 +61,7 @@ interface CubePageState {
 }
 
 
-export default class CubePage extends React.Component<CubePageProps, CubePageState> {
+class CubePage extends React.Component<CubePageProps, CubePageState> {
 
   constructor(props: CubePageProps) {
     super(props);
@@ -126,22 +128,26 @@ export default class CubePage extends React.Component<CubePageProps, CubePageSta
               </Card.Header>
               <Card.Body>
                 <p><Link to={'/cube/' + this.props.match.params.id + '/patches/'}>Patches</Link></p>
-                <p>
-                  <Link
-                    to={"#"}
-                    onClick={() => this.setState({forking: true})}
-                  >
-                    Fork cube
-                  </Link>
-                </p>
-                <p>
-                  <Link
-                    to={"#"}
-                    onClick={() => this.setState({deleting: true})}
-                  >
-                    Delete
-                  </Link>
-                </p>
+                {
+                  this.props.authenticated ? [
+                    <p>
+                      <Link
+                        to={"#"}
+                        onClick={() => this.setState({forking: true})}
+                      >
+                        Fork cube
+                      </Link>
+                    </p>,
+                    <p>
+                      <Link
+                        to={"#"}
+                        onClick={() => this.setState({deleting: true})}
+                      >
+                        Delete
+                      </Link>
+                    </p>,
+                  ] : undefined
+                }
               </Card.Body>
             </Card>
           </Col>
@@ -154,3 +160,18 @@ export default class CubePage extends React.Component<CubePageProps, CubePageSta
   }
 
 }
+
+
+const mapStateToProps = (state: any) => {
+  return {
+    authenticated: state.authenticated,
+  };
+};
+
+
+const mapDispatchToProps = (dispatch: any) => {
+  return {};
+};
+
+
+export default connect(mapStateToProps, mapDispatchToProps)(CubePage);
