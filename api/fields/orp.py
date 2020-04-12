@@ -4,6 +4,9 @@ from django.db import models
 
 from mtgorp.models.serilization.serializeable import Serializeable
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from magiccube.collections.cubeable import Cubeable, deserialize_cubeable_string, serialize_cubeable_string
 
 from resources.staticdb import db
 from utils.methods import import_path
@@ -52,5 +55,29 @@ class OrpField(models.Field):
             return None
         return JsonId.serialize(value)
 
-    def get_db_prep_value(self, value, connection, prepared=False):
+    def get_db_prep_value(self, value, connection, prepared = False):
+        return self.get_prep_value(value)
+
+
+class CubeableField(models.Field):
+
+    def db_type(self, connection) -> str:
+        return 'LONGTEXT'
+
+    def from_db_value(self, value, expression, connection) -> t.Optional[Cubeable]:
+        if value is None:
+            return
+        return deserialize_cubeable_string(value, RawStrategy(db))
+
+    def to_python(self, value) -> t.Optional[Cubeable]:
+        if value is None:
+            return
+        return deserialize_cubeable_string(value, RawStrategy(db))
+
+    def get_prep_value(self, value: Cubeable) -> t.Optional[str]:
+        if value is None:
+            return None
+        return serialize_cubeable_string(value)
+
+    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
         return self.get_prep_value(value)
