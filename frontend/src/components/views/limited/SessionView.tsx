@@ -206,7 +206,7 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
       playerTwoWins: null,
       draws: null,
       completing: false,
-  }
+    }
   }
 
   handleResultSubmitted = (): void => {
@@ -258,9 +258,9 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.username,
       },
       {
-        dataField: 'decks',
-        text: 'Decks',
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.length,
+        dataField: 'deck',
+        text: 'Deck',
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => !!cell,
       },
       {
         text: '',
@@ -268,8 +268,14 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
           return {width: '3em', textAlign: 'center'};
         },
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => (
-          this.props.session.isPublic()
-          || this.props.authenticated && this.props.user.id == row.user.id
+          this.props.session.publicPools()
+          || this.props.authenticated && (
+            this.props.user.id == row.user.id
+            || this.props.session.openDecks
+            && this.props.session.pools.some(
+              pool => pool.deck && pool.user.id == this.props.user.id
+            )
+          )
         ) ? <Link
           to={'/pools/' + row.id + '/'}
         >
@@ -346,9 +352,17 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
             <label
               className='explain-label'
             >
-              Open decks
+              Open Decks
             </label>
             <label>{this.props.session.openDecks.toString()}</label>
+          </Col>
+          <Col>
+            <label
+              className='explain-label'
+            >
+              Open Pools
+            </label>
+            <label>{this.props.session.openPools.toString()}</label>
           </Col>
         </Row>
         <Row>

@@ -1,13 +1,18 @@
 import itertools
+
 from distutils.util import strtobool
+
+from django.contrib.auth.models import AbstractUser
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 
-from api.serialization.orpserialize import CubeSerializer
 from magiccube.collections.cube import Cube
+
 from mtgdraft.client import draft_format_map
 
+from api.serialization.orpserialize import CubeSerializer
+from limited.models import Pool
 from draft import models, serializers
 
 
@@ -71,10 +76,26 @@ class SeatPermissions(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj: models.DraftSeat):
-        return (
-            request.user == obj.user
-            or obj.session.limited_session and obj.session.limited_session.decks_public
-        )
+        if request.user == obj.user:
+            return True
+
+        if obj.session.limited_session:
+            if obj.session.limited_session.pools_public:
+                return True
+
+            if isinstance(request.user, AbstractUser):
+                try:
+                    pool = Pool.objects.get(
+                        session = obj.session.limited_session,
+                        user = request.user,
+                    )
+                except Pool.DoesNotExist:
+                    return False
+
+                if pool.can_view(request.user):
+                    return True
+
+        return False
 
 
 class SeatView(generics.GenericAPIView):

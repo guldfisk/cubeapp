@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('name', models.CharField(max_length=255)),
                 ('deck', api.fields.orp.OrpField(model_type='mtgorp.models.collections.deck.Deck')),
-                ('pool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='decks', to='limited.Pool')),
+                ('pool', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='deck', to='limited.Pool')),
             ],
         ),
         migrations.AddField(

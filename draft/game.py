@@ -20,6 +20,7 @@ class DraftGame(Game):
 
     format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
     open_decks = metaoptions.BooleanOption(default = False)
+    open_pools = metaoptions.BooleanOption(default = False)
     pool_specification = PoolSpecificationOption(
         {
             'CubeBoosterSpecification': {
@@ -49,6 +50,7 @@ class DraftGame(Game):
         super().__init__(options, players, callback)
         self._pool_specification = PoolSpecification.from_options(self._options['pool_specification'])
         self._open_decks = self._options['open_decks']
+        self._open_pools = self._options['open_pools']
         self._game_format = self._options['format']
 
         self._keys = {
@@ -68,6 +70,7 @@ class DraftGame(Game):
             game_type = 'draft',
             format = self._game_format,
             open_decks = self._open_decks,
+            open_pools = self._open_pools,
             pool_specification = self._pool_specification,
         )
 

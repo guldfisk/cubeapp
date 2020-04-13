@@ -7,7 +7,6 @@ import store from '../state/store';
 import wu from 'wu';
 import {Link} from "react-router-dom";
 import fileDownload from "js-file-download";
-import {promises} from "fs";
 
 
 export const apiPath = '/api/';
@@ -43,6 +42,10 @@ export class Imageable extends Atomic {
 
 export class Cubeable extends Imageable {
 
+  public static fromRemote(remote: any): Cubeable {
+    return cubeablesMap[remote['type']].fromRemote(remote)
+  }
+
   getType = (): string => {
     return 'Cubeable';
   };
@@ -50,10 +53,6 @@ export class Cubeable extends Imageable {
   getSortValue = (): string => {
     return '';
   };
-
-  public static fromRemote(remote: any): Cubeable {
-    return cubeablesMap[remote['type']].fromRemote(remote)
-  }
 
 }
 
@@ -130,6 +129,14 @@ export class Printing extends Cubeable {
     )
   }
 
+  public static random(): Promise<Printing> {
+    return axios.get(
+      apiPath + 'service/random-printing/'
+    ).then(
+      response => Printing.fromRemote(response.data)
+    )
+  }
+
   getType = (): string => {
     return 'Printing'
   };
@@ -141,14 +148,6 @@ export class Printing extends Cubeable {
   full_name = (): string => {
     return this.name + '|' + this.expansion.code;
   };
-
-  public static random(): Promise<Printing> {
-    return axios.get(
-      apiPath + 'service/random-printing/'
-    ).then(
-      response => Printing.fromRemote(response.data)
-    )
-  }
 
 }
 
@@ -233,21 +232,6 @@ export class Trap extends Cubeable {
     )
   }
 
-  getType = (): string => {
-    return 'Trap';
-  };
-
-  getSortValue = (): string => {
-    return this.node.representation();
-  };
-
-  serialize = (): any => {
-    return {
-      node: this.node.serialize(),
-      intention_type: this.intentionType,
-    }
-  };
-
   public static parse(query: string, intentionType: string): any {
     return axios.post(
       apiPath + 'service/parse-trap/',
@@ -265,6 +249,21 @@ export class Trap extends Cubeable {
       response => Trap.fromRemote(response.data)
     )
   }
+
+  getType = (): string => {
+    return 'Trap';
+  };
+
+  getSortValue = (): string => {
+    return this.node.representation();
+  };
+
+  serialize = (): any => {
+    return {
+      node: this.node.serialize(),
+      intention_type: this.intentionType,
+    }
+  };
 
 }
 
@@ -540,13 +539,6 @@ export class Cube extends MinimalCube {
     )
   }
 
-  latestRelease = (): (CubeReleaseMeta | null) => {
-    if (this.releases.length < 1) {
-      return null;
-    }
-    return this.releases[0];
-  };
-
   static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<Cube>> => {
     return axios.get(
       apiPath + 'versioned-cubes/',
@@ -574,6 +566,13 @@ export class Cube extends MinimalCube {
     ).then(
       response => Cube.fromRemote(response.data)
     )
+  };
+
+  latestRelease = (): (CubeReleaseMeta | null) => {
+    if (this.releases.length < 1) {
+      return null;
+    }
+    return this.releases[0];
   };
 
 }
@@ -1044,6 +1043,68 @@ export class ReleasePatch extends Atomic {
     );
   }
 
+  public static updateWebsocket(
+    connection: WebSocket,
+    updates: [Cubeable | ConstrainedNode | CubeChange | string, number][],
+  ): void {
+    const values = ReleasePatch.getUpdateJSON(updates);
+    values['type'] = 'update';
+    console.log('websocket send', values);
+    connection.send(
+      JSON.stringify(
+        values
+      )
+    );
+  };
+
+  static create = (cube_id: number, description: string): Promise<ReleasePatch> => {
+    return axios.post(
+      apiPath + 'patches/',
+      {
+        description,
+        versioned_cube_id: cube_id,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => ReleasePatch.fromRemote(response.data)
+    )
+  };
+
+  static all = (): Promise<ReleasePatch[]> => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'patches/'
+    ).then(
+      response => response.data.results.map(
+        (patch: any) => ReleasePatch.fromRemote(patch)
+      )
+    )
+  };
+
+  static forCube = (cubeId: number): Promise<ReleasePatch[]> => {
+    // TODO pagination lol
+    return axios.get(
+      apiPath + 'versioned-cubes/' + cubeId + '/patches/'
+    ).then(
+      response => response.data.results.map(
+        (patch: any) => ReleasePatch.fromRemote(patch)
+      )
+    )
+  };
+
+  static get = (id: string): Promise<ReleasePatch> => {
+    return axios.get(
+      apiPath + 'patches/' + id + '/'
+    ).then(
+      response => ReleasePatch.fromRemote(response.data)
+    )
+  };
+
   private static getUpdateJSON(updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]): any {
     let cubeDelta: { [key: string]: any[] } = {
       printings: [],
@@ -1128,20 +1189,6 @@ export class ReleasePatch extends Atomic {
     )
   };
 
-  public static updateWebsocket(
-    connection: WebSocket,
-    updates: [Cubeable | ConstrainedNode | CubeChange | string, number][],
-  ): void {
-    const values = ReleasePatch.getUpdateJSON(updates);
-    values['type'] = 'update';
-    console.log('websocket send', values);
-    connection.send(
-      JSON.stringify(
-        values
-      )
-    );
-  };
-
   getEditWebsocket = (): WebSocket => {
     const url = new URL('/ws/patch_edit/' + this.id + '/', window.location.href);
     url.protocol = url.protocol.replace('http', 'ws');
@@ -1217,54 +1264,6 @@ export class ReleasePatch extends Atomic {
     )
   };
 
-  static create = (cube_id: number, description: string): Promise<ReleasePatch> => {
-    return axios.post(
-      apiPath + 'patches/',
-      {
-        description,
-        versioned_cube_id: cube_id,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    ).then(
-      response => ReleasePatch.fromRemote(response.data)
-    )
-  };
-
-  static all = (): Promise<ReleasePatch[]> => {
-    // TODO pagination lol
-    return axios.get(
-      apiPath + 'patches/'
-    ).then(
-      response => response.data.results.map(
-        (patch: any) => ReleasePatch.fromRemote(patch)
-      )
-    )
-  };
-
-  static forCube = (cubeId: number): Promise<ReleasePatch[]> => {
-    // TODO pagination lol
-    return axios.get(
-      apiPath + 'versioned-cubes/' + cubeId + '/patches/'
-    ).then(
-      response => response.data.results.map(
-        (patch: any) => ReleasePatch.fromRemote(patch)
-      )
-    )
-  };
-
-  static get = (id: string): Promise<ReleasePatch> => {
-    return axios.get(
-      apiPath + 'patches/' + id + '/'
-    ).then(
-      response => ReleasePatch.fromRemote(response.data)
-    )
-  };
-
 }
 
 
@@ -1313,14 +1312,6 @@ export class ConstrainedNode extends Atomic {
     )
   }
 
-  serialize = (): any => {
-    return {
-      node: this.node.serialize(),
-      value: this.value,
-      groups: this.groups,
-    }
-  };
-
   public static parse(query: string, groups: string, weight: number): Promise<ConstrainedNode> {
     return axios.post(
       apiPath + 'service/parse-constrained-node/',
@@ -1339,6 +1330,14 @@ export class ConstrainedNode extends Atomic {
       response => ConstrainedNode.fromRemote(response.data)
     )
   }
+
+  serialize = (): any => {
+    return {
+      node: this.node.serialize(),
+      value: this.value,
+      groups: this.groups,
+    }
+  };
 
 }
 
@@ -1490,21 +1489,20 @@ export class UpdateReport {
 
 
 export class EditEvent extends Atomic {
+  private static idCounter = 0;
   user: User;
   change: VerbosePatch;
-
-  private static idCounter = 0;
-
-  private static getNextId(): string {
-    EditEvent.idCounter += 1;
-    return EditEvent.idCounter.toString();
-  };
 
   constructor(user: User, change: VerbosePatch) {
     super(EditEvent.getNextId());
     this.user = user;
     this.change = change;
   }
+
+  private static getNextId(): string {
+    EditEvent.idCounter += 1;
+    return EditEvent.idCounter.toString();
+  };
 
 }
 
@@ -1520,6 +1518,22 @@ export class Requirement {
     this.updatedAt = updatedAt;
   }
 
+  public static fromRemote(remote: any): Requirement {
+    return requirementTypeMap[remote.type].fromRemote(remote)
+  }
+
+  public static delete(id: string): Promise<void> {
+    return axios.delete(
+      apiPath + 'wishlist/requirement/' + id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
   name = (): string => {
     return 'Requirement'
   };
@@ -1527,10 +1541,6 @@ export class Requirement {
   value = (): string => {
     return 'Some value'
   };
-
-  public static fromRemote(remote: any): Requirement {
-    return requirementTypeMap[remote.type].fromRemote(remote)
-  }
 
   serialize = (): any => {
     return {}
@@ -1552,18 +1562,6 @@ export class Requirement {
     )
   };
 
-  public static delete(id: string): Promise<void> {
-    return axios.delete(
-      apiPath + 'wishlist/requirement/' + id + '/',
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    )
-  };
-
 
 }
 
@@ -1574,6 +1572,15 @@ export class IsBorder extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, border: string) {
     super(id, createdAt, updatedAt);
     this.border = border;
+  }
+
+  public static fromRemote(remote: any): IsBorder {
+    return new IsBorder(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.border,
+    )
   }
 
   name = (): string => {
@@ -1591,15 +1598,6 @@ export class IsBorder extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): IsBorder {
-    return new IsBorder(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.border,
-    )
-  }
-
 }
 
 export class FromExpansions extends Requirement {
@@ -1608,6 +1606,15 @@ export class FromExpansions extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, expansionCodes: string[]) {
     super(id, createdAt, updatedAt);
     this.expansionCodes = expansionCodes;
+  }
+
+  public static fromRemote(remote: any): FromExpansions {
+    return new FromExpansions(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.expansion_codes,
+    )
   }
 
   name = (): string => {
@@ -1625,15 +1632,6 @@ export class FromExpansions extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): FromExpansions {
-    return new FromExpansions(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.expansion_codes,
-    )
-  }
-
 }
 
 
@@ -1643,6 +1641,15 @@ export class IsMinimumCondition extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, condition: string) {
     super(id, createdAt, updatedAt);
     this.condition = condition;
+  }
+
+  public static fromRemote(remote: any): IsMinimumCondition {
+    return new IsMinimumCondition(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.condition,
+    )
   }
 
   name = (): string => {
@@ -1660,15 +1667,6 @@ export class IsMinimumCondition extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): IsMinimumCondition {
-    return new IsMinimumCondition(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.condition,
-    )
-  }
-
 }
 
 
@@ -1678,6 +1676,15 @@ export class IsLanguage extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, language: string) {
     super(id, createdAt, updatedAt);
     this.language = language;
+  }
+
+  public static fromRemote(remote: any): IsLanguage {
+    return new IsLanguage(
+      remote.id,
+      remote.created_at,
+      remote.updated_at,
+      remote.language,
+    )
   }
 
   name = (): string => {
@@ -1695,15 +1702,6 @@ export class IsLanguage extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): IsLanguage {
-    return new IsLanguage(
-      remote.id,
-      remote.created_at,
-      remote.updated_at,
-      remote.language,
-    )
-  }
-
 }
 
 
@@ -1713,6 +1711,15 @@ export class IsFoil extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, isFoil: string) {
     super(id, createdAt, updatedAt);
     this.isFoil = isFoil;
+  }
+
+  public static fromRemote(remote: any): IsFoil {
+    return new IsFoil(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.is_foil,
+    )
   }
 
   name = (): string => {
@@ -1730,15 +1737,6 @@ export class IsFoil extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): IsFoil {
-    return new IsFoil(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.is_foil,
-    )
-  }
-
 }
 
 
@@ -1748,6 +1746,15 @@ export class IsAltered extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, isAltered: string) {
     super(id, createdAt, updatedAt);
     this.isAltered = isAltered;
+  }
+
+  public static fromRemote(remote: any): IsAltered {
+    return new IsAltered(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.is_altered,
+    )
   }
 
   name = (): string => {
@@ -1765,15 +1772,6 @@ export class IsAltered extends Requirement {
     }
   };
 
-  public static fromRemote(remote: any): IsAltered {
-    return new IsAltered(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.is_altered,
-    )
-  }
-
 }
 
 
@@ -1783,6 +1781,15 @@ export class IsSigned extends Requirement {
   constructor(id: string, createdAt: string, updatedAt: string, isSigned: string) {
     super(id, createdAt, updatedAt);
     this.isSigned = isSigned;
+  }
+
+  public static fromRemote(remote: any): IsSigned {
+    return new IsSigned(
+      remote.id,
+      remote.created_at,
+      remote.udpated_at,
+      remote.is_signed,
+    )
   }
 
   name = (): string => {
@@ -1799,15 +1806,6 @@ export class IsSigned extends Requirement {
       is_signed: this.isSigned,
     }
   };
-
-  public static fromRemote(remote: any): IsSigned {
-    return new IsSigned(
-      remote.id,
-      remote.created_at,
-      remote.udpated_at,
-      remote.is_signed,
-    )
-  }
 
 }
 
@@ -1961,18 +1959,6 @@ export class Wish {
     )
   }
 
-  delete = (): Promise<null> => {
-    return axios.delete(
-      apiPath + 'wishlist/wish/' + this.id + '/',
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    )
-  };
-
   public static update(id: string, values: { [key: string]: string }): Promise<Wish> {
     return axios.patch(
       apiPath + 'wishlist/wish/' + id + '/',
@@ -1985,6 +1971,18 @@ export class Wish {
       },
     ).then(
       response => Wish.fromRemote(response.data)
+    )
+  };
+
+  delete = (): Promise<null> => {
+    return axios.delete(
+      apiPath + 'wishlist/wish/' + this.id + '/',
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
     )
   };
 
@@ -2125,6 +2123,10 @@ export class BoosterSpecification extends Atomic {
     this.amount = amount;
   }
 
+  public static fromRemote(remote: any): BoosterSpecification {
+    return boosterSpecificationTypeMap[remote.type].fromRemote(remote)
+  }
+
   name = (): string => {
     return 'Booster Specification'
   };
@@ -2132,10 +2134,6 @@ export class BoosterSpecification extends Atomic {
   values = (): [string, any][] => {
     return []
   };
-
-  public static fromRemote(remote: any): BoosterSpecification {
-    return boosterSpecificationTypeMap[remote.type].fromRemote(remote)
-  }
 }
 
 
@@ -2161,6 +2159,18 @@ export class CubeBoosterSpecification extends BoosterSpecification {
     this.allowRepeat = allowRepeat;
   }
 
+  public static fromRemote(remote: any): CubeBoosterSpecification {
+    return new CubeBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      CubeReleaseName.fromRemote(remote.release),
+      remote.size,
+      remote.allow_intersection,
+      remote.allow_repeat,
+    )
+  }
+
   name = (): string => {
     return 'Cube Booster'
   };
@@ -2181,18 +2191,6 @@ export class CubeBoosterSpecification extends BoosterSpecification {
       ['repeat', this.allowRepeat],
     ]
   };
-
-  public static fromRemote(remote: any): CubeBoosterSpecification {
-    return new CubeBoosterSpecification(
-      remote.id,
-      remote.sequence_number,
-      remote.amount,
-      CubeReleaseName.fromRemote(remote.release),
-      remote.size,
-      remote.allow_intersection,
-      remote.allow_repeat,
-    )
-  }
 }
 
 
@@ -2209,6 +2207,15 @@ export class ExpansionBoosterSpecification extends BoosterSpecification {
     this.expansionCode = expansionCode;
   }
 
+  public static fromRemote(remote: any): ExpansionBoosterSpecification {
+    return new ExpansionBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      remote.expansion_code,
+    )
+  }
+
   name = (): string => {
     return 'Expansion Booster'
   };
@@ -2219,15 +2226,6 @@ export class ExpansionBoosterSpecification extends BoosterSpecification {
       ['code', this.expansionCode],
     ]
   };
-
-  public static fromRemote(remote: any): ExpansionBoosterSpecification {
-    return new ExpansionBoosterSpecification(
-      remote.id,
-      remote.sequence_number,
-      remote.amount,
-      remote.expansion_code,
-    )
-  }
 
 }
 
@@ -2245,6 +2243,15 @@ export class AllCardsBoosterSpecification extends BoosterSpecification {
     this.respectPrintings = respectPrintings;
   }
 
+  public static fromRemote(remote: any): AllCardsBoosterSpecification {
+    return new AllCardsBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      remote.respect_printings,
+    )
+  }
+
   name = (): string => {
     return 'Expansion Booster'
   };
@@ -2255,15 +2262,6 @@ export class AllCardsBoosterSpecification extends BoosterSpecification {
       ['respect printings', this.respectPrintings],
     ]
   };
-
-  public static fromRemote(remote: any): AllCardsBoosterSpecification {
-    return new AllCardsBoosterSpecification(
-      remote.id,
-      remote.sequence_number,
-      remote.amount,
-      remote.respect_printings,
-    )
-  }
 
 }
 
@@ -2369,6 +2367,7 @@ export class LimitedSession extends LimitedSessionName {
   players: User[];
   state: string;
   openDecks: boolean;
+  openPools: boolean;
   poolSpecification: PoolSpecification;
   results: MatchResult[];
 
@@ -2383,6 +2382,7 @@ export class LimitedSession extends LimitedSessionName {
     players: User[],
     state: string,
     openDecks: boolean,
+    openPools: boolean,
     poolSpecification: PoolSpecification,
     results: MatchResult[],
   ) {
@@ -2395,6 +2395,7 @@ export class LimitedSession extends LimitedSessionName {
     this.players = players;
     this.state = state;
     this.openDecks = openDecks;
+    this.openPools = openPools;
     this.poolSpecification = poolSpecification;
     this.results = results;
   }
@@ -2411,45 +2412,13 @@ export class LimitedSession extends LimitedSessionName {
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
       remote.open_decks,
+      remote.open_pools,
       PoolSpecification.fromRemote(remote.pool_specification),
       remote.results.map(
         (result: any) => MatchResult.fromRemote(result)
       ),
     )
   }
-
-  isPublic = (): boolean => {
-    return (
-      this.state == 'FINISHED'
-      || this.state == 'PLAYING' && this.openDecks
-    )
-  };
-
-  submitResult = (result: { players: { user_id: number, wins: number }[], draws: number }): Promise<void> => {
-    return axios.post(
-      apiPath + 'limited/sessions/' + this.id + '/submit-result/',
-      result,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    )
-  };
-
-  complete = (): Promise<void> => {
-    return axios.post(
-      apiPath + 'limited/sessions/' + this.id + '/completed/',
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    )
-  };
 
   public static all(
     offset: number = 0,
@@ -2481,6 +2450,41 @@ export class LimitedSession extends LimitedSessionName {
     )
   }
 
+  publicDecks = (): boolean => {
+    return this.state == 'FINISHED'
+    || this.state == 'PLAYING' && this.openDecks
+  };
+
+  publicPools = (): boolean => {
+    return this.openPools || this.publicDecks()
+  };
+
+  submitResult = (result: { players: { user_id: number, wins: number }[], draws: number }): Promise<void> => {
+    return axios.post(
+      apiPath + 'limited/sessions/' + this.id + '/submit-result/',
+      result,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
+  complete = (): Promise<void> => {
+    return axios.post(
+      apiPath + 'limited/sessions/' + this.id + '/completed/',
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    )
+  };
+
   delete = (): Promise<any> => {
     return axios.delete(
       apiPath + 'limited/sessions/' + this.id + '/',
@@ -2497,19 +2501,19 @@ export class LimitedSession extends LimitedSessionName {
 
 export class PoolMeta extends Atomic {
   user: User;
-  decks: string[];
+  deck: string | null;
 
-  constructor(id: string, user: User, decks: string[]) {
+  constructor(id: string, user: User, deck: string | null) {
     super(id);
     this.user = user;
-    this.decks = decks;
+    this.deck = deck;
   }
 
   public static fromRemote(remote: any): PoolMeta {
     return new PoolMeta(
       remote.id,
       User.fromRemote(remote.user),
-      remote.decks,
+      remote.deck,
     )
   }
 
@@ -2529,6 +2533,7 @@ export class FullLimitedSession extends LimitedSession {
     players: User[],
     state: string,
     openDecks: boolean,
+    openPools: boolean,
     poolSpecification: PoolSpecification,
     results: MatchResult[],
     pools: PoolMeta[],
@@ -2544,6 +2549,7 @@ export class FullLimitedSession extends LimitedSession {
       players,
       state,
       openDecks,
+      openPools,
       poolSpecification,
       results,
     );
@@ -2562,6 +2568,7 @@ export class FullLimitedSession extends LimitedSession {
       remote.players.map((player: any) => User.fromRemote(player)),
       remote.state,
       remote.open_decks,
+      remote.open_pools,
       PoolSpecification.fromRemote(remote.pool_specification),
       remote.results.map(
         (result: any) => MatchResult.fromRemote(result)
@@ -2619,7 +2626,7 @@ export class Deck extends Atomic {
 
   download = (extension: string = 'dec'): Promise<void> => {
     return axios.get(
-      '/api/limited/decks/' + this.id + '/export/',
+      '/api/limited/deck/' + this.id + '/export/',
       {
         params: {
           extension
@@ -2638,20 +2645,20 @@ export class Deck extends Atomic {
 
 export class Pool extends Atomic {
   user: User;
-  decks: Deck[];
+  deck: Deck | null;
   session: LimitedSession;
   pool: CubeablesContainer;
 
   constructor(
     id: string,
     user: User,
-    decks: Deck[],
+    deck: Deck | null,
     session: LimitedSession,
     pool: CubeablesContainer,
   ) {
     super(id);
     this.user = user;
-    this.decks = decks;
+    this.deck = deck;
     this.session = session;
     this.pool = pool;
   }
@@ -2660,15 +2667,11 @@ export class Pool extends Atomic {
     return new Pool(
       remote.id,
       User.fromRemote(remote.user),
-      remote.decks.map((deck: any) => Deck.fromRemote(deck)),
+      remote.deck && (typeof remote.deck) != 'number' ? Deck.fromRemote(remote.deck) : null,
       LimitedSession.fromRemote(remote.session),
       CubeablesContainer.fromRemote(remote.pool),
     )
   }
-
-  getDownloadUrl = (): string => {
-    return apiPath + 'limited/pools/' + this.id + '/export/'
-  };
 
   public static get(id: string): Promise<Pool> {
     return axios.get(
@@ -2682,6 +2685,10 @@ export class Pool extends Atomic {
       response => Pool.fromRemote(response.data)
     )
   }
+
+  getDownloadUrl = (): string => {
+    return apiPath + 'limited/pools/' + this.id + '/export/'
+  };
 
 }
 

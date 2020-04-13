@@ -42,7 +42,7 @@ class DraftView extends React.Component<DraftViewProps, null> {
             return {width: '3em', textAlign: 'center'};
           },
           formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => (
-            this.props.draft.limitedSession && this.props.draft.limitedSession.isPublic()
+            this.props.draft.limitedSession && this.props.draft.limitedSession.publicPools()
             || this.props.authenticated && this.props.user.id == row.user.id
           ) ? <Link
             to={'/seat/' + row.id + '/0/'}

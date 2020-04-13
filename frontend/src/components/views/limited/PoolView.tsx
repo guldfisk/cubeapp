@@ -21,9 +21,7 @@ export default class PoolView extends React.Component<PoolViewProps> {
       fluid={true}
     >
       <Row>
-        {
-          this.props.pool.decks.length > 0 && <DeckView deck={this.props.pool.decks[this.props.pool.decks.length - 1]}/>
-        }
+        {this.props.pool.deck && <DeckView deck={this.props.pool.deck}/>}
       </Row>
       <Row>
         <Card

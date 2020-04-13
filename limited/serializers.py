@@ -58,11 +58,11 @@ class PoolDeckSerializer(serializers.ModelSerializer):
 
 class MinimalPoolSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
-    decks = serializers.PrimaryKeyRelatedField(read_only = True, many = True)
+    deck = serializers.PrimaryKeyRelatedField(read_only = True, source = 'pool_deck')
 
     class Meta:
         model = models.Pool
-        fields = ('id', 'user', 'decks')
+        fields = ('id', 'user', 'deck')
 
 
 class MatchPlayerSerializer(serializers.ModelSerializer):
@@ -106,18 +106,25 @@ class LimitedSessionSerializer(LimitedSessionNameSerializer):
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type', 'pool_specification', 'results'
+            'open_pools', 'game_type', 'pool_specification', 'results'
         )
 
 
 class PoolSerializer(MinimalPoolSerializer):
     pool = OrpSerializerField(model_serializer = orpserialize.CubeSerializer)
-    decks = PoolDeckSerializer(many = True)
     session = LimitedSessionSerializer()
 
     class Meta:
         model = models.Pool
-        fields = ('id', 'user', 'session', 'decks', 'pool')
+        fields = ('id', 'user', 'session', 'deck', 'pool')
+
+
+class FullPoolSerializer(PoolSerializer):
+    deck = PoolDeckSerializer()
+
+    class Meta:
+        model = models.Pool
+        fields = ('id', 'user', 'session', 'deck', 'pool')
 
 
 class FullLimitedSessionSerializer(LimitedSessionSerializer):
@@ -127,5 +134,5 @@ class FullLimitedSessionSerializer(LimitedSessionSerializer):
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'game_type', 'pool_specification', 'pools', 'results',
+            'open_pools', 'game_type', 'pool_specification', 'pools', 'results',
         )
