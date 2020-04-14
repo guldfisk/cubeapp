@@ -3,9 +3,8 @@ import datetime
 from distutils.util import strtobool
 from json import JSONDecodeError
 
-from django.contrib.auth.models import AbstractUser
 from django.db import transaction
-from django.db.models import Prefetch, Count
+from django.db.models import Prefetch
 from django.contrib.auth import get_user_model
 
 from rest_framework import generics, permissions, status
@@ -26,37 +25,32 @@ from resources.staticdb import db
 from limited import models, serializers
 
 
-# def user_has_pool_permission(user: AbstractUser, pool: models.Pool):
-#     return (
-#         user == pool.user
-#         or pool.session.state.value > models.LimitedSession.LimitedSessionState.PLAYING.value
-#         or (
-#             pool.session.state == models.LimitedSession.LimitedSessionState.PLAYING
-#             and pool.session.open_decks
-#         )
-#     )
-
-
 class PoolDetailPermissions(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return True
 
     def has_object_permission(self, request, view, obj: models.Pool):
-        return (
-            request.user == obj.user
-            or obj.session.decks_public
-        )
+        return obj.can_view(request.user)
 
 
 class PoolDetail(generics.RetrieveDestroyAPIView):
     queryset = models.Pool.objects.all().select_related(
         'user',
     ).prefetch_related(
-        'decks'
+        'pool_deck',
     )
     serializer_class = serializers.PoolSerializer
     permission_classes = [PoolDetailPermissions, ]
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = (
+            serializers.FullPoolSerializer
+            if args[0].deck and args[0].deck.can_view(self.request.user) else
+            serializers.PoolSerializer
+        )
+        kwargs['context'] = self.get_serializer_context()
+        return serializer_class(*args, **kwargs)
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         try:
@@ -105,7 +99,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 name = request.data.get('name', 'deck'),
             )
 
-            if all(models.Pool.objects.filter(session = pool.session).values_list(Count('decks'), flat = True)):
+            if all(models.Pool.objects.filter(session = pool.session).values_list('pool_deck', flat = True)):
                 pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
                 pool.session.playing_at = datetime.datetime.now()
                 pool.session.save(update_fields = ('state', 'playing_at'))
@@ -134,10 +128,7 @@ class DeckPermissions(permissions.IsAuthenticated):
         return True
 
     def has_object_permission(self, request, view, obj: models.PoolDeck):
-        return (
-            request.user == obj.pool.user
-            or obj.pool.session.decks_public
-        )
+        return obj.can_view(request.user)
 
 
 class DeckDetail(generics.RetrieveAPIView):
@@ -233,41 +224,6 @@ class SessionList(generics.ListAPIView):
                     }
                 )
 
-        # pool_size_filter = request.GET.get('pool_size_filter')
-        # if pool_size_filter:
-        #     try:
-        #         pool_size = int(pool_size_filter)
-        #     except ValueError:
-        #         return Response(f'invalid pool_size filter {pool_size_filter}', status = status.HTTP_400_BAD_REQUEST)
-        #     comparator = {
-        #         '=': '',
-        #         '!=': None,
-        #         '<': '__lt',
-        #         '<=': '__lte',
-        #         '>': '__gt',
-        #         '>=': '__gte',
-        #     }.get(
-        #         request.GET.get('pool_size_filter_comparator'),
-        #         '',
-        #     )
-        #     if comparator is None:
-        #         queryset = queryset.exclude(pool_size = pool_size)
-        #     else:
-        #         queryset = queryset.filter(
-        #             **{
-        #                 'pool_size' + comparator: pool_size
-        #             }
-        #         )
-        #
-        # release_filter = request.GET.get('release_filter')
-        # if release_filter:
-        #     try:
-        #         queryset = queryset.filter(release_id = int(release_filter))
-        #     except ValueError:
-        #         if not isinstance(release_filter, str):
-        #             return Response(f'invalid release filter {release_filter}', status = status.HTTP_400_BAD_REQUEST)
-        #         queryset = queryset.filter(release__name__contains = release_filter)
-
         players_filter = request.GET.get('players_filter')
         if players_filter:
             if not isinstance(players_filter, str):
@@ -298,7 +254,7 @@ class SessionList(generics.ListAPIView):
 class SessionDetail(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.FullLimitedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
-        Prefetch('pools__decks', queryset = models.PoolDeck.objects.all().only('id')),
+        Prefetch('pools__pool_deck', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
         'results',
         'results__players',
@@ -321,15 +277,13 @@ class CompleteSession(generics.GenericAPIView):
     permission_classes = [SessionResultsPermission, ]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
-        instance: models.LimitedSession = self.get_object()
-        if not instance.state == models.LimitedSession.LimitedSessionState.PLAYING:
+        session: models.LimitedSession = self.get_object()
+        if not session.state == models.LimitedSession.LimitedSessionState.PLAYING:
             return Response(
                 'Cannot complete limited session that is not playing',
                 status = status.HTTP_400_BAD_REQUEST,
             )
-        instance.state = models.LimitedSession.LimitedSessionState.FINISHED
-        instance.finished_at = datetime.datetime.now()
-        instance.save(update_fields = ('state', 'finished_at'))
+        session.complete()
         return Response(status = status.HTTP_200_OK)
 
 
@@ -389,5 +343,7 @@ class SubmitResult(generics.GenericAPIView):
                     wins = player['wins'],
                     match_result = match_result,
                 )
+            if limited_session.results.all().count() >= limited_session.expected_match_amount:
+                limited_session.complete()
 
         return Response(status = status.HTTP_200_OK)

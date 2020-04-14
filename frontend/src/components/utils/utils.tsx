@@ -37,6 +37,16 @@ export const Loading: React.SFC = () => {
 };
 
 
+export const NotAllowed: React.SFC = () => {
+  return <h3 className="loading">Not Allowed</h3>
+};
+
+
+export const NotFound: React.SFC = () => {
+  return <h3 className="loading">Not Found</h3>
+};
+
+
 export const inviteUser = (email: string) => {
   return axios.post(
     apiPath + 'auth/invite/',

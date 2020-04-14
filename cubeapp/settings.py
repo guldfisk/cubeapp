@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'frontend.apps.FrontendConfig',
     'wishlist.apps.WishListConfig',
     'limited.apps.LimitedConfig',
+    'rating.apps.RatingConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -51,13 +52,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    # 'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -154,12 +152,3 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
-#         "CONFIG": {
-#             "host": f'amqp://{os.environ["RABBITMQ_USERNAME"]}:{os.environ["RABBITMQ_PASSWORD"]}@rabbitmq:5672',
-#         },
-#     },
-# }

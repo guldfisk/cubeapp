@@ -253,6 +253,20 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
         filter: textFilter(),
       },
       {
+        dataField: 'openDecks',
+        text: 'Open Decks',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '6%', textAlign: 'center'};
+        },
+      },
+      {
+        dataField: 'openPools',
+        text: 'Open Pools',
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '6%', textAlign: 'center'};
+        },
+      },
+      {
         dataField: 'poolSpecification',
         text: 'Pool Specification',
         editable: false,
@@ -271,7 +285,7 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
           return cell.length.toString() + '/' + sizeTwoSetCombinations(row.players.length).toString()
         },
         headerStyle: (column: any, colIndex: number) => {
-          return {width: '5%', textAlign: 'center'};
+          return {width: '3%', textAlign: 'center'};
         },
       },
       {

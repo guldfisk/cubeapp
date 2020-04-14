@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Loading} from '../../utils/utils';
+import {Loading, NotAllowed} from '../../utils/utils';
 import {Pool} from '../../models/models';
 import PoolView from "../../views/limited/PoolView";
 import {connect} from "react-redux";
@@ -14,6 +14,7 @@ interface PoolPageProps {
 
 interface PoolPageState {
   pool: Pool | null
+  notAllowed: boolean
 }
 
 
@@ -25,6 +26,7 @@ class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
     this.requested = false;
     this.state = {
       pool: null,
+      notAllowed: false,
     };
   }
 
@@ -35,7 +37,13 @@ class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
         pool => {
           this.setState({pool});
         }
+      ).catch(
+        () => this.setState({notAllowed: true})
       );
+    }
+
+    if (this.state.notAllowed) {
+      return <NotAllowed/>
     }
 
     let pool = <Loading/>;

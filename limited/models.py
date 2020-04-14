@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import datetime
 import functools
+import math
 import typing as t
 import random
 import operator
@@ -8,17 +10,18 @@ import operator
 from enum import Enum
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
-from resources.staticdb import db
-from typedmodels.models import TypedModel
 
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.limited.boostergen import (
     GenerateBoosterException, BoosterKey, RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
 )
+from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+
 from magiccube.collections.cube import Cube
+
+from typedmodels.models import TypedModel
 
 from api.fields.orp import OrpField
 from api.models import CubeRelease
@@ -26,6 +29,7 @@ from api.serialization.serializers import NameCubeReleaseSerializer
 from utils.fields import EnumField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
+from resources.staticdb import db
 
 
 class PoolSpecification(models.Model):
@@ -229,18 +233,35 @@ class LimitedSession(models.Model):
     state = EnumField(LimitedSessionState, default = LimitedSessionState.DECK_BUILDING)
     format = models.CharField(max_length = 255)
     game_type = models.CharField(max_length = 255)
-    open_decks = models.BooleanField()
+    open_decks = models.BooleanField(default = False)
+    open_pools = models.BooleanField(default = False)
     pool_specification = models.ForeignKey(PoolSpecification, on_delete = models.CASCADE, related_name = 'sessions')
 
+    def complete(self) -> None:
+        self.state = self.LimitedSessionState.FINISHED
+        self.finished_at = datetime.datetime.now()
+        self.save(update_fields = ('state', 'finished_at'))
+
     @property
-    def decks_public(self):
+    def expected_match_amount(self) -> int:
+        number_players = self.pools.all().count()
+        if number_players <= 1:
+            return 0
+        return int(math.factorial(number_players) / (2 * math.factorial(number_players - 2)))
+
+    @property
+    def decks_public(self) -> bool:
         return (
-            self.state.value > self.LimitedSessionState.PLAYING.value
+            self.state.value >= self.LimitedSessionState.FINISHED.value
             or (
                 self.state == self.LimitedSessionState.PLAYING
                 and self.open_decks
             )
         )
+
+    @property
+    def pools_public(self) -> bool:
+        return self.open_pools or self.decks_public
 
 
 class Pool(models.Model):
@@ -248,15 +269,41 @@ class Pool(models.Model):
     session = models.ForeignKey(LimitedSession, on_delete = models.CASCADE, related_name = 'pools')
     pool: Cube = OrpField(model_type = Cube)
 
+    @property
+    def deck(self) -> t.Optional[PoolDeck]:
+        return getattr(self, 'pool_deck', None)
+
     class Meta:
         unique_together = ('session', 'user')
+
+    def can_view(self, user: AbstractUser) -> bool:
+        return (
+            user == self.user
+            or self.session.pools_public
+            or (
+                (self.session.open_decks or self.session.open_pools)
+                and isinstance(user, AbstractUser)
+                and PoolDeck.objects.filter(pool__session = self.session, pool__user = user).exists()
+            )
+        )
 
 
 class PoolDeck(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     name = models.CharField(max_length = 255)
     deck = OrpField(Deck)
-    pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'decks')
+    pool = models.OneToOneField(Pool, on_delete = models.CASCADE, related_name = 'pool_deck')
+
+    def can_view(self, user: AbstractUser) -> bool:
+        return (
+            user == self.pool.user
+            or self.pool.session.decks_public
+            or (
+                self.pool.session.open_decks
+                and isinstance(user, AbstractUser)
+                and PoolDeck.objects.filter(pool__session = self.pool.session, pool__user = user).exists()
+            )
+        )
 
 
 class MatchResult(models.Model):

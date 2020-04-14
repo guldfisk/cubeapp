@@ -18,6 +18,7 @@ class Sealed(Game):
 
     format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
     open_decks = metaoptions.BooleanOption(default = False)
+    open_pools = metaoptions.BooleanOption(default = False)
     pool_specification = PoolSpecificationOption(
         {
             'CubeBoosterSpecification': {
@@ -49,6 +50,7 @@ class Sealed(Game):
                 game_type = 'sealed',
                 format = self._options['format'],
                 open_decks = self._options['open_decks'],
+                open_pools = self._options['open_pools'],
                 pool_specification = pool_specification,
             )
 
