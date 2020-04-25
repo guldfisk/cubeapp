@@ -46,3 +46,5 @@ celery
 redis
 channels_rabbitmq
 channels_redis==2.2.1
+django-extensions
+ipython

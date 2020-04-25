@@ -32,11 +32,14 @@ DEBUG = strtobool(os.environ['DEBUG'])
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts']) if not DEBUG else []
 HOST = _config_parser['default']['host']
 
+SHELL_PLUS = "ipython"
+
 
 INSTALLED_APPS = [
     'channels',
     'rest_framework',
     'knox',
+    'django_extensions',
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
     'draft.apps.DraftConfig',

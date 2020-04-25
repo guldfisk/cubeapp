@@ -24,9 +24,16 @@ class CubeReleaseOption(Option):
 
     @property
     def default(self) -> t.Any:
-        return CubeRelease.objects.order_by(
+        return CubeRelease.objects.select_related(
+            'versioned_cube',
+        ).filter(
+            versioned_cube__active = True,
+        ).order_by(
             'created_at',
-        ).values_list('id', flat = True).last()
+        ).values_list(
+            'id',
+            flat = True,
+        ).last()
 
     def validate(self, value: t.Any) -> t.Any:
         try:
