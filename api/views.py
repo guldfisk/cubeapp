@@ -8,7 +8,7 @@ import random
 from distutils.util import strtobool
 
 from django.db import transaction
-from django.http import HttpResponse, HttpRequest
+from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 from django.template.loader import get_template
@@ -48,6 +48,7 @@ from api.mail import send_mail
 
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
+from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 
 _IMAGE_TYPES_MAP = {
@@ -65,15 +66,19 @@ _IMAGE_SIZE_MAP = {
 }
 
 
-# @api_view(['POST', ])
-# def test(request: HttpRequest) -> HttpResponse:
-#     print(request.POST)
-#     return HttpResponse('ok')
-
-
-# class CubeReleasesList(generics.ListAPIView):
-#     queryset = models.CubeRelease.objects.all()
-#     serializer_class = serializers.CubeReleaseSerializer
+@api_view(['GET', ])
+def db_info(request: HttpRequest) -> HttpResponse:
+    return JsonResponse(
+        {
+            'created_at': db.created_at.strftime(JAVASCRIPT_DATETIME_FORMAT),
+            'json_updated_at': db.json_version.strftime(JAVASCRIPT_DATETIME_FORMAT),
+            'last_expansion_name': sorted(
+                filter(lambda e: e.expansion_type == ExpansionType.SET, db.expansions.values()),
+                key = lambda e: e.release_date
+            )[-1].name,
+            'checksum': db.checksum.hex(),
+        }
+    )
 
 
 class CubeReleaseView(generics.RetrieveAPIView):
@@ -446,7 +451,7 @@ class ForkVersionedCube(generics.CreateAPIView):
         forked_versioned_cube: models.VersionedCube = self.get_object()
 
         with transaction.atomic():
-            new_versioned_cube = serializer.save(author = self.request.user, forked_from=forked_versioned_cube)
+            new_versioned_cube = serializer.save(author = self.request.user, forked_from = forked_versioned_cube)
 
             release = models.CubeRelease.create(
                 cube = forked_versioned_cube.latest_release.cube,
