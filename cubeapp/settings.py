@@ -1,3 +1,4 @@
+import datetime
 import os
 import json
 
@@ -6,7 +7,6 @@ from distutils.util import strtobool
 import configparser
 
 from secretresources.paths import project_name_to_secret_dir
-
 
 SECRETS_PATH = os.path.join(project_name_to_secret_dir('cubeapp'), 'settings.cfg')
 
@@ -34,12 +34,12 @@ HOST = _config_parser['default']['host']
 
 SHELL_PLUS = "ipython"
 
-
 INSTALLED_APPS = [
     'channels',
     'rest_framework',
     'knox',
     'django_extensions',
+    'django_celery_beat',
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
     'draft.apps.DraftConfig',
@@ -97,7 +97,6 @@ DATABASES = {
     }
 }
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -113,7 +112,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -124,7 +122,6 @@ USE_L10N = False
 
 USE_TZ = True
 
-
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'static')
 MEDIA_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'media')
@@ -132,7 +129,6 @@ MEDIA_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'media')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
-
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
@@ -155,3 +151,7 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+CELERY_TIMEZONE = 'Europe/Copenhagen'
+
+BEAT_SCHEDULER = 'celery.beat:PersistentScheduler'
