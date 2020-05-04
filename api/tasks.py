@@ -19,8 +19,7 @@ from django.conf import settings
 
 from proxypdf.write import ProxyWriter
 
-from mtgorp.db.create import update_database
-from mtgorp.managejson.update import check_and_update
+from mtgorp.managejson.update import check, MTG_JSON_DATETIME_FORMAT, get_last_updated
 
 from mtgimg.interface import SizeSlug, ImageRequest
 
@@ -34,11 +33,13 @@ from resources.staticimageloader import image_loader
 
 @shared_task()
 def check_mtg_json():
-    if check_and_update():
-        update_database()
+    latest_version = check()
+    if latest_version:
+        local = get_last_updated()
         mail_me(
-            'new mtgjson',
-            'lmao',
+            'db out of date',
+            f'<p>Latest remote: {latest_version.strftime(MTG_JSON_DATETIME_FORMAT) if latest_version else "None"}</p>'
+            f'<p>Latest local: {local.strftime(MTG_JSON_DATETIME_FORMAT) if local else "None"}</p>',
         )
 
 

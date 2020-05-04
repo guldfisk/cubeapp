@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import datetime
 import os
 
 from celery import Celery
@@ -22,6 +23,10 @@ app.conf.beat_schedule = {
         'task': 'draft.tasks.clean_drafts',
         'schedule': crontab(hour = 4, minute = 0),
     },
+    'check_json': {
+        'task': 'api.tasks.check_mtg_json',
+        'schedule': datetime.timedelta(hours = 1),
+    }
 }
 
 
