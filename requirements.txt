@@ -51,3 +51,4 @@ ipython
 django-celery-beat
 django-debug-toolbar
 django-debug-panel
+django-debug-toolbar-request-history
