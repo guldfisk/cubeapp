@@ -29,7 +29,14 @@ class DraftSessionList(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = models.DraftSession.objects.all().prefetch_related(
+            'seats',
+            'seats__user',
             'pool_specification__specifications',
+            'limited_session__pool_specification',
+            'limited_session__pool_specification__specifications',
+            'limited_session__results',
+            'limited_session__results__players',
+            'limited_session__results__players__user',
         )
 
         draft_format_filter = self.request.GET.get('draft_format_filter')

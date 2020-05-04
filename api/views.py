@@ -8,6 +8,7 @@ import random
 from distutils.util import strtobool
 
 from django.db import transaction
+from django.db.models import Prefetch
 from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
@@ -50,7 +51,6 @@ from resources.staticdb import db
 from resources.staticimageloader import image_loader
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
-
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
     'Trap': Trap,
@@ -82,7 +82,13 @@ def db_info(request: HttpRequest) -> HttpResponse:
 
 
 class CubeReleaseView(generics.RetrieveAPIView):
-    queryset = models.CubeRelease.objects.all()
+    queryset = models.CubeRelease.objects.select_related(
+        'versioned_cube',
+        'versioned_cube__author',
+        'constrained_nodes',
+    ).prefetch_related(
+        'image_bundles',
+    ).all()
     serializer_class = serializers.FullCubeReleaseSerializer
 
 
@@ -418,7 +424,21 @@ class UserEndpoint(generics.RetrieveAPIView):
 
 
 class VersionedCubesList(generics.ListCreateAPIView):
-    queryset = models.VersionedCube.objects.all()
+    queryset = models.VersionedCube.objects.select_related(
+        'author',
+    ).prefetch_related(
+        Prefetch(
+            'releases',
+            queryset = models.CubeRelease.objects.all().only(
+                'id',
+                'name',
+                'created_at',
+                'checksum',
+                'intended_size',
+                'versioned_cube_id',
+            )
+        ),
+    ).all()
     serializer_class = serializers.VersionedCubeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
@@ -437,7 +457,21 @@ class VersionedCubesList(generics.ListCreateAPIView):
 
 
 class VersionedCubeDetail(generics.RetrieveDestroyAPIView):
-    queryset = models.VersionedCube.objects.all()
+    queryset = models.VersionedCube.objects.select_related(
+        'author',
+    ).prefetch_related(
+        Prefetch(
+            'releases',
+            queryset = models.CubeRelease.objects.all().only(
+                'id',
+                'name',
+                'created_at',
+                'checksum',
+                'intended_size',
+                'versioned_cube_id',
+            )
+        ),
+    ).all()
     serializer_class = serializers.VersionedCubeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 

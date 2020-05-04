@@ -13,6 +13,7 @@ from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from api import models
 from api.serialization import orpserialize
+from utils.serialization.fields import EnumSerializerField
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 
@@ -40,14 +41,21 @@ class OrpSerializerField(serializers.Field):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = get_user_model()
         fields = ('id', 'username')
 
 
+class ImageBundleSerializer(serializers.ModelSerializer):
+    target = EnumSerializerField(models.ReleaseImageBundle.Target)
+
+    class Meta:
+        model = models.ReleaseImageBundle
+        fields = ('id', 'url', 'target')
+
+
 class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = UserSerializer(read_only = True)
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
 
     class Meta:
@@ -67,9 +75,9 @@ class NameCubeReleaseSerializer(serializers.Serializer):
 
 
 class MinimalCubeReleaseSerializer(NameCubeReleaseSerializer):
-    created_at = serializers.DateTimeField(read_only=True, format = JAVASCRIPT_DATETIME_FORMAT)
-    checksum = serializers.CharField(read_only=True)
-    intended_size = serializers.IntegerField(read_only=True)
+    created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+    checksum = serializers.CharField(read_only = True)
+    intended_size = serializers.IntegerField(read_only = True)
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):
@@ -86,14 +94,14 @@ class ConstrainedNodesSerializer(serializers.ModelSerializer):
 
 
 class CubePatchSerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = UserSerializer(read_only = True)
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     versioned_cube_id = serializers.PrimaryKeyRelatedField(
-        write_only=True,
-        source='versioned_cube',
-        queryset=models.VersionedCube.objects.all(),
+        write_only = True,
+        source = 'versioned_cube',
+        queryset = models.VersionedCube.objects.all(),
     )
-    versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
+    versioned_cube = MinimalVersionedCubeSerializer(read_only = True)
 
     patch = OrpSerializerField(
         model_serializer = orpserialize.CubePatchOrpSerializer,
@@ -105,14 +113,15 @@ class CubePatchSerializer(serializers.ModelSerializer):
 
 
 class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
-    versioned_cube = MinimalVersionedCubeSerializer(read_only=True)
+    versioned_cube = MinimalVersionedCubeSerializer(read_only = True)
 
 
 class FullCubeReleaseSerializer(CubeReleaseSerializer):
     cube = OrpSerializerField(
         model_serializer = orpserialize.CubeSerializer,
     )
-    constrained_nodes = ConstrainedNodesSerializer(read_only=True)
+    constrained_nodes = ConstrainedNodesSerializer(read_only = True)
+    image_bundles = ImageBundleSerializer(many = True)
 
 
 class LoginSerializer(serializers.Serializer):
@@ -147,8 +156,8 @@ class SignupSerializer(serializers.Serializer):
 
 class ParseConstrainedNodeSerializer(serializers.Serializer):
     query = serializers.CharField()
-    groups = serializers.CharField(required=False, allow_blank = True)
-    weight = serializers.IntegerField(required=False, allow_null = True)
+    groups = serializers.CharField(required = False, allow_blank = True)
+    weight = serializers.IntegerField(required = False, allow_null = True)
 
     def update(self, instance, validated_data):
         raise NotImplemented
@@ -169,14 +178,13 @@ class ParseTrapSerializer(serializers.Serializer):
 
 
 class InviteSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.Invite
-        fields = ('email', )
+        fields = ('email',)
 
 
 class VersionedCubeSerializer(MinimalVersionedCubeSerializer):
-    releases = MinimalCubeReleaseSerializer(read_only=True, many=True)
+    releases = MinimalCubeReleaseSerializer(read_only = True, many = True)
 
     class Meta:
         model = models.VersionedCube

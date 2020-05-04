@@ -5,7 +5,7 @@ import cellEditFactory from 'react-bootstrap-table2-editor';
 
 import {CardboardWish, Requirement, Wish} from '../../models/models';
 import RequirementsView from "./RequirementsView";
-import {CardboardListItem, DateListItem} from "../../utils/listitems";
+import {CardboardListItem, CardboardTooltip, DateListItem} from "../../utils/listitems";
 
 import '../../../styling/WishView.css';
 
@@ -103,8 +103,8 @@ export default class WishView extends React.Component<WishViewProps> {
           id: cardboardWish.id,
           cardboard: <CardboardListItem cardboard={cardboardWish.cardboard} multiplicity={1}/>,
           minimumAmount: cardboardWish.minimumAmount,
-          createdAt: <DateListItem date={cardboardWish.createdAt} />,
-          updatedAt: <DateListItem date={cardboardWish.updatedAt} />,
+          createdAt: <DateListItem date={cardboardWish.createdAt}/>,
+          updatedAt: <DateListItem date={cardboardWish.updatedAt}/>,
           requirements: <RequirementsView
             cardboardWish={cardboardWish}
             onRequirementDelete={this.props.onRequirementDelete}
@@ -114,33 +114,36 @@ export default class WishView extends React.Component<WishViewProps> {
       }
     );
 
-    return <BootstrapTable
-      keyField='id'
-      data={data}
-      columns={columns}
-      bootstrap4
-      condensed
-      classes="hide-header light-table"
-      cellEdit={
-        this.props.onCardboardWishMinimumAmountChange ? cellEditFactory(
-          {
-            mode: 'click',
-            beforeSaveCell: (
-              (oldValue: any, newValue: any, row: any, column: any) => {
-                if (oldValue == newValue) {
-                  return;
+    return <div>
+      <CardboardTooltip/>
+      <BootstrapTable
+        keyField='id'
+        data={data}
+        columns={columns}
+        bootstrap4
+        condensed
+        classes="hide-header light-table"
+        cellEdit={
+          this.props.onCardboardWishMinimumAmountChange ? cellEditFactory(
+            {
+              mode: 'click',
+              beforeSaveCell: (
+                (oldValue: any, newValue: any, row: any, column: any) => {
+                  if (oldValue == newValue) {
+                    return;
+                  }
+                  this.props.onCardboardWishMinimumAmountChange(
+                    row.cardboardWish,
+                    parseInt(newValue),
+                  );
                 }
-                this.props.onCardboardWishMinimumAmountChange(
-                  row.cardboardWish,
-                  parseInt(newValue),
-                );
-              }
-            ),
-            blurToSave: true,
-          }
-        ) : undefined
-      }
-    />
+              ),
+              blurToSave: true,
+            }
+          ) : undefined
+        }
+      />
+    </div>
 
   }
 

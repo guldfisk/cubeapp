@@ -7,7 +7,9 @@ import Container from "react-bootstrap/Container";
 
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 import {CubeablesContainer, Cubeable, PrintingCounter} from "../../models/models";
-import {ImageableListItem} from "../../utils/listitems";
+import {ImageableListItem, PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
+import ReactTooltip from "react-tooltip";
+import {ImageableImage} from "../../images";
 
 
 interface RawCubeListViewProps {
@@ -146,6 +148,8 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
             }
           )
         }
+        <PrintingsTooltip/>
+        <TrapTooltip/>
       </Row>
     </Container>
   }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from enum import Enum
 
 from django.db import models
 from django.utils.timezone import now
@@ -15,7 +16,9 @@ from magiccube.collections.nodecollection import NodeCollection, GroupMap
 
 from api.fields.orp import OrpField
 from utils import mixins
+from utils.fields import EnumField
 from utils.methods import get_random_name
+from utils.mixins import TimestampedModel
 
 
 class VersionedCube(mixins.SoftDeletionModel, models.Model):
@@ -158,3 +161,19 @@ class Invite(models.Model):
         null = True,
         related_name = 'invite',
     )
+
+
+class ReleaseImageBundle(TimestampedModel, models.Model):
+    class Target(Enum):
+        COCKATRICE = 0
+
+    url = models.CharField(max_length = 511)
+    release = models.ForeignKey(
+        CubeRelease,
+        related_name = 'image_bundles',
+        on_delete = models.CASCADE,
+    )
+    target = EnumField(Target)
+
+    class Meta:
+        unique_together = ('release', 'target')

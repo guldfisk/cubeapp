@@ -6,7 +6,7 @@ import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
 import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
-import {NodeListItem} from "../../utils/listitems";
+import {NodeListItem, PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
 
 
 interface ConstrainedNodesViewProps {
@@ -130,95 +130,99 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
 
     const {SearchBar} = Search;
 
-    return <ToolkitProvider
-      keyField='key'
-      data={data}
-      columns={columns}
-      bootstrap4
-      search
-    >
-      {
-        (props: any) => (
-          <div>
-            {
-              this.props.search ? <SearchBar
-                {...props.searchProps}
-              /> : undefined
-            }
-            <BootstrapTable
-              {...props.baseProps}
-              condensed
-              striped
-              defaultSorted={
-                [
-                  {
-                    dataField: 'value',
-                    order: 'desc',
-                  },
-                  {
-                    dataField: 'node',
-                    order: 'desc',
-                  },
-                ]
+    return <div>
+      <PrintingsTooltip/>
+      <TrapTooltip/>
+      <ToolkitProvider
+        keyField='key'
+        data={data}
+        columns={columns}
+        bootstrap4
+        search
+      >
+        {
+          (props: any) => (
+            <div>
+              {
+                this.props.search ? <SearchBar
+                  {...props.searchProps}
+                /> : undefined
               }
-              pagination={
-                paginationFactory(
-                  {
-                    hidePageListOnlyOnePage: true,
-                    showTotal: true,
-                    sizePerPage: 30,
-                  }
-                )
-              }
-              cellEdit={
-                !this.props.onNodeEdit ? cellEditFactory({mode: 'click'}) : cellEditFactory(
-                  {
-                    mode: 'click',
-                    beforeSaveCell: (
-                      (oldValue: any, newValue: any, row: any, column: any) => {
-                        if (oldValue == newValue) {
-                          return;
+              <BootstrapTable
+                {...props.baseProps}
+                condensed
+                striped
+                defaultSorted={
+                  [
+                    {
+                      dataField: 'value',
+                      order: 'desc',
+                    },
+                    {
+                      dataField: 'node',
+                      order: 'desc',
+                    },
+                  ]
+                }
+                pagination={
+                  paginationFactory(
+                    {
+                      hidePageListOnlyOnePage: true,
+                      showTotal: true,
+                      sizePerPage: 30,
+                    }
+                  )
+                }
+                cellEdit={
+                  !this.props.onNodeEdit ? cellEditFactory({mode: 'click'}) : cellEditFactory(
+                    {
+                      mode: 'click',
+                      beforeSaveCell: (
+                        (oldValue: any, newValue: any, row: any, column: any) => {
+                          if (oldValue == newValue) {
+                            return;
+                          }
+                          const oldNode = new ConstrainedNode(
+                            row.node.props.id,
+                            row.node.props.node,
+                            row.value,
+                            row.groups.split(',').map(
+                              (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
+                            ).filter(
+                              (s: string) => s.length > 0
+                            )
+                          );
+                          if (column.dataField === 'qty') {
+                            this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
+                            return;
+                          }
+                          const newNode = new ConstrainedNode(
+                            row.node.props.id,
+                            oldNode.node,
+                            oldNode.value,
+                            oldNode.groups,
+                          );
+                          if (column.dataField === 'value') {
+                            newNode.value = newValue
+                          } else if (column.dataField == 'groups') {
+                            newNode.groups = newValue.split(',').map(
+                              (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
+                            )
+                          } else {
+                            return
+                          }
+                          this.props.onNodeEdit(oldNode, newNode, row.qty);
                         }
-                        const oldNode = new ConstrainedNode(
-                          row.node.props.id,
-                          row.node.props.node,
-                          row.value,
-                          row.groups.split(',').map(
-                            (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                          ).filter(
-                            (s: string) => s.length > 0
-                          )
-                        );
-                        if (column.dataField === 'qty') {
-                          this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
-                          return;
-                        }
-                        const newNode = new ConstrainedNode(
-                          row.node.props.id,
-                          oldNode.node,
-                          oldNode.value,
-                          oldNode.groups,
-                        );
-                        if (column.dataField === 'value') {
-                          newNode.value = newValue
-                        } else if (column.dataField == 'groups') {
-                          newNode.groups = newValue.split(',').map(
-                            (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                          )
-                        } else {
-                          return
-                        }
-                        this.props.onNodeEdit(oldNode, newNode, row.qty);
-                      }
-                    ),
-                    blurToSave: true,
-                  }
-                )
-              }
-            />
-          </div>
-        )
-      }
-    </ToolkitProvider>
+                      ),
+                      blurToSave: true,
+                    }
+                  )
+                }
+              />
+            </div>
+          )
+        }
+      </ToolkitProvider>
+    </div>
   }
 }

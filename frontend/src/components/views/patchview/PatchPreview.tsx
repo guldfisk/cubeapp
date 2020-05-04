@@ -24,7 +24,7 @@ interface PatchPreviewProps {
 export default class PatchPreview extends React.Component<PatchPreviewProps> {
 
   public static defaultProps = {
-    noHover: true,
+    noHover: false,
   };
 
   render() {

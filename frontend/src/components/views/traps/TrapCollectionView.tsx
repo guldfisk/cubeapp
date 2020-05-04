@@ -21,7 +21,7 @@ export default class TrapCollectionView extends React.Component<TrapCollectionVi
           ([trap, multiplicity]) => <ImageableListItem
             cubeable={trap}
             multiplicity={multiplicity}
-            noHover={true}
+            noHover={false}
           />
         )
       }

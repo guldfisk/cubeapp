@@ -15,6 +15,7 @@ import {Modal} from "react-bootstrap";
 import ReleasesView from "../../views/releaseview/ReleasesView";
 import history from '../../routing/history';
 import {Link} from "react-router-dom";
+import Card from "react-bootstrap/Card";
 
 
 interface ReleaseSelectionDialogProps {
@@ -39,15 +40,19 @@ class ReleaseSelectionDialog extends React.Component<ReleaseSelectionDialogProps
     };
   }
 
-  componentDidMount() {
-    Cube.get(this.props.currentRelease.cube.id).then(
-      cube => this.setState({cube})
-    )
-  }
-
   render() {
     return <Modal
       show={this.props.show}
+      onEnter={
+        () => {
+          if (this.state.cube) {
+            return
+          }
+          Cube.get(this.props.currentRelease.cube.id).then(
+            cube => this.setState({cube})
+          )
+        }
+      }
     >
       <Modal.Header closeButton>
         <Modal.Title>Select release</Modal.Title>
@@ -148,19 +153,29 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
         fluid
       >
         <Row>
-          <Button
-            onClick={() => this.setState({selectingCompareRelease: true})}
-            disabled={!this.state.release}
-          >
-            Compare
-          </Button>
-          <Button>
-            <Link to={'/release/' + this.props.match.params.id + '/sample-pack/'}>
-              Sample pack
-            </Link>
-          </Button>
-        </Row>
-        <Row>
+          <Col sm={2}>
+            <Card>
+              <Card.Header>
+                Actions
+              </Card.Header>
+              <Card.Body>
+                <p>
+                  <Link
+                    to='#'
+                    onClick={() => this.setState({selectingCompareRelease: true})}
+                    className={!this.state.release ? 'disabled-link' : 'enabled-link'}
+                  >
+                    Compare
+                  </Link>
+                </p>
+                <p>
+                  <Link to={'/release/' + this.props.match.params.id + '/sample-pack/'}>
+                    Sample pack
+                  </Link>
+                </p>
+              </Card.Body>
+            </Card>
+          </Col>
           <Col>
             {element}
           </Col>

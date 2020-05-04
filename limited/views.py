@@ -159,13 +159,13 @@ class DeckExport(generics.GenericAPIView):
 
 class SessionList(generics.ListAPIView):
     serializer_class = serializers.LimitedSessionSerializer
-    queryset = models.LimitedSession.objects.all().prefetch_related(
-        Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
-        'pool_specification__specifications',
-        'results',
-        'results__players',
-        Prefetch('results__players__user', queryset = get_user_model().objects.all().only('username')),
-    )
+    # queryset = models.LimitedSession.objects.all().prefetch_related(
+    #     'pool_specification__specifications',
+    #     'pools__user',
+    #     'results',
+    #     'results__players',
+    #     'result__players__user',
+    # )
 
     _allowed_sort_keys = {
         'name': 'name',
@@ -177,16 +177,40 @@ class SessionList(generics.ListAPIView):
         'finished_at': 'finished_at',
     }
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-
-        name_filter = request.GET.get('name_filter')
+    def get_queryset(self):
+        queryset = models.LimitedSession.objects.all().prefetch_related(
+            'pool_specification__specifications',
+            Prefetch(
+                'pool_specification__specifications__release',
+                queryset = models.CubeRelease.objects.all().only(
+                    'id',
+                    'name',
+                    'created_at',
+                    'checksum',
+                    'intended_size',
+                    'versioned_cube_id',
+                )
+            ),
+            Prefetch(
+                'pools',
+                queryset = models.Pool.objects.all().only(
+                    'id',
+                    'session_id',
+                    'user_id',
+                )
+            ),
+            'pools__user',
+            'results',
+            'results__players',
+            'results__players__user',
+        )
+        name_filter = self.request.GET.get('name_filter')
         if name_filter:
             if not isinstance(name_filter, str):
                 return Response(f'invalid name filter {name_filter}', status = status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(name__contains = name_filter)
 
-        format_filter = request.GET.get('format_filter')
+        format_filter = self.request.GET.get('format_filter')
         if format_filter:
             try:
                 game_format = Format.formats_map[format_filter]
@@ -194,11 +218,11 @@ class SessionList(generics.ListAPIView):
                 return Response(f'invalid format filter {format_filter}', status = status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(format = game_format.name)
 
-        game_type_filter = request.GET.get('game_type_filter')
+        game_type_filter = self.request.GET.get('game_type_filter')
         if game_type_filter:
             queryset = queryset.filter(game_type = game_type_filter)
 
-        state_filter = request.GET.get('state_filter')
+        state_filter = self.request.GET.get('state_filter')
         if state_filter:
             try:
                 state = models.LimitedSession.LimitedSessionState[state_filter]
@@ -212,7 +236,7 @@ class SessionList(generics.ListAPIView):
                 '>': '__gt',
                 '>=': '__gte',
             }.get(
-                request.GET.get('state_filter_comparator'),
+                self.request.GET.get('state_filter_comparator'),
                 '',
             )
             if comparator is None:
@@ -224,14 +248,14 @@ class SessionList(generics.ListAPIView):
                     }
                 )
 
-        players_filter = request.GET.get('players_filter')
+        players_filter = self.request.GET.get('players_filter')
         if players_filter:
             if not isinstance(players_filter, str):
                 return Response(f'invalid player filter {players_filter}', status = status.HTTP_400_BAD_REQUEST)
             queryset = queryset.filter(pools__user__username = players_filter)
 
-        sort_key = [self._allowed_sort_keys.get(request.GET.get('sort_key'), 'created_at')]
-        ascending = strtobool(request.GET.get('ascending', 'false'))
+        sort_key = [self._allowed_sort_keys.get(self.request.GET.get('sort_key'), 'created_at')]
+        ascending = strtobool(self.request.GET.get('ascending', 'false'))
 
         if sort_key[0] != self._allowed_sort_keys['created_at']:
             sort_key.append(self._allowed_sort_keys['created_at'])
@@ -239,16 +263,80 @@ class SessionList(generics.ListAPIView):
         if not ascending:
             sort_key[0] = '-' + sort_key[0]
 
-        queryset = queryset.order_by(*sort_key)
+        return queryset.order_by(*sort_key)
 
-        page = self.paginate_queryset(queryset)
-
-        if page is not None:
-            serializer = self.get_serializer(page, many = True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many = True)
-        return Response(serializer.data)
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset()
+    #
+    #     name_filter = request.GET.get('name_filter')
+    #     if name_filter:
+    #         if not isinstance(name_filter, str):
+    #             return Response(f'invalid name filter {name_filter}', status = status.HTTP_400_BAD_REQUEST)
+    #         queryset = queryset.filter(name__contains = name_filter)
+    #
+    #     format_filter = request.GET.get('format_filter')
+    #     if format_filter:
+    #         try:
+    #             game_format = Format.formats_map[format_filter]
+    #         except KeyError:
+    #             return Response(f'invalid format filter {format_filter}', status = status.HTTP_400_BAD_REQUEST)
+    #         queryset = queryset.filter(format = game_format.name)
+    #
+    #     game_type_filter = request.GET.get('game_type_filter')
+    #     if game_type_filter:
+    #         queryset = queryset.filter(game_type = game_type_filter)
+    #
+    #     state_filter = request.GET.get('state_filter')
+    #     if state_filter:
+    #         try:
+    #             state = models.LimitedSession.LimitedSessionState[state_filter]
+    #         except KeyError:
+    #             return Response(f'invalid state filter {state_filter}', status = status.HTTP_400_BAD_REQUEST)
+    #         comparator = {
+    #             '=': '',
+    #             '!=': None,
+    #             '<': '__lt',
+    #             '<=': '__lte',
+    #             '>': '__gt',
+    #             '>=': '__gte',
+    #         }.get(
+    #             request.GET.get('state_filter_comparator'),
+    #             '',
+    #         )
+    #         if comparator is None:
+    #             queryset = queryset.exclude(state = state)
+    #         else:
+    #             queryset = queryset.filter(
+    #                 **{
+    #                     'state' + comparator: state
+    #                 }
+    #             )
+    #
+    #     players_filter = request.GET.get('players_filter')
+    #     if players_filter:
+    #         if not isinstance(players_filter, str):
+    #             return Response(f'invalid player filter {players_filter}', status = status.HTTP_400_BAD_REQUEST)
+    #         queryset = queryset.filter(pools__user__username = players_filter)
+    #
+    #     sort_key = [self._allowed_sort_keys.get(request.GET.get('sort_key'), 'created_at')]
+    #     ascending = strtobool(request.GET.get('ascending', 'false'))
+    #
+    #     if sort_key[0] != self._allowed_sort_keys['created_at']:
+    #         sort_key.append(self._allowed_sort_keys['created_at'])
+    #
+    #     if not ascending:
+    #         sort_key[0] = '-' + sort_key[0]
+    #
+    #     queryset = queryset.order_by(*sort_key)
+    #
+    #     page = self.paginate_queryset(queryset)
+    #
+    #     if page is not None:
+    #         serializer = self.get_serializer(page, many = True)
+    #         return self.get_paginated_response(serializer.data)
+    #
+    #     serializer = self.get_serializer(queryset, many = True)
+    #     return Response(serializer.data)
 
 
 class SessionDetail(generics.RetrieveDestroyAPIView):

@@ -1,0 +1,7 @@
+
+.disabled-link {
+    pointer-events: none;
+}
+
+.enabled-link {
+}

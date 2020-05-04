@@ -49,3 +49,5 @@ channels_redis==2.2.1
 django-extensions
 ipython
 django-celery-beat
+django-debug-toolbar
+django-debug-panel

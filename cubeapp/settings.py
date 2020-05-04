@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'knox',
     'django_extensions',
     'django_celery_beat',
+    'debug_toolbar',
+
     'api.apps.ApiConfig',
     'lobbies.apps.ApiConfig',
     'draft.apps.DraftConfig',
@@ -48,6 +50,7 @@ INSTALLED_APPS = [
     'wishlist.apps.WishListConfig',
     'limited.apps.LimitedConfig',
     'rating.apps.RatingConfig',
+
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -60,6 +63,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'cubeapp.urls'
@@ -152,6 +156,26 @@ CHANNEL_LAYERS = {
     },
 }
 
-CELERY_TIMEZONE = 'Europe/Copenhagen'
+CELERY_TIMEZONE = TIME_ZONE
 
 BEAT_SCHEDULER = 'celery.beat:PersistentScheduler'
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
+
+if DEBUG:
+    DEBUG_TOOLBAR_CONFIG = {
+        "SHOW_TOOLBAR_CALLBACK": lambda _: False,
+    }
+
+DEBUG_TOOLBAR_PANELS = [
+    'ddt_request_history.panels.request_history.RequestHistoryPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+]

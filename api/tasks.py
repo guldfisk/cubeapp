@@ -1,10 +1,19 @@
+import os
+import typing as t
+
 import tempfile
 import itertools
+import zipfile
+
+from collections import defaultdict
 
 from boto3 import session
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
+from mtgorp.models.persistent.printing import Printing
+
+from mtgorp.models.persistent.cardboard import Cardboard
 from promise import Promise
 from django.conf import settings
 
@@ -13,7 +22,7 @@ from proxypdf.write import ProxyWriter
 from mtgorp.db.create import update_database
 from mtgorp.managejson.update import check_and_update
 
-from mtgimg.interface import SizeSlug
+from mtgimg.interface import SizeSlug, ImageRequest
 
 from magiccube.collections.laps import TrapCollection
 
@@ -74,6 +83,7 @@ def generate_distribution_pdf(
     def _helper(trap):
         def _wrapped(img):
             return trap, img
+
         return _wrapped
 
     images = dict(
@@ -211,3 +221,60 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
             'pdf_url': pdf_url,
         },
     )
+
+
+@shared_task()
+def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: bool = False):
+    try:
+        release: models.CubeRelease = models.CubeRelease.objects.get(pk = release_id)
+    except models.CubeRelease.DoesNotExist:
+        return
+
+    if models.ReleaseImageBundle.objects.filter(
+        release_id = release_id,
+        target = models.ReleaseImageBundle.Target.COCKATRICE,
+    ).exists():
+        raise ValueError('Bundle already exists')
+
+    boto_session = session.Session()
+    client = boto_session.client(
+        's3',
+        region_name = 'fra1',
+        endpoint_url = 'https://phdk.fra1.digitaloceanspaces.com/',
+        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
+        aws_secret_access_key = settings.SPACES_SECRET_KEY,
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        zip_file_name = os.path.join(tmpdir, 'bundle.zip')
+        with zipfile.ZipFile(zip_file_name, "w") as f:
+            cardboard_printing_map: t.MutableMapping[Cardboard, t.List[Printing]] = defaultdict(list)
+            for printing in release.cube.all_printings:
+                cardboard_printing_map[printing.cardboard].append(printing)
+            for cardboard, printings in cardboard_printing_map.items():
+                f.write(
+                    ImageRequest(
+                        (max if prefer_latest_printing else min)(
+                            printings,
+                            key = lambda p: p.expansion.release_date,
+                        ),
+                    ).path,
+                    ''.join(card.name for card in cardboard.front_cards) + '.png',
+                    zipfile.ZIP_STORED,
+                )
+
+        key = f'image_bundles/{release.cube.persistent_hash()}_{models.ReleaseImageBundle.Target.COCKATRICE.value}.zip'
+
+        client.upload_file(
+            Filename = zip_file_name,
+            Bucket = 'phdk',
+            Key = key,
+            ExtraArgs = {
+                'ACL': 'public-read',
+            },
+        )
+        models.ReleaseImageBundle.objects.create(
+            release = release,
+            url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/{key}',
+            target = models.ReleaseImageBundle.Target.COCKATRICE,
+        )

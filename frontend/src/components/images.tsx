@@ -34,6 +34,9 @@ interface CubeableImageProps {
 export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
   {imageable = null, sizeSlug = 'medium', onClick = null, id = null, type = null, cropped = false}: CubeableImageProps
 ) => {
+  if (!id && !imageable) {
+    return <div/>
+  }
   const [width, height]: [number, number] = cropped ? croppedImageSizeMap[sizeSlug] : imageSizeMap[sizeSlug];
   return <LazyImage
     src={

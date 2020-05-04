@@ -17,6 +17,8 @@ import {Loading} from "./utils/utils";
 import SignInPage from './pages/authentication/SignInPage';
 import store from './state/store';
 
+import '../styling/global.css';
+
 
 interface RootProps {
   auth: {

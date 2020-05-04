@@ -12,7 +12,7 @@ import Form from "react-bootstrap/Form";
 import PaginationBar from '../../utils/PaginationBar';
 import {ImageableImage} from "../../images";
 import Alert from "react-bootstrap/Alert";
-import {ImageableListItem} from "../../utils/listitems";
+import {CardboardTooltip, ImageableListItem, PrintingsTooltip} from "../../utils/listitems";
 
 
 interface SearchViewProps<T> {
@@ -291,6 +291,8 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
         {
           !this.state.searchResults.length ? undefined :
             <Row>
+              <PrintingsTooltip/>
+              <CardboardTooltip/>
               <Table>
                 {
                   this.props.resultView === 'images' ?

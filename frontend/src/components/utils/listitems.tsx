@@ -7,6 +7,72 @@ import {ImageableImage} from "../images";
 import ListGroup from "react-bootstrap/ListGroup";
 
 
+export const PrintingsTooltip: React.SFC = (props: any) => {
+  return <ReactTooltip
+    place="bottom"
+    type="dark"
+    effect="float"
+    id='printing-tt'
+    className="printing-list-tooltip"
+    getContent={
+      (id: string) => <ImageableImage
+        id={id}
+        type='Printing'
+      />
+    }
+  />
+};
+
+
+export const CardboardTooltip: React.SFC = (props: any) => {
+  return <ReactTooltip
+    place="bottom"
+    type="dark"
+    effect="float"
+    id='cardboard-tt'
+    className="printing-list-tooltip"
+    getContent={
+      (id: string) => <ImageableImage
+        id={id}
+        type='Cardboard'
+      />
+    }
+  />
+};
+
+
+export const TrapTooltip: React.SFC = (props: any) => {
+  return <ReactTooltip
+    place="bottom"
+    type="dark"
+    effect="float"
+    id='trap-tt'
+    className="printing-list-tooltip"
+    getContent={
+      (dataTip: string) => {
+        if (!dataTip) {
+          return <div/>
+        }
+        const [trapId, printingId] = dataTip.split('/');
+        return <span>
+          {
+            trapId && <ImageableImage
+              id={trapId}
+              type='Trap'
+            />
+          }
+          <ImageableImage
+            id={printingId}
+            type='printing'
+          />
+      </span>
+      }
+
+    }
+  />
+};
+
+
 interface DateListItemProps {
   date: Date
 }
@@ -64,8 +130,8 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
 
   return <span>
     <a
-      data-tip=""
-      data-for={props.printing.id.toString()}
+      data-for='printing-tt'
+      data-tip={props.printing.id.toString()}
       onClick={
         props.onClick && (
           () => {
@@ -76,17 +142,6 @@ export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: Printi
     >
       {display_name}
     </a>
-    <ReactTooltip
-      place="top"
-      type="dark"
-      effect="float"
-      id={props.printing.id.toString()}
-      className="printing-list-tooltip"
-    >
-      <ImageableImage
-        imageable={props.printing}
-      />
-    </ReactTooltip>
   </span>
 };
 
@@ -118,32 +173,19 @@ export const CardboardListItem: React.SFC<CardboardListItemProps> = (props: Card
     </a>
   }
 
-  return <span>
-    <a
-      data-tip=""
-      data-for={props.cardboard.id.toString()}
-      onClick={
-        props.onClick && (
-          () => {
-            props.onClick(props.cardboard, props.multiplicity);
-          }
-        )
-      }
-    >
-      {display_name}
-    </a>
-    <ReactTooltip
-      place="top"
-      type="dark"
-      effect="float"
-      id={props.cardboard.id.toString()}
-      className="printing-list-tooltip"
-    >
-      <ImageableImage
-        imageable={props.cardboard}
-      />
-    </ReactTooltip>
-  </span>
+  return <a
+    data-tip={props.cardboard.id.toString()}
+    data-for='cardboard-tt'
+    onClick={
+      props.onClick && (
+        () => {
+          props.onClick(props.cardboard, props.multiplicity);
+        }
+      )
+    }
+  >
+    {display_name}
+  </a>
 };
 
 
@@ -153,15 +195,11 @@ const trap_representation = (
   onClick: ((trap: Trap, multiplicity: number) => void) | undefined = undefined,
 ): any => {
   if (item instanceof Printing) {
-    const tooltipId = (
-      trap === undefined ?
-        item.id.toString()
-        : trap.id.toString() + item.id.toString()
-    );
+
     return <span>
     <a
-      data-tip=""
-      data-for={tooltipId}
+      data-tip={(trap ? trap.id.toString() : '') + '/' + item.id.toString()}
+      data-for='trap-tt'
     >
       {
         `${(multiplicity && multiplicity !== 1) ?
@@ -169,23 +207,6 @@ const trap_representation = (
           : ''}${item.full_name()}`
       }
     </a>
-    <ReactTooltip
-      place="top"
-      type="dark"
-      effect="float"
-      id={tooltipId}
-      className="printing-list-tooltip"
-    >
-      {
-        trap === undefined ?
-          <span/> : <ImageableImage
-            imageable={trap}
-          />
-      }
-      <ImageableImage
-        imageable={item}
-      />
-    </ReactTooltip>
   </span>
   }
 
@@ -249,6 +270,7 @@ interface NodeListItemProps {
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
+  console.log('no hover', props.noHover);
   if (props.noHover) {
     return <a
       onClick={
