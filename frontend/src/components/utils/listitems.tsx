@@ -270,7 +270,6 @@ interface NodeListItemProps {
 }
 
 export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
-  console.log('no hover', props.noHover);
   if (props.noHover) {
     return <a
       onClick={

@@ -27,5 +27,8 @@ def send_mail(
 def mail_me(
     subject: str,
     content: str,
+    force: bool = False,
 ):
+    if settings.DEBUG and not force:
+        return
     return send_mail(subject, content, [settings.OWNER_EMAIL])

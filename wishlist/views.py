@@ -163,11 +163,7 @@ class WishListDetail(generics.RetrieveDestroyAPIView):
 
 
 class WishListList(generics.ListCreateAPIView):
-    queryset = models.WishList.objects.all().prefetch_related(
-        'wishes',
-        'wishes__cardboard_wishes',
-        'wishes__cardboard_wishes__requirements',
-    )
+    queryset = models.WishList.objects.all()
     serializer_class = serializers.WishListSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 

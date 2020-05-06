@@ -15,17 +15,17 @@ services:
     networks:
       - database_network
 
-#  rabbitmq:
-#    image: 'bitnami/rabbitmq:latest'
-#    networks:
-#      - database_network
-#    restart: always
-#    environment:
-#      DEBUG: 1
-#    env_file:
-#      - .env
-#    ports:
-#      - 1515:15672
+  #  rabbitmq:
+  #    image: 'bitnami/rabbitmq:latest'
+  #    networks:
+  #      - database_network
+  #    restart: always
+  #    environment:
+  #      DEBUG: 1
+  #    env_file:
+  #      - .env
+  #    ports:
+  #      - 1515:15672
 
   redis:
     image: 'bitnami/redis:latest'
@@ -36,9 +36,29 @@ services:
       - database_network
     restart: always
 
+  web:
+    build: .
+    image: app-image
+    restart: always
+    volumes:
+      - .:/code
+      - ~/.local/share/mtgimg:/root/.local/share/mtgimg
+      - ~/.local/share/mtgorp:/root/.local/share/mtgorp
+      - static_volume:/opt/services/cubeapp/static
+      - media_volume:/opt/services/cubeapp/meda
+    depends_on:
+      - db
+      - redis
+    networks:
+      - database_network
+    env_file:
+      - .env
+    environment:
+      - DEBUG=1
+
   celery_worker:
     image: app-image
-    command: celery -A cubeapp beat --loglevel=info
+    command: celery -A cubeapp worker --loglevel=info
     volumes:
       - .:/code
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
@@ -56,10 +76,9 @@ services:
     environment:
       - DEBUG=1
 
-  web:
-    build: .
+  celery_beat:
     image: app-image
-    restart: always
+    command: celery -A cubeapp beat --loglevel=info
     volumes:
       - .:/code
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
@@ -67,11 +86,11 @@ services:
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/meda
     depends_on:
-      - db
       - redis
-#      - rabbitmq
+      - db
     networks:
       - database_network
+    restart: on-failure
     env_file:
       - .env
     environment:

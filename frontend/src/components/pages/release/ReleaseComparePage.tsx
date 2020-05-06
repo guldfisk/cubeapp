@@ -1,5 +1,5 @@
 import React from 'react';
-import {CubeRelease, Patch, VerbosePatch} from "../../models/models";
+import {CubeRelease, Patch, UpdateReport, VerbosePatch} from "../../models/models";
 import PatchMultiView from "../../views/patchview/PatchMultiView";
 import {Loading} from "../../utils/utils";
 import Container from "react-bootstrap/Container";
@@ -7,6 +7,7 @@ import Row from "react-bootstrap/Row";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 import store from "../../state/store";
+import ReportView from "../../views/report/ReportView";
 
 
 interface ReleaseComparePageProps {
@@ -17,6 +18,7 @@ interface ReleaseComparePageProps {
 interface ReleaseComparePageState {
   patch: Patch | null
   verbosePatch: VerbosePatch | null
+  report: UpdateReport | null
   pdfUrl: string | null
   ws: WebSocket | null
   generating: boolean
@@ -30,6 +32,7 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
     this.state = {
       patch: null,
       verbosePatch: null,
+      report: null,
       pdfUrl: null,
       ws: null,
       generating: false,
@@ -47,9 +50,9 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       this.props.match.params.id_from,
       this.props.match.params.id,
     ).then(
-      ([patch, verbosePatch, pdfUrl]) => {
+      ([patch, verbosePatch, pdfUrl, report]) => {
         this.setState(
-          {patch, verbosePatch, pdfUrl},
+          {patch, verbosePatch, pdfUrl, report},
           this.connectWs,
         )
       }
@@ -103,11 +106,6 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
 
 
   render() {
-    const patchMultiView = !this.state.patch ? <Loading/> : <PatchMultiView
-      patch={this.state.patch}
-      verbosePatch={this.state.verbosePatch}
-    />;
-
     const pdfButton = this.state.pdfUrl ?
       <a
         href={this.state.pdfUrl}
@@ -143,7 +141,17 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       </Row>
       <Row>
         <Col>
-          {patchMultiView}
+          {this.state.report ? <ReportView report={this.state.report}/> : <Loading/>}
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          {
+            !this.state.patch ? <Loading/> : <PatchMultiView
+              patch={this.state.patch}
+              verbosePatch={this.state.verbosePatch}
+            />
+          }
         </Col>
       </Row>
     </Container>;

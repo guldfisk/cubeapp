@@ -3,6 +3,7 @@ import itertools
 from distutils.util import strtobool
 
 from django.contrib.auth.models import AbstractUser
+from django.db.models import Prefetch
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -32,8 +33,38 @@ class DraftSessionList(generics.ListAPIView):
             'seats',
             'seats__user',
             'pool_specification__specifications',
-            'limited_session__pool_specification',
+            Prefetch(
+                'pool_specification__specifications__release',
+                queryset = models.CubeRelease.objects.all().only(
+                    'id',
+                    'name',
+                    'created_at',
+                    'checksum',
+                    'intended_size',
+                    'versioned_cube_id',
+                )
+            ),
             'limited_session__pool_specification__specifications',
+            Prefetch(
+                'limited_session__pool_specification__specifications__release',
+                queryset = models.CubeRelease.objects.all().only(
+                    'id',
+                    'name',
+                    'created_at',
+                    'checksum',
+                    'intended_size',
+                    'versioned_cube_id',
+                )
+            ),
+            Prefetch(
+                'limited_session__pools',
+                queryset = Pool.objects.all().only(
+                    'id',
+                    'session_id',
+                    'user_id',
+                )
+            ),
+            'limited_session__pools__user',
             'limited_session__results',
             'limited_session__results__players',
             'limited_session__results__players__user',

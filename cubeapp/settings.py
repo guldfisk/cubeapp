@@ -158,7 +158,7 @@ CHANNEL_LAYERS = {
 
 CELERY_TIMEZONE = TIME_ZONE
 
-BEAT_SCHEDULER = 'celery.beat:PersistentScheduler'
+BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 INTERNAL_IPS = [
     '127.0.0.1',

@@ -119,11 +119,12 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
                 cardboard = db.cardboards[pictured_id.replace('_', '/')]
             except KeyError:
                 return HttpResponse(status = status.HTTP_404_NOT_FOUND)
+
             image_request = ImageRequest(
-                sorted(
+                max(
                     cardboard.printings,
                     key = lambda p: p.expansion.release_date
-                )[-1],
+                ),
                 size_slug = size_slug,
                 crop = cropped,
             )
@@ -730,6 +731,11 @@ def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
                 cube_patch.as_verbose(from_meta_cube)
             ),
             'pdf_url': pdf_url,
+            'report': orpserialize.UpdateReportSerializer.serialize(
+                UpdateReport(
+                    CubeUpdater(from_meta_cube, cube_patch)
+                )
+            )
         }
     )
 

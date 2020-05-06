@@ -49,6 +49,10 @@ services:
     environment:
       DEBUG: 0
 
+  celery_beat:
+    environment:
+      DEBUG: 0
+
   web:
     networks:
       - nginx_network
