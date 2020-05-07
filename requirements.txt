@@ -17,6 +17,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/django-typed-models.git#egg=django-typed-models
 -e git+https://github.com/guldfisk/cubeclient.git#egg=cubeclient
 -e git+https://github.com/guldfisk/mtgdraft.git#egg=mtgdraft
+-e git+https://github.com/guldfisk/django-webpack-loader.git#egg=django-webpack-loader
 lazy-property
 multiset
 appdirs

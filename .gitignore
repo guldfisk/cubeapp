@@ -7,6 +7,8 @@ src/
 media/
 !/frontend/src/
 __pycache__/
-/static/new_garbage_out_all.pdf
 /celerybeat.pid
 /celerybeat-schedule
+/static/bundles/
+/assets/bundles/
+/webpack-stats.json

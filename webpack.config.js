@@ -1,4 +1,9 @@
+const path = require('path');
+const BundleTracker = require('webpack-bundle-tracker');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+
 module.exports = {
+  context: __dirname,
 
   entry: {
     app: './frontend/src/index.ts'
@@ -8,9 +13,9 @@ module.exports = {
   devtool: 'inline-source-map',
 
   output: {
-    filename: 'main.js',
-    path: __dirname + '/frontend/static/frontend'
-
+    filename: '[name].[contenthash].js',
+    path: path.resolve('./assets/bundles/'),
+    publicPath: "/static/bundles/",
   },
 
   module: {
@@ -36,8 +41,23 @@ module.exports = {
 
     ]
   },
+
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
-  }
+  },
+
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+    }
+  },
+
+  plugins: [
+    new BundleTracker({
+      path: __dirname,
+      filename: './webpack-stats.json',
+    }),
+    new CleanWebpackPlugin(),
+  ],
 
 };

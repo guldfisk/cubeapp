@@ -1,39 +1,39 @@
-import React from "react";
+import React from 'react';
 
-import ReleasePage from '../pages/release/ReleasePage';
-import NotFoundPage from '../pages/NotFoundPage';
-import CreateCubePage from '../pages/cubes/CreateCubePage';
-import CubePatchesPage from '../pages/patches/CubePatchesPage';
-import SignInPage from '../pages/authentication/SignInPage';
-import SignOutPage from '../pages/authentication/SignOutPage';
-import CubesPage from '../pages/cubes/CubesPage';
-import CubePage from '../pages/cubes/CubePage';
-import PatchesPage from '../pages/patches/PatchesPage';
-import PatchPage from '../pages/patches/PatchPage';
-import CreatePatchPage from '../pages/patches/CreatePatchPage';
-import SignUpPage from "../pages/authentication/SignUpPage";
-import InvitePage from "../pages/authentication/InvitePage";
-import ApplyPatchPage from "../pages/patches/ApplyPatchPage";
-import AboutPage from "../pages/AboutPage";
-import ReleaseComparePage from "../pages/release/ReleaseComparePage";
-import LatestReleasePage from "../pages/release/LatestReleasePage";
-import SearchSyntaxPage from "../pages/search/SearchSyntaxPage";
-import SearchPage from "../pages/search/SearchPage";
-import SamplePackPage from "../pages/SamplePackPage";
-import WishListPage from "../pages/wishes/WishListPage";
-import WishListsPage from "../pages/wishes/WishListsPage";
-import PoolPage from "../pages/limited/PoolPage";
-import SessionsPage from "../pages/limited/SessionsPage";
-import SessionPage from "../pages/limited/SessionPage";
-import ArtGamePage from "../pages/ArtGamePage";
-import DraftsPage from "../pages/draft/DraftsPage";
-import DraftPage from "../pages/draft/DraftPage";
-import SeatPage from "../pages/draft/SeatPage";
+const ReleasePage = React.lazy(() => import('../pages/release/ReleasePage'));
+const NotFoundPage = React.lazy(() => import('../pages/NotFoundPage'));
+const CreateCubePage = React.lazy(() => import('../pages/cubes/CreateCubePage'));
+const CubePatchesPage = React.lazy(() => import('../pages/patches/CubePatchesPage'));
+const SignInPage = React.lazy(() => import('../pages/authentication/SignInPage'));
+const SignOutPage = React.lazy(() => import('../pages/authentication/SignOutPage'));
+const CubesPage = React.lazy(() => import('../pages/cubes/CubesPage'));
+const CubePage = React.lazy(() => import('../pages/cubes/CubePage'));
+const PatchesPage = React.lazy(() => import('../pages/patches/PatchesPage'));
+const PatchPage = React.lazy(() => import('../pages/patches/PatchPage'));
+const CreatePatchPage = React.lazy(() => import('../pages/patches/CreatePatchPage'));
+const SignUpPage = React.lazy(() => import("../pages/authentication/SignUpPage"));
+const InvitePage = React.lazy(() => import("../pages/authentication/InvitePage"));
+const ApplyPatchPage = React.lazy(() => import("../pages/patches/ApplyPatchPage"));
+const AboutPage = React.lazy(() => import("../pages/AboutPage"));
+const ReleaseComparePage = React.lazy(() => import("../pages/release/ReleaseComparePage"));
+const LatestReleasePage = React.lazy(() => import("../pages/release/LatestReleasePage"));
+const SearchSyntaxPage = React.lazy(() => import("../pages/search/SearchSyntaxPage"));
+const SearchPage = React.lazy(() => import("../pages/search/SearchPage"));
+const SamplePackPage = React.lazy(() => import("../pages/SamplePackPage"));
+const WishListPage = React.lazy(() => import("../pages/wishes/WishListPage"));
+const WishListsPage = React.lazy(() => import("../pages/wishes/WishListsPage"));
+const PoolPage = React.lazy(() => import("../pages/limited/PoolPage"));
+const SessionsPage = React.lazy(() => import("../pages/limited/SessionsPage"));
+const SessionPage = React.lazy(() => import("../pages/limited/SessionPage"));
+const ArtGamePage = React.lazy(() => import("../pages/ArtGamePage"));
+const DraftsPage = React.lazy(() => import("../pages/draft/DraftsPage"));
+const DraftPage = React.lazy(() => import("../pages/draft/DraftPage"));
+const SeatPage = React.lazy(() => import("../pages/draft/SeatPage"));
 
 
 export const routes: [
   string | undefined,
-  (typeof React.Component) | React.FunctionComponent,
+  (typeof React.Component) | React.FunctionComponent | any,
   boolean,
   { [key: string]: any }
   ][] = [

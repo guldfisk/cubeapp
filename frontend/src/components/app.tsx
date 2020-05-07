@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Suspense} from 'react';
 import ReactDOM from 'react-dom';
 
 import {Router, Route, Switch} from "react-router-dom";
@@ -54,32 +54,34 @@ class RootComponent extends React.Component<RootProps> {
   createRoutes = (
     routes: [string | undefined, (typeof React.Component) | React.FunctionComponent, boolean, { [key: string]: any }][]
   ) => {
-    return <Switch>
+    return <Suspense fallback={<Loading/>}>
+      <Switch>
 
-      {
-        routes.map(
-          ([path, component, isPrivate, args]) => {
-            return (
-              isPrivate ?
-                <this.PrivateRoute
-                  path={path}
-                  key={path}
-                  exact
-                  component={component}
-                  {...args}
-                /> :
-                <Route
-                  path={path}
-                  key={path}
-                  exact
-                  component={args.render ? undefined : component}
-                  {...args}
-                />
-            )
-          }
-        )
-      }
-    </Switch>
+        {
+          routes.map(
+            ([path, component, isPrivate, args]) => {
+              return (
+                isPrivate ?
+                  <this.PrivateRoute
+                    path={path}
+                    key={path}
+                    exact
+                    component={component}
+                    {...args}
+                  /> :
+                  <Route
+                    path={path}
+                    key={path}
+                    exact
+                    component={args.render ? undefined : component}
+                    {...args}
+                  />
+              )
+            }
+          )
+        }
+      </Switch>
+    </Suspense>
   };
 
 
