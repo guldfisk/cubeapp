@@ -1,6 +1,5 @@
 import os
 import typing as t
-
 import tempfile
 import itertools
 import zipfile
@@ -11,15 +10,16 @@ from boto3 import session
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
-from mtgorp.models.persistent.printing import Printing
 
-from mtgorp.models.persistent.cardboard import Cardboard
 from promise import Promise
+
 from django.conf import settings
 
 from proxypdf.write import ProxyWriter
 
-from mtgorp.managejson.update import check, MTG_JSON_DATETIME_FORMAT, get_last_updated
+from mtgorp.models.persistent.printing import Printing
+from mtgorp.models.persistent.cardboard import Cardboard
+from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update
 
 from mtgimg.interface import SizeSlug, ImageRequest
 
@@ -33,13 +33,15 @@ from resources.staticimageloader import image_loader
 
 @shared_task()
 def check_mtg_json():
-    latest_version = check()
-    if latest_version:
-        local = get_last_updated()
+    current_db_json_version = get_last_db_update()
+    if check_and_update():
+        new_db_version = get_last_db_update()
         mail_me(
             'db out of date',
-            f'<p>Latest remote: {latest_version.strftime(MTG_JSON_DATETIME_FORMAT) if latest_version else "None"}</p>'
-            f'<p>Latest local: {local.strftime(MTG_JSON_DATETIME_FORMAT) if local else "None"}</p>',
+            '<p>Current version: {}</p><p>Previous version: {}</p>'.format(
+                new_db_version.strftime(MTG_JSON_DATETIME_FORMAT) if new_db_version else "None",
+                current_db_json_version.strftime(MTG_JSON_DATETIME_FORMAT) if current_db_json_version else "None"
+            ),
         )
 
 

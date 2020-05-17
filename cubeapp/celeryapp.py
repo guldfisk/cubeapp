@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-import datetime
 import os
+
+from django.conf import settings
 
 from celery import Celery
 from celery.schedules import crontab
@@ -13,21 +14,22 @@ redis_url = 'redis://redis:6379/0'
 
 app = Celery(
     'cubeapp',
-    broker=redis_url,
-    backend=redis_url,
+    broker = redis_url,
+    backend = redis_url,
 )
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('django.conf:settings', namespace = 'CELERY')
 
 app.conf.beat_schedule = {
     'clean_drafts': {
         'task': 'draft.tasks.clean_drafts',
         'schedule': crontab(hour = 4, minute = 0),
     },
-    'check_json': {
-        'task': 'api.tasks.check_mtg_json',
-        'schedule': datetime.timedelta(hours = 1),
-    }
 }
 
+if not settings.DEBUG:
+    app.conf.beat_schedule['check_json'] = {
+        'task': 'api.tasks.check_mtg_json',
+        'schedule': crontab(hour = 4, minute = 30),
+    }
 
 app.autodiscover_tasks()

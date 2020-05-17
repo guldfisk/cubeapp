@@ -12,8 +12,9 @@ services:
       - "${PORT_OUT}:80"
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
+      - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - static_volume:/opt/services/cubeapp/static
-      - media_volume:/opt/services/cubeapp/meda
+      - media_volume:/opt/services/cubeapp/media
     depends_on:
       - web
       - web_channels
@@ -32,7 +33,7 @@ services:
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static
-      - media_volume:/opt/services/cubeapp/meda
+      - media_volume:/opt/services/cubeapp/media
     restart: on-failure
     depends_on:
       - db
