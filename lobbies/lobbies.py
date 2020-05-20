@@ -82,7 +82,7 @@ class LobbyManager(object):
                 },
             )
 
-            lobby.join(user)
+            # lobby.join(user)
             return lobby
 
 
@@ -104,7 +104,7 @@ class Lobby(object):
         self._options = dict(game_type.get_default_options())
 
         self._state: LobbyState = LobbyState.PRE_GAME
-        self._users: t.MutableMapping[AbstractUser, bool] = {}
+        self._users: t.MutableMapping[AbstractUser, bool] = {self._owner: False}
         self._keys: t.MutableMapping[AbstractUser, str] = {}
 
         self._lock = Lock()
@@ -263,6 +263,9 @@ class Lobby(object):
 
             if len(self._users) >= self._size:
                 raise JoinLobbyException('lobby is full')
+
+            if user in self._users:
+                raise JoinLobbyException('already joined lobby')
 
             self._users[user] = False
             async_to_sync(self._manager.channel_layer.group_send)(
