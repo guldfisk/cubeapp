@@ -5,7 +5,7 @@ import PaginationBar from "../../../utils/PaginationBar";
 import DecksView from "./DecksView";
 
 
-const pageSize: number = 10;
+const pageSize: number = 5;
 
 
 interface RecentDecksViewState {
@@ -44,6 +44,7 @@ export default class RecentDecksView extends React.Component<RecentDecksViewProp
           {
             decks: objects,
             hits,
+            offset,
           }
         )
       }
