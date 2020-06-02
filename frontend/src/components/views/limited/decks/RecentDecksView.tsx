@@ -5,7 +5,7 @@ import PaginationBar from "../../../utils/PaginationBar";
 import DecksView from "./DecksView";
 
 
-const pageSize: number = 5;
+const pageSize: number = 10;
 
 
 interface RecentDecksViewState {
@@ -63,6 +63,13 @@ export default class RecentDecksView extends React.Component<RecentDecksViewProp
       />
       <DecksView
         decks={this.state.decks}
+      />
+      <PaginationBar
+        hits={this.state.hits}
+        offset={this.state.offset}
+        handleNewOffset={this.fetch}
+        pageSize={pageSize}
+        maxPageDisplay={7}
       />
     </Col>
   }
