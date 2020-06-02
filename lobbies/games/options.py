@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from abc import ABC, abstractmethod, ABCMeta
+from abc import abstractmethod, ABCMeta
 from distutils.util import strtobool
 
 
@@ -125,7 +125,18 @@ class Optioned(object, metaclass = _OptionedMeta):
         }
 
     @classmethod
-    def validate_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+    def validate_options(cls, options: t.Mapping[str, t.Any], silent: bool = False) -> t.Mapping[str, t.Any]:
+        if silent:
+            validated = {}
+            for option, value in options.items():
+                if option not in cls.options_meta:
+                    continue
+                try:
+                    validated[option] = cls.options_meta[option].validate(value)
+                except OptionsValidationError:
+                    pass
+            return validated
+
         return {
             option: cls.options_meta[option].validate(value)
             for option, value in
@@ -133,5 +144,5 @@ class Optioned(object, metaclass = _OptionedMeta):
             if option in cls.options_meta
         }
 
-    def update_options(self, options: t.Mapping[str, t.Any]) -> None:
-        self._options.update(self.validate_options(options))
+    def update_options(self, options: t.Mapping[str, t.Any], silent: bool = False) -> None:
+        self._options.update(self.validate_options(options, silent = silent))

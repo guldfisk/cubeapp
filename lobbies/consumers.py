@@ -69,6 +69,7 @@ class LobbyConsumer(AuthenticatedConsumer):
                 game_type = Game.optioneds_map[game_type]
             except KeyError:
                 self._send_error(f'invalid game type "{game_type}"')
+                return
 
             try:
                 LOBBY_MANAGER.create_lobby(
@@ -78,7 +79,7 @@ class LobbyConsumer(AuthenticatedConsumer):
                     game_type = game_type,
                     game_options = game_options,
                 )
-            except CreateLobbyException as e:
+            except (CreateLobbyException, OptionsValidationError) as e:
                 self._send_error(str(e))
 
         elif message_type == 'join':

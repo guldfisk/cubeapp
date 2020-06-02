@@ -80,7 +80,7 @@ class LobbyManager(object):
                     game_type = game_type,
                     options = lobby_options,
                 )
-                lobby.game_options.update(lobby.game_type.validate_options(game_options))
+                lobby.game_options.update(lobby.game_type.validate_options(game_options, silent = True))
             except SetOptionsException as e:
                 raise CreateLobbyException(e)
 
@@ -195,7 +195,7 @@ class Lobby(Optioned):
         if self._state != LobbyState.PRE_GAME:
             raise SetOptionsException('cannot modify game_type after pre-game')
 
-        validated_options = game_type.validate_options(options)
+        validated_options = game_type.validate_options(options, silent = True)
 
         with self._lock:
             self._game_type = game_type

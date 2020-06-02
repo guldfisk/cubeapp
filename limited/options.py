@@ -58,8 +58,14 @@ class PoolSpecificationOption(Option[PoolSpecificationOptions]):
     ):
         super().__init__(**kwargs)
         self._allowed_booster_specifications = allowed_booster_specifications
+
         for booster_specification in self._allowed_booster_specifications.values():
             booster_specification['amount'] = IntegerOption(min = 1, max = 127, default = default_amount)
+
+        for booster_options in self._allowed_booster_specifications.values():
+            for name, option in booster_options.items():
+                if option._name is None:
+                    option._name = name
 
         self._default_booster_specification = (
             self._allowed_booster_specifications.keys().__iter__().__next__()
