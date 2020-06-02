@@ -76,9 +76,11 @@ class PrintingSerializer(ModelSerializer[Printing]):
     @classmethod
     def serialize(cls, printing: Printing) -> compacted_model:
         return {
-            'name': printing.cardboard.name,
-            'expansion': ExpansionSerializer.serialize(printing.expansion),
             'id': printing.id,
+            'name': printing.cardboard.name,
+            # 'expansion': ExpansionSerializer.serialize(printing.expansion),
+            'cmc': printing.cardboard.front_card.cmc,
+            'expansion_code': printing.expansion.code,
             'color': [
                 color.letter_code
                 for color in

@@ -466,7 +466,7 @@ class PatchEditConsumer(AuthenticatedConsumer):
                         CubePatch,
                         update,
                     )
-                except (KeyError, AttributeError) as e:
+                except (KeyError, AttributeError):
                     self._send_error('bad request')
                     return
 

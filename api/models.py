@@ -94,7 +94,7 @@ class CubePatch(models.Model):
     versioned_cube = models.ForeignKey(
         VersionedCube,
         on_delete = models.CASCADE,
-        related_name = 'deltas',
+        related_name = 'patches',
     )
     forked_from = models.ForeignKey(
         'CubePatch',

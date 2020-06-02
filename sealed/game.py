@@ -6,7 +6,7 @@ from django.db import transaction
 from mtgorp.models.limited.boostergen import GenerateBoosterException
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
-from limited.models import PoolSpecification, LimitedSession, Pool
+from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
 from limited.options import PoolSpecificationOption, CubeReleaseOption, ExpansionOption
 from lobbies.games import options as metaoptions
 from lobbies.exceptions import StartGameException
@@ -16,10 +16,10 @@ from lobbies.games.games import Game
 class Sealed(Game):
     name = 'sealed'
 
-    format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
-    open_decks = metaoptions.BooleanOption(default = False)
-    open_pools = metaoptions.BooleanOption(default = False)
-    pool_specification = PoolSpecificationOption(
+    format: str = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
+    open_decks: bool = metaoptions.BooleanOption(default = False)
+    open_pools: bool = metaoptions.BooleanOption(default = False)
+    pool_specification: PoolSpecificationOptions = PoolSpecificationOption(
         {
             'CubeBoosterSpecification': {
                 'release': CubeReleaseOption(),
@@ -45,12 +45,12 @@ class Sealed(Game):
     ):
         super().__init__(options, players, callback)
         with transaction.atomic():
-            pool_specification = PoolSpecification.from_options(self._options['pool_specification'])
+            pool_specification = PoolSpecification.from_options(self.pool_specification)
             session = LimitedSession.objects.create(
                 game_type = 'sealed',
-                format = self._options['format'],
-                open_decks = self._options['open_decks'],
-                open_pools = self._options['open_pools'],
+                format = self.format,
+                open_decks = self.open_decks,
+                open_pools = self.open_pools,
                 pool_specification = pool_specification,
             )
 

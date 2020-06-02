@@ -70,7 +70,7 @@ services:
       - db
     networks:
       - database_network
-    restart: on-failure
+    restart: always
     env_file:
       - .env
     environment:
@@ -90,7 +90,7 @@ services:
       - db
     networks:
       - database_network
-    restart: on-failure
+    restart: always
     env_file:
       - .env
     environment:

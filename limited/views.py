@@ -118,7 +118,7 @@ class PoolExport(generics.GenericAPIView):
         return Response(
             status = status.HTTP_200_OK,
             content_type = 'application/text',
-            data = RawStrategy.serialize(self.get_object().pool),
+            data = JsonId.serialize(self.get_object().pool),
         )
 
 
@@ -135,6 +135,26 @@ class DeckDetail(generics.RetrieveAPIView):
     queryset = models.PoolDeck.objects.all()
     serializer_class = serializers.PoolDeckSerializer
     permission_classes = [DeckPermissions]
+
+
+class DeckList(generics.ListAPIView):
+    queryset = models.PoolDeck.objects.filter(
+        pool__session__state = models.LimitedSession.LimitedSessionState.FINISHED,
+    ).select_related(
+        'pool__user'
+    ).prefetch_related(
+        Prefetch(
+            'pool__session',
+            queryset = models.LimitedSession.objects.all().only(
+                'id',
+                'name',
+                'state',
+            )
+        ),
+    ).order_by(
+        '-created_at',
+    )
+    serializer_class = serializers.FullPoolDeckSerializer
 
 
 class DeckExport(generics.GenericAPIView):
@@ -159,13 +179,6 @@ class DeckExport(generics.GenericAPIView):
 
 class SessionList(generics.ListAPIView):
     serializer_class = serializers.LimitedSessionSerializer
-    # queryset = models.LimitedSession.objects.all().prefetch_related(
-    #     'pool_specification__specifications',
-    #     'pools__user',
-    #     'results',
-    #     'results__players',
-    #     'result__players__user',
-    # )
 
     _allowed_sort_keys = {
         'name': 'name',

@@ -3,25 +3,28 @@ import typing as t
 
 from django.contrib.auth.models import AbstractUser
 
-from draft.draft import Draft
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
-from limited.models import PoolSpecification, LimitedSession, Pool
+from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
 from limited.options import CubeReleaseOption, PoolSpecificationOption, ExpansionOption
 
 from lobbies.games.games import Game
 from lobbies.games import options as metaoptions
 
 from draft.coordinator import DRAFT_COORDINATOR
+from draft.draft import Draft
 
 
 class DraftGame(Game):
     name = 'draft'
 
-    format = metaoptions.OptionsOption(options = Format.formats_map.keys(), default = LimitedSideboard.name)
-    open_decks = metaoptions.BooleanOption(default = False)
-    open_pools = metaoptions.BooleanOption(default = False)
-    pool_specification = PoolSpecificationOption(
+    format: str = metaoptions.OptionsOption(
+        options = Format.formats_map.keys(),
+        default = LimitedSideboard.name,
+    )
+    open_decks: bool = metaoptions.BooleanOption(default = False)
+    open_pools: bool = metaoptions.BooleanOption(default = False)
+    pool_specification: PoolSpecificationOptions = PoolSpecificationOption(
         {
             'CubeBoosterSpecification': {
                 'release': CubeReleaseOption(),
@@ -39,7 +42,7 @@ class DraftGame(Game):
         default_booster_specification = 'CubeBoosterSpecification',
         default_amount = 11,
     )
-    draft_format = metaoptions.OptionsOption(options = {'single_pick', 'burn'}, default = 'single_pick')
+    draft_format: str = metaoptions.OptionsOption(options = {'single_pick', 'burn'}, default = 'single_pick')
 
     def __init__(
         self,
@@ -48,10 +51,7 @@ class DraftGame(Game):
         callback: t.Callable[[], None],
     ):
         super().__init__(options, players, callback)
-        self._pool_specification = PoolSpecification.from_options(self._options['pool_specification'])
-        self._open_decks = self._options['open_decks']
-        self._open_pools = self._options['open_pools']
-        self._game_format = self._options['format']
+        self._pool_specification = PoolSpecification.from_options(self.pool_specification)
 
         self._keys = {
             user: drafter.key
@@ -68,9 +68,9 @@ class DraftGame(Game):
         self._finished_callback()
         session = LimitedSession.objects.create(
             game_type = 'draft',
-            format = self._game_format,
-            open_decks = self._open_decks,
-            open_pools = self._open_pools,
+            format = self.format,
+            open_decks = self.open_decks,
+            open_pools = self.open_pools,
             pool_specification = self._pool_specification,
         )
 

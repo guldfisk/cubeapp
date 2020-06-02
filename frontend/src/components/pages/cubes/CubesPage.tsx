@@ -6,6 +6,8 @@ import CubesView from '../../views/cubeview/CubesView';
 
 import Col from "react-bootstrap/Col";
 import PaginationBar from "../../utils/PaginationBar";
+import Row from "react-bootstrap/Row";
+import RecentDecksView from "../../views/limited/decks/RecentDecksView";
 
 
 const pageSize: number = 10;
@@ -52,16 +54,27 @@ class CubesPage extends React.Component<null, CubesPageState> {
   render() {
 
     return <Col>
-      <PaginationBar
-        hits={this.state.hits}
-        offset={this.state.offset}
-        handleNewOffset={this.fetchCubes}
-        pageSize={pageSize}
-        maxPageDisplay={7}
-      />
-      <CubesView
-        cubes={this.state.cubes}
-      />
+      <Row>
+        <h3>Cubes</h3>
+      </Row>
+      <Row>
+        <PaginationBar
+          hits={this.state.hits}
+          offset={this.state.offset}
+          handleNewOffset={this.fetchCubes}
+          pageSize={pageSize}
+          maxPageDisplay={7}
+        />
+        <CubesView
+          cubes={this.state.cubes}
+        />
+      </Row>
+      <Row>
+        <h3>Recent decks</h3>
+      </Row>
+      <Row>
+        <RecentDecksView/>
+      </Row>
     </Col>
   }
 

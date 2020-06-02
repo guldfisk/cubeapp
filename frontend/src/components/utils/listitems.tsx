@@ -294,6 +294,33 @@ export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemPr
 };
 
 
+interface TicketListItemProps {
+  ticket: Ticket
+  multiplicity: number
+  onClick?: (purple: Ticket, multiplicity: number) => void
+  noHover?: boolean
+}
+
+
+export const TicketListItem: React.SFC<TicketListItemProps> = (props) => {
+  const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
+    props.multiplicity.toString() + 'x '
+    : ''}${props.ticket.name}`;
+
+  return <a
+    onClick={
+      props.onClick && (
+        () => {
+          props.onClick(props.ticket, props.multiplicity);
+        }
+      )
+    }
+  >
+    {display_name}
+  </a>;
+};
+
+
 interface PurpleListItemProps {
   purple: Purple
   multiplicity: number
@@ -357,7 +384,12 @@ export const ImageableListItem: React.FunctionComponent<CubeListItemProps> = (pr
     />
 
   } else if (props.cubeable instanceof Ticket) {
-    content = 'ticket';
+    content = <TicketListItem
+      ticket={props.cubeable}
+      noHover={props.noHover}
+      onClick={props.onClick}
+      multiplicity={props.multiplicity}
+    />
 
   } else if (props.cubeable instanceof Purple) {
     content = <PurpleListItem

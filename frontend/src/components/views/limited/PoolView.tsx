@@ -4,9 +4,9 @@ import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCol
 import {Pool} from "../../models/models";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import DeckView from "./DeckView";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
+import DeckView from "./decks/DeckView";
 
 
 interface PoolViewProps {
@@ -21,7 +21,13 @@ export default class PoolView extends React.Component<PoolViewProps> {
       fluid={true}
     >
       <Row>
-        {this.props.pool.deck && <DeckView deck={this.props.pool.deck}/>}
+        {
+          this.props.pool.deck &&
+          <DeckView
+            deck={this.props.pool.deck}
+            user={this.props.pool.user}
+          />
+        }
       </Row>
       <Row>
         <Card
@@ -37,9 +43,9 @@ export default class PoolView extends React.Component<PoolViewProps> {
           >
             Pool
             <a
-              href={this.props.pool.getDownloadUrl()}
+              href='#'
               title="Export"
-              download={"pool_" + this.props.pool.id + ".json"}
+              onClick={() => this.props.pool.download()}
             >
               <Button>
                 Export

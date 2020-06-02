@@ -73,6 +73,13 @@ export function alphabeticalPropertySortMethodFactory<T>(
 }
 
 
+export function integerSort(first: string, second: string) {
+  const f = parseInt(first);
+  const s = parseInt(second);
+  return (f < s) ? -1 : (f > s) ? 1 : 0;
+}
+
+
 export class UserGroup {
   users: Set<String>;
 

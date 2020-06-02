@@ -47,28 +47,37 @@ class LobbyConsumer(AuthenticatedConsumer):
         if message_type == 'create':
             name = content.get('name')
             game_type = content.get('game_type', 'sealed')
-            lobby_size = content.get('lobby_size', 8)
+            lobby_options = content.get('lobby_options', {})
+            game_options = content.get('game_options', {})
 
-            try:
-                lobby_size = int(lobby_size)
-            except ValueError:
-                self._send_error(f'invalid lobby size "{lobby_size}"')
+            if not isinstance(lobby_options, t.Mapping):
+                self._send_error('invalid lobby options')
+                return
+
+            if not isinstance(game_options, t.Mapping):
+                self._send_error('invalid game options')
                 return
 
             if (
                 name is None
-                or not re.match('[a-z0-9_]', name, re.IGNORECASE)
+                or not re.match('[a-z0-9_]+', name, re.IGNORECASE)
             ):
                 self._send_error(f'invalid name "{name}"')
                 return
 
             try:
-                game_type = Game.games_map[game_type]
+                game_type = Game.optioneds_map[game_type]
             except KeyError:
                 self._send_error(f'invalid game type "{game_type}"')
 
             try:
-                LOBBY_MANAGER.create_lobby(name, self.scope['user'], lobby_size, game_type)
+                LOBBY_MANAGER.create_lobby(
+                    name = name,
+                    user = self.scope['user'],
+                    lobby_options = lobby_options,
+                    game_type = game_type,
+                    game_options = game_options,
+                )
             except CreateLobbyException as e:
                 self._send_error(str(e))
 
@@ -85,7 +94,6 @@ class LobbyConsumer(AuthenticatedConsumer):
                 lobby.join(self.scope['user'])
             except JoinLobbyException as e:
                 self._send_error(str(e))
-                return
 
         elif message_type == 'leave':
             name = content.get('name')
@@ -100,7 +108,6 @@ class LobbyConsumer(AuthenticatedConsumer):
                 lobby.leave(self.scope['user'])
             except LeaveLobbyException as e:
                 self._send_error(str(e))
-                return
 
         elif message_type == 'ready':
             state = content.get('state')
@@ -119,7 +126,6 @@ class LobbyConsumer(AuthenticatedConsumer):
                 lobby.set_ready(self.scope['user'], state)
             except ReadyException as e:
                 self._send_error(str(e))
-                return
 
         elif message_type == 'start':
             name = content.get('name')
@@ -134,7 +140,6 @@ class LobbyConsumer(AuthenticatedConsumer):
                 lobby.start_game(self.scope['user'])
             except StartGameException as e:
                 self._send_error(str(e))
-                return
 
         elif message_type == 'game_type':
             name = content.get('name')
@@ -147,11 +152,17 @@ class LobbyConsumer(AuthenticatedConsumer):
                 return
             game_type = content.get('game_type')
             try:
-                game_type = Game.games_map[game_type]
+                game_type = Game.optioneds_map[game_type]
             except KeyError:
                 self._send_error(f'invalid game type "{game_type}"')
                 return
-            lobby.set_game_type(self.scope['user'], game_type)
+            options = content.get('options', {})
+            if not isinstance(options, t.Mapping):
+                self._send_error(f'invalid options')
+            try:
+                lobby.set_game_type(self.scope['user'], game_type, options)
+            except OptionsValidationError as e:
+                self._send_error(str(e))
 
         elif message_type == 'options':
             name = content.get('name')
@@ -170,7 +181,6 @@ class LobbyConsumer(AuthenticatedConsumer):
                 lobby.set_options(self.scope['user'], options)
             except (SetOptionsException, OptionsValidationError) as e:
                 self._send_error(str(e))
-                return
 
         else:
             self._send_error('unknown command')

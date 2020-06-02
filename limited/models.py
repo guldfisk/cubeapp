@@ -32,6 +32,9 @@ from utils.mixins import TimestampedModel
 from resources.staticdb import db
 
 
+PoolSpecificationOptions = t.Sequence[t.Mapping[str, t.Any]]
+
+
 class PoolSpecification(models.Model):
 
     def get_boosters(self, player_amount: int) -> t.Iterable[t.List[Cube]]:
@@ -56,7 +59,7 @@ class PoolSpecification(models.Model):
         )
 
     @classmethod
-    def from_options(cls, options: t.Sequence[t.Mapping[str: t.Any]]) -> PoolSpecification:
+    def from_options(cls, options: PoolSpecificationOptions) -> PoolSpecification:
         pool_specification = PoolSpecification.objects.create()
         for idx, booster_options in enumerate(options):
             BoosterSpecification.from_options(booster_options, idx, pool_specification)

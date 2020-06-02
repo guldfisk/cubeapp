@@ -1,29 +1,31 @@
 import typing as t
 
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+from mtgorp.models.persistent.expansion import Expansion
 
 from api.models import CubeRelease
 from lobbies.games.options import Option, OptionsValidationError, IntegerOption
 from resources.staticdb import db
+from limited.models import PoolSpecificationOptions
 
 
-class ExpansionOption(Option):
+class ExpansionOption(Option[Expansion]):
 
     @property
-    def default(self) -> t.Any:
+    def default(self) -> Expansion:
         return max(db.expansions.values(), key = lambda e: e.release_date).code
 
-    def validate(self, value: t.Any) -> t.Any:
+    def validate(self, value: t.Any) -> Expansion:
         expansion = db.expansions.get(value)
         if expansion is None or expansion.expansion_type != ExpansionType.SET:
             OptionsValidationError(f'invalid value "{value}" for {self._name}')
         return value
 
 
-class CubeReleaseOption(Option):
+class CubeReleaseOption(Option[int]):
 
     @property
-    def default(self) -> t.Any:
+    def default(self) -> int:
         return CubeRelease.objects.select_related(
             'versioned_cube',
         ).filter(
@@ -35,7 +37,7 @@ class CubeReleaseOption(Option):
             flat = True,
         ).last()
 
-    def validate(self, value: t.Any) -> t.Any:
+    def validate(self, value: t.Any) -> int:
         try:
             _release = int(value)
         except ValueError:
@@ -45,7 +47,7 @@ class CubeReleaseOption(Option):
         return _release
 
 
-class PoolSpecificationOption(Option):
+class PoolSpecificationOption(Option[PoolSpecificationOptions]):
 
     def __init__(
         self,
@@ -66,7 +68,7 @@ class PoolSpecificationOption(Option):
         )
 
     @property
-    def default(self) -> t.Any:
+    def default(self) -> PoolSpecificationOptions:
         return [
             {
                 'type': self._default_booster_specification,
@@ -78,7 +80,7 @@ class PoolSpecificationOption(Option):
             }
         ]
 
-    def validate(self, value: t.Any) -> t.Any:
+    def validate(self, value: t.Any) -> PoolSpecificationOptions:
         if not value:
             raise OptionsValidationError(
                 f'invalid value for {self._name}: must have at least one booster specification'

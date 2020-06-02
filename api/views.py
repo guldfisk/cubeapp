@@ -571,7 +571,11 @@ def patch_preview(request: Request, pk: int) -> Response:
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
-    latest_release = patch.versioned_cube.latest_release
+    latest_release = models.CubeRelease.objects.filter(
+        versioned_cube__patches = patch
+    ).select_related(
+        'constrained_nodes',
+    ).order_by('created_at').last()
 
     native = strtobool(request.query_params.get('native', '0'))
 

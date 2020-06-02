@@ -38,7 +38,7 @@ class QueueConsumer(threading.Thread):
 class MessageConsumer(JsonWebsocketConsumer):
 
     def _send_message(self, message_type: str, **kwargs):
-        print('send message', message_type, kwargs)
+        # print('send message', message_type, kwargs)
         d = {'type': message_type}
         d.update(kwargs)
         self.send_json(d)
@@ -65,8 +65,11 @@ class AuthenticatedConsumer(MessageConsumer):
     def _receive_message(self, message_type: str, content: t.Any) -> None:
         pass
 
+    def receive(self, text_data = None, bytes_data = None, **kwargs):
+        return super().receive(text_data, bytes_data, **kwargs)
+
     def receive_json(self, content, **kwargs):
-        print('recv', self.__class__.__name__, content)
+        print('received message', content)
 
         message_type = content.get('type')
 

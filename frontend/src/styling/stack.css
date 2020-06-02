@@ -1,0 +1,15 @@
+
+.stack-wrapper {
+    width: max-content;
+}
+
+.stack {
+    padding-top: 126%;
+    width: min-content;
+}
+
+.stacked {
+    margin-top: -126%;
+    height: min-content;
+    width: min-content;
+}

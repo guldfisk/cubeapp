@@ -16,6 +16,8 @@ from lobbies.exceptions import (
     CreateLobbyException, ReadyException, SetOptionsException, StartGameException, JoinLobbyException,
     LeaveLobbyException)
 from lobbies.games.games import Game
+from lobbies.games import options as lobbyoptions
+from lobbies.games.options import Optioned
 
 
 class LobbyState(Enum):
@@ -57,21 +59,31 @@ class LobbyManager(object):
             if (lobby.state != LobbyState.GAME or force) and user in lobby.users:
                 lobby.leave(user)
 
-    def create_lobby(self, name: str, user: AbstractUser, size: int, game_type: t.Type[Game]) -> Lobby:
-        if size not in range(1, 64):
-            raise CreateLobbyException('illegal lobby size')
+    def create_lobby(
+        self,
+        name: str,
+        user: AbstractUser,
+        lobby_options: t.Mapping[str, t.Any],
+        game_type: t.Type[Game],
+        game_options: t.Mapping[str, t.Any],
+    ) -> Lobby:
 
         with self._lock:
             if name in self._lobbies:
                 raise CreateLobbyException('lobby already exists')
 
-            lobby = Lobby(
-                manager = self,
-                name = name,
-                owner = user,
-                size = size,
-                game_type = game_type,
-            )
+            try:
+                lobby = Lobby(
+                    manager = self,
+                    name = name,
+                    owner = user,
+                    game_type = game_type,
+                    options = lobby_options,
+                )
+                lobby.game_options.update(lobby.game_type.validate_options(game_options))
+            except SetOptionsException as e:
+                raise CreateLobbyException(e)
+
             self._lobbies[name] = lobby
 
             async_to_sync(self._channel_layer.group_send)(
@@ -82,26 +94,29 @@ class LobbyManager(object):
                 },
             )
 
-            # lobby.join(user)
             return lobby
 
 
-class Lobby(object):
+class Lobby(Optioned):
+    size: int = lobbyoptions.IntegerOption(min = 1, max = 64, default = 8)
+    minimum_size: int = lobbyoptions.IntegerOption(min = 0, max = 64, default = 0)
+    require_ready: bool = lobbyoptions.BooleanOption(default = True)
+    unready_on_change: bool = lobbyoptions.BooleanOption(default = True)
 
     def __init__(
         self,
         manager: LobbyManager,
         name: str,
         owner: AbstractUser,
-        size: int,
         game_type: t.Type[Game],
+        options: t.Optional[t.Mapping[str, t.Any]] = None
     ):
+        super().__init__(options)
         self._manager = manager
         self._name = name
         self._owner = owner
-        self._size = size
         self._game_type = game_type
-        self._options = dict(game_type.get_default_options())
+        self._game_options = game_type.get_default_options()
 
         self._state: LobbyState = LobbyState.PRE_GAME
         self._users: t.MutableMapping[AbstractUser, bool] = {self._owner: False}
@@ -126,8 +141,12 @@ class Lobby(object):
         return self._state
 
     @property
-    def options(self) -> t.Any:
-        return self._options
+    def game_options(self) -> t.MutableMapping[str, t.Any]:
+        return self._game_options
+
+    @property
+    def game_type(self) -> t.Type[Game]:
+        return self._game_type
 
     def _serialize_user(self, user: AbstractUser) -> t.Any:
         return {
@@ -140,10 +159,10 @@ class Lobby(object):
             'name': self._name,
             'owner': self._owner.username,
             'state': self._state.value,
-            'size': self._size,
+            'lobby_options': self._options,
             'users': list(map(self._serialize_user, self._users)),
             'game_type': self._game_type.name,
-            'options': self._options,
+            'game_options': self._game_options,
         }
 
     def serialize_with_key(self, user: AbstractUser):
@@ -169,18 +188,24 @@ class Lobby(object):
                     },
                 )
 
-    def set_game_type(self, user: AbstractUser, game_type: t.Type[Game]) -> None:
+    def set_game_type(self, user: AbstractUser, game_type: t.Type[Game], options: t.Mapping[str, t.Any]) -> None:
         if user != self._owner:
             raise SetOptionsException('only lobby owner can modify game_type')
 
         if self._state != LobbyState.PRE_GAME:
             raise SetOptionsException('cannot modify game_type after pre-game')
 
+        validated_options = game_type.validate_options(options)
+
         with self._lock:
             self._game_type = game_type
-            self._options = self._game_type.get_default_options()
-            for user in self._users:
-                self._users[user] = False
+            self._game_options = self._game_type.get_default_options()
+            self._game_options.update(validated_options)
+
+            if self.unready_on_change:
+                for user in self._users:
+                    self._users[user] = False
+
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -197,9 +222,12 @@ class Lobby(object):
             raise SetOptionsException('cannot modify options after pre-game')
 
         with self._lock:
-            self._options.update(self._game_type.validate_options(options))
-            for user in self._users:
-                self._users[user] = False
+            self._game_options.update(self._game_type.validate_options(options))
+
+            if self.unready_on_change:
+                for user in self._users:
+                    self._users[user] = False
+
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -228,11 +256,14 @@ class Lobby(object):
             if self._state != LobbyState.PRE_GAME:
                 raise StartGameException('cannot start game after pre-game')
 
-            if not all(self._users.values()):
+            if len(self._users) < self.minimum_size:
+                raise StartGameException('not allowed: minimum users not present')
+
+            if self.require_ready and not all(self._users.values()):
                 raise StartGameException('not allowed: not all users ready')
 
             game = self._game_type(
-                options = self._options,
+                options = self._game_options,
                 players = self._users.keys(),
                 callback = self._game_finished,
             )
@@ -261,13 +292,18 @@ class Lobby(object):
             if self._state != LobbyState.PRE_GAME:
                 raise JoinLobbyException('cannot join lobby not in pre-game')
 
-            if len(self._users) >= self._size:
+            if len(self._users) >= self.size:
                 raise JoinLobbyException('lobby is full')
 
             if user in self._users:
                 raise JoinLobbyException('already joined lobby')
 
             self._users[user] = False
+
+            if self.unready_on_change:
+                for user in self._users:
+                    self._users[user] = False
+
             async_to_sync(self._manager.channel_layer.group_send)(
                 self._manager.group_name,
                 {
@@ -280,7 +316,13 @@ class Lobby(object):
         with self._lock:
             if user not in self._users:
                 raise LeaveLobbyException('cannot leave lobby without being in it')
+
             del self._users[user]
+
+            if self.unready_on_change:
+                for user in self._users:
+                    self._users[user] = False
+
             if self._users and self._owner in self._users:
                 async_to_sync(self._manager.channel_layer.group_send)(
                     self._manager.group_name,

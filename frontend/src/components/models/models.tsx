@@ -7,6 +7,7 @@ import store from '../state/store';
 import wu from 'wu';
 import {Link} from "react-router-dom";
 import fileDownload from "js-file-download";
+import {alphabeticalPropertySortMethodFactory, integerSort} from "../utils/utils";
 
 
 export const apiPath = '/api/';
@@ -107,14 +108,17 @@ export class Cardboard extends Imageable {
 
 export class Printing extends Cubeable {
   name: string;
-  expansion: Expansion;
+  cmc: number;
+  // expansion: Expansion;
+  expansionCode: string;
   color: string[];
   types: string[];
 
-  constructor(id: string, name: string, expansion: Expansion, color: string[], types: string[]) {
+  constructor(id: string, name: string, cmc: number, expansionCode: string, color: string[], types: string[]) {
     super(id);
     this.name = name;
-    this.expansion = expansion;
+    this.cmc = cmc;
+    this.expansionCode = expansionCode;
     this.color = color;
     this.types = types;
   }
@@ -123,7 +127,9 @@ export class Printing extends Cubeable {
     return new Printing(
       remote.id,
       remote.name,
-      Expansion.fromRemote(remote.expansion),
+      remote.cmc,
+      remote.expansion_code,
+      // Expansion.fromRemote(remote.expansion),
       remote.color,
       remote.types,
     )
@@ -146,7 +152,7 @@ export class Printing extends Cubeable {
   };
 
   full_name = (): string => {
-    return this.name + '|' + this.expansion.code;
+    return this.name + '|' + this.expansionCode;
   };
 
 }
@@ -345,14 +351,20 @@ export class DistributionPossibility extends Atomic {
 
 export class Ticket extends Cubeable {
   name: string;
+  options: Printing[];
 
-  constructor(id: string, name: string) {
+  constructor(id: string, name: string, options: Printing[]) {
     super(id);
     this.name = name;
+    this.options = options;
   }
 
   public static fromRemote(remote: any): Ticket {
-    return new Ticket(remote.id, remote.name)
+    return new Ticket(
+      remote.id,
+      remote.name,
+      remote.options.map((option: any) => Printing.fromRemote(option)),
+      )
   }
 
   getType = (): string => {
@@ -362,6 +374,13 @@ export class Ticket extends Cubeable {
   getSortValue = (): string => {
     return 'Ticket';
   };
+
+  serialize = (): any => {
+    return {
+      options: this.options.map(p => p.id),
+      name: this.name,
+    }
+  }
 
 }
 
@@ -674,11 +693,10 @@ export class PrintingCounter extends Counter<Printing> {
     ]
   };
 
-  type_grouped_printings = (
+  typeGroupedPrintings = (
     filters: [string, string[]][],
     restName: string,
   ): [string, [Printing, number][]][] => {
-    // ): any => {
     const groups: { [key: string]: [Printing, number][] } = {};
 
     for (const [filter_name, filter_types] of filters) {
@@ -710,7 +728,54 @@ export class PrintingCounter extends Counter<Printing> {
     result.push([restName, groups[restName]]);
     return result;
 
-  }
+  };
+
+  cmcGroupedPrintings = (truncate: number = 6): Printing[][] => {
+    const groups: { [key: string]: Printing[] } = {};
+
+    const push = (cmc: number, printing: Printing) => {
+      if (groups[cmc] === undefined) {
+        groups[cmc] = [printing];
+      } else {
+        groups[cmc].push(printing)
+      }
+    };
+
+    for (const printing of this.iter()) {
+      if (printing.types.includes('Land')) {
+        push(-1, printing);
+      } else {
+        push(printing.cmc, printing);
+      }
+    }
+
+    const sortedKeys = Object.keys(groups).sort(integerSort);
+
+    const result: Printing[][] = new Array(truncate);
+
+    for (let i = 0; i < truncate; i++) {
+      let printings = groups[sortedKeys[i]];
+      if (printings === undefined) {
+        break
+      }
+      result[i] = printings.sort(
+        alphabeticalPropertySortMethodFactory(p => p.name)
+      );
+    }
+
+    if (sortedKeys.length > truncate) {
+      for (let i = truncate; i < sortedKeys.length; i++) {
+        result[truncate - 1] = result[truncate - 1].concat(
+          groups[sortedKeys[i]].sort(
+            alphabeticalPropertySortMethodFactory(p => p.name)
+          )
+        )
+      }
+    }
+
+    return result;
+
+  };
 
 }
 
@@ -846,7 +911,7 @@ export class CubeRelease extends CubeReleaseMeta {
   public static compare = (
     from_id: number,
     to_id: number,
-    ): Promise<[Patch, VerbosePatch, string | null,UpdateReport]> => {
+  ): Promise<[Patch, VerbosePatch, string | null, UpdateReport]> => {
     return axios.get(
       apiPath + 'cube-releases/' + to_id + '/delta-from/' + from_id + '/'
     ).then(
@@ -1114,6 +1179,7 @@ export class ReleasePatch extends Atomic {
       printings: [],
       traps: [],
       purples: [],
+      tickets: [],
     };
     let nodeDelta: any = {nodes: []};
     let groupDelta: { groups: [string, number][] } = {groups: []};
@@ -1131,6 +1197,13 @@ export class ReleasePatch extends Atomic {
         );
       } else if (update instanceof Trap) {
         cubeDelta.traps.push(
+          [
+            update.serialize(),
+            multiplicity,
+          ]
+        );
+      } else if (update instanceof Ticket) {
+        cubeDelta.tickets.push(
           [
             update.serialize(),
             multiplicity,
@@ -2456,7 +2529,7 @@ export class LimitedSession extends LimitedSessionName {
 
   publicDecks = (): boolean => {
     return this.state == 'FINISHED'
-    || this.state == 'PLAYING' && this.openDecks
+      || this.state == 'PLAYING' && this.openDecks
   };
 
   publicPools = (): boolean => {
@@ -2598,17 +2671,20 @@ export class Deck extends Atomic {
   name: string;
   maindeck: PrintingCounter;
   sideboard: PrintingCounter;
+  createdAt: Date;
 
   constructor(
     id: string,
     name: string,
     maindeck: PrintingCounter,
     sideboard: PrintingCounter,
+    createdAt: Date,
   ) {
     super(id);
     this.name = name;
     this.maindeck = maindeck;
     this.sideboard = sideboard;
+    this.createdAt = createdAt;
   }
 
   public static fromRemote(remote: any): Deck {
@@ -2625,6 +2701,7 @@ export class Deck extends Atomic {
           ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
         )
       ),
+      new Date(remote.created_at),
     )
   }
 
@@ -2643,6 +2720,66 @@ export class Deck extends Atomic {
       response => fileDownload(response.data, this.name + '.' + extension)
     )
   };
+
+}
+
+
+export class FullDeck extends Deck {
+  user: User;
+  limitedSession: LimitedSessionName;
+
+  constructor(
+    id: string,
+    name: string,
+    maindeck: PrintingCounter,
+    sideboard: PrintingCounter,
+    createdAt: Date,
+    user: User,
+    limitedSession: LimitedSessionName,
+  ) {
+    super(id, name, maindeck, sideboard, createdAt);
+    this.user = user;
+    this.limitedSession = limitedSession;
+  }
+
+  public static fromRemote(remote: any): FullDeck {
+    return new FullDeck(
+      remote.id,
+      remote.name,
+      new PrintingCounter(
+        remote.deck.maindeck.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+      new PrintingCounter(
+        remote.deck.sideboard.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+      new Date(remote.created_at),
+      User.fromRemote(remote.user),
+      LimitedSessionName.fromRemote(remote.limited_session),
+    )
+  }
+
+  public static recent(offset: number = 0, limit: number = 10): Promise<PaginationResponse<FullDeck>> {
+    return axios.get(
+      apiPath + 'limited/deck/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((deck: any) => FullDeck.fromRemote(deck)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
 
 }
 
@@ -2690,8 +2827,17 @@ export class Pool extends Atomic {
     )
   }
 
-  getDownloadUrl = (): string => {
-    return apiPath + 'limited/pools/' + this.id + '/export/'
+  download = (): Promise<void> => {
+    return axios.get(
+      apiPath + 'limited/pools/' + this.id + '/export/',
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
+    ).then(
+      response => fileDownload(response.data, this.session.name + '_' + this.user.username + '.json')
+    )
   };
 
 }

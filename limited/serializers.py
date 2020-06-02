@@ -83,12 +83,20 @@ class MatchResultSerializer(serializers.ModelSerializer):
 
 
 class LimitedSessionNameSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name',
         )
+
+
+class FullPoolDeckSerializer(PoolDeckSerializer):
+    user = UserSerializer(read_only = True, source = 'pool.user')
+    limited_session = LimitedSessionNameSerializer(source = 'pool.session')
+
+    class Meta:
+        model = models.PoolDeck
+        fields = ('id', 'name', 'created_at', 'deck', 'user', 'limited_session')
 
 
 class LimitedSessionSerializer(LimitedSessionNameSerializer):
