@@ -29,7 +29,11 @@ class HiddenView extends React.Component<HiddenViewProps, null> {
   render() {
     return <>
       <Row>
-        <ImageableImage imageable={this.props.printing} cropped={true} sizeSlug='original'/>
+        <ImageableImage
+          imageable={this.props.printing}
+          cropped={true} sizeSlug='original'
+          allowStatic={false}
+        />
       </Row>
       <Row>
         <Form
@@ -67,7 +71,11 @@ class ResultView extends React.Component<ResultViewProps, null> {
         {'You guessed: ' + this.props.guessedName + (correct ? '' : '. Correct is: ' + this.props.printing.name)}
       </Row>
       <Row>
-        <ImageableImage imageable={this.props.printing} sizeSlug='original'/>
+        <ImageableImage
+          imageable={this.props.printing}
+          sizeSlug='original'
+          allowStatic={false}
+        />
       </Row>
     </>
   }

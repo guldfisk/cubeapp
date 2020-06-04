@@ -10,11 +10,49 @@ import store from '../state/store';
 
 
 const imagesPath = '/api/images/';
+const staticImagesPath = '/images/';
+
+
+const sizeSlugMap: { [key: string]: string } = {
+  original: '',
+  medium: '_m',
+  small: '_s',
+  thumbnail: '_t',
+};
+
+
+const typeDirectoryMap: { [key: string]: string } = {
+  Printing: '',
+  Trap: '_cube_traps/',
+  Ticket: '_tickets/',
+  Purple: '_purples/',
+};
+
+
+const _getSuffix = (size_slug: string, cropped: boolean): string => {
+  return sizeSlugMap[size_slug] + (cropped ? '_c' : '')
+};
+
+
+export function get_imageable_image_static_url(
+  id: string,
+  type = 'Printing',
+  size_slug = 'original',
+  cropped: boolean = false,
+) {
+  return (
+    staticImagesPath
+    + typeDirectoryMap[type]
+    + id
+    + _getSuffix(size_slug, cropped)
+    + '.png'
+  )
+}
 
 
 export function get_imageable_image_url(
   id: string,
-  type = 'printing',
+  type = 'Printing',
   size_slug = 'original',
   cropped: boolean = false,
 ) {

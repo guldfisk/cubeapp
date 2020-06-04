@@ -313,6 +313,7 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
                                   imageable={cubeable}
                                   sizeSlug="thumbnail"
                                   onClick={this.props.handleCubeableClicked as (cubeable: Imageable) => void}
+                                  allowStatic={false}
                                 />
                               </td>
                               <td>{cubeable.name}</td>

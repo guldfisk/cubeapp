@@ -20,6 +20,13 @@ import store from './state/store';
 import '../styling/global.css';
 
 
+declare global {
+  interface Window {
+    __debug__: any
+  }
+}
+
+
 interface RootProps {
   auth: {
     token: string,
