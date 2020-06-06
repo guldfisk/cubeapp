@@ -46,7 +46,7 @@ def check_mtg_json():
 
 
 @shared_task()
-def generate_release_lap_images(cube_release_id: int):
+def generate_release_images(cube_release_id: int):
     try:
         release = models.CubeRelease.objects.get(pk = cube_release_id)
     except models.CubeRelease.DoesNotExist:
@@ -56,7 +56,7 @@ def generate_release_lap_images(cube_release_id: int):
         [
             image_loader.get_image(lap, cache_only = True, size_slug = size_slug)
             for lap, size_slug in
-            itertools.product(release.cube.laps, SizeSlug)
+            itertools.product(release.cube.cubeables.distinct_elements(), SizeSlug)
         ]
     ).get()
 

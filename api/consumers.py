@@ -364,7 +364,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                     },
                 )
 
-                tasks.generate_release_lap_images.delay(
+                tasks.generate_release_images.delay(
                     new_release.id,
                 )
 
