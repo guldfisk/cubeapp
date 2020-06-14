@@ -56,7 +56,7 @@ def generate_release_images(cube_release_id: int):
         [
             image_loader.get_image(lap, cache_only = True, size_slug = size_slug)
             for lap, size_slug in
-            itertools.product(release.cube.cubeables.distinct_elements(), SizeSlug)
+            itertools.product(release.cube.laps.distinct_elements(), SizeSlug)
         ]
     ).get()
 
