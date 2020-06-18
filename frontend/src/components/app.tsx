@@ -102,6 +102,10 @@ class RootComponent extends React.Component<RootProps> {
           <Nav className='mr-auto'>
 
             <LinkContainer to='/'>
+              <Nav.Link>Home</Nav.Link>
+            </LinkContainer>
+
+            <LinkContainer to='/cubes/'>
               <Nav.Link>Cubes</Nav.Link>
             </LinkContainer>
 
@@ -111,10 +115,6 @@ class RootComponent extends React.Component<RootProps> {
 
             <LinkContainer to='/syntax/'>
               <Nav.Link>Search Syntax</Nav.Link>
-            </LinkContainer>
-
-            <LinkContainer to='/create-cube/'>
-              <Nav.Link>Create Cube</Nav.Link>
             </LinkContainer>
 
             <LinkContainer to='/wishlists/'>

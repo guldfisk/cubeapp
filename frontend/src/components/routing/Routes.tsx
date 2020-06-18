@@ -1,4 +1,5 @@
 import React from 'react';
+import HomePage from "../pages/HomePage";
 
 const ReleasePage = React.lazy(() => import('../pages/release/ReleasePage'));
 const NotFoundPage = React.lazy(() => import('../pages/NotFoundPage'));
@@ -37,7 +38,8 @@ export const routes: [
   boolean,
   { [key: string]: any }
   ][] = [
-  ['/', CubesPage, false, {exact: true}],
+  ['/', HomePage, false, {exact: true}],
+  ['/cubes', CubesPage, false, {}],
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],

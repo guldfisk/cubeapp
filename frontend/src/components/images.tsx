@@ -52,7 +52,7 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
   return <LazyImage
     src={
       (
-        allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped ?
+        false && allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped ?
           get_imageable_image_static_url
           : get_imageable_image_url
       )(
