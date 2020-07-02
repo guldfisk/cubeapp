@@ -258,6 +258,7 @@ class Draft(object):
         drafters: Ring[Drafter],
         pool_specification: PoolSpecification,
         draft_format: str,
+        reverse: bool,
         finished_callback: t.Callable[[Draft], None],
     ):
         self._key = key
@@ -265,6 +266,7 @@ class Draft(object):
         self._drafters = drafters
         self._pool_specification = pool_specification
         self._draft_format = draft_format
+        self._reverse = reverse
 
         self._finished_callback = finished_callback
 
@@ -326,6 +328,7 @@ class Draft(object):
             'pack_amount': self._pack_amount,
             'draft_format': self._draft_format,
             'pool_specification': PoolSpecificationSerializer(self._pool_specification).data,
+            'reverse': self._reverse,
         }
 
     def booster_empty(self, booster: Booster) -> None:
@@ -390,6 +393,7 @@ class Draft(object):
             key = self._key,
             draft_format = self._draft_format,
             pool_specification = self._pool_specification,
+            reverse = self._reverse,
         )
 
         self._drafter_interfaces = {

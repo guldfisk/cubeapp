@@ -2867,6 +2867,7 @@ export class DraftSession extends Atomic {
   endedAt: Date | null;
   state: string;
   draftFormat: string;
+  reverse: boolean;
   seats: DraftSeat[];
   poolSpecification: PoolSpecification;
   limitedSession: LimitedSession | null;
@@ -2878,6 +2879,7 @@ export class DraftSession extends Atomic {
     endedAt: Date | null,
     state: string,
     draftFormat: string,
+    reverse: boolean,
     seats: DraftSeat[],
     poolSpecification: PoolSpecification,
     limitedSession: LimitedSession | null,
@@ -2888,6 +2890,7 @@ export class DraftSession extends Atomic {
     this.endedAt = endedAt;
     this.state = state;
     this.draftFormat = draftFormat;
+    this.reverse = reverse;
     this.seats = seats;
     this.poolSpecification = poolSpecification;
     this.limitedSession = limitedSession;
@@ -2901,6 +2904,7 @@ export class DraftSession extends Atomic {
       remote.ended_at && new Date(remote.ended_at),
       remote.state,
       remote.draft_format,
+      remote.reverse,
       remote.seats.map((seat: any) => DraftSeat.fromRemote(seat)),
       PoolSpecification.fromRemote(remote.pool_specification),
       remote.limited_session && LimitedSession.fromRemote(remote.limited_session),

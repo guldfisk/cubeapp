@@ -29,6 +29,7 @@ class DraftCoordinator(object):
         users: t.Iterable[AbstractUser],
         pool_specification: PoolSpecification,
         draft_format: str,
+        reverse: bool,
         finished_callback: t.Callable[[Draft], None],
     ) -> t.Tuple[t.Tuple[AbstractUser, Drafter], ...]:
 
@@ -60,6 +61,7 @@ class DraftCoordinator(object):
             pool_specification = pool_specification,
             draft_format = draft_format,
             finished_callback = _finished_callback,
+            reverse = reverse,
         )
 
         draft.start()

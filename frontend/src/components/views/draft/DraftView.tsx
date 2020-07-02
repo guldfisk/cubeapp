@@ -69,6 +69,14 @@ class DraftView extends React.Component<DraftViewProps, null> {
           <label
             className='explain-label'
           >
+            Reverse
+          </label>
+          <label>{this.props.draft.reverse.toString()}</label>
+        </Col>
+        <Col>
+          <label
+            className='explain-label'
+          >
             State
           </label>
           <label>{this.props.draft.state}</label>

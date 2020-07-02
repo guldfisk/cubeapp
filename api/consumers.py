@@ -146,7 +146,6 @@ class DistributorConsumer(AuthenticatedConsumer):
             return DeltaDistributor(
                 distribution_nodes = distribution_nodes,
                 trap_amount = trap_amount,
-                initial_population_size = 300,
                 constraints = constraint_set,
                 original_collection = TrapCollection(self._versioned_cube.latest_release.cube.garbage_traps),
                 max_trap_delta = kwargs.get('max_trap_delta', 1),
@@ -157,7 +156,6 @@ class DistributorConsumer(AuthenticatedConsumer):
             return Distributor(
                 distribution_nodes = distribution_nodes,
                 trap_amount = trap_amount,
-                initial_population_size = 300,
                 constraints = constraint_set,
                 save_generations = False,
                 logger = logging.Logger(self._logging_scheme),

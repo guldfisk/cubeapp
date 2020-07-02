@@ -26,6 +26,7 @@ class DraftSession(models.Model):
     key = models.CharField(max_length = 255)
     ended_at = models.DateTimeField(null = True)
     draft_format = models.CharField(max_length = 127)
+    reverse = models.BooleanField()
     state = EnumField(DraftState, default = DraftState.DRAFTING)
     pool_specification = models.ForeignKey(
         PoolSpecification,

@@ -404,6 +404,15 @@ class SubmitResult(generics.GenericAPIView):
         serializer = serializers.MatchResultSerializer(data = request.data)
         serializer.is_valid(raise_exception = True)
 
+        if not (
+            serializer.validated_data['draws']
+            + sum(player['wins'] for player in serializer.validated_data['players'])
+        ):
+            return Response(
+                'At least one game must be completed',
+                status = status.HTTP_400_BAD_REQUEST,
+            )
+
         if len(serializer.validated_data['players']) <= 1:
             return Response(
                 'Match result must include more than one player',
@@ -423,10 +432,10 @@ class SubmitResult(generics.GenericAPIView):
 
         if any(
             user_id_set == set(_match_result.players.all().values_list('user_id', flat = True))
-            for _match_result in
-            models.MatchResult.objects.filter(session = limited_session).prefetch_related(
-                Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
-            )
+                for _match_result in
+                models.MatchResult.objects.filter(session = limited_session).prefetch_related(
+                    Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
+                )
         ):
             return Response(
                 'Result already posted for this match',

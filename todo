@@ -1,0 +1,28 @@
+
+fix image hover on refreshed views
+fix image generation
+    switch to nginx served images
+hover images on small images
+popper printing / cardboard view in search
+deck search
+pickable elo
+per card distribution fitness inspection view
+only create distribution pdf on demand
+adjust constraint weights, evolution options etc in web interface
+node image amount constraint (tak asker)
+go to previous page when completing login
+export release
+draft pick timer
+    reserve pick
+booster positions view
+allow editing nodes and then resuming distribution with changed node properties (weights / groups (/ content?))
+scale images in sample pack view to fit screen
+save sample packs, so they can be shared
+
+bulk cube upload / patch
+object level permissions for cubes
+object level permissions for wishlists
+
+artgame score
+
+browser draft client

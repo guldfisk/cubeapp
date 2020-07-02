@@ -124,7 +124,7 @@ class ResultSubmitter extends React.Component<ResultSubmitterProps> {
           <Form.Control
             type="number"
             placeholder="wins"
-            value={this.props.playerOneWins != null ? this.props.playerOneWins.toString() : ""}
+            value={this.props.playerOneWins != null ? this.props.playerOneWins.toString() : "0"}
             onChange={(event: any) => this.props.handlePlayerWinsSubmitted(parseInt(event.target.value), true)}
           />
         </Col>
@@ -155,7 +155,7 @@ class ResultSubmitter extends React.Component<ResultSubmitterProps> {
           <Form.Control
             type="number"
             placeholder="wins"
-            value={this.props.playerTwoWins != null ? this.props.playerTwoWins.toString() : ""}
+            value={this.props.playerTwoWins != null ? this.props.playerTwoWins.toString() : "0"}
             onChange={(event: any) => this.props.handlePlayerWinsSubmitted(parseInt(event.target.value), false)}
           />
         </Col>
@@ -163,7 +163,7 @@ class ResultSubmitter extends React.Component<ResultSubmitterProps> {
           <Form.Control
             type="number"
             placeholder="draws"
-            value={this.props.draws != null ? this.props.draws.toString() : ""}
+            value={this.props.draws != null ? this.props.draws.toString() : "0"}
             onChange={(event: any) => this.props.handleDrawsSubmitted(parseInt(event.target.value))}
           />
         </Col>
@@ -202,9 +202,9 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
     this.state = {
       playerOne: null,
       playerTwo: null,
-      playerOneWins: null,
-      playerTwoWins: null,
-      draws: null,
+      playerOneWins: 0,
+      playerTwoWins: 0,
+      draws: 0,
       completing: false,
     }
   }

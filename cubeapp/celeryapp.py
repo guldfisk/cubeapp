@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+from datetime import timedelta
 
 from django.conf import settings
 
@@ -29,7 +30,7 @@ app.conf.beat_schedule = {
 if not settings.DEBUG:
     app.conf.beat_schedule['check_json'] = {
         'task': 'api.tasks.check_mtg_json',
-        'schedule': crontab(hour = 4, minute = 30),
+        'schedule': timedelta(hours = 1),
     }
 
 app.autodiscover_tasks()

@@ -24,6 +24,7 @@ class DraftGame(Game):
     )
     open_decks: bool = metaoptions.BooleanOption(default = False)
     open_pools: bool = metaoptions.BooleanOption(default = False)
+    reverse: bool = metaoptions.BooleanOption(default = False)
     pool_specification: PoolSpecificationOptions = PoolSpecificationOption(
         {
             'CubeBoosterSpecification': {
@@ -59,7 +60,8 @@ class DraftGame(Game):
             DRAFT_COORDINATOR.start_draft(
                 users = random.sample(list(self._players), len(self._players)),
                 pool_specification = self._pool_specification,
-                draft_format = options['draft_format'],
+                draft_format = self.draft_format,
+                reverse = self.reverse,
                 finished_callback = self._finished_callback_wrapper,
             )
         }
@@ -77,17 +79,32 @@ class DraftGame(Game):
         draft.draft_session.limited_session = session
         draft.draft_session.save(update_fields = ('limited_session',))
 
-        for drafter, interface in draft.interfaces.items():
-            pool = Pool.objects.create(
-                user = drafter.user,
-                session = session,
-                pool = interface.pool,
-            )
-            interface.send_message(
-                'completed',
-                pool_id = pool.id,
-                session_name = session.name,
-            )
+        if self.reverse:
+            drafters = list(draft.interfaces.items())
+            random.shuffle(drafters)
+            for ((drafter, interface), (_, next_interface)) in zip(drafters, drafters[1:] + [drafters[0]]):
+                pool = Pool.objects.create(
+                    user = drafter.user,
+                    session = session,
+                    pool = next_interface.pool,
+                )
+                interface.send_message(
+                    'completed',
+                    pool_id = pool.id,
+                    session_name = session.name,
+                )
+        else:
+            for drafter, interface in draft.interfaces.items():
+                pool = Pool.objects.create(
+                    user = drafter.user,
+                    session = session,
+                    pool = interface.pool,
+                )
+                interface.send_message(
+                    'completed',
+                    pool_id = pool.id,
+                    session_name = session.name,
+                )
 
     @property
     def keys(self) -> t.Mapping[AbstractUser, t.Union[str, int]]:

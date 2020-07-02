@@ -12,7 +12,7 @@ from channels.layers import get_channel_layer
 from evolution.environment import Environment
 from evolution.logging import LogFrame
 from magiccube.laps.traps.distribute.algorithm import TrapDistribution, TrapCollectionIndividual
-from magiccube.laps.traps.distribute.distribute import DistributionWorker
+from magiccube.laps.traps.distribute.distribute import DistributionWorker, GenerationAmountAutoPause
 
 
 class DistributionTask(threading.Thread):
@@ -98,7 +98,13 @@ class DistributionTask(threading.Thread):
             return
 
         with self._submit_lock:
-            self._worker = DistributionWorker(distributor, max_generations=self._max_generations)
+            self._worker = DistributionWorker(
+                distributor,
+                max_generations=self._max_generations,
+                pause_conditions = (
+                    GenerationAmountAutoPause(5000),
+                )
+            )
             self._frames = []
             self._status = 'prerun'
             self._is_working.set()

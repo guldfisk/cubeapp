@@ -16,6 +16,7 @@ import ReportView from "../../views/report/ReportView";
 import DistributionView from "../../views/traps/DistributionView";
 import DistributionPossibilitiesView from "../../views/traps/DistributionPossibilitiesView";
 import DistributionPossibilityView from "../../views/traps/DistributionPossibilityView";
+import {ConfirmationDialog} from "../../utils/dialogs";
 
 
 interface DeltaPageProps {
@@ -39,6 +40,8 @@ interface ApplyPatchPageState {
   errorMessage: string | null
   delta: boolean
   maxTrapDelta: number
+  applying: boolean
+  withDistribution: boolean
 }
 
 
@@ -62,6 +65,8 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
       errorMessage: null,
       delta: false,
       maxTrapDelta: 10,
+      applying: false,
+      withDistribution: false,
     };
   }
 
@@ -202,6 +207,19 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     busy: ['start'],
   };
 
+  apply = (): void => {
+    if (this.state.distributionPossibility && this.state.withDistribution) {
+      this.submitMessage(
+        {
+          type: 'apply',
+          possibility_id: this.state.distributionPossibility.id,
+        }
+      )
+    } else {
+      this.submitMessage({type: 'apply'})
+    }
+  };
+
   render() {
     if (this.state.resultingRelease) {
       return <Redirect
@@ -274,6 +292,16 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     }
 
     return <>
+      <ConfirmationDialog
+        callback={this.apply}
+        cancel={() => this.setState({applying: false, withDistribution: false})}
+        show={this.state.applying}
+        message={
+          this.state.withDistribution ?
+            "Confirm apply patch with distribution."
+            : "Confirm apply patch without distribution."
+        }
+      />
       <Modal
         show={!!this.state.errorMessage}
       >
@@ -361,19 +389,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
             <Row>
               <Button
                 onClick={
-                  () => {
-                    if (this.state.distributionPossibility) {
-                      this.submitMessage(
-                        {
-                          type: 'apply',
-                          possibility_id: null,
-                        }
-                      )
-                    } else {
-                      this.submitMessage({type: 'apply'})
-
-                    }
-                  }
+                  () => this.setState({applying: true, withDistribution: false})
                 }
                 disabled={!this.state.releasePatch}
                 size='lg'
@@ -386,19 +402,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
               this.state.distributionPossibility ? <Row>
                 <Button
                   onClick={
-                    () => {
-                      if (this.state.distributionPossibility) {
-                        this.submitMessage(
-                          {
-                            type: 'apply',
-                            possibility_id: this.state.distributionPossibility.id,
-                          }
-                        )
-                      } else {
-                        this.submitMessage({type: 'apply'})
-
-                      }
-                    }
+                    () => this.setState({applying: true, withDistribution: true})
                   }
                   disabled={!this.state.releasePatch}
                   size='lg'

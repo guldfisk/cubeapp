@@ -101,7 +101,7 @@ class DraftSessionSerializer(serializers.ModelSerializer):
         model = models.DraftSession
         fields = (
             'id', 'key', 'started_at', 'ended_at', 'state', 'draft_format', 'seats', 'pool_specification',
-            'limited_session',
+            'limited_session', 'reverse',
         )
 
 

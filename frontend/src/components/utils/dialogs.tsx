@@ -8,6 +8,7 @@ interface ConfirmationDialogProps {
   callback: () => void
   cancel: () => void
   show: boolean
+  message?: string
 }
 
 export const ConfirmationDialog: React.SFC<ConfirmationDialogProps> = (props: ConfirmationDialogProps) => {
@@ -15,7 +16,11 @@ export const ConfirmationDialog: React.SFC<ConfirmationDialogProps> = (props: Co
     show={props.show}
   >
   <Modal.Header closeButton>
-    <Modal.Title>U sure about that?</Modal.Title>
+    <Modal.Title>
+      {
+        props.message || 'U sure about that?'
+      }
+    </Modal.Title>
   </Modal.Header>
   <Modal.Footer>
     <Button variant="secondary" onClick={props.cancel}>Close</Button>
