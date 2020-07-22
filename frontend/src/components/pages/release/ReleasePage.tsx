@@ -16,6 +16,7 @@ import ReleasesView from "../../views/releaseview/ReleasesView";
 import history from '../../routing/history';
 import {Link} from "react-router-dom";
 import Card from "react-bootstrap/Card";
+import InfinitesView from "../../views/infinites/InfinitesView";
 
 
 interface ReleaseSelectionDialogProps {
@@ -127,6 +128,15 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
               <ConstrainedNodesView
                 constrainedNodes={this.state.release.constrainedNodes}
                 search
+              />
+          }
+        </Tab>
+        <Tab eventKey="infinites" title="Infinites">
+          {
+            this.state.release.infinites == null ?
+              <div/> :
+              <InfinitesView
+                infinites={this.state.release.infinites}
               />
           }
         </Tab>

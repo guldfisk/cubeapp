@@ -328,6 +328,11 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
             }
           )
         }
+        onInfiniteClicked={
+          !this.canEdit() ? undefined : (
+            cardboard => this.handleUpdatePatch(cardboard, -1)
+          )
+        }
       />;
     }
 

@@ -364,7 +364,7 @@ export class Ticket extends Cubeable {
       remote.id,
       remote.name,
       remote.options.map((option: any) => Printing.fromRemote(option)),
-      )
+    )
   }
 
   getType = (): string => {
@@ -878,6 +878,7 @@ export class CubeRelease extends CubeReleaseMeta {
   cube: MinimalCube;
   cubeablesContainer: CubeablesContainer;
   constrainedNodes: ConstrainedNodes | null;
+  infinites: Infinites;
 
   constructor(
     id: string,
@@ -887,11 +888,13 @@ export class CubeRelease extends CubeReleaseMeta {
     cube: MinimalCube,
     cubeablesContainer: CubeablesContainer,
     constrainedNodes: ConstrainedNodes | null,
+    infinites: Infinites,
   ) {
     super(id, name, createdAt, intendedSize);
     this.cube = cube;
     this.constrainedNodes = constrainedNodes;
     this.cubeablesContainer = cubeablesContainer;
+    this.infinites = infinites;
   }
 
   public static fromRemote(remote: any) {
@@ -905,6 +908,7 @@ export class CubeRelease extends CubeReleaseMeta {
       remote.constrained_nodes ?
         new ConstrainedNodes(remote.constrained_nodes.constrained_nodes.nodes)
         : null,
+      Infinites.fromRemote(remote.infinites),
     )
   }
 
@@ -957,22 +961,45 @@ export class CubeRelease extends CubeReleaseMeta {
 }
 
 
+export class Infinites {
+  cardboards: Cardboard[];
+
+  constructor(cardboards: Cardboard[]) {
+    this.cardboards = cardboards;
+  }
+
+  public static fromRemote(remote: any): Infinites {
+    return new Infinites(
+      remote.cardboards.map(Cardboard.fromRemote),
+    )
+  }
+}
+
+
 export class Preview {
   cubeables: CubeablesContainer;
   constrainedNodes: ConstrainedNodes;
   groupMap: GroupMap;
+  infinites: Infinites;
 
-  constructor(cubeables: CubeablesContainer, constrainedNodes: ConstrainedNodes, groupMap: GroupMap) {
+  constructor(
+    cubeables: CubeablesContainer,
+    constrainedNodes: ConstrainedNodes,
+    groupMap: GroupMap,
+    infinites: Infinites,
+  ) {
     this.cubeables = cubeables;
     this.constrainedNodes = constrainedNodes;
     this.groupMap = groupMap;
+    this.infinites = infinites;
   }
 
   public static fromRemote(remote: any): Preview {
     return new Preview(
       CubeablesContainer.fromRemote(remote.cube),
-      new ConstrainedNodes(remote.nodes.constrained_nodes.nodes),
+      new ConstrainedNodes(remote.nodes.nodes),
       GroupMap.fromRemote(remote.group_map),
+      Infinites.fromRemote(remote.infinites),
     )
   }
 
@@ -1183,6 +1210,7 @@ export class ReleasePatch extends Atomic {
     };
     let nodeDelta: any = {nodes: []};
     let groupDelta: { groups: [string, number][] } = {groups: []};
+    let infinitesDelta: { added: string[], removed: string[] } = {added: [], removed: []};
 
     let changeUndoes: [any, number][] = [];
 
@@ -1230,6 +1258,8 @@ export class ReleasePatch extends Atomic {
             multiplicity,
           ]
         )
+      } else if (update instanceof Cardboard) {
+        infinitesDelta[multiplicity > 0 ? 'added' : 'removed'].push(update.name)
       } else if (typeof update == 'string') {
         groupDelta.groups.push(
           [
@@ -1246,6 +1276,7 @@ export class ReleasePatch extends Atomic {
         cube_delta: cubeDelta,
         nodes_delta: nodeDelta,
         groups_delta: groupDelta,
+        infinites_delta: {added: {cardboards: infinitesDelta.added}, removed: {cardboards: infinitesDelta.removed}},
       },
       change_undoes: changeUndoes,
     };

@@ -122,6 +122,7 @@ class FullCubeReleaseSerializer(CubeReleaseSerializer):
     )
     constrained_nodes = ConstrainedNodesSerializer(read_only = True)
     image_bundles = ImageBundleSerializer(many = True)
+    infinites = OrpSerializerField(model_serializer = orpserialize.InfinitesSerializer)
 
 
 class LoginSerializer(serializers.Serializer):

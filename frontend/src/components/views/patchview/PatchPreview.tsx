@@ -2,11 +2,12 @@ import React from 'react'
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import CubeablesCollectionListView from "../cubeablescollectionview/CubeablesCollectionListView";
-import {ConstrainedNode, Cubeable, Preview} from "../../models/models";
+import {Cardboard, ConstrainedNode, Cubeable, Preview} from "../../models/models";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import ConstrainedNodesView from "../constrainednodesview/ConstrainedNodesView";
 import GroupMapView from "../groupmap/GroupMapView";
+import InfinitesView from "../infinites/InfinitesView";
 
 
 interface PatchPreviewProps {
@@ -17,6 +18,7 @@ interface PatchPreviewProps {
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   onGroupClicked?: (group: string, weight: number) => void
   onGroupEdit?: (group: string, weightBefore: number, weightAfter: number) => void
+  onInfiniteClicked?: ((cardboard: Cardboard) => void) | null
   noHover: boolean
 }
 
@@ -76,6 +78,12 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
               onGroupClicked={this.props.onGroupClicked}
               onGroupEdit={this.props.onGroupEdit}
               search
+            />
+          </Tab>
+          <Tab eventKey='infinites' title='Infinites'>
+            <InfinitesView
+              infinites={this.props.preview.infinites}
+              onCardboardClick={this.props.onInfiniteClicked}
             />
           </Tab>
         </Tabs>

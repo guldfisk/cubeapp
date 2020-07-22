@@ -63,6 +63,9 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           }
           return a - b;
         },
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '4%', textAlign: 'center'};
+        },
       },
       {
         dataField: 'node',
@@ -92,7 +95,10 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
             return b - a;
           }
           return a - b;
-        }
+        },
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '4%', textAlign: 'center'};
+        },
       },
       {
         dataField: 'groups',

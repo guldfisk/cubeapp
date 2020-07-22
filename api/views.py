@@ -554,11 +554,7 @@ def patch_verbose(request: Request, pk: int) -> Response:
             orpserialize.VerbosePatchSerializer
         ).serialize(
             patch.patch.as_verbose(
-                MetaCube(
-                    cube = latest_release.cube,
-                    nodes = latest_release.constrained_nodes,
-                    groups = latest_release.constrained_nodes.group_map,
-                )
+                latest_release.as_meta_cube()
             )
         )
     )
@@ -579,32 +575,41 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     native = strtobool(request.query_params.get('native', '0'))
 
+    # new_meta = latest_release.as_meta_cube() + patch.patch
+
     return Response(
-        {
-            'cube': (
-                RawStrategy
-                if native else
-                orpserialize.CubeSerializer
-            ).serialize(
-                latest_release.cube + patch.patch.cube_delta_operation,
-            ),
-            'nodes': {
-                'constrained_nodes': (
-                    RawStrategy
-                    if native else
-                    orpserialize.ConstrainedNodesOrpSerializer
-                ).serialize(
-                    latest_release.constrained_nodes.constrained_nodes + patch.patch.node_delta_operation
-                )
-            },
-            'group_map': (
-                RawStrategy
-                if native else
-                orpserialize.GroupMapSerializer
-            ).serialize(
-                latest_release.constrained_nodes.group_map + patch.patch.group_map_delta_operation
-            )
-        },
+        (
+            RawStrategy
+            if native else
+            orpserialize.MetaCubeSerializer
+        ).serialize(
+            latest_release.as_meta_cube() + patch.patch,
+        ),
+        # {
+        #     'cube': (
+        #         RawStrategy
+        #         if native else
+        #         orpserialize.CubeSerializer
+        #     ).serialize(
+        #         latest_release.cube + patch.patch.cube_delta_operation,
+        #     ),
+        #     'nodes': {
+        #         'constrained_nodes': (
+        #             RawStrategy
+        #             if native else
+        #             orpserialize.ConstrainedNodesOrpSerializer
+        #         ).serialize(
+        #             latest_release.constrained_nodes.constrained_nodes + patch.patch.node_delta_operation
+        #         )
+        #     },
+        #     'group_map': (
+        #         RawStrategy
+        #         if native else
+        #         orpserialize.GroupMapSerializer
+        #     ).serialize(
+        #         latest_release.constrained_nodes.group_map + patch.patch.group_map_delta_operation
+        #     )
+        # },
         content_type = 'application/json',
     )
 
@@ -622,11 +627,7 @@ def patch_report(request: Request, pk: int) -> Response:
         orpserialize.UpdateReportSerializer.serialize(
             UpdateReport(
                 CubeUpdater(
-                    meta_cube = MetaCube(
-                        cube = latest_release.cube,
-                        nodes = latest_release.constrained_nodes.constrained_nodes,
-                        groups = latest_release.constrained_nodes.group_map,
-                    ),
+                    meta_cube = latest_release.as_meta_cube(),
                     patch = patch_model.patch,
                 )
             )
@@ -704,19 +705,9 @@ def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
     if from_release.created_at >= to_release.created_at:
         return Response(status = status.HTTP_400_BAD_REQUEST)
 
-    to_meta_cube = MetaCube(
-        cube = to_release.cube,
-        nodes = to_release.constrained_nodes.constrained_nodes,
-        groups = to_release.constrained_nodes.group_map,
-    )
+    from_meta_cube = from_release.as_meta_cube()
 
-    from_meta_cube = MetaCube(
-        cube = from_release.cube,
-        nodes = from_release.constrained_nodes.constrained_nodes,
-        groups = from_release.constrained_nodes.group_map,
-    )
-
-    cube_patch = CubePatch.from_meta_delta(from_meta_cube, to_meta_cube)
+    cube_patch = CubePatch.from_meta_delta(from_meta_cube, to_release.as_meta_cube())
 
     try:
         pdf_url = models.LapChangePdf.objects.get(

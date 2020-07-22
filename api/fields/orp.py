@@ -1,5 +1,7 @@
 import typing as t
 
+import json
+
 from django.db import models
 
 from mtgorp.models.serilization.serializeable import Serializeable
@@ -53,6 +55,8 @@ class OrpField(models.Field):
     def get_prep_value(self, value):
         if value is None:
             return None
+        if isinstance(value, dict):
+            return json.dumps(value)
         return JsonId.serialize(value)
 
     def get_db_prep_value(self, value, connection, prepared = False):

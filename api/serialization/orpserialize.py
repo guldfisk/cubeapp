@@ -1,6 +1,8 @@
 import typing as t
 from abc import abstractmethod
 
+from magiccube.collections.infinites import Infinites
+from magiccube.collections.meta import MetaCube
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -461,4 +463,29 @@ class DeckSerializer(ModelSerializer[Deck]):
                 for printing, multiplicity in
                 serializeable.sideboard.items()
             ],
+        }
+
+
+class InfinitesSerializer(ModelSerializer[Infinites]):
+
+    @classmethod
+    def serialize(cls, serializeable: Infinites) -> compacted_model:
+        return {
+            'cardboards': [
+                CardboardSerializer.serialize(cardboard)
+                for cardboard in
+                serializeable
+            ]
+        }
+
+
+class MetaCubeSerializer(ModelSerializer[MetaCube]):
+
+    @classmethod
+    def serialize(cls, serializeable: MetaCube) -> compacted_model:
+        return {
+            'cube': CubeSerializer.serialize(serializeable.cube),
+            'nodes': ConstrainedNodesOrpSerializer.serialize(serializeable.node_collection),
+            'group_map': GroupMapSerializer.serialize(serializeable.group_map),
+            'infinites': InfinitesSerializer.serialize(serializeable.infinites),
         }

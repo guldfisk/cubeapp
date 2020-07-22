@@ -1,3 +1,4 @@
+import traceback
 import typing as t
 
 import queue
@@ -101,4 +102,8 @@ class AuthenticatedConsumer(MessageConsumer):
             self._send_error('not logged in')
             return
 
-        self._receive_message(message_type, content)
+        try:
+            self._receive_message(message_type, content)
+        except Exception as e:
+            traceback.print_exc()
+            print(e)

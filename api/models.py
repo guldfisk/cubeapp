@@ -7,7 +7,9 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
+from magiccube.collections.infinites import Infinites
 from magiccube.collections.laps import TrapCollection
+from magiccube.collections.meta import MetaCube
 from mocknames.generate import NameGenerator
 
 from magiccube.collections.cube import Cube
@@ -47,11 +49,20 @@ class CubeRelease(models.Model):
     name = models.CharField(max_length = 64)
     intended_size = models.PositiveIntegerField()
     cube: Cube = OrpField(model_type = Cube)
+    infinites: Infinites = OrpField(model_type = Infinites)
 
     versioned_cube = models.ForeignKey(VersionedCube, on_delete = models.CASCADE, related_name = 'releases')
 
     class Meta:
         ordering = ('-created_at',)
+
+    def as_meta_cube(self) -> MetaCube:
+        return MetaCube(
+            self.cube,
+            self.constrained_nodes.constrained_nodes,
+            self.constrained_nodes.group_map,
+            self.infinites,
+        )
 
     @classmethod
     def create(cls, cube: Cube, versioned_cube: VersionedCube) -> CubeRelease:

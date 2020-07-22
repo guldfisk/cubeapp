@@ -195,11 +195,7 @@ class DistributorConsumer(AuthenticatedConsumer):
 
         cube_patch = self._patch.patch
 
-        meta_cube = MetaCube(
-            cube = latest_release.cube,
-            nodes = latest_release.constrained_nodes.constrained_nodes,
-            groups = latest_release.constrained_nodes.group_map,
-        )
+        meta_cube = latest_release.as_meta_cube()
 
         self._updater = CubeUpdater(
             meta_cube = meta_cube,
@@ -491,19 +487,19 @@ class PatchEditConsumer(AuthenticatedConsumer):
                 for undo, multiplicity in undoes:
                     patch_update -= (undo.as_patch() * multiplicity)
 
+            print('patch update', patch_update)
+
             patch.patch += patch_update
             patch.save()
 
             latest_release = patch.versioned_cube.latest_release
-            current_cube = latest_release.cube
-            current_constrained_nodes = latest_release.constrained_nodes.constrained_nodes
-            current_group_map = latest_release.constrained_nodes.group_map
+            # current_cube = latest_release.cube
+            # current_constrained_nodes = latest_release.constrained_nodes.constrained_nodes
+            # current_group_map = latest_release.constrained_nodes.group_map
 
-            meta_cube = MetaCube(
-                cube = current_cube,
-                nodes = current_constrained_nodes,
-                groups = current_group_map,
-            )
+            meta_cube = latest_release.as_meta_cube()
+
+            print('updated infinites', (meta_cube + patch_update).infinites)
 
             msg = {
                 'type': 'cube_update',
@@ -516,19 +512,22 @@ class PatchEditConsumer(AuthenticatedConsumer):
                             meta_cube
                         )
                     ),
-                    'preview': {
-                        'cube': orpserialize.CubeSerializer.serialize(
-                            current_cube + patch.patch.cube_delta_operation
-                        ),
-                        'nodes': {
-                            'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                                current_constrained_nodes + patch.patch.node_delta_operation
-                            )
-                        },
-                        'group_map': orpserialize.GroupMapSerializer.serialize(
-                            current_group_map + patch.patch.group_map_delta_operation
-                        ),
-                    },
+                    'preview': orpserialize.MetaCubeSerializer.serialize(
+                        meta_cube + patch.patch
+                    ),
+                    # 'preview': {
+                    #     'cube': orpserialize.CubeSerializer.serialize(
+                    #         current_cube + patch.patch.cube_delta_operation
+                    #     ),
+                    #     'nodes': {
+                    #         'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
+                    #             current_constrained_nodes + patch.patch.node_delta_operation
+                    #         )
+                    #     },
+                    #     'group_map': orpserialize.GroupMapSerializer.serialize(
+                    #         current_group_map + patch.patch.group_map_delta_operation
+                    #     ),
+                    # },
                     'updater': serializers.UserSerializer(self.scope['user']).data,
                     'update': orpserialize.VerbosePatchSerializer.serialize(
                         patch_update.as_verbose(
