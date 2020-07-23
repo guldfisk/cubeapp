@@ -2478,6 +2478,7 @@ export class LimitedSession extends LimitedSessionName {
   openPools: boolean;
   poolSpecification: PoolSpecification;
   results: MatchResult[];
+  infinites: Infinites;
 
   constructor(
     id: string,
@@ -2493,6 +2494,7 @@ export class LimitedSession extends LimitedSessionName {
     openPools: boolean,
     poolSpecification: PoolSpecification,
     results: MatchResult[],
+    infintes: Infinites,
   ) {
     super(id, name);
     this.format = format;
@@ -2506,6 +2508,7 @@ export class LimitedSession extends LimitedSessionName {
     this.openPools = openPools;
     this.poolSpecification = poolSpecification;
     this.results = results;
+    this.infinites = infintes;
   }
 
   public static fromRemote(remote: any): LimitedSession {
@@ -2525,6 +2528,7 @@ export class LimitedSession extends LimitedSessionName {
       remote.results.map(
         (result: any) => MatchResult.fromRemote(result)
       ),
+      Infinites.fromRemote(remote.infinites),
     )
   }
 
@@ -2644,6 +2648,7 @@ export class FullLimitedSession extends LimitedSession {
     openPools: boolean,
     poolSpecification: PoolSpecification,
     results: MatchResult[],
+    infinites: Infinites,
     pools: PoolMeta[],
   ) {
     super(
@@ -2660,6 +2665,7 @@ export class FullLimitedSession extends LimitedSession {
       openPools,
       poolSpecification,
       results,
+      infinites,
     );
     this.pools = pools;
   }
@@ -2681,6 +2687,7 @@ export class FullLimitedSession extends LimitedSession {
       remote.results.map(
         (result: any) => MatchResult.fromRemote(result)
       ),
+      Infinites.fromRemote(remote.infinites),
       remote.pools.map(
         (pool: any) => PoolMeta.fromRemote(pool)
       ),
@@ -2901,6 +2908,7 @@ export class DraftSession extends Atomic {
   reverse: boolean;
   seats: DraftSeat[];
   poolSpecification: PoolSpecification;
+  infinites: Infinites;
   limitedSession: LimitedSession | null;
 
   constructor(
@@ -2913,6 +2921,7 @@ export class DraftSession extends Atomic {
     reverse: boolean,
     seats: DraftSeat[],
     poolSpecification: PoolSpecification,
+    infinites: Infinites,
     limitedSession: LimitedSession | null,
   ) {
     super(id);
@@ -2924,6 +2933,7 @@ export class DraftSession extends Atomic {
     this.reverse = reverse;
     this.seats = seats;
     this.poolSpecification = poolSpecification;
+    this.infinites = infinites;
     this.limitedSession = limitedSession;
   }
 
@@ -2938,6 +2948,7 @@ export class DraftSession extends Atomic {
       remote.reverse,
       remote.seats.map((seat: any) => DraftSeat.fromRemote(seat)),
       PoolSpecification.fromRemote(remote.pool_specification),
+      Infinites.fromRemote(remote.infinites),
       remote.limited_session && LimitedSession.fromRemote(remote.limited_session),
     )
   }

@@ -3,16 +3,22 @@ import typing as t
 
 from django.contrib.auth.models import AbstractUser
 
+from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.formats.format import Format, LimitedSideboard
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from magiccube.collections.infinites import Infinites
 
 from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
-from limited.options import CubeReleaseOption, PoolSpecificationOption, ExpansionOption
+from limited.options import CubeReleaseOption, PoolSpecificationOption, ExpansionOption, CardboardSetOption
 
 from lobbies.games.games import Game
 from lobbies.games import options as metaoptions
 
 from draft.coordinator import DRAFT_COORDINATOR
 from draft.draft import Draft
+
+from resources.staticdb import db
 
 
 class DraftGame(Game):
@@ -44,6 +50,23 @@ class DraftGame(Game):
         default_amount = 11,
     )
     draft_format: str = metaoptions.OptionsOption(options = {'single_pick', 'burn'}, default = 'single_pick')
+    infinites: t.Mapping[str, t.Any] = CardboardSetOption(
+        default = RawStrategy.serialize(
+            CardboardSet(
+                (
+                    db.cardboards[n]
+                    for n in
+                    (
+                        'Plains',
+                        'Island',
+                        'Swamp',
+                        'Mountain',
+                        'Forest',
+                    )
+                )
+            )
+        )
+    )
 
     def __init__(
         self,
@@ -60,6 +83,7 @@ class DraftGame(Game):
             DRAFT_COORDINATOR.start_draft(
                 users = random.sample(list(self._players), len(self._players)),
                 pool_specification = self._pool_specification,
+                infinites = RawStrategy(db).deserialize(Infinites, self.infinites),
                 draft_format = self.draft_format,
                 reverse = self.reverse,
                 finished_callback = self._finished_callback_wrapper,
@@ -74,6 +98,7 @@ class DraftGame(Game):
             open_decks = self.open_decks,
             open_pools = self.open_pools,
             pool_specification = self._pool_specification,
+            infinites = RawStrategy(db).deserialize(Infinites, self.infinites)
         )
 
         draft.draft_session.limited_session = session

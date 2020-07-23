@@ -7,6 +7,8 @@ from django.db import models
 
 from typedmodels.models import TypedModel
 
+from magiccube.collections.infinites import Infinites
+
 from mtgdraft.models import Booster, Pick
 
 from api.fields.orp import OrpField
@@ -28,6 +30,7 @@ class DraftSession(models.Model):
     draft_format = models.CharField(max_length = 127)
     reverse = models.BooleanField()
     state = EnumField(DraftState, default = DraftState.DRAFTING)
+    infinites: Infinites = OrpField(model_type = Infinites)
     pool_specification = models.ForeignKey(
         PoolSpecification,
         on_delete = models.CASCADE,

@@ -109,12 +109,13 @@ class LimitedSessionSerializer(LimitedSessionNameSerializer):
     state = EnumSerializerField(models.LimitedSession.LimitedSessionState)
     pool_specification = PoolSpecificationSerializer(read_only = True)
     results = MatchResultSerializer(many = True, read_only = True)
+    infinites = OrpSerializerField(model_serializer = orpserialize.InfinitesSerializer)
 
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'open_pools', 'game_type', 'pool_specification', 'results'
+            'open_pools', 'game_type', 'pool_specification', 'results', 'infinites',
         )
 
 
@@ -142,5 +143,5 @@ class FullLimitedSessionSerializer(LimitedSessionSerializer):
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'open_pools', 'game_type', 'pool_specification', 'pools', 'results',
+            'open_pools', 'game_type', 'pool_specification', 'pools', 'results', 'infinites',
         )

@@ -65,7 +65,7 @@ class CubeRelease(models.Model):
         )
 
     @classmethod
-    def create(cls, cube: Cube, versioned_cube: VersionedCube) -> CubeRelease:
+    def create(cls, cube: Cube, versioned_cube: VersionedCube, infinites: Infinites) -> CubeRelease:
         return cls.objects.create(
             cube = cube,
             checksum = cube.persistent_hash(),
@@ -79,6 +79,7 @@ class CubeRelease(models.Model):
             ),
             versioned_cube = versioned_cube,
             intended_size = 360,
+            infinites = infinites,
         )
 
 

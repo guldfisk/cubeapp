@@ -1,10 +1,13 @@
 import typing as t
 
+from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.expansion import Expansion
 
 from api.models import CubeRelease
 from lobbies.games.options import Option, OptionsValidationError, IntegerOption
+from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
 from limited.models import PoolSpecificationOptions
 
@@ -123,3 +126,14 @@ class PoolSpecificationOption(Option[PoolSpecificationOptions]):
             values.append(specification_options)
 
         return values
+
+
+class CardboardSetOption(Option[t.Mapping[str, t.Any]]):
+
+    def validate(self, value: t.Any) -> t.Mapping[str, t.Any]:
+        try:
+            RawStrategy(db).deserialize(CardboardSet, value)
+        except Exception:
+            raise OptionsValidationError('Invalid cardboard set')
+
+        return value

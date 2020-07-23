@@ -94,6 +94,7 @@ class DraftSessionSerializer(serializers.ModelSerializer):
     state = EnumSerializerField(models.DraftSession.DraftState)
     draft_format = serializers.CharField(read_only = True)
     seats = DraftSeatSerializer(read_only = True, many = True)
+    infinites = OrpSerializerField(model_serializer = orpserialize.InfinitesSerializer)
     pool_specification = PoolSpecificationSerializer(read_only = True)
     limited_session = LimitedSessionSerializer(read_only = True)
 
@@ -101,7 +102,7 @@ class DraftSessionSerializer(serializers.ModelSerializer):
         model = models.DraftSession
         fields = (
             'id', 'key', 'started_at', 'ended_at', 'state', 'draft_format', 'seats', 'pool_specification',
-            'limited_session', 'reverse',
+            'limited_session', 'reverse', 'infinites',
         )
 
 

@@ -10,6 +10,7 @@ from django.contrib.auth.models import AbstractUser
 from channels.generic.websocket import WebsocketConsumer
 
 from draft.models import DraftSession, DraftSeat, DraftPick
+from magiccube.collections.infinites import Infinites
 from ring import Ring
 
 from mtgorp.models.serilization.serializeable import SerializationException
@@ -203,12 +204,12 @@ class DraftInterface(ABC):
                 DraftPick.objects.create(
                     seat = self._draft_seat,
                     pack_number = self._draft.pack_counter,
-                    pick_number = self._current_booster.pick,
+                    pick_number = self._current_booster.pick_number,
                     pack = self._current_booster,
                     pick = pick,
                 )
 
-                self._current_booster.pick += 1
+                self._current_booster.pick_number += 1
 
                 if self._current_booster.cubeables:
                     self.boost_out_queue.put(self._current_booster)
@@ -257,6 +258,7 @@ class Draft(object):
         key: str,
         drafters: Ring[Drafter],
         pool_specification: PoolSpecification,
+        infinites: Infinites,
         draft_format: str,
         reverse: bool,
         finished_callback: t.Callable[[Draft], None],
@@ -265,6 +267,7 @@ class Draft(object):
 
         self._drafters = drafters
         self._pool_specification = pool_specification
+        self._infinites = infinites
         self._draft_format = draft_format
         self._reverse = reverse
 
@@ -328,6 +331,7 @@ class Draft(object):
             'pack_amount': self._pack_amount,
             'draft_format': self._draft_format,
             'pool_specification': PoolSpecificationSerializer(self._pool_specification).data,
+            'infinites': RawStrategy.serialize(self._infinites),
             'reverse': self._reverse,
         }
 
@@ -393,6 +397,7 @@ class Draft(object):
             key = self._key,
             draft_format = self._draft_format,
             pool_specification = self._pool_specification,
+            infinites = self._infinites,
             reverse = self._reverse,
         )
 

@@ -11,7 +11,6 @@ from rest_framework import generics, permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.models.formats.format import Format
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
@@ -69,17 +68,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
         valid, error = check_deck_subset_pool(
             pool.pool,
             deck.seventy_five,
-            {
-                db.cardboards[name]
-                for name in
-                (
-                    'Plains',
-                    'Island',
-                    'Swamp',
-                    'Mountain',
-                    'Forest',
-                )
-            },
+            pool.session.infinites.cardboards,
         )
 
         if not valid:

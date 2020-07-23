@@ -40,6 +40,3 @@ class Command(BaseCommand):
                 interface.SizeSlug
             ]
         ).get()
-
-        print(f'Done, rendered {len(images)} images.')
-        print(time.time() - st)

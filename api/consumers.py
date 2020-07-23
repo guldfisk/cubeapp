@@ -1,3 +1,4 @@
+import traceback
 import typing as t
 
 from collections import OrderedDict
@@ -16,7 +17,6 @@ from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from magiccube.collections.laps import TrapCollection
 from magiccube.laps.traps.distribute.delta import DeltaDistributor
-from magiccube.collections.meta import MetaCube
 from magiccube.laps.traps.distribute import algorithm
 from magiccube.laps.traps.distribute.algorithm import Distributor, TrapDistribution, TrapCollectionIndividual
 from magiccube.update import cubeupdate
@@ -212,19 +212,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                         meta_cube
                     )
                 ),
-                'preview': {
-                    'cube': orpserialize.CubeSerializer.serialize(
-                        latest_release.cube + cube_patch.cube_delta_operation
-                    ),
-                    'nodes': {
-                        'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                            latest_release.constrained_nodes.constrained_nodes + cube_patch.node_delta_operation
-                        )
-                    },
-                    'group_map': orpserialize.GroupMapSerializer.serialize(
-                        latest_release.constrained_nodes.group_map + cube_patch.group_map_delta_operation
-                    ),
-                },
+                'preview': orpserialize.MetaCubeSerializer.serialize(meta_cube + cube_patch),
                 'distributions': [
                     serializers.DistributionPossibilitySerializer(distribution).data
                     for distribution in
@@ -340,6 +328,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                 new_release = models.CubeRelease.create(
                     cube = finale_cube,
                     versioned_cube = self._versioned_cube,
+                    infinites = self._updater.new_infinites,
                 )
 
                 models.ConstrainedNodes.objects.create(
@@ -481,25 +470,17 @@ class PatchEditConsumer(AuthenticatedConsumer):
                             )
                         )
                 except (KeyError, TypeError, ValueError):
+                    traceback.print_exc()
                     self._send_error('bad request')
                     return
 
                 for undo, multiplicity in undoes:
                     patch_update -= (undo.as_patch() * multiplicity)
 
-            print('patch update', patch_update)
-
             patch.patch += patch_update
             patch.save()
 
-            latest_release = patch.versioned_cube.latest_release
-            # current_cube = latest_release.cube
-            # current_constrained_nodes = latest_release.constrained_nodes.constrained_nodes
-            # current_group_map = latest_release.constrained_nodes.group_map
-
-            meta_cube = latest_release.as_meta_cube()
-
-            print('updated infinites', (meta_cube + patch_update).infinites)
+            meta_cube = patch.versioned_cube.latest_release.as_meta_cube()
 
             msg = {
                 'type': 'cube_update',
@@ -515,19 +496,6 @@ class PatchEditConsumer(AuthenticatedConsumer):
                     'preview': orpserialize.MetaCubeSerializer.serialize(
                         meta_cube + patch.patch
                     ),
-                    # 'preview': {
-                    #     'cube': orpserialize.CubeSerializer.serialize(
-                    #         current_cube + patch.patch.cube_delta_operation
-                    #     ),
-                    #     'nodes': {
-                    #         'constrained_nodes': orpserialize.ConstrainedNodesOrpSerializer.serialize(
-                    #             current_constrained_nodes + patch.patch.node_delta_operation
-                    #         )
-                    #     },
-                    #     'group_map': orpserialize.GroupMapSerializer.serialize(
-                    #         current_group_map + patch.patch.group_map_delta_operation
-                    #     ),
-                    # },
                     'updater': serializers.UserSerializer(self.scope['user']).data,
                     'update': orpserialize.VerbosePatchSerializer.serialize(
                         patch_update.as_verbose(

@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from magiccube.collections.infinites import Infinites
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.limited.boostergen import (
     GenerateBoosterException, BoosterKey, RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
@@ -239,6 +240,7 @@ class LimitedSession(models.Model):
     open_decks = models.BooleanField(default = False)
     open_pools = models.BooleanField(default = False)
     pool_specification = models.ForeignKey(PoolSpecification, on_delete = models.CASCADE, related_name = 'sessions')
+    infinites: Infinites = OrpField(model_type = Infinites)
 
     def complete(self) -> None:
         self.state = self.LimitedSessionState.FINISHED

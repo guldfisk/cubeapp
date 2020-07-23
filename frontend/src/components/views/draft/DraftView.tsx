@@ -12,6 +12,9 @@ import {DraftSeat, DraftSession, User} from "../../models/models";
 import '../../../styling/SessionsView.css';
 import PoolSpecificationView from "../limited/PoolSpecificationView";
 import {Link} from "react-router-dom";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
+import InfinitesView from "../infinites/InfinitesView";
 
 
 interface DraftViewProps {
@@ -116,7 +119,19 @@ class DraftView extends React.Component<DraftViewProps, null> {
         </Row> : undefined
       }
       <Row>
-        <PoolSpecificationView specification={this.props.draft.poolSpecification}/>
+        <Tabs
+          id='limited-session-info-tabs'
+          defaultActiveKey='poolSpecification'
+        >
+          <Tab eventKey='poolSpecification' title='Pool Specification'>
+            <PoolSpecificationView specification={this.props.draft.poolSpecification}/>
+          </Tab>
+          <Tab eventKey='infinites' title='Infinites'>
+            <InfinitesView
+              infinites={this.props.draft.infinites}
+            />
+          </Tab>
+        </Tabs>
       </Row>
       <Row>
         <BootstrapTable

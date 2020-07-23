@@ -17,9 +17,9 @@ import {
   CubeChange,
   ReleasePatch,
   Preview,
-  Printing, Trap, VerbosePatch, Patch, User, EditEvent
+  Printing, Trap, VerbosePatch, Patch, User, EditEvent, Cardboard
 } from '../../models/models';
-import {PrintingSearchView} from "../../views/search/SearchView";
+import {CardboardSearchView, PrintingSearchView} from "../../views/search/SearchView";
 import TrapParseView from "../../views/traps/TrapParseView";
 import {ConfirmationDialog} from "../../utils/dialogs";
 import PatchPreview from "../../views/patchview/PatchPreview";
@@ -431,6 +431,12 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
                           <Tab eventKey='addGroup' title='Group'>
                             <GroupAddView
                               onSubmit={this.handleUpdatePatch}
+                            />
+                          </Tab>
+                          <Tab eventKey='addInfinite' title='Infinite'>
+                            <CardboardSearchView
+                              handleCubeableClicked={(cardboard: Cardboard) => this.handleUpdatePatch(cardboard, 1)}
+                              limit={3}
                             />
                           </Tab>
                         </Tabs>

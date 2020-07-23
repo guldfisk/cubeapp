@@ -2,7 +2,7 @@ import React from 'react';
 
 import BootstrapTable from 'react-bootstrap-table-next';
 
-import {FullLimitedSession, MatchResult, User} from "../../models/models";
+import {Cardboard, FullLimitedSession, MatchResult, Printing, User} from "../../models/models";
 import {Link} from "react-router-dom";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -17,6 +17,14 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import {sizeTwoSetCombinations} from "../../utils/utils";
 import {ConfirmationDialog} from "../../utils/dialogs";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
+import Card from "react-bootstrap/Card";
+import {CardboardSearchView, PrintingSearchView} from "../search/SearchView";
+import TrapParseView from "../traps/TrapParseView";
+import ConstrainedNodeParseView from "../traps/ConstrainedNodeParseView";
+import GroupAddView from "../groupmap/GroupAddView";
+import InfinitesView from "../infinites/InfinitesView";
 
 
 interface ResultSubmitterProps {
@@ -366,7 +374,19 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
           </Col>
         </Row>
         <Row>
-          <PoolSpecificationView specification={this.props.session.poolSpecification}/>
+          <Tabs
+            id='limited-session-info-tabs'
+            defaultActiveKey='poolSpecification'
+          >
+            <Tab eventKey='poolSpecification' title='Pool Specification'>
+              <PoolSpecificationView specification={this.props.session.poolSpecification}/>
+            </Tab>
+            <Tab eventKey='infinites' title='Infinites'>
+              <InfinitesView
+                infinites={this.props.session.infinites}
+              />
+            </Tab>
+          </Tabs>
         </Row>
         <Row>
           <BootstrapTable

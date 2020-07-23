@@ -7,6 +7,7 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 
 from limited.models import PoolSpecification
+from magiccube.collections.infinites import Infinites
 from ring import Ring
 
 from draft.draft import Draft, Drafter, DraftInterface
@@ -28,6 +29,7 @@ class DraftCoordinator(object):
         self,
         users: t.Iterable[AbstractUser],
         pool_specification: PoolSpecification,
+        infinites: Infinites,
         draft_format: str,
         reverse: bool,
         finished_callback: t.Callable[[Draft], None],
@@ -59,6 +61,7 @@ class DraftCoordinator(object):
             key = str(uuid.uuid4()),
             drafters = drafters_ring,
             pool_specification = pool_specification,
+            infinites = infinites,
             draft_format = draft_format,
             finished_callback = _finished_callback,
             reverse = reverse,

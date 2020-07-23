@@ -3,14 +3,18 @@ import typing as t
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
 
+from magiccube.collections.infinites import Infinites
+from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.limited.boostergen import GenerateBoosterException
 from mtgorp.models.formats.format import Format, LimitedSideboard
 
 from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
-from limited.options import PoolSpecificationOption, CubeReleaseOption, ExpansionOption
+from limited.options import PoolSpecificationOption, CubeReleaseOption, ExpansionOption, CardboardSetOption
 from lobbies.games import options as metaoptions
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+from resources.staticdb import db
 
 
 class Sealed(Game):
@@ -36,6 +40,23 @@ class Sealed(Game):
         },
         default_booster_specification = 'CubeBoosterSpecification',
     )
+    infinites: t.Mapping[str, t.Any] = CardboardSetOption(
+        default = RawStrategy.serialize(
+            CardboardSet(
+                (
+                    db.cardboards[n]
+                    for n in
+                    (
+                        'Plains',
+                        'Island',
+                        'Swamp',
+                        'Mountain',
+                        'Forest',
+                    )
+                )
+            )
+        )
+    )
 
     def __init__(
         self,
@@ -52,6 +73,7 @@ class Sealed(Game):
                 open_decks = self.open_decks,
                 open_pools = self.open_pools,
                 pool_specification = pool_specification,
+                infinites = RawStrategy(db).deserialize(Infinites, self.infinites),
             )
 
             self._keys = {}
