@@ -181,16 +181,22 @@ class CubeBoosterSpecification(BoosterSpecification):
     size = models.PositiveSmallIntegerField(null = True)
     allow_intersection = models.BooleanField(null = True, default = False)
     allow_repeat = models.BooleanField(null = True, default = False)
+    scale = models.BooleanField(null = True, default = False)
 
     def get_boosters(self, amount: int) -> t.Iterator[Cube]:
+        cube = self.release.cube
+
         if not self.allow_repeat:
             required_cube_size = self.size * (1 if self.allow_intersection else amount)
             if required_cube_size > len(self.release.cube):
-                raise GenerateBoosterException(
-                    f'not enough cubeables, needs {required_cube_size}, only has {len(self.release.cube)}'
-                )
+                if self.scale:
+                    cube = cube.scale(required_cube_size)
+                else:
+                    raise GenerateBoosterException(
+                        f'not enough cubeables, needs {required_cube_size}, only has {len(self.release.cube)}'
+                    )
 
-        cubeables = list(self.release.cube.cubeables)
+        cubeables = list(cube.cubeables)
 
         if self.allow_repeat:
             for _ in range(amount):
@@ -212,6 +218,7 @@ class CubeBoosterSpecification(BoosterSpecification):
             'size': self.size,
             'allow_intersection': self.allow_intersection,
             'allow_repeat': self.allow_repeat,
+            'scale': self.scale,
         }
 
     @classmethod
@@ -221,6 +228,7 @@ class CubeBoosterSpecification(BoosterSpecification):
             'size': options['size'],
             'allow_intersection': options['allow_intersection'],
             'allow_repeat': options['allow_repeat'],
+            'scale': options['scale'],
         }
 
 

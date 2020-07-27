@@ -30,6 +30,7 @@ class Sealed(Game):
                 'size': metaoptions.IntegerOption(min = 1, max = 360, default = 90),
                 'allow_intersection': metaoptions.BooleanOption(default = False),
                 'allow_repeat': metaoptions.BooleanOption(default = False),
+                'scale': metaoptions.BooleanOption(default = False),
             },
             'ExpansionBoosterSpecification': {
                 'expansion_code': ExpansionOption(),

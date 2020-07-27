@@ -4,13 +4,11 @@ import datetime
 import typing as t
 import threading
 from abc import ABC, abstractmethod
-from queue import Queue, Empty
+from queue import Empty
 
 from django.contrib.auth.models import AbstractUser
 from channels.generic.websocket import WebsocketConsumer
 
-from draft.models import DraftSession, DraftSeat, DraftPick
-from magiccube.collections.infinites import Infinites
 from ring import Ring
 
 from mtgorp.models.serilization.serializeable import SerializationException
@@ -19,14 +17,17 @@ from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
+from magiccube.collections.infinites import Infinites
 
 from mtgdraft.models import Booster, Pick, SinglePickPick, BurnPick
 
+from utils.queue import Queue
 from api.serialization.serializers import UserSerializer
 from lobbies.exceptions import StartGameException
 from limited.models import PoolSpecification
 from limited.serializers import PoolSpecificationSerializer
 from resources.staticdb import db
+from draft.models import DraftSession, DraftSeat, DraftPick
 
 
 class Drafter(object):
@@ -61,8 +62,8 @@ class Drafter(object):
 
 
 class DraftInterface(ABC):
-    boost_out_queue: Queue
     pick_type: t.Type[Pick]
+    passing_to: DraftInterface
 
     class ConnectionException(Exception):
         pass
@@ -111,7 +112,7 @@ class DraftInterface(ABC):
                 raise self.ConnectionException('no consumer connected')
             self._consumer = None
 
-    def send_message(self, message_type: str, **kwargs):
+    def send_message(self, message_type: str, **kwargs) -> None:
         self.out_queue.put(
             {
                 'type': message_type,
@@ -125,6 +126,14 @@ class DraftInterface(ABC):
     @property
     def booster_queue(self) -> Queue[Booster]:
         return self._booster_queue
+
+    def give_booster(self, booster: Booster) -> None:
+        self._booster_queue.put(booster)
+        # self._draft.broadcast_message(
+        #     'received_booster',
+        #     drafter = self._drafter.user.pk,
+        #     queue_size = self._booster_queue.put(booster) + (1 if self._current_booster else 0),
+        # )
 
     @property
     def pick_queue(self) -> Queue[Cubeable]:
@@ -212,7 +221,7 @@ class DraftInterface(ABC):
                 self._current_booster.pick_number += 1
 
                 if self._current_booster.cubeables:
-                    self.boost_out_queue.put(self._current_booster)
+                    self.passing_to.give_booster(self._current_booster)
                 else:
                     self._draft.booster_empty(self._current_booster)
                 self._current_booster = None
@@ -281,8 +290,8 @@ class Draft(object):
 
         self._pack_amount = sum(
             booster_specification.amount
-            for booster_specification in
-            self._pool_specification.specifications.all()
+                for booster_specification in
+                self._pool_specification.specifications.all()
         )
 
         try:
@@ -335,6 +344,10 @@ class Draft(object):
             'reverse': self._reverse,
         }
 
+    def broadcast_message(self, message_type: str, **kwargs) -> None:
+        for interface in self._drafter_interfaces.values():
+            interface.send_message(message_type, **kwargs)
+
     def booster_empty(self, booster: Booster) -> None:
         with self._active_boosters_lock:
             self._active_boosters[booster] = True
@@ -346,11 +359,11 @@ class Draft(object):
 
     def _chain_booster_queues(self) -> None:
         for drafter, interface in self._drafter_interfaces.items():
-            interface.boost_out_queue = self._drafter_interfaces[
+            interface.passing_to = self._drafter_interfaces[
                 self._drafters.before(drafter)
                 if self._clockwise else
                 self._drafters.after(drafter)
-            ].booster_queue
+            ]
 
         self._clockwise = not self._clockwise
 
@@ -375,7 +388,7 @@ class Draft(object):
             )
             booster = player_boosters.pop()
             self._active_boosters[booster] = False
-            interface.booster_queue.put(booster)
+            interface.give_booster(booster)
 
     def completed(self) -> None:
         self._draft_session.state = DraftSession.DraftState.COMPLETED
