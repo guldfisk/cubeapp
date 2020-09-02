@@ -11,6 +11,7 @@ import {Redirect} from "react-router";
 import Alert from "react-bootstrap/Alert";
 import {signIn} from "../../auth/controller";
 import {connect} from "react-redux";
+import {Link} from "react-router-dom";
 
 
 interface SignInFormProps {
@@ -86,6 +87,7 @@ class SignInPage extends React.Component<SignInPageProps> {
             />
           </Card.Body>
         </Card>
+        <Link to={"/reset-password"}>Forgot password?</Link>
       </Col>
     </Container>
   }

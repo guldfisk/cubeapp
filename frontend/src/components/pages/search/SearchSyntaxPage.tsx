@@ -50,7 +50,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
     <p>Searches are done using a series of filters, that consist of a code, an operator, and a value. The code
       determines what to filter on, the operator how the filtering operation takes place, and the value what is compared
       against.</p>
-    <p>So "cmc>3" has code "cmc", operator ">" and value "3", which means all cards with a converted mana cost less than
+    <p>So "cmc{">"}3" has code "cmc", operator "{">"}" and value "3", which means all cards with a converted mana cost less than
       3.</p>
     <p>{'The legal operators are: "=", "<", ">", "<=", ">=" and ";"'}</p>
     <p>They all behave like they usually do, except for ";" that means "contains", so "o;xd" means "cards with `xd` in
@@ -159,7 +159,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
       </tbody>
     </Table>
     <p>Order never matters. For now, ";" operator doesn't work here, since a manacost does not contain another manacost,
-      use ">=" instead.</p>
+      use "{">"}=" instead.</p>
     <p>Example: <SearchLink query="m>=2r"/></p>
     <p>Cards with a manacost containing two generic and one red.</p>
     <p>Example: <SearchLink query="m=2rr2"/></p>
@@ -203,7 +203,7 @@ const SearchSyntaxPage: React.FunctionComponent = () =>
       </tbody>
     </Table>
     <p>Order never matters. For now, ";" operator doesn't work here, since a color set does not contain another color
-      set, use ">=" instead.</p>
+      set, use "{">"}=" instead.</p>
     <p>Example: <SearchLink query="color>ur"/></p>
     <p>All cards that are more colors than blue and red.</p>
     <p>Example: <SearchLink query="color=b"/></p>

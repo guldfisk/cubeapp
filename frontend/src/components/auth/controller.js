@@ -22,11 +22,11 @@ export const signUp = ({username, email, password, inviteToken}) => {
         dispatch(
           {
             type: authFailed,
-            errorMessage: typeof(error.response.data) === 'string' ?
+            errorMessage: typeof (error.response.data) === 'string' ?
               error.response.data
               : Object.entries(error.response.data).map(
-              ([key, value]) => key.toString() + ': ' + value.toString()
-            ).join(', '),
+                ([key, value]) => key.toString() + ': ' + value.toString()
+              ).join(', '),
           }
         )
       }
@@ -107,3 +107,21 @@ export const signOut = (token) => {
     )
   }
 };
+
+
+export const resetPassword = (username, email) => {
+  return axios.post(
+    '/api/user/reset-password/',
+    {username, email},
+  )
+};
+
+
+export const claimPasswordReset = (code, newPassword) => {
+  return axios.post(
+    '/api/user/claim-reset-password/',
+    {code, new_password: newPassword},
+  )
+};
+
+

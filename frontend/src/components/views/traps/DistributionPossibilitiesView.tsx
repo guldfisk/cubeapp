@@ -8,6 +8,7 @@ import paginationFactory from "react-bootstrap-table2-paginator";
 interface DistributionPossibilitiesViewProps {
   possibilities: DistributionPossibility[]
   onPossibilityClick?: (possibility: DistributionPossibility) => void
+  selected?: null | string
 }
 
 
@@ -54,11 +55,13 @@ export default class DistributionPossibilitiesView extends React.Component<Distr
         {
           mode: 'radio',
           onSelect: (row: any, isSelect: any, rowIndex: number, e: any) => {
+            console.log(row, isSelect, rowIndex);
             if (isSelect) {
               this.props.onPossibilityClick(row)
             }
           },
           hideSelectAll: true,
+          selected: this.props.selected ? [this.props.selected] : null,
         }
       }
     />;

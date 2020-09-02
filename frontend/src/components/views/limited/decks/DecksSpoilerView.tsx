@@ -5,12 +5,12 @@ import Row from "react-bootstrap/Row";
 import DeckView from "./DeckView";
 
 
-interface DecksViewProps {
+interface DecksSpoilerViewProps {
   decks: FullDeck[];
 }
 
 
-export default class DecksView extends React.Component<DecksViewProps> {
+export default class DecksSpoilerView extends React.Component<DecksSpoilerViewProps> {
 
   render() {
     return <Container

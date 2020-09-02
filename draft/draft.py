@@ -386,7 +386,7 @@ class Draft(object):
                     'clockwise': self._clockwise,
                 },
             )
-            booster = player_boosters.pop()
+            booster = player_boosters.pop(0)
             self._active_boosters[booster] = False
             interface.give_booster(booster)
 

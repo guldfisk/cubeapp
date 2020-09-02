@@ -38,6 +38,9 @@ class Sealed(Game):
             'AllCardsBoosterSpecification': {
                 'respect_printings': metaoptions.BooleanOption(default = True),
             },
+            'ChaosBoosterSpecification': {
+                'same': metaoptions.BooleanOption(default = False),
+            },
         },
         default_booster_specification = 'CubeBoosterSpecification',
     )

@@ -13,4 +13,5 @@ urlpatterns = [
     path('deck/', views.DeckList.as_view()),
     path('deck/<int:pk>/', views.DeckDetail.as_view()),
     path('deck/<int:pk>/export/', views.DeckExport.as_view()),
+    path('deck/<int:pk>/sample-hand/', views.SampleHand.as_view()),
 ]

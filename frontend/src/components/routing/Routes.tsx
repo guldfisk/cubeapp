@@ -6,6 +6,8 @@ const NotFoundPage = React.lazy(() => import('../pages/NotFoundPage'));
 const CreateCubePage = React.lazy(() => import('../pages/cubes/CreateCubePage'));
 const CubePatchesPage = React.lazy(() => import('../pages/patches/CubePatchesPage'));
 const SignInPage = React.lazy(() => import('../pages/authentication/SignInPage'));
+const ResetPage = React.lazy(() => import('../pages/authentication/ResetPage'));
+const ClaimResetPage = React.lazy(() => import('../pages/authentication/ClaimResetPage'));
 const SignOutPage = React.lazy(() => import('../pages/authentication/SignOutPage'));
 const CubesPage = React.lazy(() => import('../pages/cubes/CubesPage'));
 const CubePage = React.lazy(() => import('../pages/cubes/CubePage'));
@@ -24,6 +26,7 @@ const SamplePackPage = React.lazy(() => import("../pages/SamplePackPage"));
 const WishListPage = React.lazy(() => import("../pages/wishes/WishListPage"));
 const WishListsPage = React.lazy(() => import("../pages/wishes/WishListsPage"));
 const PoolPage = React.lazy(() => import("../pages/limited/PoolPage"));
+const DecksPage = React.lazy(() => import("../pages/limited/DecksPage"));
 const SessionsPage = React.lazy(() => import("../pages/limited/SessionsPage"));
 const SessionPage = React.lazy(() => import("../pages/limited/SessionPage"));
 const ArtGamePage = React.lazy(() => import("../pages/ArtGamePage"));
@@ -55,6 +58,8 @@ export const routes: [
   ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],
+  ['/reset-password', ResetPage, false, {}],
+  ['/claim-password-reset', ClaimResetPage, false, {}],
   ['/invite', InvitePage, true, {}],
   ['/logout', SignOutPage, false, {}],
   ['/sign-up', SignUpPage, false, {}],
@@ -68,6 +73,7 @@ export const routes: [
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/seat/:id(\\d+)/:seat(\\d+)', SeatPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
+  ['/decks/', DecksPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
   [
     '/patch/:id(\\d+)', PatchPage, false,

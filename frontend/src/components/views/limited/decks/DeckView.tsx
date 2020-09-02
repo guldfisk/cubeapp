@@ -6,11 +6,18 @@ import Card from "react-bootstrap/Card";
 import {Modal} from "react-bootstrap";
 import DeckTextView from "./DeckTextView";
 import DeckImageView from "./DeckImageView";
-import {Cubeable, Deck, LimitedSessionName, User} from "../../../models/models";
+import {
+  Cubeable,
+  CubeablesContainer,
+  Deck,
+  LimitedSessionName,
+  User
+} from "../../../models/models";
 import {DateListItem} from "../../../utils/listitems";
 
 import '../../../../styling/DeckView.css';
 import {Link} from "react-router-dom";
+import CubeablesCollectionSpoilerView from "../../cubeablescollectionview/CubeablesCollectionSpoilerView";
 
 
 interface DeckExportDialogProps {
@@ -83,7 +90,7 @@ interface DeckViewProps {
 interface DeckViewState {
   exporting: boolean;
   viewType: string;
-
+  sampleHand: null | CubeablesContainer;
 }
 
 
@@ -93,7 +100,8 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
     super(props);
     this.state = {
       exporting: false,
-      viewType: 'Images'
+      viewType: 'Images',
+      sampleHand: null,
     }
   }
 
@@ -115,7 +123,13 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
         <Card.Header
           className="d-flex justify-content-between panel-heading"
         >
-          <span className="header-item">{this.props.deck.name}</span>
+          <span className="header-item">
+            <Link
+              to={'/pools/' + this.props.deck.poolId + '/'}
+            >
+          {this.props.deck.name}
+        </Link>
+          </span>
           <span className="header-item">{this.props.user.username}</span>
           <span
             className="header-item"
@@ -141,12 +155,24 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
             <option>Images</option>
           </select>
           <Button
+            onClick={() => this.props.deck.sampleHand().then((sampleHand) => this.setState({sampleHand}))}
+          >
+            Sample Hand
+          </Button>
+          <Button
             onClick={() => this.setState({exporting: true})}
           >
             Export
           </Button>
         </ Card.Header>
         < Card.Body>
+          {
+            this.state.sampleHand && <CubeablesCollectionSpoilerView
+              cubeablesContainer={this.state.sampleHand}
+              cubeableType="Cubeables"
+              sizeSlug="small"
+            />
+          }
           < Container
             fluid
           >

@@ -136,6 +136,34 @@ class ExpansionBoosterSpecification(BoosterSpecification):
         }
 
 
+class ChaosBoosterSpecification(BoosterSpecification):
+    same = models.BooleanField(null = True)
+
+    def get_boosters(self, amount: int) -> t.Iterator[Cube]:
+        expansions = list(expansion for expansion in db.expansions.values() if expansion.expansion_type == ExpansionType.SET)
+        if self.same:
+            expansion = random.choice(expansions)
+            return (
+                Cube(expansion.generate_booster())
+                for _ in
+                range(amount)
+            )
+        for _ in range(amount):
+            yield Cube(random.choice(expansions).generate_booster())
+
+    def serialize(self):
+        return {
+            **super().serialize(),
+            'same': self.same,
+        }
+
+    @classmethod
+    def values_from_options(cls, options: t.Mapping[str, t.Any]) -> t.Mapping[str, t.Any]:
+        return {
+            'same': options['same'],
+        }
+
+
 class AllCardsBoosterSpecification(BoosterSpecification):
     respect_printings = models.BooleanField(null = True)
 

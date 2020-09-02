@@ -73,7 +73,7 @@ export default class HomePage extends React.Component<null, CubesPageState> {
         <h3>Recent decks</h3>
       </Row>
       <Row>
-        <RecentDecksView/>
+        <RecentDecksView />
       </Row>
     </Col>
   }

@@ -16,7 +16,129 @@ import ReportView from "../../views/report/ReportView";
 import DistributionView from "../../views/traps/DistributionView";
 import DistributionPossibilitiesView from "../../views/traps/DistributionPossibilitiesView";
 import DistributionPossibilityView from "../../views/traps/DistributionPossibilityView";
-import {ConfirmationDialog} from "../../utils/dialogs";
+
+import '../../../styling/ApplyPatchPage.css';
+
+
+interface ApplyPatchDialogProps {
+  show: boolean
+  callback: (
+    fork: boolean,
+    distributionPossibility: null | DistributionPossibility,
+    forkName: string | null,
+    forkDescription: string | null,
+  ) => void
+  cancel: () => void
+  distributionPossibility: null | DistributionPossibility
+  distributionPossibilities: DistributionPossibility[]
+
+}
+
+
+interface ApplyPatchDialogState {
+  fork: boolean
+  withDistribution: boolean
+  distributionPossibility: null | DistributionPossibility
+  forkName: null | string
+  forkDescription: null | string
+}
+
+
+class ApplyPatchDialog extends React.Component<ApplyPatchDialogProps, ApplyPatchDialogState> {
+
+  constructor(props: ApplyPatchDialogProps) {
+    super(props);
+    this.state = {
+      fork: false,
+      withDistribution: !!props.distributionPossibility,
+      distributionPossibility: props.distributionPossibility,
+      forkName: null,
+      forkDescription: null,
+    }
+  }
+
+  render() {
+    return <Modal
+      show={this.props.show}
+      dialogClassName="modal-90w"
+      onHide={this.props.cancel}
+      onCa
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Apply Cube</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Row>
+          <label>Fork &nbsp;</label>
+          <input
+            type="checkbox"
+            checked={this.state.fork}
+            onClick={() => this.setState({fork: !this.state.fork})}
+          />
+        </Row>
+        {
+          this.state.fork && <>
+            <Row>
+              <input
+                type="text"
+                name="Name"
+                placeholder="Fork name"
+                value={this.state.forkName}
+                onChange={event => this.setState({forkName: event.target.value})}
+              />
+            </Row>
+            <Row>
+              <input
+                type="text"
+                name="Description"
+                placeholder="Fork description"
+                value={this.state.forkDescription}
+                onChange={event => this.setState({forkDescription: event.target.value})}
+              />
+            </Row>
+          </>
+        }
+        <Row>
+          <label>With distribution &nbsp;</label>
+          <input
+            type="checkbox"
+            checked={this.state.withDistribution}
+            onClick={
+              () => this.setState({withDistribution: !this.state.withDistribution, distributionPossibility: null})
+            }
+          />
+        </Row>
+        {
+          this.state.withDistribution && <DistributionPossibilitiesView
+            possibilities={this.props.distributionPossibilities}
+            onPossibilityClick={possibility => this.setState({distributionPossibility: possibility})}
+            selected={this.state.distributionPossibility ? this.state.distributionPossibility.id : null}
+          />
+        }
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={this.props.cancel}>Cancel</Button>
+        <Button
+          variant="primary"
+          onClick={
+            () => this.props.callback(
+              this.state.fork,
+              this.state.distributionPossibility,
+              this.state.forkName,
+              this.state.forkDescription,
+            )
+          }
+          disabled={
+            this.state.withDistribution && !this.state.distributionPossibility
+            || this.state.fork && !this.state.forkName
+          }
+        >
+          Apply
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  }
+}
 
 
 interface DeltaPageProps {
@@ -207,17 +329,32 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     busy: ['start'],
   };
 
-  apply = (): void => {
-    if (this.state.distributionPossibility && this.state.withDistribution) {
-      this.submitMessage(
-        {
-          type: 'apply',
-          possibility_id: this.state.distributionPossibility.id,
-        }
-      )
-    } else {
-      this.submitMessage({type: 'apply'})
-    }
+  apply = (
+    fork: boolean,
+    distributionPossibility: null | DistributionPossibility,
+    forkName: string | null,
+    forkDescription: string | null,
+  ): void => {
+    console.log('apply', fork, distributionPossibility, forkName, forkDescription);
+    this.submitMessage(
+      {
+        type: 'apply',
+        possibility_id: distributionPossibility && distributionPossibility.id,
+        fork: fork,
+        name: forkName,
+        description: forkDescription,
+      }
+    );
+    // if (this.state.distributionPossibility && this.state.withDistribution) {
+    //   this.submitMessage(
+    //     {
+    //       type: 'apply',
+    //       possibility_id: this.state.distributionPossibility.id,
+    //     }
+    //   )
+    // } else {
+    //   this.submitMessage({type: 'apply'})
+    // }
   };
 
   render() {
@@ -292,16 +429,27 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     }
 
     return <>
-      <ConfirmationDialog
-        callback={this.apply}
-        cancel={() => this.setState({applying: false, withDistribution: false})}
+      <ApplyPatchDialog
         show={this.state.applying}
-        message={
-          this.state.withDistribution ?
-            "Confirm apply patch with distribution."
-            : "Confirm apply patch without distribution."
+        callback={
+          this.apply
+          // (fork, distributionPossibility, forkName, forkDescription) => console.log(fork, distributionPossibility, forkName, forkDescription)
         }
+        cancel={() => this.setState({applying: false, withDistribution: false})}
+        distributionPossibility={this.state.distributionPossibility}
+        distributionPossibilities={this.state.distributionPossibilities}
+        key={this.state.distributionPossibility ? this.state.distributionPossibility.id : 0}
       />
+      {/*<ConfirmationDialog*/}
+      {/*  callback={this.apply}*/}
+      {/*  cancel={() => this.setState({applying: false, withDistribution: false})}*/}
+      {/*  show={this.state.applying}*/}
+      {/*  message={*/}
+      {/*    this.state.withDistribution ?*/}
+      {/*      "Confirm apply patch with distribution."*/}
+      {/*      : "Confirm apply patch without distribution."*/}
+      {/*  }*/}
+      {/*/>*/}
       <Modal
         show={!!this.state.errorMessage}
       >
@@ -353,6 +501,19 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         </Row>
 
         <Row>
+          <Button
+            onClick={
+              () => this.setState({applying: true, withDistribution: false})
+            }
+            disabled={!this.state.releasePatch}
+            size='lg'
+            block
+          >
+            Apply
+          </Button>
+        </Row>
+
+        <Row>
           <Col>
             {
               !this.state.distributionPossibility ? undefined :
@@ -395,23 +556,23 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
                 size='lg'
                 block
               >
-                Apply without distribution
+                Apply
               </Button>
             </Row>
-            {
-              this.state.distributionPossibility ? <Row>
-                <Button
-                  onClick={
-                    () => this.setState({applying: true, withDistribution: true})
-                  }
-                  disabled={!this.state.releasePatch}
-                  size='lg'
-                  block
-                >
-                  Apply with distribution
-                </Button>
-              </Row> : null
-            }
+            {/*{*/}
+            {/*  this.state.distributionPossibility ? <Row>*/}
+            {/*    <Button*/}
+            {/*      onClick={*/}
+            {/*        () => this.setState({applying: true, withDistribution: true})*/}
+            {/*      }*/}
+            {/*      disabled={!this.state.releasePatch}*/}
+            {/*      size='lg'*/}
+            {/*      block*/}
+            {/*    >*/}
+            {/*      Apply with distribution*/}
+            {/*    </Button>*/}
+            {/*  </Row> : null*/}
+            {/*}*/}
           </Col>
         </Row>
       </Container>

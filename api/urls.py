@@ -29,6 +29,9 @@ urlpatterns = [
     path('versioned-cubes/<int:pk>/fork/', views.ForkVersionedCube.as_view()),
     path('versioned-cubes/<int:pk>/patches/', views.VersionedCubePatchList.as_view()),
 
+    path('user/reset-password/', views.ResetPassword.as_view()),
+    path('user/claim-reset-password/', views.ClaimReset.as_view()),
+
     path('users/', views.UserList.as_view()),
     path('users/<int:pk>/', views.UserDetail.as_view()),
 

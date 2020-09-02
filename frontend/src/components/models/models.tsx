@@ -2374,10 +2374,47 @@ export class AllCardsBoosterSpecification extends BoosterSpecification {
 }
 
 
+export class ChaosBoosterSpecification extends BoosterSpecification {
+  same: boolean;
+
+  constructor(
+    id: string,
+    sequenceNumber: number,
+    amount: number,
+    same: boolean,
+  ) {
+    super(id, sequenceNumber, amount);
+    this.same = same;
+  }
+
+  public static fromRemote(remote: any): ChaosBoosterSpecification {
+    return new ChaosBoosterSpecification(
+      remote.id,
+      remote.sequence_number,
+      remote.amount,
+      remote.same,
+    )
+  }
+
+  name = (): string => {
+    return 'Chaos Booster'
+  };
+
+  values = (): [string, any][] => {
+    return [
+      ['id', this.id],
+      ['same', this.same],
+    ]
+  };
+
+}
+
+
 export const boosterSpecificationTypeMap: { [key: string]: Remoteable<BoosterSpecification> } = {
   CubeBoosterSpecification: CubeBoosterSpecification,
   ExpansionBoosterSpecification: ExpansionBoosterSpecification,
   AllCardsBoosterSpecification: AllCardsBoosterSpecification,
+  ChaosBoosterSpecification: ChaosBoosterSpecification,
 };
 
 
@@ -2710,6 +2747,7 @@ export class Deck extends Atomic {
   maindeck: PrintingCounter;
   sideboard: PrintingCounter;
   createdAt: Date;
+  poolId: string | number;
 
   constructor(
     id: string,
@@ -2717,12 +2755,14 @@ export class Deck extends Atomic {
     maindeck: PrintingCounter,
     sideboard: PrintingCounter,
     createdAt: Date,
+    poolId: string | number,
   ) {
     super(id);
     this.name = name;
     this.maindeck = maindeck;
     this.sideboard = sideboard;
     this.createdAt = createdAt;
+    this.poolId = poolId;
   }
 
   public static fromRemote(remote: any): Deck {
@@ -2740,8 +2780,31 @@ export class Deck extends Atomic {
         )
       ),
       new Date(remote.created_at),
+      remote.pool_id,
     )
   }
+
+  sampleHand = (): Promise<CubeablesContainer> => {
+    return axios.get(
+      '/api/limited/deck/' + this.id + '/sample-hand/',
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
+    ).then(
+      (response: any) => new CubeablesContainer(
+        new PrintingCounter(
+          response.data.printings.map(
+            ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+          )
+        ),
+        new Counter(),
+        new Counter(),
+        new Counter(),
+      )
+    )
+  };
 
   download = (extension: string = 'dec'): Promise<void> => {
     return axios.get(
@@ -2774,8 +2837,9 @@ export class FullDeck extends Deck {
     createdAt: Date,
     user: User,
     limitedSession: LimitedSessionName,
+    poolId: string | number
   ) {
-    super(id, name, maindeck, sideboard, createdAt);
+    super(id, name, maindeck, sideboard, createdAt, poolId);
     this.user = user;
     this.limitedSession = limitedSession;
   }
@@ -2797,16 +2861,22 @@ export class FullDeck extends Deck {
       new Date(remote.created_at),
       User.fromRemote(remote.user),
       LimitedSessionName.fromRemote(remote.limited_session),
+      remote.pool_id,
     )
   }
 
-  public static recent(offset: number = 0, limit: number = 10): Promise<PaginationResponse<FullDeck>> {
+  public static recent(
+    offset: number = 0,
+    limit: number = 10,
+    filter: string = "",
+  ): Promise<PaginationResponse<FullDeck>> {
     return axios.get(
       apiPath + 'limited/deck/',
       {
         params: {
           offset,
           limit,
+          ...(filter && {filter}),
         }
       }
     ).then(

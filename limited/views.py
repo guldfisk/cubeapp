@@ -1,16 +1,20 @@
 import datetime
+import random
+import typing as t
 
 from distutils.util import strtobool
 from json import JSONDecodeError
 
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, QuerySet
 from django.contrib.auth import get_user_model
+from magiccube.collections.cube import Cube
 
 from rest_framework import generics, permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from api.serialization import orpserialize
 from mtgorp.models.formats.format import Format
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
@@ -18,10 +22,15 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.tools.deckio import DeckSerializer
 
 from magiccube.tools.subset import check_deck_subset_pool
+from mtgorp.tools.parsing.exceptions import ParseException
+from mtgorp.tools.parsing.search.parse import SearchParser
+from mtgorp.tools.search.extraction import PrintingStrategy
+from mtgorp.tools.search.pattern import Pattern
 
 from resources.staticdb import db
 
 from limited import models, serializers
+from yeetlong.multiset import Multiset
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -145,6 +154,46 @@ class DeckList(generics.ListAPIView):
     )
     serializer_class = serializers.FullPoolDeckSerializer
 
+    filters: t.List[Pattern] = []
+
+    def get_queryset(self):
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            queryset = queryset.all()
+
+        if self.filters:
+            queryset = queryset.filter(
+                id__in=[
+                    deck.id
+                    for deck in
+                    queryset
+                    if all(
+                        any(
+                            filter_pattern.match(p)
+                            for p in
+                            deck.deck.seventy_five.distinct_elements()
+                        )
+                        for filter_pattern in
+                        self.filters
+                    )
+                ]
+            )
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        if 'filter' in request.GET:
+            self.filters = []
+            search_parser = SearchParser(db)
+
+            for filter_pattern in request.GET.getlist('filter', []):
+                try:
+                    self.filters.append(search_parser.parse(filter_pattern, PrintingStrategy))
+                except ParseException as e:
+                    return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
+
+        return super().get(request, *args, **kwargs)
+
 
 class DeckExport(generics.GenericAPIView):
     queryset = models.PoolDeck.objects.all()
@@ -163,6 +212,24 @@ class DeckExport(generics.GenericAPIView):
             status = status.HTTP_200_OK,
             content_type = 'application/octet-stream',
             data = serializer.serialize(self.get_object().deck),
+        )
+
+
+class SampleHand(generics.GenericAPIView):
+    queryset = models.PoolDeck.objects.all()
+    permission_classes = [DeckPermissions]
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        return Response(
+            status = status.HTTP_200_OK,
+            data = orpserialize.CubeSerializer.serialize(
+                Cube(
+                    random.sample(
+                        list(self.get_object().deck.maindeck),
+                        7,
+                    )
+                )
+            )
         )
 
 

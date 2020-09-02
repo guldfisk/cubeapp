@@ -1,77 +1,51 @@
-import {FullDeck} from "../../../models/models";
 import React from "react";
-import Col from "react-bootstrap/Col";
-import PaginationBar from "../../../utils/PaginationBar";
-import DecksView from "./DecksView";
 
-
-const pageSize: number = 10;
+import DecksSpoilerView from "./DecksSpoilerView";
+import {FullDeck} from "../../../models/models";
 
 
 interface RecentDecksViewState {
   decks: FullDeck[];
-  offset: number
-  hits: number
 }
 
 
 interface RecentDecksViewProps {
+  amount: number
 }
 
 
 export default class RecentDecksView extends React.Component<RecentDecksViewProps, RecentDecksViewState> {
 
-  constructor(props: null) {
+  public static defaultProps = {
+    amount: 10
+  };
+
+  constructor(props: RecentDecksViewProps) {
     super(props);
     this.state = {
       decks: [],
-      offset: 0,
-      hits: 0,
-    };
+    }
   }
 
   componentDidMount() {
-    this.fetch(0);
-  }
-
-  fetch = (offset: number) => {
     FullDeck.recent(
-      offset,
-      pageSize,
+      0,
+      this.props.amount,
     ).then(
       ({objects, hits}) => {
         this.setState(
           {
             decks: objects,
-            hits,
-            offset,
           }
         )
       }
     );
-  };
+  }
 
   render() {
-
-    return <Col>
-      <PaginationBar
-        hits={this.state.hits}
-        offset={this.state.offset}
-        handleNewOffset={this.fetch}
-        pageSize={pageSize}
-        maxPageDisplay={7}
-      />
-      <DecksView
-        decks={this.state.decks}
-      />
-      <PaginationBar
-        hits={this.state.hits}
-        offset={this.state.offset}
-        handleNewOffset={this.fetch}
-        pageSize={pageSize}
-        maxPageDisplay={7}
-      />
-    </Col>
+    return <DecksSpoilerView
+      decks={this.state.decks}
+    />
   }
 
 }

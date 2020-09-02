@@ -2,6 +2,7 @@ import traceback
 import typing as t
 
 from collections import OrderedDict
+from distutils.util import strtobool
 
 from asgiref.sync import async_to_sync
 
@@ -310,6 +311,8 @@ class DistributorConsumer(AuthenticatedConsumer):
         elif message_type == 'apply':
             possibility_id = content.get('possibility_id')
 
+            fork = content.get('fork', False)
+
             with transaction.atomic():
                 if possibility_id is not None:
                     try:
@@ -325,9 +328,27 @@ class DistributorConsumer(AuthenticatedConsumer):
 
                 finale_cube = self._updater.get_finale_cube(possibility)
 
+                if fork:
+                    try:
+                        versioned_cube_name = content['name']
+                    except KeyError:
+                        self._send_error('invalid name')
+                        return
+
+                    versioned_cube_description = content.get('description', 'Forked from {}'.format(self._versioned_cube.name))
+
+                    versioned_cube = models.VersionedCube.objects.create(
+                        name = versioned_cube_name,
+                        description = versioned_cube_description,
+                        author = self.scope['user'],
+                        forked_from = self._versioned_cube
+                    )
+                else:
+                    versioned_cube = self._versioned_cube
+
                 new_release = models.CubeRelease.create(
                     cube = finale_cube,
-                    versioned_cube = self._versioned_cube,
+                    versioned_cube = versioned_cube,
                     infinites = self._updater.new_infinites,
                 )
 

@@ -50,10 +50,11 @@ class PoolUserField(serializers.RelatedField):
 class PoolDeckSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
     deck = OrpSerializerField(model_serializer = orpserialize.DeckSerializer)
+    pool_id = serializers.PrimaryKeyRelatedField(source = 'pool', read_only = True)
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'name', 'created_at', 'deck')
+        fields = ('id', 'name', 'created_at', 'deck', 'pool_id')
 
 
 class MinimalPoolSerializer(serializers.ModelSerializer):
@@ -96,7 +97,7 @@ class FullPoolDeckSerializer(PoolDeckSerializer):
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'name', 'created_at', 'deck', 'user', 'limited_session')
+        fields = ('id', 'name', 'created_at', 'deck', 'user', 'limited_session', 'pool_id')
 
 
 class LimitedSessionSerializer(LimitedSessionNameSerializer):

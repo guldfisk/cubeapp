@@ -178,6 +178,28 @@ class ParseTrapSerializer(serializers.Serializer):
         raise NotImplemented
 
 
+class ResetSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    email = serializers.EmailField()
+
+    def update(self, instance, validated_data):
+        raise NotImplemented
+
+    def create(self, validated_data):
+        raise NotImplemented
+
+
+class ClaimResetSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    new_password = serializers.CharField()
+
+    def update(self, instance, validated_data):
+        raise NotImplemented
+
+    def create(self, validated_data):
+        raise NotImplemented
+
+
 class InviteSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Invite

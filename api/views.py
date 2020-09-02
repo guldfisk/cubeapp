@@ -1,12 +1,11 @@
 import string
 import typing as t
-
 import datetime
 import hashlib
 import random
-
 from distutils.util import strtobool
 
+from django.contrib.auth.backends import UserModel
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import HttpResponse, HttpRequest, JsonResponse
@@ -30,7 +29,7 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 
 from mtgimg.interface import SizeSlug, ImageFetchException, ImageRequest
 
-from magiccube.collections.meta import MetaCube
+from magiccube.collections.infinites import Infinites
 from magiccube.update.report import UpdateReport
 from magiccube.collections.cube import Cube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
@@ -50,6 +49,7 @@ from api.mail import send_mail
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
+
 
 _IMAGE_TYPES_MAP = {
     'Printing': Printing,
@@ -190,8 +190,8 @@ class SearchView(generics.ListAPIView):
                 'artist': lambda model: tuple(strategy.extract_artist(model)),
                 'release_date': lambda model: tuple(
                     expansion.release_date
-                    for expansion in
-                    strategy.extract_expansion(model)
+                        for expansion in
+                        strategy.extract_expansion(model)
                 ),
             }
 
@@ -363,6 +363,70 @@ class LoginEndpoint(generics.GenericAPIView):
         )
 
 
+class ResetPassword(generics.GenericAPIView):
+    serializer_class = serializers.ResetSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer: serializers.ResetSerializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+
+        try:
+            user = get_user_model().objects.get(
+                username = serializer.validated_data['username'],
+                email = serializer.validated_data['email'],
+            )
+        except (UserModel.DoesNotExist, UserModel.MultipleObjectsReturned):
+            return Response('Invalid user', status = status.HTTP_400_BAD_REQUEST)
+
+        if models.PasswordReset.objects.filter(
+            user = user,
+            created_at__gte = datetime.datetime.now() - datetime.timedelta(hours = 1),
+        ).count() >= 2:
+            return Response('To many password resets, try again later', status = status.HTTP_400_BAD_REQUEST)
+
+        reset = models.PasswordReset.create(user)
+
+        send_mail(
+            subject = 'Password reset',
+            content = get_template('reset_mail.html').render(
+                {
+                    'reset_link': 'http://{host}/claim-password-reset/?code={code}'.format(
+                        host = settings.HOST,
+                        code = reset.code,
+                    ),
+                }
+            ),
+            recipients = [user.email],
+        )
+
+        return Response(status = status.HTTP_200_OK)
+
+
+class ClaimReset(generics.GenericAPIView):
+    serializer_class = serializers.ClaimResetSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer: serializers.ClaimResetSerializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+
+        reset: models.PasswordReset = models.PasswordReset.objects.filter(
+            code = serializer.validated_data['code'],
+            claimed = False,
+            created_at__gte = datetime.datetime.now() - datetime.timedelta(hours = 1),
+        ).order_by('created_at').last()
+
+        if reset is None:
+            return Response('Invalid code', status = status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            reset.user.set_password(serializer.validated_data['new_password'])
+            reset.user.save()
+            reset.claimed = True
+            reset.save(update_fields = ('claimed',))
+
+        return Response(status = status.HTTP_200_OK)
+
+
 class InviteUserEndpoint(generics.GenericAPIView):
     serializer_class = serializers.InviteSerializer
     permission_classes = [permissions.IsAuthenticated, ]
@@ -378,8 +442,8 @@ class InviteUserEndpoint(generics.GenericAPIView):
         for _ in range(128):
             key = ''.join(
                 random.choice(string.ascii_letters)
-                for _ in
-                range(255)
+                    for _ in
+                    range(255)
             )
 
             hasher = hashlib.sha3_256()
@@ -449,6 +513,19 @@ class VersionedCubesList(generics.ListCreateAPIView):
             release = models.CubeRelease.create(
                 cube = Cube(),
                 versioned_cube = versioned_cube,
+                infinites = Infinites(
+                    (
+                        db.cardboards[c]
+                        for c in
+                        (
+                            'Plains',
+                            'Island',
+                            'Swamp',
+                            'Mountain',
+                            'Forest',
+                        )
+                    )
+                ),
             )
             models.ConstrainedNodes.objects.create(
                 constrained_nodes = NodeCollection(()),
@@ -491,6 +568,7 @@ class ForkVersionedCube(generics.CreateAPIView):
             release = models.CubeRelease.create(
                 cube = forked_versioned_cube.latest_release.cube,
                 versioned_cube = new_versioned_cube,
+                infinites = forked_versioned_cube.latest_release.infinites,
             )
             models.ConstrainedNodes.objects.create(
                 constrained_nodes = forked_versioned_cube.latest_release.constrained_nodes.constrained_nodes,
@@ -575,8 +653,6 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     native = strtobool(request.query_params.get('native', '0'))
 
-    # new_meta = latest_release.as_meta_cube() + patch.patch
-
     return Response(
         (
             RawStrategy
@@ -585,31 +661,6 @@ def patch_preview(request: Request, pk: int) -> Response:
         ).serialize(
             latest_release.as_meta_cube() + patch.patch,
         ),
-        # {
-        #     'cube': (
-        #         RawStrategy
-        #         if native else
-        #         orpserialize.CubeSerializer
-        #     ).serialize(
-        #         latest_release.cube + patch.patch.cube_delta_operation,
-        #     ),
-        #     'nodes': {
-        #         'constrained_nodes': (
-        #             RawStrategy
-        #             if native else
-        #             orpserialize.ConstrainedNodesOrpSerializer
-        #         ).serialize(
-        #             latest_release.constrained_nodes.constrained_nodes + patch.patch.node_delta_operation
-        #         )
-        #     },
-        #     'group_map': (
-        #         RawStrategy
-        #         if native else
-        #         orpserialize.GroupMapSerializer
-        #     ).serialize(
-        #         latest_release.constrained_nodes.group_map + patch.patch.group_map_delta_operation
-        #     )
-        # },
         content_type = 'application/json',
     )
 

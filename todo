@@ -3,7 +3,7 @@ fix image hover on refreshed views
 fix image generation
     switch to nginx served images
 hover images on small images
-popper printing / cardboard view in search
+proper printing / cardboard view in search
 deck search
 pickable elo
 per card distribution fitness inspection view

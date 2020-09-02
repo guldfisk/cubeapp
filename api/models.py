@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import random
+import string
 from enum import Enum
 
+from django.contrib.auth.backends import UserModel
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
@@ -173,6 +176,23 @@ class Invite(models.Model):
         null = True,
         related_name = 'invite',
     )
+
+
+class PasswordReset(TimestampedModel, models.Model):
+    user = models.ForeignKey(get_user_model(), related_name = 'password_resets', on_delete = models.CASCADE)
+    code = models.CharField(max_length = 127)
+    claimed = models.BooleanField(default = False)
+
+    @classmethod
+    def create(cls, user: UserModel) -> PasswordReset:
+        return cls.objects.create(
+            user = user,
+            code = ''.join(
+                random.choice(string.ascii_letters)
+                    for _ in
+                    range(16)
+            ),
+        )
 
 
 class ReleaseImageBundle(TimestampedModel, models.Model):
