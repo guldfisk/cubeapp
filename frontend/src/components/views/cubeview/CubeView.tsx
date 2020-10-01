@@ -6,6 +6,7 @@ import Table from "react-bootstrap/Table";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import {Cube} from "../../models/models";
+import {DateListItem} from "../../utils/listitems";
 
 
 interface CubeViewProps {
@@ -20,7 +21,7 @@ class CubeView extends React.Component<CubeViewProps> {
         <Row>
           <h4>
             <span className="badge badge-secondary">{this.props.cube.name}</span>
-            <span className="badge badge-secondary">{this.props.cube.createdAt}</span>
+            <span className="badge badge-secondary"><DateListItem date={this.props.cube.createdAt}/></span>
           </h4>
         </Row>
       </Card.Header>
@@ -43,7 +44,7 @@ class CubeView extends React.Component<CubeViewProps> {
                       {release.name}
                     </Link>
                   </td>
-                  <td>{release.createdAt}</td>
+                  <td><DateListItem date={release.createdAt}/></td>
                   <td>{release.intendedSize}</td>
                 </tr>
               }

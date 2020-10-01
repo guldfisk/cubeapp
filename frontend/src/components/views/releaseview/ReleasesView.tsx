@@ -33,7 +33,7 @@ export default class ReleasesView extends React.Component<GroupMapViewProps> {
     ];
 
     const data = this.props.releases.sort(
-      (a, b) => a.createAtTimestamp > b.createAtTimestamp ? -1 : a.createAtTimestamp < b.createAtTimestamp ? 1 : 0
+      (a, b) => a.createdAt > b.createdAt ? -1 : a.createdAt < b.createdAt ? 1 : 0
     );
 
     return <BootstrapTable

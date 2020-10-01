@@ -38,7 +38,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('pack_number', models.PositiveSmallIntegerField()),
                 ('pick_number', models.PositiveSmallIntegerField()),
-                ('pack', api.fields.orp.OrpField(model_type='mtgdraft.models.Booster')),
+                ('pack', api.fields.orp.OrpField(model_type='mtgdraft.models.DraftBooster')),
                 ('pick', api.fields.orp.OrpField(model_type='mtgdraft.models.Pick')),
                 ('drafter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='picks', to='draft.DraftSession')),
             ],

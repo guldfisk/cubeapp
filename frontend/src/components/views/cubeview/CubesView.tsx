@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 
 import Table from "react-bootstrap/Table";
 import {Cube} from "../../models/models";
+import {DateListItem} from "../../utils/listitems";
 
 
 interface CubesViewProps {
@@ -26,41 +27,46 @@ class CubesView extends React.Component<CubesViewProps> {
       </tr>
       </thead>
       <tbody>
-        {
-         this.props.cubes.map(
-           (cube: Cube) => {
-             return <tr>
-               <td>
-                 <Link to={"/cube/" + cube.id}>
-                   {cube.name}
-                 </Link>
-               </td>
-               <td>{cube.description}</td>
-               <td>{cube.author.username}</td>
-               <td>
-                 {
-                   cube.latestRelease() !== null ?
-                     <Link to={'/release/' + cube.latestRelease().id}>
-                       {cube.latestRelease().name}
-                     </Link>
-                     :
-                     "No releases"
-                 }
-               </td>
-               <td>
-                  {
-                    cube.latestRelease() !== null ?
-                      cube.latestRelease().createdAt
-                      :
-                      "No releases"
-                  }
-               </td>
-               <td>{cube.releases.length}</td>
-               <td>{cube.createdAt}</td>
-             </tr>
-           }
-         )
-        }
+      {
+        this.props.cubes.map(
+          (cube: Cube) => {
+            return <tr>
+              <td>
+                <Link to={"/cube/" + cube.id}>
+                  {cube.name}
+                </Link>
+              </td>
+              <td>{cube.description}</td>
+              <td>{cube.author.username}</td>
+              <td>
+                {
+                  cube.latestRelease() !== null ?
+                    <Link to={'/release/' + cube.latestRelease().id}>
+                      {cube.latestRelease().name}
+                    </Link>
+                    :
+                    "No releases"
+                }
+              </td>
+              <td>
+                {
+                  cube.latestRelease() !== null ?
+                    <DateListItem
+                      date={cube.latestRelease().createdAt}
+                    /> :
+                    "No releases"
+                }
+              </td>
+              <td>{cube.releases.length}</td>
+              <td>
+                <DateListItem
+                  date={cube.createdAt}
+                />
+              </td>
+            </tr>
+          }
+        )
+      }
       </tbody>
     </Table>
 

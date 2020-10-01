@@ -9,7 +9,7 @@ from typedmodels.models import TypedModel
 
 from magiccube.collections.infinites import Infinites
 
-from mtgdraft.models import Booster, Pick
+from mtgdraft.models import DraftBooster, Pick
 
 from api.fields.orp import OrpField
 from api.models import CubeRelease
@@ -62,5 +62,5 @@ class DraftPick(models.Model):
     seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
-    pack = OrpField(Booster)
+    pack = OrpField(DraftBooster)
     pick = OrpField(Pick)

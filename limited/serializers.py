@@ -5,8 +5,8 @@ from rest_framework.fields import empty
 
 from api.serialization import orpserialize
 from api.serialization.serializers import OrpSerializerField, UserSerializer
-from utils.serialization.fields import EnumSerializerField
 
+from utils.serialization.fields import EnumSerializerField
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 from limited import models

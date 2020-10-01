@@ -10,7 +10,7 @@ from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 
-from mtgdraft.models import Pick, SinglePickPick, BurnPick, Booster
+from mtgdraft.models import Pick, SinglePickPick, BurnPick, DraftBooster
 
 from api.serialization.serializers import OrpSerializerField, UserSerializer
 from api.serialization import orpserialize
@@ -61,10 +61,10 @@ class BurnPickSerializer(PickSerializer):
         }
 
 
-class BoosterSerializer(orpserialize.ModelSerializer[Booster]):
+class BoosterSerializer(orpserialize.ModelSerializer[DraftBooster]):
 
     @classmethod
-    def serialize(cls, booster: Booster) -> compacted_model:
+    def serialize(cls, booster: DraftBooster) -> compacted_model:
         return {
             'booster_id': booster.booster_id,
             'pick': booster.pick,

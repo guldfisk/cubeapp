@@ -63,7 +63,7 @@ class ReleaseSelectionDialog extends React.Component<ReleaseSelectionDialogProps
           <ReleasesView
             releases={
               this.state.cube.releases.filter(
-                release => release.createAtTimestamp < this.props.currentRelease.createAtTimestamp
+                release => release.createdAt < this.props.currentRelease.createdAt
               )
             }
             onReleaseClicked={this.props.onReleaseClicked}

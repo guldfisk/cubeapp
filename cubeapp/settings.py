@@ -169,8 +169,10 @@ INTERNAL_IPS = [
 
 if DEBUG:
     DEBUG_TOOLBAR_CONFIG = {
-        "SHOW_TOOLBAR_CALLBACK": lambda _: False,
+        'SHOW_TOOLBAR_CALLBACK': lambda _: False,
+        'RESULTS_CACHE_SIZE': 40,
     }
+
 
 DEBUG_TOOLBAR_PANELS = [
     'ddt_request_history.panels.request_history.RequestHistoryPanel',

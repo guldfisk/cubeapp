@@ -8,7 +8,10 @@ from mtgorp.models.serilization.serializeable import Serializeable
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 
-from magiccube.collections.cubeable import Cubeable, deserialize_cubeable_string, serialize_cubeable_string
+from magiccube.collections.cubeable import (
+    Cubeable, deserialize_cubeable_string, serialize_cubeable_string,
+    deserialize_cardboard_cubeable_string, CardboardCubeable, serialize_cardboard_cubeable_string
+)
 
 from resources.staticdb import db
 from utils.methods import import_path
@@ -82,6 +85,30 @@ class CubeableField(models.Field):
         if value is None:
             return None
         return serialize_cubeable_string(value)
+
+    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
+        return self.get_prep_value(value)
+
+
+class CardboardCubeableField(models.Field):
+
+    def db_type(self, connection) -> str:
+        return 'LONGTEXT'
+
+    def from_db_value(self, value, expression, connection) -> t.Optional[CardboardCubeable]:
+        if value is None:
+            return
+        return deserialize_cardboard_cubeable_string(value, RawStrategy(db))
+
+    def to_python(self, value) -> t.Optional[CardboardCubeable]:
+        if value is None:
+            return
+        return deserialize_cardboard_cubeable_string(value, RawStrategy(db))
+
+    def get_prep_value(self, value: CardboardCubeable) -> t.Optional[str]:
+        if value is None:
+            return None
+        return serialize_cardboard_cubeable_string(value)
 
     def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
         return self.get_prep_value(value)

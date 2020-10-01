@@ -36,7 +36,7 @@ from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
-from magiccube.laps.traps.trap import Trap
+from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.laps.traps.tree.parse import PrintingTreeParser, PrintingTreeParserException
 
 from cubeapp import settings
@@ -51,12 +51,12 @@ from resources.staticimageloader import image_loader
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 
-_IMAGE_TYPES_MAP = {
-    'Printing': Printing,
-    'Trap': Trap,
-    'Ticket': Ticket,
-    'Purple': Purple,
-    'Cardboard': Cardboard,
+_CUBEABLES_TYPE_MAP = {
+    'printing': Printing,
+    'trap': Trap,
+    'ticket': Ticket,
+    'purple': Purple,
+    'cardboard': Cardboard,
 }
 
 _IMAGE_SIZE_MAP = {
@@ -94,11 +94,11 @@ class CubeReleaseView(generics.RetrieveAPIView):
 
 @api_view(['GET', ])
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
-    pictured_type = _IMAGE_TYPES_MAP.get(
+    pictured_type = _CUBEABLES_TYPE_MAP.get(
         request.GET.get(
             'type',
-            'Printing',
-        ),
+            'printing',
+        ).lower(),
         Printing,
     )
     size_slug = _IMAGE_SIZE_MAP.get(
@@ -653,6 +653,9 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     native = strtobool(request.query_params.get('native', '0'))
 
+    print(latest_release.as_meta_cube())
+    print(patch.patch)
+
     return Response(
         (
             RawStrategy
@@ -827,9 +830,9 @@ class ParseTrapEndpoint(generics.GenericAPIView):
         serializer.is_valid(raise_exception = True)
 
         try:
-            intention_type = Trap.IntentionType[serializer.validated_data['intention_type']]
+            intention_type = IntentionType[serializer.validated_data['intention_type']]
         except KeyError:
-            intention_type = Trap.IntentionType.NO_INTENTION
+            intention_type = IntentionType.NO_INTENTION
 
         try:
             trap = Trap(
@@ -866,3 +869,14 @@ def random_printing(request: Request) -> Response:
         ),
         status = status.HTTP_200_OK,
     )
+
+
+@api_view(['GET'])
+def cube_cubeable(request: Request, pk: int, cubeable_type: str, cubeable_id: str) -> Response:
+    print(request.data, pk, cubeable_type, cubeable_id)
+    try:
+        cubeable_type = _CUBEABLES_TYPE_MAP[cubeable_type.lower()]
+    except KeyError:
+        return Response('Invalid cubeable type', status = status.HTTP_400_BAD_REQUEST)
+
+    return Response('ok', status = status.HTTP_200_OK)

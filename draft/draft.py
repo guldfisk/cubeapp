@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import typing as t
 import threading
+
 from abc import ABC, abstractmethod
 from queue import Empty
 
@@ -19,7 +20,7 @@ from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.infinites import Infinites
 
-from mtgdraft.models import Booster, Pick, SinglePickPick, BurnPick
+from mtgdraft.models import DraftBooster, Pick, SinglePickPick, BurnPick
 
 from utils.queue import Queue
 from api.serialization.serializers import UserSerializer
@@ -83,7 +84,7 @@ class DraftInterface(ABC):
         self._pick_queue = Queue()
         self._out_queue = Queue()
 
-        self._current_booster: t.Optional[Booster] = None
+        self._current_booster: t.Optional[DraftBooster] = None
 
         self._terminating = threading.Event()
 
@@ -124,10 +125,10 @@ class DraftInterface(ABC):
         self.send_message('error', error_type = error_type, **kwargs)
 
     @property
-    def booster_queue(self) -> Queue[Booster]:
+    def booster_queue(self) -> Queue[DraftBooster]:
         return self._booster_queue
 
-    def give_booster(self, booster: Booster) -> None:
+    def give_booster(self, booster: DraftBooster) -> None:
         self._booster_queue.put(booster)
         # self._draft.broadcast_message(
         #     'received_booster',
@@ -282,7 +283,7 @@ class Draft(object):
 
         self._finished_callback = finished_callback
 
-        self._active_boosters: t.MutableMapping[Booster, bool] = {}
+        self._active_boosters: t.MutableMapping[DraftBooster, bool] = {}
         self._active_boosters_lock = threading.Lock()
 
         self._clockwise = True
@@ -297,7 +298,7 @@ class Draft(object):
         try:
             self._boosters = [
                 [
-                    Booster(booster)
+                    DraftBooster(booster)
                     for booster in
                     player_boosters
                 ]
@@ -348,7 +349,7 @@ class Draft(object):
         for interface in self._drafter_interfaces.values():
             interface.send_message(message_type, **kwargs)
 
-    def booster_empty(self, booster: Booster) -> None:
+    def booster_empty(self, booster: DraftBooster) -> None:
         with self._active_boosters_lock:
             self._active_boosters[booster] = True
             if all(self._active_boosters.values()):

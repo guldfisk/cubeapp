@@ -10,6 +10,7 @@ import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCol
 import CubeablesCollectionSpoilerView from '../cubeablescollectionview/CubeablesCollectionSpoilerView';
 import {CubeRelease, CubeablesContainer} from "../../models/models";
 import Alert from "react-bootstrap/Alert";
+import {DateListItem} from "../../utils/listitems";
 
 
 interface ReleaseMultiViewProps {
@@ -88,16 +89,18 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
               </Link>
             </span>
             <span className="badge badge-secondary">{this.props.release.name}</span>
-            <span className="badge badge-secondary">{this.props.release.createdAt}</span>
+            <span className="badge badge-secondary">
+              <DateListItem date={this.props.release.createdAt}/>
+            </span>
             <span className="badge badge-secondary">
               {
                 `${
                   Array.from(
                     this.props.release.cubeablesContainer.allCubeables()
                   ).length
-                  }/${
+                }/${
                   this.props.release.intendedSize
-                  }`
+                }`
               }
             </span>
           </h4>

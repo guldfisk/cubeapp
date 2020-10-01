@@ -218,7 +218,10 @@ class CubeBoosterSpecification(BoosterSpecification):
             required_cube_size = self.size * (1 if self.allow_intersection else amount)
             if required_cube_size > len(self.release.cube):
                 if self.scale:
-                    cube = cube.scale(required_cube_size)
+                    try:
+                        cube = cube.scale(required_cube_size)
+                    except ValueError:
+                        raise GenerateBoosterException('Not enough cubeables, cannot scale empty cube')
                 else:
                     raise GenerateBoosterException(
                         f'not enough cubeables, needs {required_cube_size}, only has {len(self.release.cube)}'

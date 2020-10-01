@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import typing as t
 import hashlib
 import random
 import string
+
 from enum import Enum
 
 from django.contrib.auth.backends import UserModel
@@ -10,10 +12,11 @@ from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth import get_user_model
 
+from mocknames.generate import NameGenerator
+
 from magiccube.collections.infinites import Infinites
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
-from mocknames.generate import NameGenerator
 
 from magiccube.collections.cube import Cube
 from magiccube.update.cubeupdate import CubePatch as Patch
@@ -66,6 +69,13 @@ class CubeRelease(models.Model):
             self.constrained_nodes.group_map,
             self.infinites,
         )
+
+    @property
+    def previous_release(self) -> t.Optional[CubeRelease]:
+        return CubeRelease.objects.filter(
+            created_at__lt = self.created_at,
+            versioned_cube = self.versioned_cube,
+        ).order_by('created_at').last()
 
     @classmethod
     def create(cls, cube: Cube, versioned_cube: VersionedCube, infinites: Infinites) -> CubeRelease:

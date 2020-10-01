@@ -461,9 +461,9 @@ export class MinimalCube extends Atomic {
   name: string;
   description: string;
   author: User;
-  createdAt: string;
+  createdAt: Date;
 
-  constructor(id: string, name: string, description: string, author: User, createdAt: string) {
+  constructor(id: string, name: string, description: string, author: User, createdAt: Date) {
     super(id);
     this.name = name;
     this.description = description;
@@ -477,7 +477,7 @@ export class MinimalCube extends Atomic {
       remote.name,
       remote.description,
       User.fromRemote(remote.author),
-      remote.created_at,
+      new Date(remote.created_at),
     )
   }
 
@@ -538,7 +538,7 @@ export class Cube extends MinimalCube {
     name: string,
     description: string,
     author: User,
-    createdAt: string,
+    createdAt: Date,
     releases: CubeReleaseMeta[],
   ) {
     super(id, name, description, author, createdAt);
@@ -551,7 +551,7 @@ export class Cube extends MinimalCube {
       remote.name,
       remote.description,
       User.fromRemote(remote.author),
-      remote.created_at,
+      new Date(remote.created_at),
       remote.releases.map(
         (release: any) => CubeReleaseMeta.fromRemote(release)
       )
@@ -615,14 +615,13 @@ export class CubeReleaseName extends Atomic {
 
 
 export class CubeReleaseMeta extends CubeReleaseName {
-  createdAt: string;
-  createAtTimestamp: number;
+  createdAt: Date;
   intendedSize: string;
 
-  constructor(id: string, name: string, createdAt: string, intendedSize: string) {
+  constructor(id: string, name: string, createdAt: Date, intendedSize: string) {
     super(id, name);
     this.createdAt = createdAt;
-    this.createAtTimestamp = Date.parse(createdAt);
+    // this.createAtTimestamp = Date.parse(createdAt);
     this.intendedSize = intendedSize;
   };
 
@@ -630,7 +629,7 @@ export class CubeReleaseMeta extends CubeReleaseName {
     return new CubeReleaseMeta(
       remote.id,
       remote.name,
-      remote.created_at,
+      new Date(remote.created_at),
       remote.intended_size,
     )
   };
@@ -883,7 +882,7 @@ export class CubeRelease extends CubeReleaseMeta {
   constructor(
     id: string,
     name: string,
-    createdAt: string,
+    createdAt: Date,
     intendedSize: string,
     cube: MinimalCube,
     cubeablesContainer: CubeablesContainer,
@@ -901,7 +900,7 @@ export class CubeRelease extends CubeReleaseMeta {
     return new CubeRelease(
       remote.id,
       remote.name,
-      remote.created_at,
+      new Date(remote.created_at),
       remote.intended_size,
       MinimalCube.fromRemote(remote.versioned_cube),
       CubeablesContainer.fromRemote(remote.cube),
