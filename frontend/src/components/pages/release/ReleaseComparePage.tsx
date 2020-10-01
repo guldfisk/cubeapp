@@ -118,7 +118,9 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       </a> : this.state.generating ?
         <Button
           disabled={true}
-        >Generating</Button> :
+        >
+          Generating
+        </Button> :
         <Button
           disabled={!this.state.ws}
           onClick={

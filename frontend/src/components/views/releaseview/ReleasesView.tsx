@@ -4,6 +4,7 @@ import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 
 import {CubeReleaseMeta} from '../../models/models';
+import {DateListItem} from "../../utils/listitems";
 
 
 interface GroupMapViewProps {
@@ -28,6 +29,7 @@ export default class ReleasesView extends React.Component<GroupMapViewProps> {
       {
         dataField: 'createdAt',
         text: 'Release Date',
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <DateListItem date={cell}/>,
       },
 
     ];
