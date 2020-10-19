@@ -2,26 +2,30 @@ import os
 import typing as t
 import tempfile
 import itertools
+import functools
 import zipfile
 
 from collections import defaultdict
+from contextlib import ExitStack
+from typing import Protocol
+from urllib.parse import urljoin
 
 from boto3 import session
+from botocore.client import BaseClient
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
 
-from promise import Promise
-
 from django.conf import settings
 
-from proxypdf.write import ProxyWriter
+from proxypdf.streamwriter import StreamProxyWriter
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update
 
 from mtgimg.interface import SizeSlug, ImageRequest
+from mtgimg.load import ImageableProcessor
 
 from magiccube.collections.laps import TrapCollection
 
@@ -29,6 +33,37 @@ from api import models
 from api.mail import mail_me
 
 from resources.staticimageloader import image_loader
+from utils.boto import MultipartUpload
+
+
+SPACES_REGION = 'fra1'
+SPACES_ENDPOINT = 'https://phdk.fra1.digitaloceanspaces.com/'
+
+
+class GenericCallable(Protocol):
+
+    def __call__(self, *args, **kwargs) -> t.Any:
+        pass
+
+
+def get_boto_client() -> BaseClient:
+    boto_session = session.Session()
+    return boto_session.client(
+        's3',
+        region_name = SPACES_REGION,
+        endpoint_url = SPACES_ENDPOINT,
+        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
+        aws_secret_access_key = settings.SPACES_SECRET_KEY,
+    )
+
+
+def inject_boto_client(f: GenericCallable) -> GenericCallable:
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs) -> t.Any:
+        kwargs['client'] = get_boto_client()
+        return f(*args, **kwargs)
+
+    return wrapper
 
 
 @shared_task()
@@ -52,58 +87,23 @@ def generate_release_images(cube_release_id: int):
     except models.CubeRelease.DoesNotExist:
         return
 
-    Promise.all(
-        [
-            image_loader.get_image(lap, cache_only = True, size_slug = size_slug)
-            for lap, size_slug in
-            itertools.product(release.cube.laps.distinct_elements(), SizeSlug)
-        ]
-    ).get()
+    for lap, size_slug in itertools.product(release.cube.laps.distinct_elements(), SizeSlug):
+        ImageableProcessor.get_image(ImageRequest(lap, size_slug = size_slug, cache_only = True), image_loader)
 
 
 @shared_task()
+@inject_boto_client
 def generate_distribution_pdf(
     patch_id: int,
     possibility_id: int,
     size_slug: SizeSlug = SizeSlug.MEDIUM,
     include_changes_pdf: bool = False,
+    *,
+    client: BaseClient = None,
 ):
-    boto_session = session.Session()
-    client = boto_session.client(
-        's3',
-        region_name = 'fra1',
-        endpoint_url = 'https://phdk.fra1.digitaloceanspaces.com/',
-        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
-        aws_secret_access_key = settings.SPACES_SECRET_KEY,
-    )
-
     possibility = models.DistributionPossibility.objects.get(pk = possibility_id)
 
-    cube_traps = TrapCollection(possibility.release.cube.garbage_traps)
-
-    unique_traps = frozenset(possibility.trap_collection) | frozenset(cube_traps)
-
-    def _helper(trap):
-        def _wrapped(img):
-            return trap, img
-
-        return _wrapped
-
-    images = dict(
-        Promise.all(
-            tuple(
-                image_loader.get_image(
-                    trap,
-                    size_slug = size_slug,
-                    save = False,
-                ).then(
-                    _helper(trap)
-                )
-                for trap in
-                unique_traps
-            )
-        ).get()
-    )
+    original_trap_collection = TrapCollection(possibility.release.cube.garbage_traps)
 
     pdfs = (
         ('all', possibility.trap_collection, 'pdf_url'),
@@ -111,43 +111,60 @@ def generate_distribution_pdf(
 
     if include_changes_pdf:
         pdfs += (
-            ('added', possibility.trap_collection - cube_traps, 'added_pdf_url'),
-            ('removed', cube_traps - possibility.trap_collection, 'removed_pdf_url'),
+            ('added', possibility.trap_collection - original_trap_collection, 'added_pdf_url'),
+            ('removed', original_trap_collection - possibility.trap_collection, 'removed_pdf_url'),
         )
+
+    with ExitStack() as context_stack:
+        storage_keys = [
+            f'distributions/{possibility.trap_collection.persistent_hash()}_{name}.pdf'
+            for name, _, _ in
+            pdfs
+        ]
+        uploaders = [
+            context_stack.enter_context(
+                MultipartUpload(
+                    client,
+                    bucket = 'phdk',
+                    key = key,
+                    acl = 'public-read',
+                )
+            ) for key in
+            storage_keys
+        ]
+
+        writers = [
+            context_stack.enter_context(
+                StreamProxyWriter(
+                    uploader,
+                    close_stream = False,
+                )
+            ) for uploader in
+            uploaders
+        ]
+
+        for trap in (
+            possibility.trap_collection.traps.distinct_elements()
+            | original_trap_collection.traps.distinct_elements()
+        ):
+            image = ImageableProcessor.get_image(ImageRequest(trap, size_slug = size_slug, save = False), image_loader)
+            for writer, (_, pdf_trap_collection, _) in zip(writers, pdfs):
+                writer.add_proxy(image, pdf_trap_collection.traps.elements().get(trap, 0))
 
     urls = {}
 
-    for name, traps, url_attribute_name in pdfs:
-        with tempfile.TemporaryFile() as f:
-            proxy_writer = ProxyWriter(file = f)
+    for storage_key, (name, _, url_attribute_name) in zip(storage_keys, pdfs):
+        pdf_url = urljoin(SPACES_ENDPOINT, 'phdk/' + storage_key)
 
-            for trap in traps:
-                proxy_writer.add_proxy(images[trap])
+        urls[url_attribute_name] = pdf_url
 
-            proxy_writer.save()
+        setattr(
+            possibility,
+            url_attribute_name,
+            pdf_url,
+        )
 
-            f.seek(0)
-
-            storage_key = f'distributions/{possibility.trap_collection.persistent_hash()}_{name}.pdf'
-
-            client.put_object(
-                Body = f,
-                Bucket = 'phdk',
-                Key = storage_key,
-                ACL = 'public-read',
-            )
-
-            pdf_url = 'https://phdk.fra1.digitaloceanspaces.com/phdk/' + storage_key
-
-            urls[url_attribute_name] = pdf_url
-
-            setattr(
-                possibility,
-                url_attribute_name,
-                pdf_url
-            )
-
-    possibility.save()
+    possibility.save(update_fields = [url_attribute_name for _, _, url_attribute_name in pdfs])
 
     content = {
         'type': 'distribution_pdf_update',
@@ -172,44 +189,29 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
 
     delta = to_release.cube - from_release.cube
 
-    boto_session = session.Session()
-    client = boto_session.client(
-        's3',
-        region_name = 'fra1',
-        endpoint_url = 'https://phdk.fra1.digitaloceanspaces.com/',
-        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
-        aws_secret_access_key = settings.SPACES_SECRET_KEY,
-    )
+    client = get_boto_client()
 
-    with tempfile.TemporaryFile() as f:
-        proxy_writer = ProxyWriter(file = f, margin_size = .5)
-
-        images = Promise.all(
-            tuple(
-                image_loader.get_image(
-                    lap,
-                    size_slug = SizeSlug.ORIGINAL,
+    with MultipartUpload(
+        client,
+        bucket = 'phdk',
+        key = f'distributions/{delta.persistent_hash()}.pdf',
+        acl = 'public-read',
+    ) as uploader:
+        with StreamProxyWriter(
+            uploader,
+            margin_size = .5,
+            close_stream = False,
+        ) as writer:
+            for lap, multiplicity in delta.laps.items():
+                writer.add_proxy(
+                    ImageableProcessor.get_image(
+                        ImageRequest(lap, size_slug = SizeSlug.ORIGINAL, save = False),
+                        image_loader,
+                    ),
+                    multiplicity,
                 )
-                for lap in
-                delta.laps
-            )
-        ).get()
 
-        for image in images:
-            proxy_writer.add_proxy(image)
-
-        proxy_writer.save()
-
-        f.seek(0)
-
-        client.put_object(
-            Body = f,
-            Bucket = 'phdk',
-            Key = f'distributions/{delta.persistent_hash()}.pdf',
-            ACL = 'public-read',
-        )
-
-    pdf_url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/distributions/{delta.persistent_hash()}.pdf'
+    pdf_url = urljoin(SPACES_ENDPOINT, f'phdk/distributions/{delta.persistent_hash()}.pdf')
 
     models.LapChangePdf.objects.create(
         pdf_url = pdf_url,
@@ -239,25 +241,23 @@ def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: b
     ).exists():
         raise ValueError('Bundle already exists')
 
-    boto_session = session.Session()
-    client = boto_session.client(
-        's3',
-        region_name = 'fra1',
-        endpoint_url = 'https://phdk.fra1.digitaloceanspaces.com/',
-        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
-        aws_secret_access_key = settings.SPACES_SECRET_KEY,
-    )
+    client = get_boto_client()
+
+    comparator = max if prefer_latest_printing else min
 
     with tempfile.TemporaryDirectory() as tmpdir:
         zip_file_name = os.path.join(tmpdir, 'bundle.zip')
+
         with zipfile.ZipFile(zip_file_name, "w") as f:
             cardboard_printing_map: t.MutableMapping[Cardboard, t.List[Printing]] = defaultdict(list)
+
             for printing in release.cube.all_printings:
                 cardboard_printing_map[printing.cardboard].append(printing)
+
             for cardboard, printings in cardboard_printing_map.items():
                 f.write(
                     ImageRequest(
-                        (max if prefer_latest_printing else min)(
+                        comparator(
                             printings,
                             key = lambda p: p.expansion.release_date,
                         ),
@@ -268,16 +268,20 @@ def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: b
 
         key = f'image_bundles/{release.cube.persistent_hash()}_{models.ReleaseImageBundle.Target.COCKATRICE.value}.zip'
 
-        client.upload_file(
-            Filename = zip_file_name,
-            Bucket = 'phdk',
-            Key = key,
-            ExtraArgs = {
-                'ACL': 'public-read',
-            },
-        )
+        with MultipartUpload(
+            client,
+            bucket = 'phdk',
+            key = key,
+            acl = 'public-read',
+        ) as uploader, open(zip_file_name, 'rb') as zip_file:
+            while True:
+                chunk = zip_file.read(1024 * 1024)
+                if not chunk:
+                    break
+                uploader.write(chunk)
+
         models.ReleaseImageBundle.objects.create(
             release = release,
-            url = f'https://phdk.fra1.digitaloceanspaces.com/phdk/{key}',
+            url = urljoin(SPACES_ENDPOINT, 'phdk/' + key),
             target = models.ReleaseImageBundle.Target.COCKATRICE,
         )

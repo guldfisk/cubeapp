@@ -653,9 +653,6 @@ def patch_preview(request: Request, pk: int) -> Response:
 
     native = strtobool(request.query_params.get('native', '0'))
 
-    print(latest_release.as_meta_cube())
-    print(patch.patch)
-
     return Response(
         (
             RawStrategy

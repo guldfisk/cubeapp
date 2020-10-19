@@ -305,7 +305,7 @@ class DistributorConsumer(AuthenticatedConsumer):
             tasks.generate_distribution_pdf.delay(
                 self._patch_pk,
                 possibility.id,
-                include_changes_pdf = True,
+                include_changes_pdf = isinstance(self._distribution_task.distribution_worker.distributor, DeltaDistributor),
             )
 
         elif message_type == 'apply':

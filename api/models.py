@@ -131,7 +131,7 @@ class CubePatch(models.Model):
 
 class DistributionPossibility(models.Model):
     created_at = models.DateTimeField(default = now)
-    trap_collection = OrpField(model_type = TrapCollection)
+    trap_collection: TrapCollection = OrpField(model_type = TrapCollection)
     pdf_url = models.CharField(max_length = 511, null = True)
     added_pdf_url = models.CharField(max_length = 511, null = True)
     removed_pdf_url = models.CharField(max_length = 511, null = True)
