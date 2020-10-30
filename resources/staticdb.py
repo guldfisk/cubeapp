@@ -1,4 +1,4 @@
-from mtgorp.db.load import Loader
+from mtgorp.db.load import PickleLoader
 
 
-db = Loader.load()
+db = PickleLoader().load()

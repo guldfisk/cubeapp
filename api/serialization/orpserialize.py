@@ -1,8 +1,7 @@
 import typing as t
 from abc import abstractmethod
 
-from magiccube.collections.infinites import Infinites
-from magiccube.collections.meta import MetaCube
+
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -20,6 +19,8 @@ from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNode
 from magiccube.update import cubeupdate
+from magiccube.collections.infinites import Infinites
+from magiccube.collections.meta import MetaCube
 
 
 T = t.TypeVar('T')

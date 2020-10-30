@@ -110,6 +110,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
     )
 
     cropped = strtobool(request.GET.get('cropped', '0'))
+    back = strtobool(request.GET.get('back', '0'))
 
     if pictured_id == 'back':
         image = image_loader.get_default_image(size_slug = size_slug, crop = cropped)
@@ -138,7 +139,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
                 printing = db.printings[_id]
             except KeyError:
                 return HttpResponse(status = status.HTTP_404_NOT_FOUND)
-            image_request = ImageRequest(printing, size_slug = size_slug, crop = cropped)
+            image_request = ImageRequest(printing, size_slug = size_slug, crop = cropped, back = back)
 
         else:
             image_request = ImageRequest(
@@ -146,6 +147,7 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
                 pictured_type = pictured_type,
                 size_slug = size_slug,
                 crop = cropped,
+                back = back,
             )
         try:
             image = image_loader.get_image(
@@ -253,7 +255,7 @@ def filter_release_view(request: Request, pk: int) -> Response:
         flattened = strtobool(
             request.query_params.get(
                 'flattened',
-                'False'
+                'False',
             )
         )
     except ValueError:

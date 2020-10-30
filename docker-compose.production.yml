@@ -14,6 +14,7 @@ services:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
+      - /home/ftper/ftp/files:/opt/services/cubeapp/files
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/media
     depends_on:

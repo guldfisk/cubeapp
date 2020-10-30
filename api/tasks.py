@@ -25,7 +25,7 @@ from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update
 
 from mtgimg.interface import SizeSlug, ImageRequest
-from mtgimg.load import ImageableProcessor
+from mtgimg.pipeline import ImageableProcessor
 
 from magiccube.collections.laps import TrapCollection
 

@@ -1,5 +1,4 @@
 import typing as t
-
 import json
 
 from distutils.util import strtobool
@@ -8,6 +7,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
 from magiccube.collections.laps import TrapCollection
+
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 

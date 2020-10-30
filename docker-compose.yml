@@ -58,7 +58,7 @@ services:
 
   celery_worker:
     image: app-image
-    command: celery -A cubeapp worker --loglevel=INFO
+    command: celery -A cubeapp worker --loglevel=INFO --concurrency=1
     volumes:
       - .:/code
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
