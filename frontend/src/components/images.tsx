@@ -29,6 +29,7 @@ interface CubeableImageProps {
   type?: string
   cropped?: boolean
   allowStatic?: boolean
+  hover?: boolean
 }
 
 
@@ -40,7 +41,8 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
     id = null,
     type = null,
     cropped = false,
-    allowStatic = true,
+    hover = false,
+    allowStatic = false,
   }: CubeableImageProps
 ) => {
   if (!id && !imageable) {
@@ -49,10 +51,11 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
   const [width, height]: [number, number] = cropped ? croppedImageSizeMap[sizeSlug] : imageSizeMap[sizeSlug];
   const _type = imageable === null ? type : imageable.getType();
 
-  return <LazyImage
+
+  const image = <LazyImage
     src={
       (
-        false && allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped ?
+        allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped ?
           get_imageable_image_static_url
           : get_imageable_image_url
       )(
@@ -74,5 +77,15 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
     actual={({imageProps}) => <img {...imageProps} />}
     {...(onClick === null ? {} : {onClick: () => onClick(imageable)})}
   />;
+
+  if (!hover) {
+    return image
+  }
+  return <a
+    data-tip={imageable.id.toString()}
+    data-for={imageable.toolTipType()}
+  >
+    {image}
+  </a>
 
 };

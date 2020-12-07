@@ -4,10 +4,8 @@ import tempfile
 import itertools
 import functools
 import zipfile
-
 from collections import defaultdict
 from contextlib import ExitStack
-from typing import Protocol
 from urllib.parse import urljoin
 
 from boto3 import session
@@ -22,7 +20,7 @@ from proxypdf.streamwriter import StreamProxyWriter
 
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.persistent.cardboard import Cardboard
-from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update
+from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
 
 from mtgimg.interface import SizeSlug, ImageRequest
 from mtgimg.pipeline import ImageableProcessor
@@ -40,12 +38,6 @@ SPACES_REGION = 'fra1'
 SPACES_ENDPOINT = 'https://phdk.fra1.digitaloceanspaces.com/'
 
 
-class GenericCallable(Protocol):
-
-    def __call__(self, *args, **kwargs) -> t.Any:
-        pass
-
-
 def get_boto_client() -> BaseClient:
     boto_session = session.Session()
     return boto_session.client(
@@ -57,7 +49,7 @@ def get_boto_client() -> BaseClient:
     )
 
 
-def inject_boto_client(f: GenericCallable) -> GenericCallable:
+def inject_boto_client(f: t.Callable) -> t.Callable:
     @functools.wraps(f)
     def wrapper(*args, **kwargs) -> t.Any:
         kwargs['client'] = get_boto_client()
@@ -68,9 +60,10 @@ def inject_boto_client(f: GenericCallable) -> GenericCallable:
 
 @shared_task()
 def check_mtg_json():
-    current_db_json_version = get_last_db_update()
-    if check_and_update():
-        new_db_version = get_last_db_update()
+    update_db = get_update_db()
+    current_db_json_version = get_last_db_update(update_db = update_db)
+    if check_and_update(update_db = update_db):
+        new_db_version = get_last_db_update(update_db = update_db)
         mail_me(
             'db out of date',
             '<p>Current version: {}</p><p>Previous version: {}</p>'.format(

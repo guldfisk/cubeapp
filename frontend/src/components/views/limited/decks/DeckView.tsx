@@ -24,6 +24,7 @@ interface DeckExportDialogProps {
   deck: Deck
   close: () => void
   show: boolean
+  code?: string
 }
 
 
@@ -66,7 +67,10 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
           onClick={
             () => {
               this.props.close();
-              this.props.deck.download(this.state.extension);
+              this.props.deck.download(
+                this.state.extension,
+                this.props.code,
+              );
             }
           }
         >
@@ -83,7 +87,8 @@ interface DeckViewProps {
   user: User;
   limitedSession?: LimitedSessionName;
   onCubeableClicked?: (cubeable: Cubeable, amount: number) => void
-  noHover?: boolean
+  noHover?: boolean;
+  code?: string;
 }
 
 
@@ -112,6 +117,7 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
         deck={this.props.deck}
         close={() => this.setState({exporting: false})}
         show={this.state.exporting}
+        code={this.props.code}
       />
       <Card
         style={
@@ -155,7 +161,10 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
             <option>Images</option>
           </select>
           <Button
-            onClick={() => this.props.deck.sampleHand().then((sampleHand) => this.setState({sampleHand}))}
+            onClick={
+              () => this.props.deck.sampleHand(this.props.code)
+                .then((sampleHand) => this.setState({sampleHand}))
+            }
           >
             Sample Hand
           </Button>

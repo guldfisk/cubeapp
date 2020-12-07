@@ -1,19 +1,21 @@
+import itertools
 import typing as t
 
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
 
-from magiccube.collections.infinites import Infinites
 from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.limited.boostergen import GenerateBoosterException
 from mtgorp.models.formats.format import Format, LimitedSideboard
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from magiccube.collections.infinites import Infinites
 
 from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
 from limited.options import PoolSpecificationOption, CubeReleaseOption, ExpansionOption, CardboardSetOption
 from lobbies.games import options as metaoptions
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
-from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
 
 
@@ -61,6 +63,7 @@ class Sealed(Game):
             )
         )
     )
+    mirrored = metaoptions.BooleanOption(default = False)
 
     def __init__(
         self,
@@ -83,7 +86,12 @@ class Sealed(Game):
             self._keys = {}
 
             try:
-                for player, pool in zip(players, pool_specification.get_pools(len(players))):
+                for player, pool in zip(
+                    players,
+                    itertools.repeat(pool_specification.get_pool())
+                    if self.mirrored else
+                    pool_specification.get_pools(len(players))
+                ):
                     self._keys[player] = Pool.objects.create(
                         user = player,
                         session = session,

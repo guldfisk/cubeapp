@@ -3,6 +3,8 @@ import React from 'react';
 import {ImageableImage} from '../../images';
 import {Cubeable, CubeablesContainer, PrintingCounter} from "../../models/models";
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
+import {PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
+import Row from "react-bootstrap/Row";
 
 
 interface CubeablesCollectionSpoilerViewProps {
@@ -17,7 +19,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
     sizeSlug: 'thumbnail',
   };
 
-  *groupsSortedChained(groups: IterableIterator<[Cubeable, number]>[]): IterableIterator<Cubeable> {
+  * groupsSortedChained(groups: IterableIterator<[Cubeable, number]>[]): IterableIterator<Cubeable> {
     for (const group of groups) {
       for (
         const [cubeable, multiplicity] of Array.from(group).sort(
@@ -72,12 +74,15 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
     }
 
     return <div>
+      <PrintingsTooltip/>
+      <TrapTooltip/>
       {
         Array.from(this.groupsSortedChained(groups)).map(
           (cubeable) => {
             return <ImageableImage
               imageable={cubeable}
               sizeSlug={this.props.sizeSlug}
+              hover={true}
             />
           }
         )

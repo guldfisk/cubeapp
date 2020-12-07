@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import functools
 import math
+import string
 import typing as t
 import random
 import operator
@@ -58,6 +59,9 @@ class PoolSpecification(models.Model):
             for boosters in
             self.get_boosters(player_amount)
         )
+
+    def get_pool(self) -> Cube:
+        return self.get_pools(1).__iter__().__next__()
 
     @classmethod
     def from_options(cls, options: PoolSpecificationOptions) -> PoolSpecification:
@@ -280,6 +284,7 @@ class LimitedSession(models.Model):
     open_pools = models.BooleanField(default = False)
     pool_specification = models.ForeignKey(PoolSpecification, on_delete = models.CASCADE, related_name = 'sessions')
     infinites: Infinites = OrpField(model_type = Infinites)
+    allow_cheating: bool = models.BooleanField(default = False)
 
     def complete(self) -> None:
         self.state = self.LimitedSessionState.FINISHED
@@ -313,10 +318,6 @@ class Pool(models.Model):
     session = models.ForeignKey(LimitedSession, on_delete = models.CASCADE, related_name = 'pools')
     pool: Cube = OrpField(model_type = Cube)
 
-    @property
-    def deck(self) -> t.Optional[PoolDeck]:
-        return getattr(self, 'pool_deck', None)
-
     class Meta:
         unique_together = ('session', 'user')
 
@@ -336,7 +337,11 @@ class PoolDeck(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     name = models.CharField(max_length = 255)
     deck = OrpField(Deck)
-    pool = models.OneToOneField(Pool, on_delete = models.CASCADE, related_name = 'pool_deck')
+    pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'pool_decks')
+    cheating = models.BooleanField(default = False)
+
+    class Meta(object):
+        ordering = ('created_at',)
 
     def can_view(self, user: AbstractUser) -> bool:
         return (
@@ -363,3 +368,21 @@ class MatchPlayer(models.Model):
 
     class Meta:
         unique_together = ('user', 'match_result')
+
+
+class PoolSharingCode(TimestampedModel):
+    code = models.CharField(max_length = 63)
+    pool = models.OneToOneField(Pool, on_delete = models.CASCADE, related_name = 'code')
+
+    @classmethod
+    def get_for_pool(cls, pool: Pool) -> PoolSharingCode:
+        return cls.objects.get_or_create(
+            pool = pool,
+            defaults = {
+                'code': ''.join(
+                    random.choice(string.ascii_letters)
+                    for _ in
+                    range(63)
+                ),
+            }
+        )[0]

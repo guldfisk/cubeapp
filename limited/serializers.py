@@ -59,11 +59,11 @@ class PoolDeckSerializer(serializers.ModelSerializer):
 
 class MinimalPoolSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only = True)
-    deck = serializers.PrimaryKeyRelatedField(read_only = True, source = 'pool_deck')
+    decks = serializers.PrimaryKeyRelatedField(read_only = True, source = 'pool_decks', many = True)
 
     class Meta:
         model = models.Pool
-        fields = ('id', 'user', 'deck')
+        fields = ('id', 'user', 'decks')
 
 
 class MatchPlayerSerializer(serializers.ModelSerializer):
@@ -126,15 +126,15 @@ class PoolSerializer(MinimalPoolSerializer):
 
     class Meta:
         model = models.Pool
-        fields = ('id', 'user', 'session', 'deck', 'pool')
+        fields = ('id', 'user', 'session', 'decks', 'pool')
 
 
 class FullPoolSerializer(PoolSerializer):
-    deck = PoolDeckSerializer()
+    decks = PoolDeckSerializer(many = True, source = 'pool_decks')
 
     class Meta:
         model = models.Pool
-        fields = ('id', 'user', 'session', 'deck', 'pool')
+        fields = ('id', 'user', 'session', 'decks', 'pool')
 
 
 class FullLimitedSessionSerializer(LimitedSessionSerializer):

@@ -1,10 +1,8 @@
-
+tournament system
 fix image hover on refreshed views
-fix image generation
-    switch to nginx served images
+switch to nginx served images when possible
 hover images on small images
 proper printing / cardboard view in search
-deck search
 pickable elo
 per card distribution fitness inspection view
 only create distribution pdf on demand
@@ -15,7 +13,6 @@ export release
 draft pick timer
     reserve pick
 booster positions view
-allow editing nodes and then resuming distribution with changed node properties (weights / groups (/ content?))
 scale images in sample pack view to fit screen
 save sample packs, so they can be shared
 
@@ -26,3 +23,4 @@ object level permissions for wishlists
 artgame score
 
 browser draft client
+allow editing nodes and then resuming distribution with changed node properties (weights / groups (/ content?))

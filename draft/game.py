@@ -71,6 +71,7 @@ class DraftGame(Game):
             )
         )
     )
+    allow_cheating = metaoptions.BooleanOption(default = False)
 
     def __init__(
         self,
@@ -102,7 +103,8 @@ class DraftGame(Game):
             open_decks = self.open_decks,
             open_pools = self.open_pools,
             pool_specification = self._pool_specification,
-            infinites = RawStrategy(db).deserialize(Infinites, self.infinites)
+            infinites = RawStrategy(db).deserialize(Infinites, self.infinites),
+            allow_cheating = self.allow_cheating,
         )
 
         draft.draft_session.limited_session = session

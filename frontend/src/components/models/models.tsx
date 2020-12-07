@@ -38,6 +38,10 @@ export class Imageable extends Atomic {
     return 'Imageable';
   };
 
+  toolTipType = (): string => {
+    return this.getType().toLowerCase() + '-tt'
+  }
+
 }
 
 
@@ -109,7 +113,6 @@ export class Cardboard extends Imageable {
 export class Printing extends Cubeable {
   name: string;
   cmc: number;
-  // expansion: Expansion;
   expansionCode: string;
   color: string[];
   types: string[];
@@ -129,7 +132,6 @@ export class Printing extends Cubeable {
       remote.name,
       remote.cmc,
       remote.expansion_code,
-      // Expansion.fromRemote(remote.expansion),
       remote.color,
       remote.types,
     )
@@ -2649,19 +2651,19 @@ export class LimitedSession extends LimitedSessionName {
 
 export class PoolMeta extends Atomic {
   user: User;
-  deck: string | null;
+  decks: string[];
 
-  constructor(id: string, user: User, deck: string | null) {
+  constructor(id: string, user: User, decks: string[]) {
     super(id);
     this.user = user;
-    this.deck = deck;
+    this.decks = decks;
   }
 
   public static fromRemote(remote: any): PoolMeta {
     return new PoolMeta(
       remote.id,
       User.fromRemote(remote.user),
-      remote.deck,
+      remote.decks,
     )
   }
 
@@ -2783,13 +2785,14 @@ export class Deck extends Atomic {
     )
   }
 
-  sampleHand = (): Promise<CubeablesContainer> => {
+  sampleHand = (code: string = ''): Promise<CubeablesContainer> => {
     return axios.get(
       '/api/limited/deck/' + this.id + '/sample-hand/',
       {
         headers: store.getState().authenticated && {
           "Authorization": `Token ${store.getState().token}`,
         },
+        params: {code},
       },
     ).then(
       (response: any) => new CubeablesContainer(
@@ -2805,12 +2808,13 @@ export class Deck extends Atomic {
     )
   };
 
-  download = (extension: string = 'dec'): Promise<void> => {
+  download = (extension: string = 'dec', code: string = ''): Promise<void> => {
     return axios.get(
       '/api/limited/deck/' + this.id + '/export/',
       {
         params: {
-          extension
+          extension,
+          code,
         },
         headers: store.getState().authenticated && {
           "Authorization": `Token ${store.getState().token}`,
@@ -2893,20 +2897,20 @@ export class FullDeck extends Deck {
 
 export class Pool extends Atomic {
   user: User;
-  deck: Deck | null;
+  decks: Deck[];
   session: LimitedSession;
   pool: CubeablesContainer;
 
   constructor(
     id: string,
     user: User,
-    deck: Deck | null,
+    decks: Deck[],
     session: LimitedSession,
     pool: CubeablesContainer,
   ) {
     super(id);
     this.user = user;
-    this.deck = deck;
+    this.decks = decks;
     this.session = session;
     this.pool = pool;
   }
@@ -2915,35 +2919,54 @@ export class Pool extends Atomic {
     return new Pool(
       remote.id,
       User.fromRemote(remote.user),
-      remote.deck && (typeof remote.deck) != 'number' ? Deck.fromRemote(remote.deck) : null,
+      remote.decks.filter((deck: any) => (typeof  deck) != 'number').map((deck: any) => Deck.fromRemote(deck)),
       LimitedSession.fromRemote(remote.session),
       CubeablesContainer.fromRemote(remote.pool),
     )
   }
 
-  public static get(id: string): Promise<Pool> {
+  public static get(id: string, code: string = ''): Promise<Pool> {
     return axios.get(
       apiPath + 'limited/pools/' + id + '/',
       {
         headers: store.getState().authenticated && {
           "Authorization": `Token ${store.getState().token}`,
         },
+        params: {
+          code,
+        }
       },
     ).then(
       response => Pool.fromRemote(response.data)
     )
   }
 
-  download = (): Promise<void> => {
+  download = (code: string = ''): Promise<void> => {
     return axios.get(
       apiPath + 'limited/pools/' + this.id + '/export/',
       {
         headers: store.getState().authenticated && {
           "Authorization": `Token ${store.getState().token}`,
         },
+        params: {code},
       },
     ).then(
       response => fileDownload(response.data, this.session.name + '_' + this.user.username + '.json')
+    )
+  };
+
+  share = (code: string = ''): Promise<string> => {
+    return axios.post(
+      apiPath + 'limited/pools/' + this.id + '/share/',
+      {},
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+        params: {code},
+      },
+    ).then(
+      response => window.location.host + '/pools/' + this.id + '/?code=' + response.data.code
     )
   };
 

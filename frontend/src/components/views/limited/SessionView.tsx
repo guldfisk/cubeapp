@@ -266,9 +266,9 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
         formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.username,
       },
       {
-        dataField: 'deck',
+        dataField: 'decks',
         text: 'Deck',
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => !!cell,
+        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => !!cell.length,
       },
       {
         text: '',
@@ -281,7 +281,7 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
             this.props.user.id == row.user.id
             || this.props.session.openDecks
             && this.props.session.pools.some(
-              pool => pool.deck && pool.user.id == this.props.user.id
+              pool => pool.decks && pool.user.id == this.props.user.id
             )
           )
         ) ? <Link

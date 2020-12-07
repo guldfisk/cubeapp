@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED 1
 RUN mkdir -p /code
 COPY . /code
 RUN pip3 install --upgrade pip
-RUN pip3 install -r /code/requirements.txt
+RUN pip3 install -r /code/requirements.txt --use-deprecated=legacy-resolver
 WORKDIR /code
 
 COPY ./appdirs/ /root/.local/share/

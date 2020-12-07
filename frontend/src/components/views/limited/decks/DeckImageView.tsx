@@ -7,6 +7,7 @@ import {ImageableImage} from "../../../images";
 import {alphabeticalPropertySortMethodFactory} from "../../../utils/utils";
 
 import '../../../../styling/stack.css';
+import {PrintingsTooltip, TrapTooltip} from "../../../utils/listitems";
 
 
 class Stack extends React.Component {
@@ -48,44 +49,48 @@ interface CardContainerProps {
 export default class DeckImageView extends React.Component<CardContainerProps> {
 
   render() {
-      return <Row>
-        {
-          this.props.deck.maindeck.cmcGroupedPrintings().map(
-            printings => <Col>
-              <Stack>
-                {
-                  printings.map(
-                    printing => <Stacked>
-                      <ImageableImage
-                        imageable={printing}
-                        sizeSlug="small"
-                      />
-                    </Stacked>
-                  )
-                }
-              </Stack>
-            </Col>
-          )
-        }
-        <Col
-          className="col-md-auto"
-        >
-          <Stack>
-            {
-              Array.from(this.props.deck.sideboard.iter()).sort(
-                alphabeticalPropertySortMethodFactory(p => p.name)
-              ).map(
-                printing => <Stacked>
-                  <ImageableImage
-                    imageable={printing}
-                    sizeSlug="small"
-                  />
-                </Stacked>
-              )
-            }
-          </Stack>
-        </Col>
-      </Row>
+    return <Row>
+      <PrintingsTooltip/>
+      <TrapTooltip/>
+      {
+        this.props.deck.maindeck.cmcGroupedPrintings().map(
+          printings => <Col>
+            <Stack>
+              {
+                printings.map(
+                  printing => <Stacked>
+                    <ImageableImage
+                      imageable={printing}
+                      sizeSlug="small"
+                      hover={true}
+                    />
+                  </Stacked>
+                )
+              }
+            </Stack>
+          </Col>
+        )
+      }
+      <Col
+        className="col-md-auto"
+      >
+        <Stack>
+          {
+            Array.from(this.props.deck.sideboard.iter()).sort(
+              alphabeticalPropertySortMethodFactory(p => p.name)
+            ).map(
+              printing => <Stacked>
+                <ImageableImage
+                  imageable={printing}
+                  sizeSlug="small"
+                  hover={true}
+                />
+              </Stacked>
+            )
+          }
+        </Stack>
+      </Col>
+    </Row>
   }
 
 }

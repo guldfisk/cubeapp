@@ -8,29 +8,28 @@ from json import JSONDecodeError
 from django.db import transaction
 from django.db.models import Prefetch, QuerySet
 from django.contrib.auth import get_user_model
-from magiccube.collections.cube import Cube
 
 from rest_framework import generics, permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from api.serialization import orpserialize
 from mtgorp.models.formats.format import Format
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.tools.deckio import DeckSerializer
-
-from magiccube.tools.subset import check_deck_subset_pool
 from mtgorp.tools.parsing.exceptions import ParseException
 from mtgorp.tools.parsing.search.parse import SearchParser
 from mtgorp.tools.search.extraction import PrintingStrategy
 from mtgorp.tools.search.pattern import Pattern
 
-from resources.staticdb import db
+from magiccube.tools.subset import check_deck_subset_pool
+from magiccube.collections.cube import Cube
 
+from api.serialization import orpserialize
+from resources.staticdb import db
 from limited import models, serializers
-from yeetlong.multiset import Multiset
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -38,23 +37,58 @@ class PoolDetailPermissions(permissions.BasePermission):
     def has_permission(self, request, view):
         return True
 
-    def has_object_permission(self, request, view, obj: models.Pool):
+    def has_object_permission(self, request: Request, view, obj: models.Pool):
         return obj.can_view(request.user)
+
+
+class PoolDetailPermissionsWithCode(PoolDetailPermissions):
+
+    def has_object_permission(self, request: Request, view, obj: models.Pool):
+        code = request.query_params.get('code')
+        return (
+            models.PoolSharingCode.objects.filter(code = code, pool = obj).exists()
+            or super().has_object_permission(request, view, obj)
+        )
+
+
+class DeckPermissions(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return True
+
+    def has_object_permission(self, request, view, obj: models.PoolDeck):
+        return obj.can_view(request.user)
+
+
+class DeckPermissionsWithCode(DeckPermissions):
+
+    def has_object_permission(self, request: Request, view, obj: models.PoolDeck):
+        code = request.query_params.get('code')
+        return (
+            models.PoolSharingCode.objects.filter(code = code, pool_id = obj.pool_id).exists()
+            or super().has_object_permission(request, view, obj)
+        )
 
 
 class PoolDetail(generics.RetrieveDestroyAPIView):
     queryset = models.Pool.objects.all().select_related(
         'user',
     ).prefetch_related(
-        'pool_deck',
+        'pool_decks',
     )
-    serializer_class = serializers.PoolSerializer
-    permission_classes = [PoolDetailPermissions, ]
+    permission_classes = [PoolDetailPermissionsWithCode]
 
     def get_serializer(self, *args, **kwargs):
+        pool: models.Pool = args[0]
         serializer_class = (
             serializers.FullPoolSerializer
-            if args[0].deck and args[0].deck.can_view(self.request.user) else
+            if pool.pool_decks.exists() and (
+                'code' in self.request.query_params and models.PoolSharingCode.objects.filter(
+                    code = self.request.query_params['code'],
+                    pool = pool,
+                ).exists()
+                or pool.pool_decks.order_by('created_at').last().can_view(self.request.user)
+            ) else
             serializers.PoolSerializer
         )
         kwargs['context'] = self.get_serializer_context()
@@ -66,22 +100,41 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
         except models.Pool.DoesNotExist:
             return Response(status = status.HTTP_404_NOT_FOUND)
 
-        if not pool.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING:
+        allow_cheating = (
+            pool.session.allow_cheating
+            and not models.MatchPlayer.objects.filter(user = request.user, match_result__session = pool.session).exists()
+        )
+
+        if not (
+            (
+                pool.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING
+                or (
+                    pool.session.state == models.LimitedSession.LimitedSessionState.PLAYING and
+                    allow_cheating
+                )
+            )
+            and (
+                allow_cheating
+                or not pool.session.open_decks
+                or not pool.pool_decks.exists()
+            )
+        ):
             return Response(status = status.HTTP_405_METHOD_NOT_ALLOWED)
 
         try:
             deck = JsonId(db).deserialize(Deck, request.data.get('deck', '{}'))
         except (SerializationException, JSONDecodeError):
-            return Response({'errors': ['invalid deck definition']}, status = status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': ['invalid decks definition']}, status = status.HTTP_400_BAD_REQUEST)
 
-        valid, error = check_deck_subset_pool(
+        valid, errors = check_deck_subset_pool(
             pool.pool,
             deck.seventy_five,
             pool.session.infinites.cardboards,
+            strict = False,
         )
 
         if not valid:
-            return Response({'errors': [error]}, status = status.HTTP_400_BAD_REQUEST)
+            return Response({'errors': errors}, status = status.HTTP_400_BAD_REQUEST)
 
         game_format = Format.formats_map.get(pool.session.format)
 
@@ -94,10 +147,14 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
             pool_deck = models.PoolDeck.objects.create(
                 deck = deck,
                 pool = pool,
-                name = request.data.get('name', 'deck'),
+                name = request.data.get('name', 'decks'),
+                cheating = (
+                    pool.session.state != models.LimitedSession.LimitedSessionState.DECK_BUILDING
+                    or pool.session.open_decks and pool.pool_decks.exists()
+                ),
             )
 
-            if all(models.Pool.objects.filter(session = pool.session).values_list('pool_deck', flat = True)):
+            if all(models.Pool.objects.filter(session = pool.session).values_list('pool_decks', flat = True)):
                 pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
                 pool.session.playing_at = datetime.datetime.now()
                 pool.session.save(update_fields = ('state', 'playing_at'))
@@ -110,7 +167,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
 
 class PoolExport(generics.GenericAPIView):
     queryset = models.Pool.objects.all()
-    permission_classes = [PoolDetailPermissions]
+    permission_classes = [PoolDetailPermissionsWithCode]
 
     def get(self, request: Request, *args, **kwargs) -> Response:
         return Response(
@@ -120,19 +177,10 @@ class PoolExport(generics.GenericAPIView):
         )
 
 
-class DeckPermissions(permissions.IsAuthenticated):
-
-    def has_permission(self, request, view):
-        return True
-
-    def has_object_permission(self, request, view, obj: models.PoolDeck):
-        return obj.can_view(request.user)
-
-
 class DeckDetail(generics.RetrieveAPIView):
     queryset = models.PoolDeck.objects.all()
     serializer_class = serializers.PoolDeckSerializer
-    permission_classes = [DeckPermissions]
+    permission_classes = [DeckPermissionsWithCode]
 
 
 class DeckList(generics.ListAPIView):
@@ -163,7 +211,7 @@ class DeckList(generics.ListAPIView):
 
         if self.filters:
             queryset = queryset.filter(
-                id__in=[
+                id__in = [
                     deck.id
                     for deck in
                     queryset
@@ -197,7 +245,7 @@ class DeckList(generics.ListAPIView):
 
 class DeckExport(generics.GenericAPIView):
     queryset = models.PoolDeck.objects.all()
-    permission_classes = [DeckPermissions]
+    permission_classes = [DeckPermissionsWithCode]
 
     def get(self, request: Request, *args, **kwargs) -> Response:
         try:
@@ -211,18 +259,27 @@ class DeckExport(generics.GenericAPIView):
         return Response(
             status = status.HTTP_200_OK,
             content_type = 'application/octet-stream',
-            data = serializer.serialize(self.get_object().deck),
+            data = serializer.serialize(self.get_object().pool_decks.order_by('created_at').last()),
         )
 
 
 class SampleHand(generics.GenericAPIView):
     queryset = models.PoolDeck.objects.all()
-    permission_classes = [DeckPermissions]
+    permission_classes = [DeckPermissionsWithCode]
 
     def get(self, request: Request, *args, **kwargs) -> Response:
+        try:
+            native = strtobool(self.request.query_params.get('native', 'False'))
+        except ValueError:
+            return Response(status = status.HTTP_400_BAD_REQUEST)
+
         return Response(
             status = status.HTTP_200_OK,
-            data = orpserialize.CubeSerializer.serialize(
+            data = (
+                RawStrategy
+                if native else
+                orpserialize.CubeSerializer
+            ).serialize(
                 Cube(
                     random.sample(
                         list(self.get_object().deck.maindeck),
@@ -230,6 +287,19 @@ class SampleHand(generics.GenericAPIView):
                     )
                 )
             )
+        )
+
+
+class SharePool(generics.GenericAPIView):
+    queryset = models.Pool.objects.all()
+    permission_classes = [PoolDetailPermissionsWithCode]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        return Response(
+            status = status.HTTP_200_OK,
+            data = {
+                'code': models.PoolSharingCode.get_for_pool(self.get_object()).code,
+            },
         )
 
 
@@ -291,31 +361,20 @@ class SessionList(generics.ListAPIView):
         if game_type_filter:
             queryset = queryset.filter(game_type = game_type_filter)
 
-        state_filter = self.request.GET.get('state_filter')
+        state_filter = self.request.GET.getlist('state_filter')
         if state_filter:
             try:
-                state = models.LimitedSession.LimitedSessionState[state_filter]
+                if isinstance(state_filter, list):
+                    states = [models.LimitedSession.LimitedSessionState[_state] for _state in state_filter]
+                else:
+                    states = [models.LimitedSession.LimitedSessionState[state_filter]]
             except KeyError:
                 return Response(f'invalid state filter {state_filter}', status = status.HTTP_400_BAD_REQUEST)
-            comparator = {
-                '=': '',
-                '!=': None,
-                '<': '__lt',
-                '<=': '__lte',
-                '>': '__gt',
-                '>=': '__gte',
-            }.get(
-                self.request.GET.get('state_filter_comparator'),
-                '',
+            queryset = queryset.filter(
+                **{
+                    'state__in': states
+                }
             )
-            if comparator is None:
-                queryset = queryset.exclude(state = state)
-            else:
-                queryset = queryset.filter(
-                    **{
-                        'state' + comparator: state
-                    }
-                )
 
         players_filter = self.request.GET.get('players_filter')
         if players_filter:
@@ -334,84 +393,11 @@ class SessionList(generics.ListAPIView):
 
         return queryset.order_by(*sort_key)
 
-    # def list(self, request, *args, **kwargs):
-    #     queryset = self.get_queryset()
-    #
-    #     name_filter = request.GET.get('name_filter')
-    #     if name_filter:
-    #         if not isinstance(name_filter, str):
-    #             return Response(f'invalid name filter {name_filter}', status = status.HTTP_400_BAD_REQUEST)
-    #         queryset = queryset.filter(name__contains = name_filter)
-    #
-    #     format_filter = request.GET.get('format_filter')
-    #     if format_filter:
-    #         try:
-    #             game_format = Format.formats_map[format_filter]
-    #         except KeyError:
-    #             return Response(f'invalid format filter {format_filter}', status = status.HTTP_400_BAD_REQUEST)
-    #         queryset = queryset.filter(format = game_format.name)
-    #
-    #     game_type_filter = request.GET.get('game_type_filter')
-    #     if game_type_filter:
-    #         queryset = queryset.filter(game_type = game_type_filter)
-    #
-    #     state_filter = request.GET.get('state_filter')
-    #     if state_filter:
-    #         try:
-    #             state = models.LimitedSession.LimitedSessionState[state_filter]
-    #         except KeyError:
-    #             return Response(f'invalid state filter {state_filter}', status = status.HTTP_400_BAD_REQUEST)
-    #         comparator = {
-    #             '=': '',
-    #             '!=': None,
-    #             '<': '__lt',
-    #             '<=': '__lte',
-    #             '>': '__gt',
-    #             '>=': '__gte',
-    #         }.get(
-    #             request.GET.get('state_filter_comparator'),
-    #             '',
-    #         )
-    #         if comparator is None:
-    #             queryset = queryset.exclude(state = state)
-    #         else:
-    #             queryset = queryset.filter(
-    #                 **{
-    #                     'state' + comparator: state
-    #                 }
-    #             )
-    #
-    #     players_filter = request.GET.get('players_filter')
-    #     if players_filter:
-    #         if not isinstance(players_filter, str):
-    #             return Response(f'invalid player filter {players_filter}', status = status.HTTP_400_BAD_REQUEST)
-    #         queryset = queryset.filter(pools__user__username = players_filter)
-    #
-    #     sort_key = [self._allowed_sort_keys.get(request.GET.get('sort_key'), 'created_at')]
-    #     ascending = strtobool(request.GET.get('ascending', 'false'))
-    #
-    #     if sort_key[0] != self._allowed_sort_keys['created_at']:
-    #         sort_key.append(self._allowed_sort_keys['created_at'])
-    #
-    #     if not ascending:
-    #         sort_key[0] = '-' + sort_key[0]
-    #
-    #     queryset = queryset.order_by(*sort_key)
-    #
-    #     page = self.paginate_queryset(queryset)
-    #
-    #     if page is not None:
-    #         serializer = self.get_serializer(page, many = True)
-    #         return self.get_paginated_response(serializer.data)
-    #
-    #     serializer = self.get_serializer(queryset, many = True)
-    #     return Response(serializer.data)
-
 
 class SessionDetail(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.FullLimitedSessionSerializer
     queryset = models.LimitedSession.objects.all().prefetch_related(
-        Prefetch('pools__pool_deck', queryset = models.PoolDeck.objects.all().only('id')),
+        Prefetch('pools__pool_decks', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
         'results',
         'results__players',
@@ -488,10 +474,10 @@ class SubmitResult(generics.GenericAPIView):
 
         if any(
             user_id_set == set(_match_result.players.all().values_list('user_id', flat = True))
-                for _match_result in
-                models.MatchResult.objects.filter(session = limited_session).prefetch_related(
-                    Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
-                )
+            for _match_result in
+            models.MatchResult.objects.filter(session = limited_session).prefetch_related(
+                Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
+            )
         ):
             return Response(
                 'Result already posted for this match',

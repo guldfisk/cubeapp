@@ -4,11 +4,13 @@ import {Loading, NotAllowed} from '../../utils/utils';
 import {Pool} from '../../models/models';
 import PoolView from "../../views/limited/PoolView";
 import {connect} from "react-redux";
+import queryString from "query-string";
 
 
 interface PoolPageProps {
   match: any
   loading: boolean
+  location: any
 }
 
 
@@ -30,10 +32,21 @@ class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
     };
   }
 
+  getCode = (): string => {
+    const queryOptions = queryString.parse(this.props.location.search);
+    return !queryOptions['code'] ?
+      ""
+      : (queryOptions['code'] instanceof Array ?
+          queryOptions['code'][0]
+          : queryOptions['code']
+      ) as string;
+  };
+
   render() {
+    const code = this.getCode();
     if (!this.requested && !this.props.loading) {
       this.requested = true;
-      Pool.get(this.props.match.params.id).then(
+      Pool.get(this.props.match.params.id, code).then(
         pool => {
           this.setState({pool});
         }
@@ -50,6 +63,7 @@ class PoolPage extends React.Component<PoolPageProps, PoolPageState> {
     if (this.state.pool !== null) {
       pool = <PoolView
         pool={this.state.pool}
+        code={code}
       />
     }
 
