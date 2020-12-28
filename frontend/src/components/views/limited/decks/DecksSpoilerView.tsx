@@ -23,6 +23,7 @@ export default class DecksSpoilerView extends React.Component<DecksSpoilerViewPr
               deck={deck}
               user={deck.user}
               limitedSession={deck.limitedSession}
+              record={deck.record}
             />
           </Row>
         )

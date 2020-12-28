@@ -100,13 +100,23 @@ export const inviteUser = (email: string) => {
 
 
 export function alphabeticalPropertySortMethodFactory<T>(
-  extractor:
-    (extractable: T) => string
+  extractor: (extractable: T) => string
 ): ((first: T, second: T) => number) {
   return (first: T, second: T) => {
     const f = extractor(first).toLowerCase();
     const s = extractor(second).toLowerCase();
     return (f < s) ? -1 : (f > s) ? 1 : 0;
+  }
+}
+
+export function integerSortFactory<T>(
+  extractor: (extractable: T) => number,
+  reverse: boolean = false,
+): ((first: T, second: T) => number) {
+  return (first: T, second: T) => {
+    const f = extractor(first);
+    const s = extractor(second);
+    return ((f < s) ? -1 : (f > s) ? 1 : 0) * (reverse ? -1 : 1);
   }
 }
 
@@ -164,20 +174,4 @@ export const getEditDistance = (a: string, b: string): number => {
   }
 
   return matrix[b.length][a.length];
-};
-
-export const factorial = (n: number): number => {
-  let resultValue = 1;
-  for (let i = 2; i <= n; i++) {
-    resultValue = resultValue * i;
-  }
-  return resultValue;
-};
-
-
-export const sizeTwoSetCombinations = (n: number): number => {
-  if (n <= 1) {
-    return 0
-  }
-  return factorial(n) / (2 * factorial(n - 2))
 };

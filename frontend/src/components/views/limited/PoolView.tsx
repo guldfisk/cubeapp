@@ -4,9 +4,11 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
 import Button from "react-bootstrap/Button";
+
 import DeckView from "./decks/DeckView";
 import CubeablesCollectionListView from '../cubeablescollectionview/CubeablesCollectionListView';
 import {Pool} from "../../models/models";
+import CubeablesCollectionSpoilerView from "../cubeablescollectionview/CubeablesCollectionSpoilerView";
 
 
 interface PoolViewProps {
@@ -16,6 +18,7 @@ interface PoolViewProps {
 
 interface PoolViewState {
   shareLink: string
+  viewType: string;
 }
 
 
@@ -25,6 +28,7 @@ export default class PoolView extends React.Component<PoolViewProps, PoolViewSta
     super(props);
     this.state = {
       shareLink: '',
+      viewType: 'List',
     }
   }
 
@@ -35,11 +39,12 @@ export default class PoolView extends React.Component<PoolViewProps, PoolViewSta
       <Row>
         {
           this.props.pool.decks.length ?
-          <DeckView
-            deck={this.props.pool.decks[this.props.pool.decks.length - 1]}
-            user={this.props.pool.user}
-            code={this.props.code}
-          />: null
+            <DeckView
+              deck={this.props.pool.decks[this.props.pool.decks.length - 1]}
+              user={this.props.pool.user}
+              code={this.props.code}
+              limitedSession={this.props.pool.session}
+            /> : null
         }
       </Row>
       <Row>
@@ -57,15 +62,26 @@ export default class PoolView extends React.Component<PoolViewProps, PoolViewSta
             Pool
             {
               this.state.shareLink ? <input
+                className="ml-auto"
                 type='text'
                 value={this.state.shareLink}
                 contentEditable={false}
               /> : <Button
+                className="ml-auto"
                 onClick={() => this.props.pool.share(this.props.code).then(link => this.setState({shareLink: link}))}
               >
                 share
               </Button>
             }
+            <select
+              value={this.state.viewType}
+              onChange={
+                event => this.setState({viewType: event.target.value})
+              }
+            >
+              <option>List</option>
+              <option>Images</option>
+            </select>
             <a
               href='#'
               title="Export"
@@ -77,10 +93,17 @@ export default class PoolView extends React.Component<PoolViewProps, PoolViewSta
             </a>
           </Card.Header>
           <Card.Body>
-            <CubeablesCollectionListView
-              rawCube={this.props.pool.pool}
-              cubeableType={'Cubeables'}
-            />
+            {
+              this.state.viewType === 'List' ?
+                <CubeablesCollectionListView
+                  rawCube={this.props.pool.pool}
+                  cubeableType={'Cubeables'}
+                />
+                : <CubeablesCollectionSpoilerView
+                  cubeableType={'Cubeables'}
+                  cubeablesContainer={this.props.pool.pool}
+                />
+            }
           </Card.Body>
         </ Card>
       </Row>

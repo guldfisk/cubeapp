@@ -6,10 +6,8 @@ from api import views
 urlpatterns = [
     path('', views.VersionedCubesList.as_view(), name = 'index'),
 
-    # path('test/', views.test),
     path('db-info/', views.db_info),
 
-    # path('cube-releases/', views.CubeReleasesList.as_view()),
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),
     path('cube-releases/<int:to_pk>/delta-from/<int:from_pk>/', views.release_delta),
@@ -28,7 +26,6 @@ urlpatterns = [
     path('versioned-cubes/<int:pk>/', views.VersionedCubeDetail.as_view()),
     path('versioned-cubes/<int:pk>/fork/', views.ForkVersionedCube.as_view()),
     path('versioned-cubes/<int:pk>/patches/', views.VersionedCubePatchList.as_view()),
-    # path('versioned-cubes/<int:pk>/cubeable/<slug:cubeable_type>/<slug:cubeable_id>/', views.cube_cubeable),
 
     path('user/reset-password/', views.ResetPassword.as_view()),
     path('user/claim-reset-password/', views.ClaimReset.as_view()),

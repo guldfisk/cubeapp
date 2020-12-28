@@ -11,3 +11,9 @@ def import_path(path: str):
 
 def get_random_name():
     return NameGenerator().get_name()
+
+
+def remove_prefix(s: str, prefix: str) -> str:
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s

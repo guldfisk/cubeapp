@@ -17,6 +17,7 @@ from lobbies.games import options as metaoptions
 from lobbies.exceptions import StartGameException
 from lobbies.games.games import Game
 from resources.staticdb import db
+from tournaments.options import TournamentOptions
 
 
 class Sealed(Game):
@@ -64,6 +65,7 @@ class Sealed(Game):
         )
     )
     mirrored = metaoptions.BooleanOption(default = False)
+    tournament_options = TournamentOptions()
 
     def __init__(
         self,
@@ -72,6 +74,9 @@ class Sealed(Game):
         callback: t.Callable[[], None],
     ):
         super().__init__(options, players, callback)
+
+        tournament_type, tournament_config, match_type = TournamentOptions.deserialize_options(self.tournament_options)
+
         with transaction.atomic():
             pool_specification = PoolSpecification.from_options(self.pool_specification)
             session = LimitedSession.objects.create(
@@ -81,6 +86,9 @@ class Sealed(Game):
                 open_pools = self.open_pools,
                 pool_specification = pool_specification,
                 infinites = RawStrategy(db).deserialize(Infinites, self.infinites),
+                tournament_type = tournament_type,
+                tournament_config = tournament_config,
+                match_type = match_type,
             )
 
             self._keys = {}

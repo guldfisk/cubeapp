@@ -39,10 +39,9 @@ export default class SessionPage extends React.Component<sessionPageProps, Sessi
     if (this.state.session !== null) {
       sessionView = <SessionView
         session={this.state.session}
-        onResultSubmitted={this.refresh}
+        onChange={this.refresh}
       />
     }
-
     return sessionView;
   }
 

@@ -1,9 +1,9 @@
-interface IDable {
+interface IDAble {
   id: string
 }
 
 
-class SingleCounter<T extends IDable> {
+class SingleCounter<T extends IDAble> {
   _cubeable: T;
   _count: number;
 
@@ -28,7 +28,7 @@ class SingleCounter<T extends IDable> {
 }
 
 
-export class Counter<T extends IDable> {
+export class Counter<T extends IDAble> {
 
   _counters: { [id: string]: SingleCounter<T> };
 

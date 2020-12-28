@@ -9,7 +9,6 @@ import {DateListItem} from "../../utils/listitems";
 import {connect} from "react-redux";
 
 import {DraftSeat, DraftSession, User} from "../../models/models";
-import '../../../styling/SessionsView.css';
 import PoolSpecificationView from "../limited/PoolSpecificationView";
 import {Link} from "react-router-dom";
 import Tabs from "react-bootstrap/Tabs";

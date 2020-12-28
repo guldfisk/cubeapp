@@ -13,11 +13,7 @@ interface DecksPageState {
 export default class DecksPage extends React.Component<DecksPageProps, DecksPageState> {
 
   render() {
-
-
-    return <>
-      <DeckSearchView/>
-    </>
+    return <DeckSearchView/>
   }
 
 }

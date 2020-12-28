@@ -433,23 +433,12 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         show={this.state.applying}
         callback={
           this.apply
-          // (fork, distributionPossibility, forkName, forkDescription) => console.log(fork, distributionPossibility, forkName, forkDescription)
         }
         cancel={() => this.setState({applying: false, withDistribution: false})}
         distributionPossibility={this.state.distributionPossibility}
         distributionPossibilities={this.state.distributionPossibilities}
         key={this.state.distributionPossibility ? this.state.distributionPossibility.id : 0}
       />
-      {/*<ConfirmationDialog*/}
-      {/*  callback={this.apply}*/}
-      {/*  cancel={() => this.setState({applying: false, withDistribution: false})}*/}
-      {/*  show={this.state.applying}*/}
-      {/*  message={*/}
-      {/*    this.state.withDistribution ?*/}
-      {/*      "Confirm apply patch with distribution."*/}
-      {/*      : "Confirm apply patch without distribution."*/}
-      {/*  }*/}
-      {/*/>*/}
       <Modal
         show={!!this.state.errorMessage}
       >

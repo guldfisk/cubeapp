@@ -2,12 +2,13 @@ import React from 'react';
 
 import axios from 'axios';
 
-import {Counter, MultiplicityList} from "./utils";
 import store from '../state/store';
 import wu from 'wu';
 import {Link} from "react-router-dom";
 import fileDownload from "js-file-download";
 import {alphabeticalPropertySortMethodFactory, integerSort} from "../utils/utils";
+
+import {Counter, MultiplicityList} from "./utils";
 
 
 export const apiPath = '/api/';
@@ -2218,6 +2219,363 @@ export class WishList {
 }
 
 
+export class MatchType {
+  name: string;
+  n: number;
+
+  constructor(
+    name: string,
+    n: number,
+  ) {
+    this.name = name;
+    this.n = n;
+  }
+
+  fullName = (): string => {
+    return this.name + this.n;
+  };
+
+  public static fromRemote(remote: any): MatchType {
+    return new MatchType(
+      remote.name,
+      remote.n,
+    )
+  }
+
+}
+
+
+export class TournamentResult extends Atomic {
+  participant: TournamentParticipant;
+
+  constructor(
+    id: string,
+    participant: TournamentParticipant,
+  ) {
+    super(id);
+    this.participant = participant;
+  }
+
+  public static fromRemote(remote: any): TournamentResult {
+    return new TournamentResult(
+      remote.id,
+      TournamentParticipant.fromRemote(remote.participant),
+    )
+  }
+}
+
+
+export class Tournament extends Atomic {
+  name: string;
+  tournamentType: string;
+  rounds: TournamentRound[];
+  participants: TournamentParticipant[];
+  state: string;
+  matchType: MatchType;
+  createdAt: Date;
+  results: TournamentResult[];
+  finishedAt: Date | null;
+  roundAmount: number;
+
+  constructor(
+    id: string,
+    name: string,
+    tournamentType: string,
+    rounds: TournamentRound[],
+    participants: TournamentParticipant[],
+    state: string,
+    matchType: MatchType,
+    createdAt: Date,
+    results: TournamentResult[],
+    finishedAt: Date | null,
+    roundAmount: number,
+  ) {
+    super(id);
+    this.name = name;
+    this.tournamentType = tournamentType;
+    this.rounds = rounds;
+    this.participants = participants;
+    this.state = state;
+    this.matchType = matchType;
+    this.createdAt = createdAt;
+    this.results = results;
+    this.finishedAt = finishedAt;
+    this.roundAmount = roundAmount;
+  }
+
+  completedRounds = (): number => {
+    return this.rounds.filter(
+      round => round.matches.every(
+        match => match.result
+      )
+    ).length;
+  };
+
+  public static fromRemote(remote: any): Tournament {
+    return new Tournament(
+      remote.id,
+      remote.name,
+      remote.tournament_type,
+      remote.rounds.map((round: any) => TournamentRound.fromRemote(round)),
+      remote.participants.map((participant: any) => TournamentParticipant.fromRemote(participant)),
+      remote.state,
+      MatchType.fromRemote(remote.match_type),
+      new Date(remote.created_at),
+      remote.results.map((result: any) => TournamentResult.fromRemote(result)),
+      remote.finished_at && new Date(remote.finished_at),
+      remote.round_amount,
+    )
+  }
+
+  public static get(id: string): Promise<Tournament> {
+    return axios.get(
+      apiPath + 'tournaments/' + id + '/',
+    ).then(
+      response => Tournament.fromRemote(response.data)
+    )
+  }
+
+  public static all(
+    offset: number = 0,
+    limit: number = 50,
+    sortField: string = 'created_at',
+    sortAscending: boolean = false,
+    filters: { [key: string]: string } = {},
+  ): Promise<PaginationResponse<Tournament>> {
+    return axios.get(
+      apiPath + 'tournaments/',
+      {
+        params: {
+          offset,
+          limit,
+          sort_key: sortField,
+          ascending: sortAscending,
+          ...filters,
+        },
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (session: any) => Tournament.fromRemote(session)
+          ),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+  cancel = (): Promise<Tournament> => {
+    return axios.post(
+      apiPath + 'tournaments/' + this.id + '/cancel/',
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => Tournament.fromRemote(response.data)
+    )
+  };
+
+}
+
+
+export class TournamentParticipant extends Atomic {
+  player: User | null;
+  seed: number;
+  deck: MinimalDeck;
+
+  constructor(
+    id: string,
+    player: User | null,
+    seed: number,
+    deck: MinimalDeck,
+  ) {
+    super(id);
+    this.player = player;
+    this.seed = seed;
+    this.deck = deck;
+  }
+
+  fullName = (): string => {
+    return this.player ? this.player.username : this.deck.name;
+  };
+
+  public static fromRemote(remote: any): TournamentParticipant {
+    return new TournamentParticipant(
+      remote.id,
+      User.fromRemote(remote.player),
+      remote.seed,
+      MinimalDeck.fromRemote(remote.deck),
+    )
+  }
+
+}
+
+
+export class TournamentRound extends Atomic {
+  index: number;
+  matches: ScheduledMatch[];
+
+  constructor(
+    id: string,
+    index: number,
+    scheduledMatches: ScheduledMatch[],
+  ) {
+    super(id);
+    this.index = index;
+    this.matches = scheduledMatches;
+  }
+
+  public static fromRemote(remote: any): TournamentRound {
+    return new TournamentRound(
+      remote.id,
+      remote.index,
+      remote.matches.map((match: any) => ScheduledMatch.fromRemote(match)),
+    )
+  }
+
+}
+
+export class ScheduledMatchResult extends Atomic {
+  draws: number;
+
+  constructor(
+    id: string,
+    draws: number,
+  ) {
+    super(id);
+    this.draws = draws;
+  }
+
+  public static fromRemote(remote: any): ScheduledMatchResult {
+    return new ScheduledMatchResult(
+      remote.id,
+      remote.draws,
+    )
+  }
+
+}
+
+export class ScheduledMatch extends Atomic {
+  seats: ScheduleSeat[]
+  result: ScheduledMatchResult | null;
+
+  constructor(
+    id: string,
+    seats: ScheduleSeat[],
+    result: ScheduledMatchResult | null,
+  ) {
+    super(id);
+    this.seats = seats;
+    this.result = result;
+  }
+
+  public static fromRemote(remote: any): ScheduledMatch {
+    return new ScheduledMatch(
+      remote.id,
+      remote.seats.map((seat: any) => ScheduleSeat.fromRemote(seat)),
+      remote.result ? ScheduledMatchResult.fromRemote(remote.result) : null,
+    )
+  }
+
+  public static get(id: string): Promise<ScheduledMatch> {
+    return axios.get(
+      apiPath + 'api/tournaments/scheduled-match/' + id + '/',
+    ).then(
+      response => ScheduledMatch.fromRemote(response.data)
+    )
+  }
+
+  canSubmit = (user: User): boolean => {
+    if (this.result) {
+      return false;
+    }
+    const users = Array.from(
+      this.seats.filter(
+        seat => seat.participant.player
+      ).map(
+        seat => seat.participant.player.id
+      )
+    );
+    return users.length ? users.includes(user.id) : true;
+  };
+
+  submitResult = (
+    draws: number,
+    winsMap: { [key: string]: string } = {},
+  ): Promise<ScheduledMatch> => {
+    return axios.post(
+      apiPath + 'tournaments/scheduled-matches/' + this.id + '/',
+      {
+        draws,
+        seat_results: Object.entries(winsMap).map(
+          ([seat, wins]) => {
+            return {seat, wins}
+          }
+        ),
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => ScheduledMatch.fromRemote(response.data)
+    )
+  };
+
+}
+
+
+export class SeatResult extends Atomic {
+  wins: number;
+
+  constructor(
+    id: string,
+    wins: number,
+  ) {
+    super(id);
+    this.wins = wins;
+  }
+
+  public static fromRemote(remote: any): SeatResult {
+    return new SeatResult(
+      remote.id,
+      remote.wins,
+    )
+  }
+
+}
+
+export class ScheduleSeat extends Atomic {
+  participant: TournamentParticipant;
+  result: SeatResult | null;
+
+  constructor(
+    id: string,
+    participant: TournamentParticipant,
+    result: SeatResult | null,
+  ) {
+    super(id);
+    this.participant = participant;
+    this.result = result;
+  }
+
+  public static fromRemote(remote: any): ScheduleSeat {
+    return new ScheduleSeat(
+      remote.id,
+      TournamentParticipant.fromRemote(remote.participant),
+      remote.result ? SeatResult.fromRemote(remote.result) : null,
+    )
+  }
+
+}
+
 export class BoosterSpecification extends Atomic {
   sequenceNumber: number;
   amount: number;
@@ -2671,6 +3029,7 @@ export class PoolMeta extends Atomic {
 
 export class FullLimitedSession extends LimitedSession {
   pools: PoolMeta[];
+  tournament: Tournament | null;
 
   constructor(
     id: string,
@@ -2688,6 +3047,7 @@ export class FullLimitedSession extends LimitedSession {
     results: MatchResult[],
     infinites: Infinites,
     pools: PoolMeta[],
+    tournament: Tournament | null,
   ) {
     super(
       id,
@@ -2706,6 +3066,7 @@ export class FullLimitedSession extends LimitedSession {
       infinites,
     );
     this.pools = pools;
+    this.tournament = tournament;
   }
 
   public static fromRemote(remote: any): FullLimitedSession {
@@ -2729,6 +3090,7 @@ export class FullLimitedSession extends LimitedSession {
       remote.pools.map(
         (pool: any) => PoolMeta.fromRemote(pool)
       ),
+      remote.tournament ? Tournament.fromRemote(remote.tournament) : null,
     )
   }
 
@@ -2743,43 +3105,27 @@ export class FullLimitedSession extends LimitedSession {
 }
 
 
-export class Deck extends Atomic {
+class MinimalDeck extends Atomic {
   name: string;
-  maindeck: PrintingCounter;
-  sideboard: PrintingCounter;
   createdAt: Date;
   poolId: string | number;
 
   constructor(
     id: string,
     name: string,
-    maindeck: PrintingCounter,
-    sideboard: PrintingCounter,
     createdAt: Date,
     poolId: string | number,
   ) {
     super(id);
     this.name = name;
-    this.maindeck = maindeck;
-    this.sideboard = sideboard;
     this.createdAt = createdAt;
     this.poolId = poolId;
   }
 
-  public static fromRemote(remote: any): Deck {
-    return new Deck(
+  public static fromRemote(remote: any): MinimalDeck {
+    return new MinimalDeck(
       remote.id,
       remote.name,
-      new PrintingCounter(
-        remote.deck.maindeck.map(
-          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
-        )
-      ),
-      new PrintingCounter(
-        remote.deck.sideboard.map(
-          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
-        )
-      ),
       new Date(remote.created_at),
       remote.pool_id,
     )
@@ -2828,9 +3174,80 @@ export class Deck extends Atomic {
 }
 
 
+export class Deck extends MinimalDeck {
+  maindeck: PrintingCounter;
+  sideboard: PrintingCounter;
+
+  constructor(
+    id: string,
+    name: string,
+    createdAt: Date,
+    poolId: string | number,
+    maindeck: PrintingCounter,
+    sideboard: PrintingCounter,
+  ) {
+    super(
+      id,
+      name,
+      createdAt,
+      poolId,
+    );
+    this.maindeck = maindeck;
+    this.sideboard = sideboard;
+  }
+
+  public static fromRemote(remote: any): Deck {
+    return new Deck(
+      remote.id,
+      remote.name,
+      new Date(remote.created_at),
+      remote.pool_id,
+      new PrintingCounter(
+        remote.deck.maindeck.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+      new PrintingCounter(
+        remote.deck.sideboard.map(
+          ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
+        )
+      ),
+    )
+  }
+
+}
+
+
+export class TournamentRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+
+  constructor(wins: number, losses: number, draws: number) {
+    this.wins = wins;
+    this.losses = losses;
+    this.draws = draws;
+  }
+
+  asString = (): string => {
+    return this.wins + ' - ' + this.losses + ' - ' + this.draws;
+  }
+
+  public static fromRemote(remote: any): TournamentRecord {
+    return new TournamentRecord(
+      remote.wins,
+      remote.losses,
+      remote.draws,
+    )
+  }
+
+}
+
+
 export class FullDeck extends Deck {
   user: User;
   limitedSession: LimitedSessionName;
+  record: TournamentRecord;
 
   constructor(
     id: string,
@@ -2840,11 +3257,13 @@ export class FullDeck extends Deck {
     createdAt: Date,
     user: User,
     limitedSession: LimitedSessionName,
-    poolId: string | number
+    poolId: string | number,
+    record: TournamentRecord,
   ) {
-    super(id, name, maindeck, sideboard, createdAt, poolId);
+    super(id, name, createdAt, poolId, maindeck, sideboard);
     this.user = user;
     this.limitedSession = limitedSession;
+    this.record = record;
   }
 
   public static fromRemote(remote: any): FullDeck {
@@ -2865,6 +3284,7 @@ export class FullDeck extends Deck {
       User.fromRemote(remote.user),
       LimitedSessionName.fromRemote(remote.limited_session),
       remote.pool_id,
+      TournamentRecord.fromRemote(remote.record),
     )
   }
 
@@ -2919,7 +3339,7 @@ export class Pool extends Atomic {
     return new Pool(
       remote.id,
       User.fromRemote(remote.user),
-      remote.decks.filter((deck: any) => (typeof  deck) != 'number').map((deck: any) => Deck.fromRemote(deck)),
+      remote.decks.filter((deck: any) => (typeof deck) != 'number').map((deck: any) => Deck.fromRemote(deck)),
       LimitedSession.fromRemote(remote.session),
       CubeablesContainer.fromRemote(remote.pool),
     )

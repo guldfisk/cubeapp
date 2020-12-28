@@ -10,7 +10,7 @@ import {
   Cubeable,
   CubeablesContainer,
   Deck,
-  LimitedSessionName,
+  LimitedSessionName, TournamentRecord,
   User
 } from "../../../models/models";
 import {DateListItem} from "../../../utils/listitems";
@@ -85,7 +85,8 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
 interface DeckViewProps {
   deck: Deck;
   user: User;
-  limitedSession?: LimitedSessionName;
+  limitedSession?: LimitedSessionName | null;
+  record?: TournamentRecord | null;
   onCubeableClicked?: (cubeable: Cubeable, amount: number) => void
   noHover?: boolean;
   code?: string;
@@ -133,10 +134,16 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
             <Link
               to={'/pools/' + this.props.deck.poolId + '/'}
             >
-          {this.props.deck.name}
-        </Link>
+              {this.props.deck.name}
+            </Link>
           </span>
           <span className="header-item">{this.props.user.username}</span>
+          {
+            this.props.record && <span className="header-item">
+              {this.props.record.asString()}
+            </span>
+
+          }
           <span
             className="header-item"
           >

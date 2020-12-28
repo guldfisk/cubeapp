@@ -3,11 +3,10 @@ import typing as t
 from mtgorp.models.collections.cardboardset import CardboardSet
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.expansion import Expansion
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from api.models import CubeRelease
 from lobbies.games.options import Option, OptionsValidationError, IntegerOption
-from mtgorp.models.serilization.strategies.jsonid import JsonId
-from mtgorp.models.serilization.strategies.raw import RawStrategy
 from resources.staticdb import db
 from limited.models import PoolSpecificationOptions
 

@@ -5,3 +5,16 @@
 
 .enabled-link {
 }
+
+.hide-header thead {
+    visibility: collapse;
+}
+
+.show-header thead {
+    visibility: visible;
+}
+
+.explain-label {
+    display: inline-block;
+    margin-right: 1em;
+}

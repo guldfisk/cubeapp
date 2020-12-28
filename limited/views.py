@@ -30,6 +30,8 @@ from magiccube.collections.cube import Cube
 from api.serialization import orpserialize
 from resources.staticdb import db
 from limited import models, serializers
+from limited.serializers.pools.full import FullPoolSerializer, PoolSerializer
+from tournaments.models import SeatResult
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -81,7 +83,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
     def get_serializer(self, *args, **kwargs):
         pool: models.Pool = args[0]
         serializer_class = (
-            serializers.FullPoolSerializer
+            FullPoolSerializer
             if pool.pool_decks.exists() and (
                 'code' in self.request.query_params and models.PoolSharingCode.objects.filter(
                     code = self.request.query_params['code'],
@@ -89,7 +91,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 ).exists()
                 or pool.pool_decks.order_by('created_at').last().can_view(self.request.user)
             ) else
-            serializers.PoolSerializer
+            PoolSerializer
         )
         kwargs['context'] = self.get_serializer_context()
         return serializer_class(*args, **kwargs)
@@ -102,7 +104,10 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
 
         allow_cheating = (
             pool.session.allow_cheating
-            and not models.MatchPlayer.objects.filter(user = request.user, match_result__session = pool.session).exists()
+            and not SeatResult.objects.filter(
+                scheduled_seat__match__round__tournament__limited_session = pool.session,
+                scheduled_seat__participant__player = request.user
+            ).exists()
         )
 
         if not (
@@ -144,6 +149,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 return Response({'errors': errors}, status = status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
+            pool.pool_decks.update(latest = False)
             pool_deck = models.PoolDeck.objects.create(
                 deck = deck,
                 pool = pool,
@@ -154,7 +160,11 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 ),
             )
 
-            if all(models.Pool.objects.filter(session = pool.session).values_list('pool_decks', flat = True)):
+            if (
+                pool.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING and
+                all(models.Pool.objects.filter(session = pool.session).values_list('pool_decks', flat = True))
+            ):
+                pool.session.create_tournament()
                 pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
                 pool.session.playing_at = datetime.datetime.now()
                 pool.session.save(update_fields = ('state', 'playing_at'))
@@ -186,8 +196,10 @@ class DeckDetail(generics.RetrieveAPIView):
 class DeckList(generics.ListAPIView):
     queryset = models.PoolDeck.objects.filter(
         pool__session__state = models.LimitedSession.LimitedSessionState.FINISHED,
+        latest = True,
     ).select_related(
-        'pool__user'
+        'pool__user',
+        'pool__session__tournament',
     ).prefetch_related(
         Prefetch(
             'pool__session',
@@ -259,7 +271,7 @@ class DeckExport(generics.GenericAPIView):
         return Response(
             status = status.HTTP_200_OK,
             content_type = 'application/octet-stream',
-            data = serializer.serialize(self.get_object().pool_decks.order_by('created_at').last()),
+            data = serializer.serialize(self.get_object().deck),
         )
 
 
@@ -427,75 +439,4 @@ class CompleteSession(generics.GenericAPIView):
                 status = status.HTTP_400_BAD_REQUEST,
             )
         session.complete()
-        return Response(status = status.HTTP_200_OK)
-
-
-class SubmitResult(generics.GenericAPIView):
-    queryset = models.LimitedSession.objects.all()
-    permission_classes = [SessionResultsPermission, ]
-
-    def post(self, request: Request, *args, **kwargs) -> Response:
-        limited_session: models.LimitedSession = self.get_object()
-
-        if not limited_session.state == models.LimitedSession.LimitedSessionState.PLAYING:
-            return Response(
-                'Session in invalid state for submitting results',
-                status = status.HTTP_400_BAD_REQUEST,
-            )
-
-        serializer = serializers.MatchResultSerializer(data = request.data)
-        serializer.is_valid(raise_exception = True)
-
-        if not (
-            serializer.validated_data['draws']
-            + sum(player['wins'] for player in serializer.validated_data['players'])
-        ):
-            return Response(
-                'At least one game must be completed',
-                status = status.HTTP_400_BAD_REQUEST,
-            )
-
-        if len(serializer.validated_data['players']) <= 1:
-            return Response(
-                'Match result must include more than one player',
-                status = status.HTTP_400_BAD_REQUEST,
-            )
-
-        user_ids = [player['user_id'] for player in serializer.validated_data['players']]
-        user_id_set = set(user_ids)
-        if (
-            not len(user_ids) == len(user_id_set)
-            or not user_id_set <= set(limited_session.pools.all().values_list('user_id', flat = True))
-        ):
-            return Response(
-                'Invalid users',
-                status = status.HTTP_400_BAD_REQUEST,
-            )
-
-        if any(
-            user_id_set == set(_match_result.players.all().values_list('user_id', flat = True))
-            for _match_result in
-            models.MatchResult.objects.filter(session = limited_session).prefetch_related(
-                Prefetch('players__user', queryset = get_user_model().objects.all().only('username')),
-            )
-        ):
-            return Response(
-                'Result already posted for this match',
-                status = status.HTTP_400_BAD_REQUEST,
-            )
-
-        with transaction.atomic():
-            match_result = models.MatchResult.objects.create(
-                session = limited_session,
-                draws = serializer.validated_data['draws']
-            )
-            for player in serializer.validated_data['players']:
-                models.MatchPlayer.objects.create(
-                    user_id = player['user_id'],
-                    wins = player['wins'],
-                    match_result = match_result,
-                )
-            if limited_session.results.all().count() >= limited_session.expected_match_amount:
-                limited_session.complete()
-
         return Response(status = status.HTTP_200_OK)

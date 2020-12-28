@@ -7,6 +7,7 @@ urlpatterns = [
     path('api/limited/', include('limited.urls')),
     path('api/draft/', include('draft.urls')),
     path('api/wishlist/', include('wishlist.urls')),
+    path('api/tournaments/', include('tournaments.urls')),
 ]
 
 if settings.DEBUG:

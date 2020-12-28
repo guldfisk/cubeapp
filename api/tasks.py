@@ -8,13 +8,10 @@ from collections import defaultdict
 from contextlib import ExitStack
 from urllib.parse import urljoin
 
-from boto3 import session
 from botocore.client import BaseClient
 from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
-
-from django.conf import settings
 
 from proxypdf.streamwriter import StreamProxyWriter
 
@@ -29,24 +26,9 @@ from magiccube.collections.laps import TrapCollection
 
 from api import models
 from api.mail import mail_me
-
 from resources.staticimageloader import image_loader
 from utils.boto import MultipartUpload
-
-
-SPACES_REGION = 'fra1'
-SPACES_ENDPOINT = 'https://phdk.fra1.digitaloceanspaces.com/'
-
-
-def get_boto_client() -> BaseClient:
-    boto_session = session.Session()
-    return boto_session.client(
-        's3',
-        region_name = SPACES_REGION,
-        endpoint_url = SPACES_ENDPOINT,
-        aws_access_key_id = settings.SPACES_PUBLIC_KEY,
-        aws_secret_access_key = settings.SPACES_SECRET_KEY,
-    )
+from api.boto import get_boto_client, SPACES_ENDPOINT
 
 
 def inject_boto_client(f: t.Callable) -> t.Callable:

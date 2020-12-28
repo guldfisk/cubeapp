@@ -12,23 +12,26 @@ from enum import Enum
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.db import models, transaction
 
-from magiccube.collections.infinites import Infinites
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.limited.boostergen import (
     GenerateBoosterException, BoosterKey, RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
 )
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+from mtgorp.models.tournaments import tournaments as to
+from mtgorp.models.tournaments.matches import MatchType
 
 from magiccube.collections.cube import Cube
+from magiccube.collections.infinites import Infinites
 
 from typedmodels.models import TypedModel
 
+from tournaments.models import Tournament, TournamentParticipant
 from api.fields.orp import OrpField
 from api.models import CubeRelease
 from api.serialization.serializers import NameCubeReleaseSerializer
-from utils.fields import EnumField
+from utils.fields import EnumField, StringMapField, SerializeableField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
 from resources.staticdb import db
@@ -285,8 +288,43 @@ class LimitedSession(models.Model):
     pool_specification = models.ForeignKey(PoolSpecification, on_delete = models.CASCADE, related_name = 'sessions')
     infinites: Infinites = OrpField(model_type = Infinites)
     allow_cheating: bool = models.BooleanField(default = False)
+    tournament_type: t.Type[to.Tournament] = StringMapField(to.Tournament.tournaments_map)
+    tournament_config = models.JSONField()
+    match_type: MatchType = SerializeableField(MatchType)
+    tournament = models.OneToOneField(Tournament, on_delete = models.SET_NULL, related_name = 'limited_session', null = True)
+
+    def create_tournament(self) -> Tournament:
+        if self.tournament is not None:
+            raise ValueError('tournament already created')
+        if self.pools.filter(pool_decks__isnull=True).exists():
+            raise ValueError('not all participants have submitted a deck')
+
+        with transaction.atomic():
+            tournament = Tournament.objects.create(
+                name = self.name,
+                tournament_type = self.tournament_type,
+                tournament_config = self.tournament_config,
+                match_type = self.match_type,
+            )
+
+            for pool in self.pools.all():
+                TournamentParticipant.objects.create(
+                    tournament = tournament,
+                    deck = pool.pool_decks.order_by('created_at').last(),
+                    player = pool.user,
+                )
+
+            self.tournament = tournament
+
+            self.save(update_fields = ('tournament',))
+
+            tournament.advance()
+
+            return tournament
 
     def complete(self) -> None:
+        if self.state == self.LimitedSessionState.FINISHED:
+            return
         self.state = self.LimitedSessionState.FINISHED
         self.finished_at = datetime.datetime.now()
         self.save(update_fields = ('state', 'finished_at'))
@@ -339,6 +377,7 @@ class PoolDeck(models.Model):
     deck = OrpField(Deck)
     pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'pool_decks')
     cheating = models.BooleanField(default = False)
+    latest = models.BooleanField(default = True)
 
     class Meta(object):
         ordering = ('created_at',)

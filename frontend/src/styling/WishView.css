@@ -1,6 +1,4 @@
-.hide-header thead {
-    visibility: collapse;
-}
+
 .show-header thead {
     visibility: visible;
 }

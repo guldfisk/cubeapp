@@ -3,17 +3,14 @@ import React from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import filterFactory, {textFilter, selectFilter} from 'react-bootstrap-table2-filter';
-
-import {LimitedSession, MatchResult, User} from '../../models/models';
-
+import {connect} from "react-redux";
 import Container from "react-bootstrap/Container";
-
 import {Link} from "react-router-dom";
+
+import {LimitedSession, User} from '../../models/models';
 import {DateListItem} from "../../utils/listitems";
 import PoolSpecificationView from "../../views/limited/PoolSpecificationView";
-import {connect} from "react-redux";
 import {ConfirmationDialog} from "../../utils/dialogs";
-import {sizeTwoSetCombinations} from "../../utils/utils";
 
 
 interface SessionsPageProps {
@@ -275,17 +272,6 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
         />,
         headerStyle: (column: any, colIndex: number) => {
           return {textAlign: 'center'};
-        },
-      },
-      {
-        dataField: 'results',
-        text: 'Results',
-        editable: false,
-        formatter: (cell: MatchResult[], row: LimitedSession, rowIndex: number, formatExtraData: any) => {
-          return cell.length.toString() + '/' + sizeTwoSetCombinations(row.players.length).toString()
-        },
-        headerStyle: (column: any, colIndex: number) => {
-          return {width: '3%', textAlign: 'center'};
         },
       },
       {

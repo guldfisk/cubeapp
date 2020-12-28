@@ -9,7 +9,6 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/mtgorp.git#egg=mtgorp
 -e git+https://github.com/guldfisk/mtgimg.git#egg=mtgimg
 -e git+https://github.com/guldfisk/magiccube.git#egg=magiccube
--e git+https://github.com/guldfisk/misccube.git#egg=misccube
 -e git+https://github.com/guldfisk/mocknames.git#egg=mocknames
 -e git+https://github.com/guldfisk/secretresources.git#egg=secretresources
 -e git+https://github.com/guldfisk/sheetclient.git#egg=sheetclient
@@ -53,3 +52,4 @@ django-debug-toolbar
 django-debug-panel
 django-debug-toolbar-request-history
 botocore
+bidict

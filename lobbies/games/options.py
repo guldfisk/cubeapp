@@ -5,8 +5,12 @@ import typing as t
 from abc import abstractmethod, ABCMeta
 from distutils.util import strtobool
 
+from hardcandy.schema import Schema, DeserializationError
+
 
 T = t.TypeVar('T')
+
+JSON_SIMPLE = t.Union[str, float, int]
 
 
 class OptionsValidationError(Exception):
@@ -60,6 +64,44 @@ class IntegerOption(Option[int]):
         return _value
 
 
+class ConfigOption(Option[t.Mapping[str, JSON_SIMPLE]]):
+
+    def validate(self, value: t.Any) -> T:
+        if not isinstance(value, t.Mapping):
+            raise OptionsValidationError(f'invalid value for {self._name}: options must be a mapping')
+
+        for k, v in value.items():
+            if not isinstance(k, str):
+                raise OptionsValidationError(f'invalid value for {self._name}: key {k} must be a string')
+            if not isinstance(v, t.get_args(JSON_SIMPLE)):
+                raise OptionsValidationError(f'invalid value for {self._name}: value {v} for {k} must be a simple json value')
+
+        return value
+
+
+class SchemaOption(Option[t.Mapping[str, t.Any]]):
+
+    def __init__(self, schema: Schema, **kwargs):
+        super().__init__(**kwargs)
+        self._default_value = kwargs.get('default')
+        self._schema = schema
+
+    @property
+    def default(self) -> T:
+        return self._default_value if self._default_value is not None else self._schema.default
+
+    def validate(self, value: t.Any) -> T:
+        if not isinstance(value, t.Mapping):
+            raise OptionsValidationError(f'invalid value for {self._name}: options must be a mapping')
+
+        try:
+            return self._schema.deserialize_raw(value)
+        except DeserializationError as e:
+            raise OptionsValidationError(
+                [_e.reason for _e in e.errors]
+            )
+
+
 class OptionsOption(Option[T]):
 
     def __init__(self, options: t.AbstractSet[str], **kwargs):
@@ -109,12 +151,7 @@ class _OptionedMeta(ABCMeta):
         return klass
 
 
-class Optioned(object, metaclass = _OptionedMeta):
-
-    def __init__(self, options: t.Optional[t.Mapping[str, t.Any]] = None):
-        self._options: t.MutableMapping[str, t.Any] = self.get_default_options()
-        if options:
-            self.update_options(options)
+class BaseOptioned(object, metaclass = _OptionedMeta):
 
     @classmethod
     def get_default_options(cls) -> t.MutableMapping[str, t.Any]:
@@ -143,6 +180,27 @@ class Optioned(object, metaclass = _OptionedMeta):
             options.items()
             if option in cls.options_meta
         }
+
+
+class OptionedOption(Option[T], BaseOptioned):
+
+    @property
+    def default(self) -> T:
+        return self.get_default_options()
+
+    def validate(self, value: t.Any) -> T:
+        if not isinstance(value, t.Mapping):
+            raise OptionsValidationError(f'invalid value for {self._name}: options must be a mapping')
+
+        return self.validate_options(value)
+
+
+class Optioned(BaseOptioned):
+
+    def __init__(self, options: t.Optional[t.Mapping[str, t.Any]] = None):
+        self._options: t.MutableMapping[str, t.Any] = self.get_default_options()
+        if options:
+            self.update_options(options)
 
     def update_options(self, options: t.Mapping[str, t.Any], silent: bool = False) -> None:
         self._options.update(self.validate_options(options, silent = silent))

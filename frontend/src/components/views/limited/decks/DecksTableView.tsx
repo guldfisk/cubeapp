@@ -4,7 +4,7 @@ import BootstrapTable from 'react-bootstrap-table-next';
 
 import {Link} from "react-router-dom";
 
-import {Deck, FullDeck, LimitedSession, User} from "../../../models/models";
+import {FullDeck, LimitedSession, User} from "../../../models/models";
 import {DateListItem} from "../../../utils/listitems";
 
 

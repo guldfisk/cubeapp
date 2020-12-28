@@ -11,14 +11,12 @@ from magiccube.collections.infinites import Infinites
 
 from limited.models import PoolSpecification, LimitedSession, Pool, PoolSpecificationOptions
 from limited.options import CubeReleaseOption, PoolSpecificationOption, ExpansionOption, CardboardSetOption
-
 from lobbies.games.games import Game
 from lobbies.games import options as metaoptions
-
 from draft.coordinator import DRAFT_COORDINATOR
 from draft.draft import Draft
-
 from resources.staticdb import db
+from tournaments.options import TournamentOptions
 
 
 class DraftGame(Game):
@@ -72,6 +70,7 @@ class DraftGame(Game):
         )
     )
     allow_cheating = metaoptions.BooleanOption(default = False)
+    tournament_options = TournamentOptions()
 
     def __init__(
         self,
@@ -97,6 +96,9 @@ class DraftGame(Game):
 
     def _finished_callback_wrapper(self, draft: Draft):
         self._finished_callback()
+
+        tournament_type, tournament_config, match_type = TournamentOptions.deserialize_options(self.tournament_options)
+
         session = LimitedSession.objects.create(
             game_type = 'draft',
             format = self.format,
@@ -105,6 +107,9 @@ class DraftGame(Game):
             pool_specification = self._pool_specification,
             infinites = RawStrategy(db).deserialize(Infinites, self.infinites),
             allow_cheating = self.allow_cheating,
+            tournament_type = tournament_type,
+            tournament_config = tournament_config,
+            match_type = match_type,
         )
 
         draft.draft_session.limited_session = session

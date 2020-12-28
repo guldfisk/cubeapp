@@ -97,16 +97,16 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
         </select>
       </Row>
       <span>
-            {
-              `Showing ${
-                this.state.offset
-                } - ${
-                Math.min(this.state.offset + pageSize, this.state.hits)
-                } out of ${
-                this.state.hits
-                } results.`
-            }
-          </span>
+        {
+          `Showing ${
+            this.state.offset
+          } - ${
+            Math.min(this.state.offset + pageSize, this.state.hits)
+          } out of ${
+            this.state.hits
+          } results.`
+        }
+      </span>
       {
         this.state.viewType == 'spoiler' ?
           <DecksSpoilerView

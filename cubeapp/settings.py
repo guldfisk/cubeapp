@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'wishlist.apps.WishListConfig',
     'limited.apps.LimitedConfig',
     'rating.apps.RatingConfig',
+    'tournaments.apps.TournamentsConfig',
 
     'django.contrib.auth',
     'django.contrib.contenttypes',

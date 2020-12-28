@@ -4,8 +4,9 @@ import typing as t
 import hashlib
 import random
 import string
-
 from enum import Enum
+
+from botocore.client import BaseClient
 
 from django.contrib.auth.backends import UserModel
 from django.db import models
@@ -23,9 +24,10 @@ from magiccube.update.cubeupdate import CubePatch as Patch
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
 
 from api.fields.orp import OrpField
+from api.boto import get_boto_client, SPACES_ENDPOINT
 from utils import mixins
 from utils.fields import EnumField
-from utils.methods import get_random_name
+from utils.methods import get_random_name, remove_prefix
 from utils.mixins import TimestampedModel
 
 
@@ -128,6 +130,11 @@ class CubePatch(models.Model):
         on_delete = models.SET_NULL,
     )
 
+    def delete(self, using = None, keep_parents = False):
+        for distribution in self.distribution_possibilities.all():
+            distribution.delete_pdfs(save = False)
+        return super().delete(using, keep_parents)
+
 
 class DistributionPossibility(models.Model):
     created_at = models.DateTimeField(default = now)
@@ -142,6 +149,7 @@ class DistributionPossibility(models.Model):
     patch = models.ForeignKey(
         CubePatch,
         on_delete = models.CASCADE,
+        related_name = 'distribution_possibilities',
     )
 
     release = models.ForeignKey(
@@ -151,6 +159,29 @@ class DistributionPossibility(models.Model):
 
     class Meta:
         unique_together = ('patch', 'patch_checksum', 'distribution_checksum')
+
+    @classmethod
+    def _delete_pdf_for_url(cls, url: str, client: BaseClient) -> None:
+        client.delete_object(
+            Key = remove_prefix(url, SPACES_ENDPOINT + 'phdk/'),
+            Bucket = 'phdk',
+        )
+
+    def delete_pdfs(self, save: bool = True) -> None:
+        client = get_boto_client()
+        fields = ('pdf_url', 'added_pdf_url', 'removed_pdf_url')
+        for attr in fields:
+            url = getattr(self, attr)
+            if url:
+                self._delete_pdf_for_url(url, client)
+                setattr(self, attr, None)
+        if save:
+            self.save(update_fields = fields)
+
+    def delete(self, using = None, keep_parents = False):
+        r = super().delete(using, keep_parents)
+        self.delete_pdfs(save = False)
+        return r
 
 
 class LapChangePdf(models.Model):
@@ -199,8 +230,8 @@ class PasswordReset(TimestampedModel, models.Model):
             user = user,
             code = ''.join(
                 random.choice(string.ascii_letters)
-                    for _ in
-                    range(16)
+                for _ in
+                range(16)
             ),
         )
 

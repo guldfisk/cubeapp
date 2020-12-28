@@ -33,14 +33,16 @@ const ArtGamePage = React.lazy(() => import("../pages/ArtGamePage"));
 const DraftsPage = React.lazy(() => import("../pages/draft/DraftsPage"));
 const DraftPage = React.lazy(() => import("../pages/draft/DraftPage"));
 const SeatPage = React.lazy(() => import("../pages/draft/SeatPage"));
+const TournamentPage = React.lazy(() => import("../pages/tournaments/tournamentPage"));
+const TournamentsPage = React.lazy(() => import("../pages/tournaments/tournamentsPage"));
 
 
 export const routes: [
-  string | undefined,
-  (typeof React.Component) | React.FunctionComponent | any,
+    string | undefined,
+    (typeof React.Component) | React.FunctionComponent | any,
   boolean,
   { [key: string]: any }
-  ][] = [
+][] = [
   ['/', HomePage, false, {exact: true}],
   ['/cubes', CubesPage, false, {}],
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
@@ -69,6 +71,8 @@ export const routes: [
   ['/search', SearchPage, false, {}],
   ['/limited/:id(\\d+)', SessionPage, false, {}],
   ['/limited', SessionsPage, false, {}],
+  ['/tournaments', TournamentsPage, false, {}],
+  ['/tournaments/:id(\\d+)', TournamentPage, false, {}],
   ['/drafts', DraftsPage, false, {}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/seat/:id(\\d+)/:seat(\\d+)', SeatPage, false, {}],
