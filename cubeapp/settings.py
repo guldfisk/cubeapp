@@ -8,6 +8,7 @@ import configparser
 
 from secretresources.paths import project_name_to_secret_dir
 
+
 SECRETS_PATH = os.path.join(project_name_to_secret_dir('cubeapp'), 'settings.cfg')
 
 _config_parser = configparser.ConfigParser()
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     'limited.apps.LimitedConfig',
     'rating.apps.RatingConfig',
     'tournaments.apps.TournamentsConfig',
+    'league.apps.LeagueConfig',
 
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -167,13 +169,11 @@ INTERNAL_IPS = [
     '127.0.0.1',
 ]
 
-
 if DEBUG:
     DEBUG_TOOLBAR_CONFIG = {
         'SHOW_TOOLBAR_CALLBACK': lambda _: False,
         'RESULTS_CACHE_SIZE': 40,
     }
-
 
 DEBUG_TOOLBAR_PANELS = [
     'ddt_request_history.panels.request_history.RequestHistoryPanel',
@@ -184,7 +184,6 @@ DEBUG_TOOLBAR_PANELS = [
     'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.logging.LoggingPanel',
 ]
-
 
 WEBPACK_LOADER = {
     'DEFAULT': {

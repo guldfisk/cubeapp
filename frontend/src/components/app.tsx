@@ -137,6 +137,10 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>Tournaments</Nav.Link>
             </LinkContainer>
 
+            <LinkContainer to='/leagues/'>
+              <Nav.Link>Leagues</Nav.Link>
+            </LinkContainer>
+
             <LinkContainer to='/art-game/'>
               <Nav.Link>Art Game</Nav.Link>
             </LinkContainer>

@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing as t
 from enum import Enum
@@ -90,3 +91,19 @@ class SerializeableField(models.Field):
         if value is None:
             return None
         return json.dumps(value.serialize())
+
+
+class TimeDeltaField(models.Field):
+
+    def db_type(self, connection) -> str:
+        return 'FLOAT'
+
+    def from_db_value(self, value: t.Optional[datetime.timedelta], expression, connection) -> t.Any:
+        if value is None:
+            return
+        return value.total_seconds()
+
+    def get_prep_value(self, value: t.Any) -> t.Optional[datetime.timedelta]:
+        if value is None:
+            return None
+        return datetime.timedelta(seconds = value)

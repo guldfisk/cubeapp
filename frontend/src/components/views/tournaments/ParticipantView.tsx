@@ -26,16 +26,27 @@ export class ParticipantView extends React.Component<ParticipantViewProps, Parti
   render() {
     return <Card>
       <Card.Header>
-        <label>
-          {
-            (this.props.participant.player ? this.props.participant.player.username + ' - ' : '')
-          }
-        </label>
+        {
+          this.props.participant.player && <label>
+            {this.props.participant.player.username + ' - '}
+          </label>
+        }
         <Link
           to={'/pools/' + this.props.participant.deck.poolId + '/'}
         >
           {this.props.participant.deck.name}
         </Link>
+        {
+          !this.props.participant.player && <label
+          style={
+            {
+              marginLeft: '.5em',
+            }
+          }
+          >
+            {' (' + this.props.participant.deck.user.username + ')'}
+          </label>
+        }
       </Card.Header>
     </Card>
   }

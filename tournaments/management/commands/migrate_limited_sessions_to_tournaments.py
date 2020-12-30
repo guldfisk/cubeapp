@@ -35,6 +35,9 @@ class Command(BaseCommand):
                 limited_session.match_type = match_type
                 limited_session.save(update_fields = ('match_type',))
 
+                if limited_session.pools.filter(pool_decks__isnull = True).exists():
+                    continue
+
                 tournament = limited_session.create_tournament()
 
                 scheduled_matches_map = {

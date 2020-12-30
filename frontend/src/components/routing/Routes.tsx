@@ -35,6 +35,8 @@ const DraftPage = React.lazy(() => import("../pages/draft/DraftPage"));
 const SeatPage = React.lazy(() => import("../pages/draft/SeatPage"));
 const TournamentPage = React.lazy(() => import("../pages/tournaments/tournamentPage"));
 const TournamentsPage = React.lazy(() => import("../pages/tournaments/tournamentsPage"));
+const LeaguePage = React.lazy(() => import("../pages/leagues/LeaguePage"));
+const LeaguesPage = React.lazy(() => import("../pages/leagues/LeaguesPage"));
 
 
 export const routes: [
@@ -73,6 +75,8 @@ export const routes: [
   ['/limited', SessionsPage, false, {}],
   ['/tournaments', TournamentsPage, false, {}],
   ['/tournaments/:id(\\d+)', TournamentPage, false, {}],
+  ['/leagues', LeaguesPage, false, {}],
+  ['/leagues/:id(\\d+)', LeaguePage, false, {}],
   ['/drafts', DraftsPage, false, {}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/seat/:id(\\d+)/:seat(\\d+)', SeatPage, false, {}],

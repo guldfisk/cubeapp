@@ -53,3 +53,4 @@ django-debug-panel
 django-debug-toolbar-request-history
 botocore
 bidict
+more_itertools

@@ -15,11 +15,10 @@ class PoolDeckSerializer(MinimalPoolDeckSerializer):
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'name', 'created_at', 'deck', 'pool_id')
+        fields = ('id', 'name', 'created_at', 'deck', 'pool_id', 'user')
 
 
 class FullPoolDeckSerializer(PoolDeckSerializer):
-    user = UserSerializer(read_only = True, source = 'pool.user')
     limited_session = LimitedSessionNameSerializer(source = 'pool.session')
     record = SerializerMethodField()
 

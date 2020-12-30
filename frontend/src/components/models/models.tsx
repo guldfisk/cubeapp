@@ -2407,7 +2407,7 @@ export class TournamentParticipant extends Atomic {
   public static fromRemote(remote: any): TournamentParticipant {
     return new TournamentParticipant(
       remote.id,
-      User.fromRemote(remote.player),
+      remote.player && User.fromRemote(remote.player),
       remote.seed,
       MinimalDeck.fromRemote(remote.deck),
     )
@@ -3109,17 +3109,20 @@ class MinimalDeck extends Atomic {
   name: string;
   createdAt: Date;
   poolId: string | number;
+  user: User;
 
   constructor(
     id: string,
     name: string,
     createdAt: Date,
     poolId: string | number,
+    user: User,
   ) {
     super(id);
     this.name = name;
     this.createdAt = createdAt;
     this.poolId = poolId;
+    this.user = user;
   }
 
   public static fromRemote(remote: any): MinimalDeck {
@@ -3128,6 +3131,7 @@ class MinimalDeck extends Atomic {
       remote.name,
       new Date(remote.created_at),
       remote.pool_id,
+      User.fromRemote(remote.user),
     )
   }
 
@@ -3185,12 +3189,14 @@ export class Deck extends MinimalDeck {
     poolId: string | number,
     maindeck: PrintingCounter,
     sideboard: PrintingCounter,
+    user: User,
   ) {
     super(
       id,
       name,
       createdAt,
       poolId,
+      user,
     );
     this.maindeck = maindeck;
     this.sideboard = sideboard;
@@ -3212,6 +3218,7 @@ export class Deck extends MinimalDeck {
           ([printing, multiplicity]: [any, number]) => [Printing.fromRemote(printing), multiplicity]
         )
       ),
+      User.fromRemote(remote.user),
     )
   }
 
@@ -3245,7 +3252,6 @@ export class TournamentRecord {
 
 
 export class FullDeck extends Deck {
-  user: User;
   limitedSession: LimitedSessionName;
   record: TournamentRecord;
 
@@ -3260,8 +3266,7 @@ export class FullDeck extends Deck {
     poolId: string | number,
     record: TournamentRecord,
   ) {
-    super(id, name, createdAt, poolId, maindeck, sideboard);
-    this.user = user;
+    super(id, name, createdAt, poolId, maindeck, sideboard, user);
     this.limitedSession = limitedSession;
     this.record = record;
   }
@@ -3602,5 +3607,87 @@ export class DraftPick extends Atomic {
       Booster.fromRemote(remote.pack),
     )
   }
+
+}
+
+
+export class League extends Atomic {
+  name: string;
+  cube: MinimalCube;
+  previousNReleases: number;
+  seasonSize: number;
+  topNFromPreviousSeason: number;
+  lowParticipationPrioritizationAmount: number;
+  tournamentType: string;
+  matchType: MatchType;
+  createdAt: Date;
+
+  constructor(
+    id: string,
+    name: string,
+    cube: MinimalCube,
+    previousNReleases: number,
+    seasonSize: number,
+    topNFromPreviousSeason: number,
+    lowParticipationPrioritizationAmount: number,
+    tournamentType: string,
+    matchType: MatchType,
+    createdAt: Date,
+  ) {
+    super(id);
+    this.name = name;
+    this.cube = cube;
+    this.previousNReleases = previousNReleases;
+    this.seasonSize = seasonSize;
+    this.topNFromPreviousSeason = topNFromPreviousSeason;
+    this.lowParticipationPrioritizationAmount = lowParticipationPrioritizationAmount;
+    this.tournamentType = tournamentType;
+    this.matchType = matchType;
+    this.createdAt = createdAt;
+  }
+
+  public static fromRemote(remote: any): League {
+    return new League(
+      remote.id,
+      remote.name,
+      MinimalCube.fromRemote(remote.versioned_cube),
+      remote.previous_n_releases,
+      remote.season_size,
+      remote.top_n_from_previous_season,
+      remote.low_participation_prioritization_amount,
+      remote.tournament_type,
+      MatchType.fromRemote(remote.match_type),
+      new Date(remote.created_at),
+    )
+  }
+
+  static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<League>> => {
+    return axios.get(
+      apiPath + 'leagues/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (cube: any) => League.fromRemote(cube)
+          ),
+          hits: response.data.count,
+        }
+      }
+    )
+  };
+
+  static get = (id: string): Promise<League> => {
+    return axios.get(
+      apiPath + 'leagues/' + id + '/'
+    ).then(
+      response => League.fromRemote(response.data)
+    )
+  };
 
 }

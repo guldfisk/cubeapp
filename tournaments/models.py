@@ -5,6 +5,7 @@ import typing as t
 from enum import Enum
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction
 from django.db.models import Max
 
@@ -32,10 +33,7 @@ class Tournament(TimestampedModel):
     @property
     def tournament(self) -> to.Tournament[TournamentParticipant]:
         if not hasattr(self, '_tournament'):
-            players = frozenset(
-                # self.participants.select_related('deck', 'player').all()
-                self.participants.all()
-            )
+            players = frozenset(self.participants.all())
             self._tournament = self.tournament_type(
                 players,
                 seed_map = {
@@ -90,7 +88,7 @@ class Tournament(TimestampedModel):
     def _complete_limited_session(self) -> None:
         try:
             self.limited_session.complete()
-        except models.Model.DoesNotExist:
+        except ObjectDoesNotExist:
             pass
 
     def complete(self) -> to.TournamentResult[TournamentParticipant]:

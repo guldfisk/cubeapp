@@ -25,6 +25,10 @@ app.conf.beat_schedule = {
         'task': 'draft.tasks.clean_drafts',
         'schedule': crontab(hour = 4, minute = 0),
     },
+    'create_seasons': {
+        'task': 'league.tasks.create_seasons',
+        'schedule': timedelta(minutes = 15),
+    }
 }
 
 if not settings.DEBUG:
