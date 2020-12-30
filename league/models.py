@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-import datetime
 import itertools
 import math
 import random
 import typing as t
-from collections import defaultdict, Counter
-from enum import Enum
+from collections import defaultdict
 
-import more_itertools
 import numpy as np
 
-from django.contrib.auth import get_user_model
 from django.db import models, transaction
-from django.db.models import Max, Count, Prefetch
+from django.db.models import Count, Prefetch
 
+from mtgorp.models.formats.format import LimitedSideboard
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
 
@@ -52,10 +49,12 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
                 )
             ).filter(
                 specifications_count = 1,
-                tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-                tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications__release__in = release_ids,
-                tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications__allow_intersection = False,
-                tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications__allow_repeat = False,
+                tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
+                tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = release_ids,
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
             )
         )
 

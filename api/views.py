@@ -586,7 +586,7 @@ class UserList(generics.ListAPIView):
 
 class UserDetail(generics.RetrieveAPIView):
     queryset = get_user_model().objects.all()
-    serializer_class = serializers.UserSerializer
+    serializer_class = serializers.FullUserSerializer
 
 
 class PatchList(generics.ListCreateAPIView):

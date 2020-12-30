@@ -189,7 +189,7 @@ class PoolExport(generics.GenericAPIView):
 
 class DeckDetail(generics.RetrieveAPIView):
     queryset = models.PoolDeck.objects.all()
-    serializer_class = serializers.PoolDeckSerializer
+    serializer_class = serializers.FullPoolDeckSerializer
     permission_classes = [DeckPermissionsWithCode]
 
 

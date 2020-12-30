@@ -3293,6 +3293,19 @@ export class FullDeck extends Deck {
     )
   }
 
+  public static get(id: string): Promise<FullDeck> {
+    return axios.get(
+      apiPath + 'limited/deck/' + id + '/',
+      {
+        headers: store.getState().authenticated && {
+          "Authorization": `Token ${store.getState().token}`,
+        },
+      },
+    ).then(
+      response => FullDeck.fromRemote(response.data)
+    )
+  }
+
   public static recent(
     offset: number = 0,
     limit: number = 10,

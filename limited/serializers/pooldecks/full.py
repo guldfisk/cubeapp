@@ -3,11 +3,11 @@ import typing as t
 from rest_framework.fields import SerializerMethodField
 
 from api.serialization import orpserialize
-from api.serialization.serializers import OrpSerializerField, UserSerializer
+from api.serialization.serializers import OrpSerializerField
 from limited import models
 from limited.serializers.limitedsessions import LimitedSessionNameSerializer
 from limited.serializers.pooldecks.minimal import MinimalPoolDeckSerializer
-from tournaments.models import Tournament, ScheduledMatch
+from tournaments.models import Tournament, ScheduledMatch, SeatResult
 
 
 class PoolDeckSerializer(MinimalPoolDeckSerializer):
@@ -42,11 +42,15 @@ class FullPoolDeckSerializer(PoolDeckSerializer):
             'seats__participant',
             'seats__result',
         ):
-            wins_map = {
-                seat.participant.deck_id: seat.result.wins
-                for seat in
-                match.seats.all()
-            }
+            try:
+                wins_map = {
+                    seat.participant.deck_id: seat.result.wins
+                    for seat in
+                    match.seats.all()
+                }
+            except SeatResult.DoesNotExist:
+                continue
+
             max_wins = max(wins_map.values())
             winners = [k for k, v in wins_map.items() if v == max_wins]
             if not winners:

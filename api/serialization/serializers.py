@@ -46,6 +46,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
+class FullUserSerializer(UserSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ('id', 'username', 'date_joined')
+
+
 class ImageBundleSerializer(serializers.ModelSerializer):
     target = EnumSerializerField(models.ReleaseImageBundle.Target)
 

@@ -1,8 +1,9 @@
 import React from 'react';
 
-import {Tournament} from '../../models/models';
+import {FullDeck, Tournament} from '../../models/models';
 import {Loading} from "../../utils/utils";
 import TournamentView from "../../views/tournaments/TournamentView";
+import DeckView from "../../views/limited/decks/DeckView";
 
 
 interface TournamentPageProps {
@@ -11,6 +12,7 @@ interface TournamentPageProps {
 
 interface TournamentPageState {
   tournament: Tournament | null;
+  decks: FullDeck[];
 }
 
 
@@ -20,6 +22,7 @@ export default class TournamentPage extends React.Component<TournamentPageProps,
     super(props);
     this.state = {
       tournament: null,
+      decks: [],
     };
   }
 
@@ -30,7 +33,16 @@ export default class TournamentPage extends React.Component<TournamentPageProps,
   refresh = (): void => {
     Tournament.get(this.props.match.params.id).then(
       tournament => {
-        this.setState({tournament});
+        this.setState(
+          {tournament, decks: []},
+          () => {
+            this.state.tournament.participants.forEach(
+              (participant) => FullDeck.get(participant.deck.id).then(
+                deck => this.setState({decks: this.state.decks.concat([deck])})
+              )
+            )
+          }
+        );
       }
     );
   };
@@ -44,7 +56,19 @@ export default class TournamentPage extends React.Component<TournamentPageProps,
         handleMatchSubmitted={this.refresh}
       />
     }
-    return tournamentView;
+    return <>
+      {tournamentView}
+      {
+        this.state.decks.map(
+          deck => <DeckView
+            deck={deck}
+            user={deck.user}
+            limitedSession={deck.limitedSession}
+            record={deck.record}
+          />
+        )
+      }
+    </>;
   }
 
 }
