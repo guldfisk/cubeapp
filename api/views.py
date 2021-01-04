@@ -109,8 +109,8 @@ def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
         SizeSlug.ORIGINAL,
     )
 
-    cropped = strtobool(request.GET.get('cropped', '0'))
-    back = strtobool(request.GET.get('back', '0'))
+    cropped = strtobool(request.GET.get('cropped') or '0')
+    back = strtobool(request.GET.get('back') or '0')
 
     if pictured_id == 'back':
         image = image_loader.get_default_image(size_slug = size_slug, crop = cropped)

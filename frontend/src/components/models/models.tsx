@@ -3703,4 +3703,27 @@ export class League extends Atomic {
     )
   };
 
+  public static eligibleDecks(
+    id: string,
+    offset: number = 0,
+    limit: number = 10,
+  ): Promise<PaginationResponse<FullDeck>> {
+    return axios.get(
+      apiPath + 'leagues/' + id + '/eligibles/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((deck: any) => FullDeck.fromRemote(deck)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
 }

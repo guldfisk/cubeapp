@@ -13,6 +13,30 @@ const imageSizeMap: { [key: string]: [number, number] } = {
   'thumbnail': [111, 156],
 };
 
+
+interface BackImageProps {
+  sizeSlug?: string
+  cropped?: boolean
+}
+
+
+export const BackImage: React.FunctionComponent<BackImageProps> = (
+  {
+    sizeSlug = 'medium',
+    cropped = false,
+  }: BackImageProps
+) => {
+  const [width, height]: [number, number] = cropped ? croppedImageSizeMap[sizeSlug] : imageSizeMap[sizeSlug];
+
+  return <img
+    src={get_cardback_image_url(sizeSlug, cropped)}
+    width={width}
+    height={height}
+    alt="Cardback"
+  />
+};
+
+
 const croppedImageSizeMap: { [key: string]: [number, number] } = {
   'original': [560, 435],
   'medium': [280, 217],

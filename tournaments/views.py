@@ -1,5 +1,6 @@
 from distutils.util import strtobool
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Prefetch
 
@@ -8,9 +9,9 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from limited.models import PoolDeck
 from mtgorp.models.tournaments import tournaments as to
 
+from limited.models import PoolDeck
 from tournaments import models, serializers
 
 
@@ -74,6 +75,7 @@ class ScheduledMatchDetail(generics.RetrieveAPIView):
 
 
 class TournamentView(generics.GenericAPIView):
+    user_query_set = get_user_model().objects.all().only('id', 'username')
     queryset = models.Tournament.objects.all().prefetch_related(
         'participants',
         Prefetch(
@@ -85,11 +87,23 @@ class TournamentView(generics.GenericAPIView):
                 'pool_id',
             )
         ),
-        'participants__player',
+        Prefetch(
+            'participants__player',
+            queryset = user_query_set,
+        ),
+        'participants__deck__pool',
+        Prefetch(
+            'participants__deck__pool__user',
+            queryset = user_query_set,
+        ),
         'rounds',
         'rounds__matches',
         'rounds__matches__seats',
         'rounds__matches__seats__participant',
+        Prefetch(
+            'rounds__matches__seats__participant__player',
+            queryset = user_query_set,
+        ),
         Prefetch(
             'rounds__matches__seats__participant__deck',
             queryset = PoolDeck.objects.all().only(
@@ -99,21 +113,24 @@ class TournamentView(generics.GenericAPIView):
                 'pool_id',
             )
         ),
-        'rounds__matches__seats__participant__player',
+        Prefetch(
+            'rounds__matches__seats__participant__deck__pool__user',
+            queryset = user_query_set,
+        ),
         'rounds__matches__seats__result',
         'rounds__matches__result',
         'results',
         'results__participant',
         Prefetch(
-            'results__participant__deck',
-            queryset = PoolDeck.objects.all().only(
-                'id',
-                'name',
-                'created_at',
-                'pool_id',
-            )
+            'results__participant__player',
+            queryset = user_query_set,
         ),
-        'results__participant__player',
+        'results__participant__deck',
+        'results__participant__deck__pool',
+        Prefetch(
+            'results__participant__deck__pool__user',
+            queryset = user_query_set,
+        ),
     )
 
 

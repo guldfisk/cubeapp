@@ -4,7 +4,7 @@ import BootstrapTable from 'react-bootstrap-table-next';
 
 import {Link} from "react-router-dom";
 
-import {FullDeck, LimitedSession, User} from "../../../models/models";
+import {FullDeck, LimitedSession, TournamentRecord, User} from "../../../models/models";
 import {DateListItem} from "../../../utils/listitems";
 
 
@@ -62,6 +62,14 @@ export default class DecksTableView extends React.Component<DecksTableViewProps,
         },
       },
       {
+        dataField: 'record',
+        text: 'Record',
+        formatter: (cell: TournamentRecord, row: any, rowIndex: number, formatExtraData: any) => cell.asString(),
+        headerStyle: (column: any, colIndex: number) => {
+          return {width: '8%', textAlign: 'center'};
+        },
+      },
+      {
         dataField: 'createdAt',
         text: 'Created',
         formatter: (cell: Date, row: any, rowIndex: number, formatExtraData: any) => <DateListItem
@@ -80,7 +88,6 @@ export default class DecksTableView extends React.Component<DecksTableViewProps,
       columns={columns}
       bootstrap4
       condensed
-      // classes='dark-table'
     />
   }
 

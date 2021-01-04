@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 from django.db import models, transaction
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, QuerySet
 
 from mtgorp.models.formats.format import LimitedSideboard
 from mtgorp.models.tournaments import tournaments as to
@@ -40,23 +40,24 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
     match_type: MatchType = SerializeableField(MatchType)
 
     @property
-    def eligible_decks(self) -> t.Mapping[PoolDeck, float]:
+    def eligible_decks(self) -> QuerySet:
         release_ids = set(self.versioned_cube.releases.order_by('-created_at').values_list('id', flat = True)[:self.previous_n_releases])
-        possible_decks = set(
-            PoolDeck.objects.annotate(
-                specifications_count = Count(
-                    'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'
-                )
-            ).filter(
-                specifications_count = 1,
-                tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
-                tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
-                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = release_ids,
-                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
-                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
+        return PoolDeck.objects.annotate(
+            specifications_count = Count(
+                'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'
             )
+        ).filter(
+            specifications_count = 1,
+            tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
+            tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
+            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
+            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = release_ids,
+            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
+            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
         )
+
+    def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
+        possible_decks = set(self.eligible_decks)
 
         if len(possible_decks) < self.season_size:
             raise LeagueError('Insufficient decks')
@@ -176,7 +177,7 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
         }
 
     def create_season(self) -> Season:
-        decks = self.eligible_decks
+        decks = self.get_decks_for_season()
         with transaction.atomic():
             tournament = Tournament.objects.create(
                 name = '{} - Season {}'.format(self.name, self.seasons.count() + 1),

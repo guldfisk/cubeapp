@@ -6,12 +6,12 @@ import Container from "react-bootstrap/Container"
 
 import {getEditDistance, Loading} from '../utils/utils';
 import {Printing} from '../models/models';
-import {ImageableImage} from "../images";
+import {BackImage, ImageableImage} from "../images";
 import Form from "react-bootstrap/Form";
 
 
 interface HiddenViewProps {
-  printing: Printing;
+  printing: Printing | null;
   handleSubmit: (name: string) => void;
   name: string
   onNameChange: (name: string) => void;
@@ -29,11 +29,17 @@ class HiddenView extends React.Component<HiddenViewProps, null> {
   render() {
     return <>
       <Row>
-        <ImageableImage
-          imageable={this.props.printing}
-          cropped={true} sizeSlug='original'
-          allowStatic={false}
-        />
+        {
+          this.props.printing ? <ImageableImage
+            imageable={this.props.printing}
+            cropped={true}
+            sizeSlug='original'
+            allowStatic={false}
+          /> : <BackImage
+            cropped={true}
+            sizeSlug='original'
+          />
+        }
       </Row>
       <Row>
         <Form
@@ -112,9 +118,12 @@ export default class ArtGamePage extends React.Component<null, ArtGamePageState>
       )
     }
 
-    Printing.random().then(
-      printing => this.setState({printing})
-    )
+    this.setState(
+      {printing: null},
+      () => Printing.random().then(
+        printing => this.setState({printing})
+      )
+    );
   };
 
   componentDidMount() {
@@ -127,16 +136,12 @@ export default class ArtGamePage extends React.Component<null, ArtGamePageState>
     >
       <Row>
         <Col>
-          {
-            this.state.printing === null ?
-              <Loading/> :
-              <HiddenView
-                printing={this.state.printing}
-                handleSubmit={this.getPrinting}
-                name={this.state.name}
-                onNameChange={name => this.setState({name})}
-              />
-          }
+          <HiddenView
+            printing={this.state.printing}
+            handleSubmit={this.getPrinting}
+            name={this.state.name}
+            onNameChange={name => this.setState({name})}
+          />
         </Col>
         <Col>
           {

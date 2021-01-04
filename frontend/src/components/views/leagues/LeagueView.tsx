@@ -79,7 +79,7 @@ export class LeagueView extends React.Component<LeagueViewProps, LeagueViewState
               <label
                 className='explain-label'
               >
-                Tournament TYpe
+                Tournament Type
               </label>
               {this.props.league.tournamentType}
             </li>

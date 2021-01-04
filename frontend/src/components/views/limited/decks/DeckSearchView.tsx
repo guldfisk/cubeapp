@@ -4,25 +4,22 @@ import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 
 import PaginationBar from "../../../utils/PaginationBar";
-import DecksSpoilerView from "./DecksSpoilerView";
 import {FullDeck} from "../../../models/models";
-import DecksTableView from "./DecksTableView";
+import {range} from "../../../utils/utils";
+import DecksMultiView from "./DecksMultiView";
 
 
-const pageSize: number = 10;
+interface DeckSearchViewProps {
+}
 
 
 interface DeckSearchViewState {
-  decks: FullDeck[];
+  decks: FullDeck[]
   offset: number
   hits: number
   filter: string
   filterInput: string
-  viewType: string
-}
-
-
-interface DeckSearchViewProps {
+  pageSize: number
 }
 
 
@@ -36,7 +33,7 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
       hits: 0,
       filter: "",
       filterInput: "",
-      viewType: 'spoiler',
+      pageSize: 10,
     };
   }
 
@@ -47,7 +44,7 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
   fetch = (offset: number = 0) => {
     FullDeck.recent(
       offset,
-      pageSize,
+      this.state.pageSize,
       this.state.filter,
     ).then(
       ({objects, hits}) => {
@@ -69,7 +66,7 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
           hits={this.state.hits}
           offset={this.state.offset}
           handleNewOffset={this.fetch}
-          pageSize={pageSize}
+          pageSize={this.state.pageSize}
           maxPageDisplay={7}
         />
         <input
@@ -85,42 +82,44 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
             }
           }
         />
-        <select
-          className="ml-auto"
-          onChange={
-            event => this.setState({viewType: event.target.value})
-          }
-          value={this.state.viewType}
-        >
-          <option value="spoiler">Spoiler</option>
-          <option value="table">Table</option>
-        </select>
       </Row>
       <span>
         {
           `Showing ${
             this.state.offset
           } - ${
-            Math.min(this.state.offset + pageSize, this.state.hits)
+            Math.min(this.state.offset + this.state.pageSize, this.state.hits)
           } out of ${
             this.state.hits
           } results.`
         }
       </span>
-      {
-        this.state.viewType == 'spoiler' ?
-          <DecksSpoilerView
-            decks={this.state.decks}
-          /> :
-          <DecksTableView decks={this.state.decks}/>
-      }
-      <PaginationBar
-        hits={this.state.hits}
-        offset={this.state.offset}
-        handleNewOffset={this.fetch}
-        pageSize={pageSize}
-        maxPageDisplay={7}
-      />
+      <DecksMultiView decks={this.state.decks}/>
+      <Row>
+        <PaginationBar
+          hits={this.state.hits}
+          offset={this.state.offset}
+          handleNewOffset={this.fetch}
+          pageSize={this.state.pageSize}
+          maxPageDisplay={7}
+        />
+        <select
+          name="pageSize"
+          value={this.state.pageSize}
+          onChange={
+            event => this.setState(
+              {pageSize: parseInt(event.target.value)},
+              () => this.fetch(this.state.offset),
+            )
+          }
+        >
+          {
+            Array.from(range(5, 35, 5)).map(
+              v => <option value={v}>{v}</option>
+            )
+          }
+        </select>
+      </Row>
     </Col>
   }
 
