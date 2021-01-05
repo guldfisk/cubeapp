@@ -19,9 +19,7 @@ USER_QUERY_SET = get_user_model().objects.all().only('id', 'username')
 
 
 class ScheduledMatchView(generics.GenericAPIView):
-    queryset = models.ScheduledMatch.objects.filter(
-        result__isnull = True,
-    ).prefetch_related(
+    queryset = models.ScheduledMatch.objects.all().prefetch_related(
         'seats',
         'seats__participant',
         Prefetch(
@@ -109,7 +107,9 @@ class UserScheduledMatches(generics.ListAPIView, ScheduledMatchView):
 
     def get_queryset(self):
         return self.queryset.filter(
+            result__isnull = True,
             seats__participant__player_id = self.kwargs['pk'],
+            round__tournament__state = models.Tournament.TournamentState.ONGOING,
         ).prefetch_related(
             'round__tournament__participants',
             Prefetch(
@@ -142,6 +142,8 @@ class UserScheduledMatches(generics.ListAPIView, ScheduledMatchView):
                 'round__tournament__results__participant__deck__pool__user',
                 queryset = USER_QUERY_SET,
             ),
+        ).order_by(
+            '-round__tournament__created_at'
         )
 
 
