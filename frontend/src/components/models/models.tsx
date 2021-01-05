@@ -449,11 +449,27 @@ export class User extends Atomic {
     )
   };
 
-  static get = (id: string): Promise<User> => {
+
+}
+
+
+export class FullUser extends User {
+  joinedAt: Date
+
+  constructor(id: string, username: string, joinedAt: Date) {
+    super(id, username);
+    this.joinedAt = joinedAt;
+  }
+
+  public static fromRemote(remote: any): FullUser {
+    return new FullUser(remote.id, remote.username, new Date(remote.date_joined))
+  }
+
+  static get = (id: string): Promise<FullUser> => {
     return axios.get(
       apiPath + 'users/' + id + '/'
     ).then(
-      response => User.fromRemote(response.data)
+      response => FullUser.fromRemote(response.data)
     )
   };
 
@@ -527,7 +543,7 @@ export class MinimalCube extends Atomic {
 }
 
 
-interface PaginationResponse<T> {
+export interface PaginationResponse<T> {
   objects: T[]
   hits: number
 }
@@ -2265,10 +2281,9 @@ export class TournamentResult extends Atomic {
 }
 
 
-export class Tournament extends Atomic {
+export class MinimalTournament extends Atomic {
   name: string;
   tournamentType: string;
-  rounds: TournamentRound[];
   participants: TournamentParticipant[];
   state: string;
   matchType: MatchType;
@@ -2276,6 +2291,65 @@ export class Tournament extends Atomic {
   results: TournamentResult[];
   finishedAt: Date | null;
   roundAmount: number;
+
+  constructor(
+    id: string,
+    name: string,
+    tournamentType: string,
+    participants: TournamentParticipant[],
+    state: string,
+    matchType: MatchType,
+    createdAt: Date,
+    results: TournamentResult[],
+    finishedAt: Date | null,
+    roundAmount: number,
+  ) {
+    super(id);
+    this.name = name;
+    this.tournamentType = tournamentType;
+    this.participants = participants;
+    this.state = state;
+    this.matchType = matchType;
+    this.createdAt = createdAt;
+    this.results = results;
+    this.finishedAt = finishedAt;
+    this.roundAmount = roundAmount;
+  }
+
+  public static fromRemote(remote: any): MinimalTournament {
+    return new MinimalTournament(
+      remote.id,
+      remote.name,
+      remote.tournament_type,
+      remote.participants.map((participant: any) => TournamentParticipant.fromRemote(participant)),
+      remote.state,
+      MatchType.fromRemote(remote.match_type),
+      new Date(remote.created_at),
+      remote.results.map((result: any) => TournamentResult.fromRemote(result)),
+      remote.finished_at && new Date(remote.finished_at),
+      remote.round_amount,
+    )
+  }
+
+  cancel = (): Promise<Tournament> => {
+    return axios.post(
+      apiPath + 'tournaments/' + this.id + '/cancel/',
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => Tournament.fromRemote(response.data)
+    )
+  };
+
+}
+
+export class Tournament extends MinimalTournament {
+  rounds: TournamentRound[];
 
   constructor(
     id: string,
@@ -2290,17 +2364,8 @@ export class Tournament extends Atomic {
     finishedAt: Date | null,
     roundAmount: number,
   ) {
-    super(id);
-    this.name = name;
-    this.tournamentType = tournamentType;
+    super(id, name, tournamentType, participants, state, matchType, createdAt, results, finishedAt, roundAmount);
     this.rounds = rounds;
-    this.participants = participants;
-    this.state = state;
-    this.matchType = matchType;
-    this.createdAt = createdAt;
-    this.results = results;
-    this.finishedAt = finishedAt;
-    this.roundAmount = roundAmount;
   }
 
   completedRounds = (): number => {
@@ -2364,21 +2429,6 @@ export class Tournament extends Atomic {
       }
     )
   }
-
-  cancel = (): Promise<Tournament> => {
-    return axios.post(
-      apiPath + 'tournaments/' + this.id + '/cancel/',
-      {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${store.getState().token}`,
-        }
-      },
-    ).then(
-      response => Tournament.fromRemote(response.data)
-    )
-  };
 
 }
 
@@ -2484,7 +2534,7 @@ export class ScheduledMatch extends Atomic {
 
   public static get(id: string): Promise<ScheduledMatch> {
     return axios.get(
-      apiPath + 'api/tournaments/scheduled-match/' + id + '/',
+      apiPath + 'tournaments/scheduled-match/' + id + '/',
     ).then(
       response => ScheduledMatch.fromRemote(response.data)
     )
@@ -2528,6 +2578,58 @@ export class ScheduledMatch extends Atomic {
       response => ScheduledMatch.fromRemote(response.data)
     )
   };
+
+}
+
+
+export class FullScheduledMatch extends ScheduledMatch {
+  tournament: MinimalTournament
+  round: number
+
+  constructor(
+    id: string,
+    seats: ScheduleSeat[],
+    result: ScheduledMatchResult | null,
+    tournament: MinimalTournament,
+    round: number,
+  ) {
+    super(id, seats, result);
+    this.tournament = tournament;
+    this.round = round;
+  }
+
+  public static fromRemote(remote: any): FullScheduledMatch {
+    return new FullScheduledMatch(
+      remote.id,
+      remote.seats.map((seat: any) => ScheduleSeat.fromRemote(seat)),
+      remote.result ? ScheduledMatchResult.fromRemote(remote.result) : null,
+      MinimalTournament.fromRemote(remote.tournament),
+      remote.round,
+    )
+  }
+
+  public static forUser(
+    id: string,
+    offset: number,
+    limit: number,
+  ): Promise<PaginationResponse<FullScheduledMatch>> {
+    return axios.get(
+      apiPath + 'tournaments/users/' + id + '/scheduled-matches/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((match: any) => FullScheduledMatch.fromRemote(match)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
 
 }
 

@@ -37,6 +37,7 @@ const TournamentPage = React.lazy(() => import("../pages/tournaments/tournamentP
 const TournamentsPage = React.lazy(() => import("../pages/tournaments/tournamentsPage"));
 const LeaguePage = React.lazy(() => import("../pages/leagues/LeaguePage"));
 const LeaguesPage = React.lazy(() => import("../pages/leagues/LeaguesPage"));
+const UserPage = React.lazy(() => import("../pages/users/UserPage"));
 
 
 export const routes: [
@@ -46,6 +47,7 @@ export const routes: [
   { [key: string]: any }
 ][] = [
   ['/', HomePage, false, {exact: true}],
+  ['/users/:id(\\d+)/', UserPage, false, {}],
   ['/cubes', CubesPage, false, {}],
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],

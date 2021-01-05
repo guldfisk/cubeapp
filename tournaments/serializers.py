@@ -94,14 +94,28 @@ class TournamentWinnerSerializer(serializers.ModelSerializer):
         fields = ('id', 'participant')
 
 
-class TournamentSerializer(serializers.ModelSerializer):
+class MinimalTournamentSerializer(serializers.ModelSerializer):
     state = EnumSerializerField(models.Tournament.TournamentState)
     tournament_type = LambdaSerializer(lambda tt: tt.name)
     match_type = LambdaSerializer(lambda mt: mt.serialize())
     participants = ParticipantSerializer(many = True)
-    rounds = RoundSerializer(many = True)
     round_amount = SerializerMethodField()
     results = TournamentWinnerSerializer(many = True)
+
+    class Meta:
+        model = models.Tournament
+        fields = (
+            'id', 'state', 'name', 'tournament_type', 'tournament_config', 'match_type', 'participants',
+            'created_at', 'results', 'finished_at', 'round_amount',
+        )
+
+    @classmethod
+    def get_round_amount(cls, tournament: models.Tournament) -> int:
+        return tournament.tournament.round_amount
+
+
+class TournamentSerializer(MinimalTournamentSerializer):
+    rounds = RoundSerializer(many = True)
 
     class Meta:
         model = models.Tournament
@@ -110,6 +124,11 @@ class TournamentSerializer(serializers.ModelSerializer):
             'created_at', 'results', 'finished_at', 'round_amount',
         )
 
-    @classmethod
-    def get_round_amount(cls, tournament: models.Tournament) -> int:
-        return tournament.tournament.round_amount
+
+class FullScheduledMatchSerializer(ScheduledMatchSerializer):
+    tournament = MinimalTournamentSerializer(source = 'round.tournament')
+    round = serializers.IntegerField(source = 'round.index')
+
+    class Meta:
+        model = models.ScheduledMatch
+        fields = ('id', 'seats', 'result', 'tournament', 'round')

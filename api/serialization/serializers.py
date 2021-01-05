@@ -47,6 +47,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class FullUserSerializer(UserSerializer):
+    date_joined = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+
     class Meta:
         model = get_user_model()
         fields = ('id', 'username', 'date_joined')

@@ -45,9 +45,13 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
         return PoolDeck.objects.annotate(
             specifications_count = Count(
                 'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'
-            )
+            ),
+            winners_count = Count(
+                'tournament_entries__wins__tournament__limited_session__draft_session__limited_session__tournament__results'
+            ),
         ).filter(
             specifications_count = 1,
+            winners_count = 1,
             tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
             tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,

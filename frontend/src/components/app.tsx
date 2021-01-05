@@ -152,10 +152,15 @@ class RootComponent extends React.Component<RootProps> {
           </Nav>
           <Nav className="justify-content-end">
             {
-              this.props.auth.user ?
+              this.props.auth.user &&
+              <LinkContainer
+                to={'/users/' + this.props.auth.user.id}
+              >
                 <Nav.Link>
                   {this.props.auth.user.username}
-                </Nav.Link> : null
+                </Nav.Link>
+              </LinkContainer>
+
             }
             {
               this.props.auth.authenticated ?
