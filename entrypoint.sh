@@ -2,7 +2,7 @@
 
 if [[ "$DEBUG" == "1" ]]
 then
-    python3 manage.py runserver 0.0.0.0:7000
+    IMAGE_CACHE_SIZE=32 USE_PICKLE_DB=1 python3 manage.py runserver 0.0.0.0:7000
 else
-    gunicorn --chdir cubeapp --bind :7000 cubeapp.wsgi:application
+    IMAGE_CACHE_SIZE=32 USE_PICKLE_DB=1 gunicorn --chdir cubeapp --bind :7000 cubeapp.wsgi:application
 fi

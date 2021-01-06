@@ -30,6 +30,10 @@ SECRET_KEY = _config_parser['default']['secret_key']
 
 DEBUG = strtobool(os.environ['DEBUG'])
 
+USE_PICKLE_DB = strtobool(os.environ.get('USE_PICKLE_DB', '0'))
+
+IMAGE_CACHE_SIZE = int(os.environ.get('IMAGE_CACHE_SIZE', 0))
+
 ALLOWED_HOSTS = json.loads(_config_parser['default']['allowed_hosts'])
 HOST = _config_parser['default']['host']
 
