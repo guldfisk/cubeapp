@@ -4,19 +4,20 @@ import {ImageableImage} from '../../images';
 import {Cubeable, CubeablesContainer, PrintingCounter} from "../../models/models";
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 import {PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
-import Row from "react-bootstrap/Row";
 
 
 interface CubeablesCollectionSpoilerViewProps {
   cubeablesContainer: CubeablesContainer
   cubeableType: string
   sizeSlug: string
+  allowStaticImages: boolean
 }
 
 export default class CubeablesCollectionSpoilerView extends React.Component<CubeablesCollectionSpoilerViewProps> {
 
   static defaultProps = {
     sizeSlug: 'thumbnail',
+    allowStaticImages: true,
   };
 
   * groupsSortedChained(groups: IterableIterator<[Cubeable, number]>[]): IterableIterator<Cubeable> {
@@ -83,6 +84,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
               imageable={cubeable}
               sizeSlug={this.props.sizeSlug}
               hover={true}
+              allowStatic={this.props.allowStaticImages}
             />
           }
         )

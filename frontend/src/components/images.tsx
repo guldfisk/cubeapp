@@ -66,7 +66,7 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
     type = null,
     cropped = false,
     hover = false,
-    allowStatic = false,
+    allowStatic = true,
   }: CubeableImageProps
 ) => {
   if (!id && !imageable) {

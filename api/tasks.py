@@ -20,7 +20,7 @@ from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
 
 from mtgimg.interface import SizeSlug, ImageRequest
-from mtgimg.pipeline import ImageableProcessor
+from mtgimg.pipeline import ImageableProcessor, get_pipeline
 
 from magiccube.collections.laps import TrapCollection
 
@@ -62,8 +62,9 @@ def generate_release_images(cube_release_id: int):
     except models.CubeRelease.DoesNotExist:
         return
 
-    for lap, size_slug in itertools.product(release.cube.laps.distinct_elements(), SizeSlug):
-        ImageableProcessor.get_image(ImageRequest(lap, size_slug = size_slug, cache_only = True), image_loader)
+    for cubeable, size_slug in itertools.product(release.cube.cubeables.distinct_elements(), SizeSlug):
+        image_request = ImageRequest(cubeable, size_slug = size_slug, cache_only = True)
+        get_pipeline(image_request).get_image(image_request, image_loader)
 
 
 @shared_task()

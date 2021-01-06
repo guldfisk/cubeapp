@@ -17,9 +17,14 @@ interface RawCubeListViewProps {
   onCubeableClicked?: (cubeable: Cubeable, amount: number) => void
   noHover?: boolean
   noGarbage?: boolean
+  allowStaticImages: boolean
 }
 
 export default class CubeablesCollectionListView extends React.Component<RawCubeListViewProps> {
+
+  static defaultProps = {
+    allowStaticImages: true,
+  };
 
   componentDidUpdate(prevProps: Readonly<RawCubeListViewProps>, prevState: Readonly<{}>, snapshot?: any): void {
     ReactTooltip.rebuild();

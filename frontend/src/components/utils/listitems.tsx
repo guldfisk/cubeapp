@@ -18,6 +18,7 @@ export const PrintingsTooltip: React.SFC = (props: any) => {
       (id: string) => <ImageableImage
         id={id}
         type='Printing'
+        allowStatic={false}
       />
     }
   />
@@ -64,6 +65,7 @@ export const TrapTooltip: React.SFC = (props: any) => {
           <ImageableImage
             id={printingId}
             type='printing'
+            allowStatic={false}
           />
       </span>
       }

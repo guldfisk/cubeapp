@@ -16,7 +16,7 @@ class Command(BaseCommand):
     help = 'Render lap images for existing releases'
 
     def add_arguments(self, parser):
-        parser.add_argument('last_n_cubes', type=int, default=None, nargs='?')
+        parser.add_argument('last_n_cubes', type = int, default = None, nargs = '?')
 
     def handle(self, *args, **options):
         laps = set(

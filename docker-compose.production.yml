@@ -28,7 +28,7 @@ services:
       DEBUG: 0
 
   web_channels:
-    command: USE_PICKLE_DB=1 daphne -b 0.0.0.0 -p 7001 cubeapp.asgi:application
+    entrypoint: ./channels_entrypoint.sh
     image: app-image
     volumes:
       - .:/code
