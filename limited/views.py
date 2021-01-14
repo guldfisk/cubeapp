@@ -261,7 +261,7 @@ class DeckExport(generics.GenericAPIView):
 
     def get(self, request: Request, *args, **kwargs) -> Response:
         try:
-            serializer = DeckSerializer.extension_to_serializer[request.query_params.get('extension', 'dec')]
+            serializer_type = DeckSerializer.extension_to_serializer[request.query_params.get('extension', 'dec')]
         except KeyError:
             return Response(
                 data = 'Invalid extension',
@@ -271,7 +271,7 @@ class DeckExport(generics.GenericAPIView):
         return Response(
             status = status.HTTP_200_OK,
             content_type = 'application/octet-stream',
-            data = serializer.serialize(self.get_object().deck),
+            data = serializer_type(db).serialize(self.get_object().deck),
         )
 
 

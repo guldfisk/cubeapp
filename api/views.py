@@ -66,6 +66,16 @@ _IMAGE_SIZE_MAP = {
 }
 
 
+@api_view(['POST', ])
+def test(request: HttpRequest) -> HttpResponse:
+    print(request.body)
+    return JsonResponse(
+        {
+            'some_shit': 'real',
+        }
+    )
+
+
 @api_view(['GET', ])
 def db_info(request: HttpRequest) -> HttpResponse:
     return JsonResponse(

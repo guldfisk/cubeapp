@@ -62,7 +62,15 @@ def generate_release_images(cube_release_id: int):
     except models.CubeRelease.DoesNotExist:
         return
 
-    for cubeable, size_slug in itertools.product(release.cube.cubeables.distinct_elements(), SizeSlug):
+    for cubeable, size_slug in itertools.product(
+        set(
+            itertools.chain(
+                release.cube.cubeables.distinct_elements(),
+                release.cube.all_printings,
+            )
+        ),
+        SizeSlug,
+    ):
         image_request = ImageRequest(cubeable, size_slug = size_slug, cache_only = True)
         get_pipeline(image_request).get_image(image_request, image_loader)
 
