@@ -96,6 +96,21 @@ services:
     environment:
       - DEBUG=1
 
+#  flower:
+#    image: app-image
+#    command: flower -A cubeapp
+#    depends_on:
+#      - celery_beat
+#      - celery_worker
+#      - redis
+#    networks:
+#      - database_network
+#    restart: always
+#    environment:
+#      - DEBUG=1
+#    ports:
+#      - 5000:5000
+
 networks:
   database_network:
     driver: bridge

@@ -127,8 +127,8 @@ class Tournament(TimestampedModel):
 
 class TournamentParticipant(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete = models.CASCADE, related_name = 'participants')
-    deck = models.ForeignKey('limited.PoolDeck', on_delete = models.PROTECT, related_name = 'tournament_entries')
-    player = models.ForeignKey(get_user_model(), on_delete = models.PROTECT, related_name = 'tournament', null = True)
+    deck = models.ForeignKey('limited.PoolDeck', on_delete = models.CASCADE, related_name = 'tournament_entries')
+    player = models.ForeignKey(get_user_model(), on_delete = models.CASCADE, related_name = 'tournament', null = True)
     seed = models.FloatField(default = 0.)
 
     class Meta:

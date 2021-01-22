@@ -211,7 +211,6 @@ class MatchView extends React.Component<MatchViewProps, MatchViewState> {
               handleSubmitted={
                 match => {
                   this.setState({submitting: false});
-                  console.log('real', match);
                   if (this.props.handleSubmitted) {
                     this.props.handleSubmitted(match)
                   }

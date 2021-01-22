@@ -543,7 +543,7 @@ export class MinimalCube extends Atomic {
 }
 
 
-export interface PaginationResponse<T> {
+export interface PaginatedResponse<T> {
   objects: T[]
   hits: number
 }
@@ -577,7 +577,7 @@ export class Cube extends MinimalCube {
     )
   }
 
-  static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<Cube>> => {
+  static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<Cube>> => {
     return axios.get(
       apiPath + 'versioned-cubes/',
       {
@@ -2146,7 +2146,7 @@ export class WishList {
     )
   };
 
-  public static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<WishList>> => {
+  public static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<WishList>> => {
     return axios.get(
       apiPath + 'wishlist/',
       {
@@ -2171,7 +2171,7 @@ export class WishList {
     sortField: string = 'weight',
     sortAscending: boolean = false,
     filters: { [key: string]: string } = {},
-  ): Promise<PaginationResponse<Wish>> => {
+  ): Promise<PaginatedResponse<Wish>> => {
     return axios.get(
       apiPath + 'wishlist/wishes/' + this.id + '/',
       {
@@ -2406,7 +2406,7 @@ export class Tournament extends MinimalTournament {
     sortField: string = 'created_at',
     sortAscending: boolean = false,
     filters: { [key: string]: string } = {},
-  ): Promise<PaginationResponse<Tournament>> {
+  ): Promise<PaginatedResponse<Tournament>> {
     return axios.get(
       apiPath + 'tournaments/',
       {
@@ -2612,7 +2612,7 @@ export class FullScheduledMatch extends ScheduledMatch {
     id: string,
     offset: number,
     limit: number,
-  ): Promise<PaginationResponse<FullScheduledMatch>> {
+  ): Promise<PaginatedResponse<FullScheduledMatch>> {
     return axios.get(
       apiPath + 'tournaments/users/' + id + '/scheduled-matches/',
       {
@@ -2677,6 +2677,59 @@ export class ScheduleSeat extends Atomic {
   }
 
 }
+
+
+export class Season extends Atomic {
+  league: number;
+  tournament: Tournament;
+  createdAt: Date;
+
+  constructor(
+    id: string,
+    league: number,
+    tournament: Tournament,
+    createdAt: Date,
+  ) {
+    super(id);
+    this.league = league;
+    this.tournament = tournament;
+    this.createdAt = createdAt;
+  }
+
+  public static fromRemote(remote: any): Season {
+    return new Season(
+      remote.id,
+      remote.league,
+      Tournament.fromRemote(remote.tournament),
+      new Date(remote.created_at),
+    )
+  }
+
+  public static forLeague(
+    id: string,
+    offset: number,
+    limit: number,
+  ): Promise<PaginatedResponse<Season>> {
+    return axios.get(
+      apiPath + 'leagues/' + id + '/seasons/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((match: any) => Season.fromRemote(match)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+}
+
 
 export class BoosterSpecification extends Atomic {
   sequenceNumber: number;
@@ -3036,7 +3089,7 @@ export class LimitedSession extends LimitedSessionName {
     sortField: string = 'created_at',
     sortAscending: boolean = false,
     filters: { [key: string]: string } = {},
-  ): Promise<PaginationResponse<LimitedSession>> {
+  ): Promise<PaginatedResponse<LimitedSession>> {
     return axios.get(
       apiPath + 'limited/sessions/',
       {
@@ -3412,7 +3465,7 @@ export class FullDeck extends Deck {
     offset: number = 0,
     limit: number = 10,
     filter: string = "",
-  ): Promise<PaginationResponse<FullDeck>> {
+  ): Promise<PaginatedResponse<FullDeck>> {
     return axios.get(
       apiPath + 'limited/deck/',
       {
@@ -3591,7 +3644,7 @@ export class DraftSession extends Atomic {
     sortField: string = 'created_at',
     sortAscending: boolean = false,
     filters: { [key: string]: string } = {},
-  ): Promise<PaginationResponse<DraftSession>> {
+  ): Promise<PaginatedResponse<DraftSession>> {
     return axios.get(
       apiPath + 'draft/',
       {
@@ -3776,7 +3829,7 @@ export class League extends Atomic {
     )
   }
 
-  static all = (offset: number = 0, limit: number = 50): Promise<PaginationResponse<League>> => {
+  static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<League>> => {
     return axios.get(
       apiPath + 'leagues/',
       {
@@ -3809,7 +3862,7 @@ export class League extends Atomic {
     id: string,
     offset: number = 0,
     limit: number = 10,
-  ): Promise<PaginationResponse<FullDeck>> {
+  ): Promise<PaginatedResponse<FullDeck>> {
     return axios.get(
       apiPath + 'leagues/' + id + '/eligibles/',
       {

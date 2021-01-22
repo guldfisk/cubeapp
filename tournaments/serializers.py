@@ -7,6 +7,7 @@ from api.serialization.serializers import UserSerializer
 from limited.serializers.pooldecks.minimal import MinimalPoolDeckSerializer
 from tournaments import models
 from utils.serialization.fields import EnumSerializerField, LambdaSerializer
+from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 
 class DumbSerializer(serializers.Serializer):
@@ -101,6 +102,8 @@ class MinimalTournamentSerializer(serializers.ModelSerializer):
     participants = ParticipantSerializer(many = True)
     round_amount = SerializerMethodField()
     results = TournamentWinnerSerializer(many = True)
+    created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+    finished_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
 
     class Meta:
         model = models.Tournament

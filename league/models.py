@@ -11,6 +11,8 @@ import numpy as np
 from django.db import models, transaction
 from django.db.models import Count, Prefetch, QuerySet
 
+from yeetlong.multiset import Multiset
+
 from mtgorp.models.formats.format import LimitedSideboard
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
@@ -21,7 +23,6 @@ from utils.fields import StringMapField, SerializeableField
 from utils.mixins import TimestampedModel, SoftDeletionModel
 from draft.models import DraftSession
 from limited.models import PoolDeck, CubeBoosterSpecification
-from yeetlong.multiset import Multiset
 
 
 class LeagueError(Exception):

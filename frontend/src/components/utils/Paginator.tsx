@@ -5,11 +5,11 @@ import Container from "react-bootstrap/Container";
 
 import {range} from "./utils";
 import PaginationBar from "./PaginationBar";
-import {PaginationResponse} from "../models/models";
+import {PaginatedResponse} from "../models/models";
 
 
 interface PaginatorProps<T> {
-  fetch: (offset: number, limit: number) => Promise<PaginationResponse<T>>
+  fetch: (offset: number, limit: number) => Promise<PaginatedResponse<T>>
   renderBody: (items: T[]) => any
 }
 

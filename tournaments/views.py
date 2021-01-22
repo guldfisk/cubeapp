@@ -41,8 +41,39 @@ class ScheduledMatchView(generics.GenericAPIView):
         ),
         'result',
         'seats__result',
+        'round__tournament__participants',
+        Prefetch(
+            'round__tournament__participants__deck',
+            queryset = PoolDeck.objects.all().only(
+                'id',
+                'name',
+                'created_at',
+                'pool_id',
+            )
+        ),
+        Prefetch(
+            'round__tournament__participants__player',
+            queryset = USER_QUERY_SET,
+        ),
+        'round__tournament__participants__deck__pool',
+        Prefetch(
+            'round__tournament__participants__deck__pool__user',
+            queryset = USER_QUERY_SET,
+        ),
+        'round__tournament__results',
+        'round__tournament__results__participant',
+        Prefetch(
+            'round__tournament__results__participant__player',
+            queryset = USER_QUERY_SET,
+        ),
+        'round__tournament__results__participant__deck',
+        'round__tournament__results__participant__deck__pool',
+        Prefetch(
+            'round__tournament__results__participant__deck__pool__user',
+            queryset = USER_QUERY_SET,
+        ),
     )
-    serializer_class = serializers.ScheduledMatchSerializer
+    serializer_class = serializers.FullScheduledMatchSerializer
 
 
 class ScheduledMatchDetail(generics.RetrieveAPIView, ScheduledMatchView):
@@ -103,45 +134,12 @@ class ScheduledMatchDetail(generics.RetrieveAPIView, ScheduledMatchView):
 
 
 class UserScheduledMatches(generics.ListAPIView, ScheduledMatchView):
-    serializer_class = serializers.FullScheduledMatchSerializer
 
     def get_queryset(self):
         return self.queryset.filter(
             result__isnull = True,
             seats__participant__player_id = self.kwargs['pk'],
             round__tournament__state = models.Tournament.TournamentState.ONGOING,
-        ).prefetch_related(
-            'round__tournament__participants',
-            Prefetch(
-                'round__tournament__participants__deck',
-                queryset = PoolDeck.objects.all().only(
-                    'id',
-                    'name',
-                    'created_at',
-                    'pool_id',
-                )
-            ),
-            Prefetch(
-                'round__tournament__participants__player',
-                queryset = USER_QUERY_SET,
-            ),
-            'round__tournament__participants__deck__pool',
-            Prefetch(
-                'round__tournament__participants__deck__pool__user',
-                queryset = USER_QUERY_SET,
-            ),
-            'round__tournament__results',
-            'round__tournament__results__participant',
-            Prefetch(
-                'round__tournament__results__participant__player',
-                queryset = USER_QUERY_SET,
-            ),
-            'round__tournament__results__participant__deck',
-            'round__tournament__results__participant__deck__pool',
-            Prefetch(
-                'round__tournament__results__participant__deck__pool__user',
-                queryset = USER_QUERY_SET,
-            ),
         ).order_by(
             '-round__tournament__created_at'
         )
