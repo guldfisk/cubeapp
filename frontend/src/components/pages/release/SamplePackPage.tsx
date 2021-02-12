@@ -3,11 +3,11 @@ import React from 'react';
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container"
-
-import {Loading} from '../utils/utils';
-import {CubeablesContainer, CubeRelease} from '../models/models';
-import CubeablesCollectionSpoilerView from "../views/cubeablescollectionview/CubeablesCollectionSpoilerView";
 import Button from "react-bootstrap/Button";
+
+import {CubeablesContainer, CubeRelease} from '../../models/models';
+import CubeablesCollectionSpoilerView from "../../views/cubeablescollectionview/CubeablesCollectionSpoilerView";
+import {Loading} from "../../utils/utils";
 
 
 interface SamplePackPageProps {
@@ -51,6 +51,12 @@ class SamplePackPage extends React.Component<SamplePackPageProps, SamplePackPage
         cubeablesContainer={this.state.pack}
         cubeableType="Cubeables"
         sizeSlug='medium'
+        imageStyle={
+          {
+            width: '12%',
+            height: 'auto',
+          }
+        }
       />
     }
 

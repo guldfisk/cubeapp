@@ -18,6 +18,14 @@ class LeagueDetail(generics.RetrieveAPIView):
     queryset = models.HOFLeague.objects.all()
 
 
+class RecentLeague(generics.RetrieveAPIView):
+    serializer_class = serializers.SeasonSerializer
+    queryset = models.Season.objects.order_by('created_at')
+
+    def get_object(self):
+        return self.queryset.last()
+
+
 class LeagueRelatedList(generics.ListAPIView):
     queryset = models.HOFLeague.objects.all().only('id')
 

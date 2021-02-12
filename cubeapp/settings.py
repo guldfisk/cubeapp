@@ -200,3 +200,18 @@ WEBPACK_LOADER = {
         'LOADER_CLASS': 'webpack_loader.loader.WebpackLoader',
     }
 }
+
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+# }

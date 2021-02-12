@@ -1,10 +1,19 @@
-tournament system
+tree node editor in patch, both when adding new nodes, and when editing existing ones
+full deck search
+    search for
+        multiple cards
+        tournaments
+        limited sessions
+        releases
+        users
+        record
+        created at
+league scoreboard
+league settings edit view
 fix image hover on refreshed views
-switch to nginx served images when possible
-hover images on small images
+seed weaving
 proper printing / cardboard view in search
 pickable elo
-per card distribution fitness inspection view
 only create distribution pdf on demand
 adjust constraint weights, evolution options etc in web interface
 node image amount constraint (tak asker)
@@ -16,9 +25,12 @@ booster positions view
 scale images in sample pack view to fit screen
 save sample packs, so they can be shared
 
+partial match results
+
 bulk cube upload / patch
 object level permissions for cubes
 object level permissions for wishlists
+per card distribution fitness inspection view
 
 artgame score
 

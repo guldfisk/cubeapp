@@ -11,6 +11,7 @@ interface CubeablesCollectionSpoilerViewProps {
   cubeableType: string
   sizeSlug: string
   allowStaticImages: boolean
+  imageStyle?: any
 }
 
 export default class CubeablesCollectionSpoilerView extends React.Component<CubeablesCollectionSpoilerViewProps> {
@@ -85,6 +86,7 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
               sizeSlug={this.props.sizeSlug}
               hover={true}
               allowStatic={this.props.allowStaticImages}
+              style={this.props.imageStyle}
             />
           }
         )

@@ -4,12 +4,12 @@ import Container from "react-bootstrap/Container";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 
-import {FullDeck, FullScheduledMatch, League, Season} from '../../models/models';
+import {FullDeck, League, Season} from '../../models/models';
 import {Loading} from "../../utils/utils";
-import {LeagueView} from "../../views/leagues/LeagueView";
 import DecksMultiView from "../../views/limited/decks/DecksMultiView";
 import Paginator from "../../utils/Paginator";
 import TournamentView from "../../views/tournaments/TournamentView";
+import LeagueView from "../../views/leagues/LeagueView";
 
 
 interface LeaguePageProps {

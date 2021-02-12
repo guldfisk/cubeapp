@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Cube} from '../models/models';
+import {Cube, Season} from '../models/models';
 
 import CubesView from '../views/cubeview/CubesView';
 
@@ -8,6 +8,7 @@ import Col from "react-bootstrap/Col";
 import PaginationBar from "../utils/PaginationBar";
 import Row from "react-bootstrap/Row";
 import RecentDecksView from "../views/limited/decks/RecentDecksView";
+import TournamentView from "../views/tournaments/TournamentView";
 
 
 const pageSize: number = 10;
@@ -17,6 +18,7 @@ interface CubesPageState {
   cubes: Cube[]
   offset: number
   hits: number
+  season: Season | null
 }
 
 
@@ -28,12 +30,20 @@ export default class HomePage extends React.Component<null, CubesPageState> {
       cubes: [],
       offset: 0,
       hits: 0,
+      season: null,
     };
   }
 
   componentDidMount() {
     this.fetchCubes(0);
+    this.fetchSeason();
   }
+
+  fetchSeason = () => {
+    Season.recentSeason().then(
+      season => this.setState({season})
+    )
+  };
 
   fetchCubes = (offset: number) => {
     Cube.all(
@@ -69,11 +79,25 @@ export default class HomePage extends React.Component<null, CubesPageState> {
           cubes={this.state.cubes}
         />
       </Row>
+      {
+        this.state.season && <>
+          <Row>
+            <h3>Latest League Season</h3>
+          </Row>
+          <Row>
+            <TournamentView
+              tournament={this.state.season.tournament}
+              handleCanceled={this.fetchSeason}
+              handleMatchSubmitted={this.fetchSeason}
+            />
+          </Row>
+        </>
+      }
       <Row>
         <h3>Recent decks</h3>
       </Row>
       <Row>
-        <RecentDecksView />
+        <RecentDecksView/>
       </Row>
     </Col>
   }

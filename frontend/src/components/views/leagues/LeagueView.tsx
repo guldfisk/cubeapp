@@ -17,7 +17,7 @@ interface LeagueViewState {
 }
 
 
-export class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
+export default class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
 
   constructor(props: LeagueViewProps) {
     super(props);

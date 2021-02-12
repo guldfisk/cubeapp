@@ -13,6 +13,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import {connect} from "react-redux";
 import {integerSortFactory} from "../../utils/utils";
+import {Link} from "react-router-dom";
 
 
 interface ResultSubmitterProps {
@@ -164,11 +165,13 @@ class MatchView extends React.Component<MatchViewProps, MatchViewState> {
         className="d-flex justify-content-between panel-heading"
       >
         <span className="header-item">
-          {
-            this.props.match.seats.map(seat => seat.participant.fullName()).join(' vs. ') + (
-              this.props.match.seats.length <= 1 ? ' (bye)' : ''
-            )
-          }
+          <Link to={'/match/' + this.props.match.id}>
+            {
+              this.props.match.seats.map(seat => seat.participant.fullName()).join(' vs. ') + (
+                this.props.match.seats.length <= 1 ? ' (bye)' : ''
+              )
+            }
+          </Link>
         </span>
         {
           this.props.authenticated

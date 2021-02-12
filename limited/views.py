@@ -5,16 +5,16 @@ import typing as t
 from distutils.util import strtobool
 from json import JSONDecodeError
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Prefetch, QuerySet
-from django.contrib.auth import get_user_model
 
 from rest_framework import generics, permissions, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from mtgorp.models.formats.format import Format
 from mtgorp.models.collections.deck import Deck
+from mtgorp.models.formats.format import Format
 from mtgorp.models.serilization.serializeable import SerializationException
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
@@ -24,14 +24,14 @@ from mtgorp.tools.parsing.search.parse import SearchParser
 from mtgorp.tools.search.extraction import PrintingStrategy
 from mtgorp.tools.search.pattern import Pattern
 
-from magiccube.tools.subset import check_deck_subset_pool
 from magiccube.collections.cube import Cube
+from magiccube.tools.subset import check_deck_subset_pool
 
 from api.serialization import orpserialize
-from resources.staticdb import db
 from limited import models, serializers
 from limited.serializers.pools.full import FullPoolSerializer, PoolSerializer
-from tournaments.models import SeatResult
+from resources.staticdb import db
+from tournaments.models import SeatResult, TournamentParticipant
 
 
 class PoolDetailPermissions(permissions.BasePermission):
@@ -106,7 +106,7 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
             pool.session.allow_cheating
             and not SeatResult.objects.filter(
                 scheduled_seat__match__round__tournament__limited_session = pool.session,
-                scheduled_seat__participant__player = request.user
+                scheduled_seat__participant__player = request.user,
             ).exists()
         )
 
@@ -150,14 +150,17 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
 
         with transaction.atomic():
             pool.pool_decks.update(latest = False)
+
+            cheating = (
+                pool.session.state != models.LimitedSession.LimitedSessionState.DECK_BUILDING
+                or pool.session.open_decks and pool.pool_decks.exists()
+            )
+
             pool_deck = models.PoolDeck.objects.create(
                 deck = deck,
                 pool = pool,
                 name = request.data.get('name', 'decks'),
-                cheating = (
-                    pool.session.state != models.LimitedSession.LimitedSessionState.DECK_BUILDING
-                    or pool.session.open_decks and pool.pool_decks.exists()
-                ),
+                cheating = cheating,
             )
 
             if (
@@ -168,6 +171,12 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
                 pool.session.playing_at = datetime.datetime.now()
                 pool.session.save(update_fields = ('state', 'playing_at'))
+
+            elif pool.session.tournament and cheating:
+                TournamentParticipant.objects.filter(
+                    tournament = pool.session.tournament,
+                    player = request.user,
+                ).update(deck_id = pool_deck.id)
 
         return Response(
             serializers.PoolDeckSerializer(pool_deck, context = {'request': request}).data,

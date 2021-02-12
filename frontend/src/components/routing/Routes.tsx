@@ -22,7 +22,7 @@ const ReleaseComparePage = React.lazy(() => import("../pages/release/ReleaseComp
 const LatestReleasePage = React.lazy(() => import("../pages/release/LatestReleasePage"));
 const SearchSyntaxPage = React.lazy(() => import("../pages/search/SearchSyntaxPage"));
 const SearchPage = React.lazy(() => import("../pages/search/SearchPage"));
-const SamplePackPage = React.lazy(() => import("../pages/SamplePackPage"));
+const SamplePackPage = React.lazy(() => import("../pages/release/SamplePackPage"));
 const WishListPage = React.lazy(() => import("../pages/wishes/WishListPage"));
 const WishListsPage = React.lazy(() => import("../pages/wishes/WishListsPage"));
 const PoolPage = React.lazy(() => import("../pages/limited/PoolPage"));
@@ -35,6 +35,7 @@ const DraftPage = React.lazy(() => import("../pages/draft/DraftPage"));
 const SeatPage = React.lazy(() => import("../pages/draft/SeatPage"));
 const TournamentPage = React.lazy(() => import("../pages/tournaments/tournamentPage"));
 const TournamentsPage = React.lazy(() => import("../pages/tournaments/tournamentsPage"));
+const MatchPage = React.lazy(() => import("../pages/tournaments/matchPage"));
 const LeaguePage = React.lazy(() => import("../pages/leagues/LeaguePage"));
 const LeaguesPage = React.lazy(() => import("../pages/leagues/LeaguesPage"));
 const UserPage = React.lazy(() => import("../pages/users/UserPage"));
@@ -77,6 +78,7 @@ export const routes: [
   ['/limited', SessionsPage, false, {}],
   ['/tournaments', TournamentsPage, false, {}],
   ['/tournaments/:id(\\d+)', TournamentPage, false, {}],
+  ['/match/:id(\\d+)', MatchPage, false, {}],
   ['/leagues', LeaguesPage, false, {}],
   ['/leagues/:id(\\d+)', LeaguePage, false, {}],
   ['/drafts', DraftsPage, false, {}],

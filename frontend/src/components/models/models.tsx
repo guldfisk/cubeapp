@@ -2534,7 +2534,7 @@ export class ScheduledMatch extends Atomic {
 
   public static get(id: string): Promise<ScheduledMatch> {
     return axios.get(
-      apiPath + 'tournaments/scheduled-match/' + id + '/',
+      apiPath + 'tournaments/scheduled-matches/' + id + '/',
     ).then(
       response => ScheduledMatch.fromRemote(response.data)
     )
@@ -2727,6 +2727,14 @@ export class Season extends Atomic {
       }
     )
   }
+
+  public static recentSeason = (): Promise<Season> => {
+    return axios.get(
+      apiPath + 'leagues/recent-season/'
+    ).then(
+      response => Season.fromRemote(response.data)
+    )
+  };
 
 }
 
@@ -3829,7 +3837,7 @@ export class League extends Atomic {
     )
   }
 
-  static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<League>> => {
+  public static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<League>> => {
     return axios.get(
       apiPath + 'leagues/',
       {
@@ -3850,7 +3858,7 @@ export class League extends Atomic {
     )
   };
 
-  static get = (id: string): Promise<League> => {
+  public static get = (id: string): Promise<League> => {
     return axios.get(
       apiPath + 'leagues/' + id + '/'
     ).then(

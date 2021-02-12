@@ -54,6 +54,7 @@ interface CubeableImageProps {
   cropped?: boolean
   allowStatic?: boolean
   hover?: boolean
+  style?: any
 }
 
 
@@ -67,6 +68,7 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
     cropped = false,
     hover = false,
     allowStatic = true,
+    style,
   }: CubeableImageProps
 ) => {
   if (!id && !imageable) {
@@ -75,20 +77,25 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
   const [width, height]: [number, number] = cropped ? croppedImageSizeMap[sizeSlug] : imageSizeMap[sizeSlug];
   const _type = imageable === null ? type : imageable.getType();
 
+  const apiUrl = get_imageable_image_url(
+    imageable === null ? id.toString() : imageable.id,
+    _type,
+    sizeSlug,
+    cropped,
+  );
+
+  const canUseStatic = allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped;
+
+  const srcUrl = canUseStatic ? get_imageable_image_static_url(
+    imageable === null ? id.toString() : imageable.id,
+    _type,
+    sizeSlug,
+    cropped,
+  ) : apiUrl;
 
   const image = <LazyImage
-    src={
-      (
-        allowStatic && _type !== 'Cardboard' && !window.__debug__ && !cropped ?
-          get_imageable_image_static_url
-          : get_imageable_image_url
-      )(
-        imageable === null ? id.toString() : imageable.id,
-        _type,
-        sizeSlug,
-        cropped,
-      )
-    }
+    error={canUseStatic ? (() => <img src={apiUrl}/>) : null}
+    src={srcUrl}
     placeholder={({imageProps, ref}) => (
       <img
         ref={ref}
@@ -96,9 +103,10 @@ export const ImageableImage: React.FunctionComponent<CubeableImageProps> = (
         alt={imageProps.alt}
         width={width}
         height={height}
+        style={style}
       />
     )}
-    actual={({imageProps}) => <img {...imageProps} />}
+    actual={({imageProps}) => <img style={style} {...imageProps} />}
     {...(onClick === null ? {} : {onClick: () => onClick(imageable)})}
   />;
 

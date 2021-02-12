@@ -12,9 +12,13 @@ from django.db.models import Max
 from mtgorp.models.tournaments.matches import MatchType
 from mtgorp.models.tournaments import tournaments as to
 
+from cubeapp.celeryapp import app
 from utils.fields import EnumField, StringMapField, SerializeableField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
+
+
+_create_seasons = app.signature('league.tasks.create_seasons')
 
 
 class Tournament(TimestampedModel):
@@ -91,6 +95,13 @@ class Tournament(TimestampedModel):
         except ObjectDoesNotExist:
             pass
 
+    def _new_season(self) -> None:
+        try:
+            self.season
+        except ObjectDoesNotExist:
+            return
+        _create_seasons.delay()
+
     def complete(self) -> to.TournamentResult[TournamentParticipant]:
         result = self.tournament.get_result(self.completed_rounds)
         with transaction.atomic():
@@ -103,6 +114,7 @@ class Tournament(TimestampedModel):
             self.finished_at = datetime.datetime.now()
             self.save(update_fields = ('state', 'finished_at'))
             self._complete_limited_session()
+        self._new_season()
         return result
 
     def advance(self) -> None:

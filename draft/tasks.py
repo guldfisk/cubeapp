@@ -19,8 +19,13 @@ def clean_drafts() -> None:
             started_at__lte = now - datetime.timedelta(days = 7),
             limited_session__isnull = True,
         )
-    ).order_by('started_at'):
+    ).order_by('started_at').prefetch_related(
+        'limited_session',
+        'limited_session__tournament',
+    ):
         if draft.limited_session:
+            if draft.limited_session.tournament:
+                draft.limited_session.tournament.delete()
             draft.limited_session.delete()
 
         draft.delete()
