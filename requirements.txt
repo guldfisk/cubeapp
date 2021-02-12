@@ -54,3 +54,4 @@ django-debug-toolbar-request-history
 botocore
 bidict
 more_itertools
+jedi==0.17.2
