@@ -38,7 +38,7 @@ services:
       - media_volume:/opt/services/cubeapp/media
     restart: on-failure
     depends_on:
-      - db
+      - pdb
       - redis
     networks:
       - database_network
