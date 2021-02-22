@@ -119,10 +119,10 @@ class Migration(migrations.Migration):
 
         migrations.RunSQL(
             """
-            alter table cubespoiler.limited_boosterspecification
+            alter table limited_boosterspecification
             add constraint pool_specification_id_constraint
             foreign key (pool_specification_id)
-            REFERENCES cubespoiler.limited_poolspecification(id)
+            REFERENCES limited_poolspecification(id)
             on delete cascade;
             """
         ),

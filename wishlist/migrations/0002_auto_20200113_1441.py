@@ -55,10 +55,10 @@ class Migration(migrations.Migration):
 
         migrations.RunSQL(
             """
-            alter table cubespoiler.wishlist_requirement
+            alter table wishlist_requirement
             add constraint updated_by_id
             foreign key (updated_by_id)
-            REFERENCES cubespoiler.auth_user(id)
+            REFERENCES auth_user(id)
             on delete cascade;
             """
         )

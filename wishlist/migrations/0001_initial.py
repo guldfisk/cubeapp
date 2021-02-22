@@ -163,10 +163,10 @@ class Migration(migrations.Migration):
 
         migrations.RunSQL(
             """
-            alter table cubespoiler.wishlist_requirement
+            alter table wishlist_requirement
             add constraint cardboard_wish_id
             foreign key (cardboard_wish_id)
-            REFERENCES cubespoiler.wishlist_cardboardwish(id)
+            REFERENCES wishlist_cardboardwish(id)
             on delete cascade;
             """
         ),

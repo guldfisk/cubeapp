@@ -36,8 +36,13 @@ class EnumField(models.Field):
             return None
         return value.value
 
-    def to_python(self, value) -> Enum:
-        return self._enum_type.get(value)
+    def to_python(self, value) -> t.Optional[Enum]:
+        if value is None:
+            return None
+        return self._enum_type.__call__(int(value))
+
+    def value_to_string(self, obj):
+        return str(self.value_from_object(obj).value)
 
 
 class StringMapField(models.CharField):
@@ -62,6 +67,14 @@ class StringMapField(models.CharField):
             return None
         return self._mapping.inverse[value]
 
+    def to_python(self, value):
+        if value is None:
+            return
+        return self._mapping[value]
+
+    def value_to_string(self, obj):
+        return self._mapping.inverse[self.value_from_object(obj)]
+
 
 class SerializeableField(models.Field):
 
@@ -80,7 +93,7 @@ class SerializeableField(models.Field):
         return name, path, args, kwargs
 
     def db_type(self, connection) -> str:
-        return 'LONGTEXT'
+        return 'TEXT'
 
     def from_db_value(self, value: t.Optional[str], expression, connection) -> t.Any:
         if value is None:
@@ -91,6 +104,9 @@ class SerializeableField(models.Field):
         if value is None:
             return None
         return json.dumps(value.serialize())
+
+    def value_to_string(self, obj):
+        return self.value_from_object(obj).serialize()
 
 
 class TimeDeltaField(models.Field):
@@ -107,3 +123,6 @@ class TimeDeltaField(models.Field):
         if value is None:
             return None
         return datetime.timedelta(seconds = value)
+
+    def value_to_string(self, obj):
+        return str(self.value_from_object(obj).total_seconds())

@@ -102,10 +102,14 @@ class Tournament(TimestampedModel):
             return
         _create_seasons.delay()
 
-    def complete(self) -> to.TournamentResult[TournamentParticipant]:
-        result = self.tournament.get_result(self.completed_rounds)
+    def complete(self) -> t.Sequence[t.Collection[TournamentParticipant]]:
+        results = self.tournament.get_ranked_players(self.completed_rounds)
         with transaction.atomic():
-            for winner in result.winners:
+            for idx, tier in enumerate(results):
+                for participant in tier:
+                    participant.placement = idx
+                    participant.save(update_fields = ('placement',))
+            for winner in results[0]:
                 TournamentWinner.objects.create(
                     tournament = self,
                     participant = winner,
@@ -115,7 +119,7 @@ class Tournament(TimestampedModel):
             self.save(update_fields = ('state', 'finished_at'))
             self._complete_limited_session()
         self._new_season()
-        return result
+        return results
 
     def advance(self) -> None:
         if ScheduledMatch.objects.filter(
@@ -142,6 +146,7 @@ class TournamentParticipant(models.Model):
     deck = models.ForeignKey('limited.PoolDeck', on_delete = models.CASCADE, related_name = 'tournament_entries')
     player = models.ForeignKey(get_user_model(), on_delete = models.CASCADE, related_name = 'tournament', null = True)
     seed = models.FloatField(default = 0.)
+    placement = models.IntegerField(null = True)
 
     class Meta:
         ordering = '-seed',

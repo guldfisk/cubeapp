@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:pk>/', views.LeagueDetail.as_view()),
     path('<int:pk>/eligibles/', views.LeagueEligibles.as_view()),
     path('<int:pk>/seasons/', views.LeagueSeasons.as_view()),
+    path('<int:pk>/leader-board/', views.LeagueLeaderBoard.as_view()),
 ]

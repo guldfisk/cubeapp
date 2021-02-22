@@ -95,6 +95,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'cubeapp.wsgi.application'
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.postgresql_psycopg2',
+    #     'NAME': 'cubespoiler',
+    #     'USER': 'phdk',
+    #     'PASSWORD': DATABASE_PASSWORD,
+    #     'HOST': 'pdb',
+    #     'PORT': '',
+    # },
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'cubespoiler',
@@ -106,7 +114,15 @@ DATABASES = {
             'charset': 'utf8',
             'use_unicode': True,
         },
-    }
+    },
+    'postgresql': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'cubespoiler',
+        'USER': 'phdk',
+        'PASSWORD': DATABASE_PASSWORD,
+        'HOST': 'pdb',
+        'PORT': '',
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [

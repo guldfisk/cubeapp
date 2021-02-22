@@ -42,7 +42,7 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
     @property
     def eligible_decks(self) -> QuerySet:
-        release_ids = set(self.versioned_cube.releases.order_by('-created_at').values_list('id', flat = True)[:self.previous_n_releases])
+        release_ids = self.versioned_cube.releases.order_by('-created_at').values_list('id', flat = True)[:self.previous_n_releases]
         return PoolDeck.objects.annotate(
             specifications_count = Count(
                 'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'

@@ -1,14 +1,8 @@
-import React, {RefObject} from 'react';
+import React from 'react';
 
-import Container from "react-bootstrap/Container";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
 
-import {FullDeck, League, Season} from '../../models/models';
+import {League} from '../../models/models';
 import {Loading} from "../../utils/utils";
-import DecksMultiView from "../../views/limited/decks/DecksMultiView";
-import Paginator from "../../utils/Paginator";
-import TournamentView from "../../views/tournaments/TournamentView";
 import LeagueView from "../../views/leagues/LeagueView";
 
 
@@ -22,11 +16,9 @@ interface LeaguePageState {
 
 
 export default class LeaguePage extends React.Component<LeaguePageProps, LeaguePageState> {
-  seasonsPaginatorRef: RefObject<Paginator<Season>>;
 
   constructor(props: LeaguePageProps) {
     super(props);
-    this.seasonsPaginatorRef = React.createRef();
     this.state = {
       league: null,
     };
@@ -41,57 +33,9 @@ export default class LeaguePage extends React.Component<LeaguePageProps, LeagueP
   }
 
   render() {
-    let tournamentView = <Loading/>;
-    if (this.state.league !== null) {
-      tournamentView = <LeagueView
-        league={this.state.league}
-      />
-    }
-    return <>
-      {tournamentView}
-      <Container fluid>
-        <Tabs
-          id='league-tabs'
-          defaultActiveKey='decks'
-        >
-          <Tab eventKey='decks' title='Decks'>
-            <Paginator
-              fetch={
-                (offset, limit) => League.eligibleDecks(
-                  this.props.match.params.id,
-                  offset,
-                  limit,
-                )
-              }
-              renderBody={
-                (items: FullDeck[]) => <DecksMultiView decks={items}/>
-              }
-            />
-          </Tab>
-          <Tab eventKey='seasons' title='Seasons'>
-            <Paginator
-              ref={this.seasonsPaginatorRef}
-              fetch={
-                (offset, limit) => Season.forLeague(
-                  this.props.match.params.id,
-                  offset,
-                  limit,
-                )
-              }
-              renderBody={
-                (items: Season[]) => items.map(
-                  season => <TournamentView
-                    tournament={season.tournament}
-                    handleCanceled={() => this.seasonsPaginatorRef.current.refresh()}
-                    handleMatchSubmitted={() => this.seasonsPaginatorRef.current.refresh()}
-                  />
-                )
-              }
-            />
-          </Tab>
-        </Tabs>
-      </Container>
-    </>;
+    return this.state.league ? <LeagueView
+      league={this.state.league}
+    /> : <Loading/>;
   }
 
 }

@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Count, Avg, IntegerField, Subquery, OuterRef, FloatField
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics
@@ -134,3 +135,41 @@ class LeagueEligibles(LeagueRelatedList):
 class LeagueList(generics.ListAPIView):
     serializer_class = serializers.LeagueSerializer
     queryset = models.HOFLeague.objects.all()
+
+
+class LeagueLeaderBoard(LeagueRelatedList):
+    serializer_class = serializers.PoolDeckScoreSerializer
+
+    def get_queryset(self):
+        league: models.HOFLeague = self.get_object()
+        return league.eligible_decks.annotate(
+            wins = Coalesce(
+                Subquery(
+                    models.TournamentParticipant.objects.filter(
+                        tournament__season__league = league,
+                        placement = 0,
+                        deck_id = OuterRef('pk'),
+                    ).values('deck').annotate(cnt = Count('pk')).values('cnt'),
+                    output_field = IntegerField(),
+                ),
+                0,
+            ),
+            seasons = Coalesce(
+                Subquery(
+                    models.TournamentParticipant.objects.filter(
+                        tournament__season__league = league,
+                        deck_id = OuterRef('pk'),
+                    ).values('deck').annotate(cnt = Count('pk')).values('cnt'),
+                    output_field = IntegerField(),
+                ),
+                0,
+            ),
+            average_placement = Subquery(
+                models.TournamentParticipant.objects.filter(
+                    tournament__season__league = league,
+                    placement__isnull = False,
+                    deck_id = OuterRef('pk')
+                ).values('deck').annotate(avr = Avg('placement')).values('avr'),
+                output_field = FloatField(),
+            ),
+        ).order_by('average_placement', '-wins')

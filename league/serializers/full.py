@@ -3,6 +3,7 @@ from rest_framework import serializers
 from api.serialization.serializers import MinimalVersionedCubeSerializer
 from league import models
 from league.serializers.minimal import MinimalLeagueSerializer, MinimalSeasonSerializer
+from limited.serializers import MinimalPoolDeckSerializer
 from tournaments.serializers import TournamentSerializer
 from utils.serialization.fields import LambdaSerializer
 
@@ -39,3 +40,13 @@ class FullLeagueSerializer(LeagueSerializer):
             'low_participation_prioritization_amount', 'tournament_type', 'tournament_config', 'match_type', 'created_at',
             'seasons',
         )
+
+
+class PoolDeckScoreSerializer(MinimalPoolDeckSerializer):
+    wins = serializers.IntegerField()
+    seasons = serializers.IntegerField()
+    average_placement = serializers.FloatField()
+
+    class Meta:
+        model = models.PoolDeck
+        fields = ('id', 'name', 'created_at', 'pool_id', 'user', 'wins', 'seasons', 'average_placement')

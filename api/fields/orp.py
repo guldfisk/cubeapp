@@ -33,7 +33,7 @@ class OrpField(models.Field):
         return name, path, args, kwargs
 
     def db_type(self, connection) -> str:
-        return 'LONGTEXT'
+        return 'TEXT'
 
     def from_db_value(self, value, expression, connection) -> t.Optional[Serializeable]:
         if value is None:
@@ -65,11 +65,14 @@ class OrpField(models.Field):
     def get_db_prep_value(self, value, connection, prepared = False):
         return self.get_prep_value(value)
 
+    def value_to_string(self, obj):
+        return JsonId.serialize(self.value_from_object(obj))
+
 
 class CubeableField(models.Field):
 
     def db_type(self, connection) -> str:
-        return 'LONGTEXT'
+        return 'TEXT'
 
     def from_db_value(self, value, expression, connection) -> t.Optional[Cubeable]:
         if value is None:
@@ -89,11 +92,14 @@ class CubeableField(models.Field):
     def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
         return self.get_prep_value(value)
 
+    def value_to_string(self, obj):
+        return serialize_cubeable_string(self.value_from_object(obj))
+
 
 class CardboardCubeableField(models.Field):
 
     def db_type(self, connection) -> str:
-        return 'LONGTEXT'
+        return 'TEXT'
 
     def from_db_value(self, value, expression, connection) -> t.Optional[CardboardCubeable]:
         if value is None:
@@ -112,3 +118,6 @@ class CardboardCubeableField(models.Field):
 
     def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
         return self.get_prep_value(value)
+
+    def value_to_string(self, obj):
+        return serialize_cardboard_cubeable_string(self.value_from_object(obj))

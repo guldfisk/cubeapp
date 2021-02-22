@@ -3341,6 +3341,43 @@ class MinimalDeck extends Atomic {
 }
 
 
+export class ScoredDeck extends MinimalDeck {
+  wins: number
+  seasons: number
+  averagePlacement: number
+
+  constructor(
+    id: string,
+    name: string,
+    createdAt: Date,
+    poolId: string | number,
+    user: User,
+    wins: number,
+    seasons: number,
+    averagePlacement: number,
+  ) {
+    super(id, name, createdAt, poolId, user);
+    this.wins = wins;
+    this.seasons = seasons;
+    this.averagePlacement = averagePlacement;
+  }
+
+  public static fromRemote(remote: any): ScoredDeck {
+    console.log(remote.average_placement);
+    return new ScoredDeck(
+      remote.id,
+      remote.name,
+      new Date(remote.created_at),
+      remote.pool_id,
+      User.fromRemote(remote.user),
+      remote.wins,
+      remote.seasons,
+      remote.average_placement,
+    )
+  }
+}
+
+
 export class Deck extends MinimalDeck {
   maindeck: PrintingCounter;
   sideboard: PrintingCounter;
@@ -3883,6 +3920,29 @@ export class League extends Atomic {
       response => {
         return {
           objects: response.data.results.map((deck: any) => FullDeck.fromRemote(deck)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+  public static leaderboard(
+    id: string,
+    offset: number = 0,
+    limit: number = 10,
+  ): Promise<PaginatedResponse<ScoredDeck>> {
+    return axios.get(
+      apiPath + 'leagues/' + id + '/leader-board/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((deck: any) => ScoredDeck.fromRemote(deck)),
           hits: response.data.count,
         }
       }
