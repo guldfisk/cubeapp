@@ -1,19 +1,6 @@
 version: '3.3'
 
 services:
-  db:
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_DATABASE: 'cubespoiler'
-      MYSQL_USER: 'phdk'
-      MYSQL_PASSWORD: "${DB_PASSWORD}"
-      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
-      DEBUG: 1
-    volumes:
-      - db:/var/lib/mysql
-    networks:
-      - database_network
 
   pdb:
     image: postgres

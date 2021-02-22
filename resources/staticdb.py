@@ -20,9 +20,9 @@ class SqlContext(object):
         if getattr(cls, 'engine', None) is not None:
             return
 
-        uri = '{dialect}+{driver}://{username}:{password}@{host}/{database}?charset=utf8'.format(
-            dialect = 'mysql',
-            driver = 'mysqldb',
+        uri = '{dialect}+{driver}://{username}:{password}@{host}/{database}'.format(
+            dialect = 'postgresql',
+            driver = 'psycopg2',
             username = 'phdk',
             password = settings.DATABASE_PASSWORD,
             host = settings.DATABASE_HOST,
@@ -33,6 +33,7 @@ class SqlContext(object):
             uri,
             pool_size = 64,
             max_overflow = 32,
+            pool_pre_ping = True,
         )
 
         session_factory = sessionmaker(bind = cls.engine)
