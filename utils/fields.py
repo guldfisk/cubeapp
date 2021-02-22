@@ -108,7 +108,7 @@ class SerializeableField(models.Field):
     def to_python(self, value: t.Optional[str]) -> t.Any:
         if value is None:
             return
-        return self._klass.deserialize(json.loads(value))
+        return self._klass.deserialize(value)
 
     def value_to_string(self, obj):
         return self.value_from_object(obj).serialize()
