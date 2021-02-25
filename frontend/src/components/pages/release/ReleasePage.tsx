@@ -17,6 +17,7 @@ import history from '../../routing/history';
 import {Link} from "react-router-dom";
 import Card from "react-bootstrap/Card";
 import InfinitesView from "../../views/infinites/InfinitesView";
+import GroupMapView from "../../views/groupmap/GroupMapView";
 
 
 interface ReleaseSelectionDialogProps {
@@ -137,6 +138,16 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
               <div/> :
               <InfinitesView
                 infinites={this.state.release.infinites}
+              />
+          }
+        </Tab>
+        <Tab eventKey="groups" title="Groups">
+          {
+            this.state.release.groupMap == null ?
+              <div/> :
+              <GroupMapView
+                groupMap={this.state.release.groupMap}
+                search
               />
           }
         </Tab>

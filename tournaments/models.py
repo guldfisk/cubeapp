@@ -186,6 +186,17 @@ class TournamentRound(TimestampedModel):
 class ScheduledMatch(models.Model):
     round = models.ForeignKey(TournamentRound, on_delete = models.CASCADE, related_name = 'matches')
 
+    @property
+    def winners(self) -> t.Collection[TournamentParticipant]:
+        wins_map = {
+            seat.participant: seat.result.wins
+            for seat in
+            self.seats.all()
+        }
+
+        max_wins = max(wins_map.values())
+        return [k for k, v in wins_map.items() if v == max_wins]
+
 
 class ScheduledSeat(models.Model):
     match = models.ForeignKey(ScheduledMatch, on_delete = models.CASCADE, related_name = 'seats')

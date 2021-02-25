@@ -28,7 +28,7 @@ app.conf.beat_schedule = {
     'create_seasons': {
         'task': 'league.tasks.create_seasons',
         'schedule': timedelta(minutes = 15),
-    }
+    },
 }
 
 if not settings.DEBUG:

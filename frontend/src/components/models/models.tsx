@@ -897,6 +897,7 @@ export class CubeRelease extends CubeReleaseMeta {
   cubeablesContainer: CubeablesContainer;
   constrainedNodes: ConstrainedNodes | null;
   infinites: Infinites;
+  groupMap: GroupMap;
 
   constructor(
     id: string,
@@ -907,12 +908,14 @@ export class CubeRelease extends CubeReleaseMeta {
     cubeablesContainer: CubeablesContainer,
     constrainedNodes: ConstrainedNodes | null,
     infinites: Infinites,
+    groupMap: GroupMap,
   ) {
     super(id, name, createdAt, intendedSize);
     this.cube = cube;
     this.constrainedNodes = constrainedNodes;
     this.cubeablesContainer = cubeablesContainer;
     this.infinites = infinites;
+    this.groupMap = groupMap;
   }
 
   public static fromRemote(remote: any) {
@@ -927,6 +930,7 @@ export class CubeRelease extends CubeReleaseMeta {
         new ConstrainedNodes(remote.constrained_nodes.constrained_nodes.nodes)
         : null,
       Infinites.fromRemote(remote.infinites),
+      GroupMap.fromRemote(remote.constrained_nodes.group_map),
     )
   }
 
@@ -3345,6 +3349,7 @@ export class ScoredDeck extends MinimalDeck {
   wins: number
   seasons: number
   averagePlacement: number
+  rating: number
 
   constructor(
     id: string,
@@ -3355,11 +3360,13 @@ export class ScoredDeck extends MinimalDeck {
     wins: number,
     seasons: number,
     averagePlacement: number,
+    rating: number,
   ) {
     super(id, name, createdAt, poolId, user);
     this.wins = wins;
     this.seasons = seasons;
     this.averagePlacement = averagePlacement;
+    this.rating = rating;
   }
 
   public static fromRemote(remote: any): ScoredDeck {
@@ -3373,6 +3380,7 @@ export class ScoredDeck extends MinimalDeck {
       remote.wins,
       remote.seasons,
       remote.average_placement,
+      remote.rating,
     )
   }
 }

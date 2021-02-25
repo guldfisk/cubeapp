@@ -53,6 +53,7 @@ export default class LeagueView extends React.Component<LeagueViewProps, LeagueV
         <Tabs
           id='league-tabs'
           defaultActiveKey='decks'
+          mountOnEnter={true}
         >
           <Tab eventKey='decks' title='Decks'>
             <Paginator

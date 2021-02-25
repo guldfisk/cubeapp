@@ -102,6 +102,10 @@ export default class Leaderboard extends React.Component<LeaderboardProps, Leade
         </Link>,
       },
       {
+        dataField: 'rating',
+        text: 'Rating',
+      },
+      {
         dataField: 'wins',
         text: 'Wins',
       },

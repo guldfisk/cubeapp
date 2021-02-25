@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 
 from django.db import models, transaction
-from django.db.models import Count, Prefetch, QuerySet
+from django.db.models import Count, Prefetch, QuerySet, Subquery
 
 from yeetlong.multiset import Multiset
 
@@ -18,11 +18,11 @@ from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
 
 from api.models import VersionedCube
+from draft.models import DraftSession
+from limited.models import PoolDeck, CubeBoosterSpecification
 from tournaments.models import Tournament, TournamentWinner, TournamentParticipant
 from utils.fields import StringMapField, SerializeableField
 from utils.mixins import TimestampedModel, SoftDeletionModel
-from draft.models import DraftSession
-from limited.models import PoolDeck, CubeBoosterSpecification
 
 
 class LeagueError(Exception):
@@ -42,7 +42,6 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
     @property
     def eligible_decks(self) -> QuerySet:
-        release_ids = self.versioned_cube.releases.order_by('-created_at').values_list('id', flat = True)[:self.previous_n_releases]
         return PoolDeck.objects.annotate(
             specifications_count = Count(
                 'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'
@@ -56,7 +55,9 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
             tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
             tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = release_ids,
+            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = Subquery(
+                self.versioned_cube.releases.order_by('-created_at').values('id')[:self.previous_n_releases]
+            ),
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
         )
@@ -209,3 +210,18 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 class Season(TimestampedModel):
     league = models.ForeignKey(HOFLeague, on_delete = models.CASCADE, related_name = 'seasons')
     tournament = models.OneToOneField(Tournament, on_delete = models.CASCADE, related_name = 'season')
+    ratings_processed = models.BooleanField(default = False)
+
+
+class DeckRating(models.Model):
+    league = models.ForeignKey(HOFLeague, on_delete = models.CASCADE, related_name = 'ratings')
+    deck = models.ForeignKey(PoolDeck, on_delete = models.CASCADE, related_name = 'league_ratings')
+    rating = models.IntegerField()
+
+    @property
+    def elo(self) -> int:
+        return self.rating
+
+    @elo.setter
+    def elo(self, value: int) -> None:
+        self.rating = value

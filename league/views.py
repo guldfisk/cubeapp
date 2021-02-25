@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Prefetch, Count, Avg, IntegerField, Subquery, OuterRef, FloatField
+from django.db.models import Prefetch, Count, Avg, IntegerField, Subquery, OuterRef, FloatField, F, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
@@ -142,7 +142,15 @@ class LeagueLeaderBoard(LeagueRelatedList):
 
     def get_queryset(self):
         league: models.HOFLeague = self.get_object()
-        return league.eligible_decks.annotate(
+        return models.PoolDeck.objects.filter(
+            Q(
+                league_ratings__league_id = league.id,
+            ) | Q(
+                id__in = Subquery(
+                    league.eligible_decks.values('pk'),
+                )
+            )
+        ).annotate(
             wins = Coalesce(
                 Subquery(
                     models.TournamentParticipant.objects.filter(
@@ -172,4 +180,19 @@ class LeagueLeaderBoard(LeagueRelatedList):
                 ).values('deck').annotate(avr = Avg('placement')).values('avr'),
                 output_field = FloatField(),
             ),
-        ).order_by('average_placement', '-wins')
+            rating = Coalesce(
+                Subquery(
+                    models.DeckRating.objects.filter(
+                        league_id = league.id,
+                        deck_id = OuterRef('pk'),
+                    ).values('rating'),
+                    output_field = IntegerField(),
+                ),
+                1000,
+            ),
+        ).order_by('-rating', 'average_placement', '-wins').prefetch_related(
+            Prefetch(
+                'pool__user',
+                queryset = USER_QUERY_SET,
+            ),
+        )

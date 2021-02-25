@@ -46,7 +46,8 @@ class PoolDeckScoreSerializer(MinimalPoolDeckSerializer):
     wins = serializers.IntegerField()
     seasons = serializers.IntegerField()
     average_placement = serializers.FloatField()
+    rating = serializers.IntegerField()
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'name', 'created_at', 'pool_id', 'user', 'wins', 'seasons', 'average_placement')
+        fields = ('id', 'name', 'created_at', 'pool_id', 'user', 'wins', 'seasons', 'average_placement', 'rating')
