@@ -62,6 +62,7 @@ class DatedCardboardCubeableRatingSerializer(serializers.ModelSerializer):
 class RatingMapSerializer(serializers.ModelSerializer):
     release = NameCubeReleaseSerializer()
     ratings = CardboardCubeableRatingSerializer(many = True)
+    created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
 
     class Meta:
         model = models.RatingMap
