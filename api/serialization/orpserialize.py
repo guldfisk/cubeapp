@@ -1,7 +1,6 @@
 import typing as t
 from abc import abstractmethod
 
-
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.persistent.card import Card
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -10,17 +9,18 @@ from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
-from magiccube.collections.laps import TrapCollection
-from magiccube.update.report import UpdateReport, ReportNotification
 from magiccube.collections.cube import Cube
-from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
-from magiccube.laps.purples.purple import Purple
-from magiccube.laps.tickets.ticket import Ticket
-from magiccube.laps.traps.trap import Trap
-from magiccube.laps.traps.tree.printingtree import PrintingNode
-from magiccube.update import cubeupdate
+from magiccube.collections.cubeable import BaseCubeable, FlatBaseCubeable
 from magiccube.collections.infinites import Infinites
+from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
+from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
+from magiccube.laps.purples.purple import BasePurple
+from magiccube.laps.tickets.ticket import BaseTicket
+from magiccube.laps.traps.trap import BaseTrap
+from magiccube.laps.traps.tree.printingtree import BaseNode
+from magiccube.update import cubeupdate
+from magiccube.update.report import UpdateReport, ReportNotification
 
 
 T = t.TypeVar('T')
@@ -81,7 +81,6 @@ class PrintingSerializer(ModelSerializer[Printing]):
         return {
             'id': printing.id,
             'name': printing.cardboard.name,
-            # 'expansion': ExpansionSerializer.serialize(printing.expansion),
             'cmc': printing.cardboard.front_card.cmc,
             'expansion_code': printing.expansion.code,
             'color': [
@@ -189,22 +188,23 @@ class FullPrintingSerializer(ModelSerializer[Printing]):
         }
 
 
-class NodeSerializer(ModelSerializer):
+class NodeSerializer(ModelSerializer[BaseNode]):
 
     @classmethod
-    def serialize(cls, printing_node: PrintingNode) -> compacted_model:
+    def _serialize_child(cls, child: BaseCubeable) -> compacted_model:
+        if isinstance(child, Printing):
+            return PrintingSerializer.serialize(child)
+        if isinstance(child, Cardboard):
+            return CardboardSerializer.serialize(child)
+        return cls.serialize(child)
+
+    @classmethod
+    def serialize(cls, printing_node: BaseNode) -> compacted_model:
         return {
             'type': printing_node.__class__.__name__,
             'children': [
                 (
-                    (
-                        PrintingSerializer.serialize(
-                            child
-                        ) if isinstance(child, Printing) else
-                        NodeSerializer.serialize(
-                            child
-                        )
-                    ),
+                    cls._serialize_child(child),
                     multiplicity,
                 )
                 for child, multiplicity in
@@ -214,10 +214,10 @@ class NodeSerializer(ModelSerializer):
         }
 
 
-class TrapSerializer(ModelSerializer[Trap]):
+class TrapSerializer(ModelSerializer[BaseTrap]):
 
     @classmethod
-    def serialize(cls, trap: Trap) -> compacted_model:
+    def serialize(cls, trap: BaseTrap) -> compacted_model:
         return {
             'id': trap.persistent_hash(),
             'node': NodeSerializer.serialize(trap.node),
@@ -227,27 +227,28 @@ class TrapSerializer(ModelSerializer[Trap]):
         }
 
 
-class TicketSerializer(ModelSerializer[Ticket]):
+class TicketSerializer(ModelSerializer[BaseTicket]):
 
     @classmethod
-    def serialize(cls, ticket: Ticket) -> compacted_model:
+    def _serialize_option(cls, option: FlatBaseCubeable) -> t.Any:
+        if isinstance(option, Printing):
+            return PrintingSerializer.serialize(option)
+        return CardboardSerializer.serialize(option)
+
+    @classmethod
+    def serialize(cls, ticket: BaseTicket) -> compacted_model:
         return {
-            'options': [
-                PrintingSerializer.serialize(
-                    printing
-                ) for printing in
-                ticket.options
-            ],
+            'options': list(map(cls._serialize_option, ticket.options)),
             'name': ticket.name,
             'id': ticket.persistent_hash(),
             'type': 'ticket',
         }
 
 
-class PurpleSerializer(ModelSerializer[Purple]):
+class PurpleSerializer(ModelSerializer[BasePurple]):
 
     @classmethod
-    def serialize(cls, purple: Purple) -> compacted_model:
+    def serialize(cls, purple: BasePurple) -> compacted_model:
         return {
             'name': purple.name,
             'id': purple.persistent_hash(),

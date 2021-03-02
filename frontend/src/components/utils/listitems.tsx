@@ -2,12 +2,21 @@ import React, {ComponentElement} from "react";
 import ReactTooltip from "react-tooltip";
 import dateFormat from 'dateformat';
 
-import {Cardboard, Cubeable, CubeChange, Printing, PrintingNode, Purple, Ticket, Trap} from "../models/models";
+import {
+  Cardboard,
+  Cubeable,
+  CubeChange,
+  Printing,
+  PrintingNode,
+  Purple,
+  Ticket,
+  Trap
+} from "../models/models";
 import {ImageableImage} from "../images";
 import ListGroup from "react-bootstrap/ListGroup";
 
 
-export const PrintingsTooltip: React.SFC = (props: any) => {
+export const PrintingsTooltip: React.FunctionComponent = (props: any) => {
   return <ReactTooltip
     place="bottom"
     type="dark"
@@ -25,7 +34,7 @@ export const PrintingsTooltip: React.SFC = (props: any) => {
 };
 
 
-export const CardboardTooltip: React.SFC = (props: any) => {
+export const CardboardTooltip: React.FunctionComponent = (props: any) => {
   return <ReactTooltip
     place="bottom"
     type="dark"
@@ -42,7 +51,7 @@ export const CardboardTooltip: React.SFC = (props: any) => {
 };
 
 
-export const TrapTooltip: React.SFC = (props: any) => {
+export const TrapTooltip: React.FunctionComponent = (props: any) => {
   return <ReactTooltip
     place="bottom"
     type="dark"
@@ -80,7 +89,7 @@ interface DateListItemProps {
 }
 
 
-export const DateListItem: React.SFC<DateListItemProps> = (props: DateListItemProps) => {
+export const DateListItem: React.FunctionComponent<DateListItemProps> = (props: DateListItemProps) => {
   const short = dateFormat(props.date, 'dd/mm/yy');
   const long = props.date.toUTCString();
   return <span>
@@ -111,10 +120,10 @@ interface PrintingListItemProps {
 }
 
 
-export const PrintingListItem: React.SFC<PrintingListItemProps> = (props: PrintingListItemProps) => {
+export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = (props: PrintingListItemProps) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
     props.multiplicity.toString() + 'x '
-    : ''}${props.printing.full_name()}`;
+    : ''}${props.printing.fullName()}`;
 
   if (props.noHover) {
     return <a
@@ -156,7 +165,7 @@ interface CardboardListItemProps {
 }
 
 
-export const CardboardListItem: React.SFC<CardboardListItemProps> = (props: CardboardListItemProps) => {
+export const CardboardListItem: React.FunctionComponent<CardboardListItemProps> = (props: CardboardListItemProps) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
     props.multiplicity.toString() + 'x '
     : ''}${props.cardboard.name}`;
@@ -206,7 +215,7 @@ const trap_representation = (
       {
         `${(multiplicity && multiplicity !== 1) ?
           multiplicity.toString() + '# '
-          : ''}${item.full_name()}`
+          : ''}${item.fullName()}`
       }
     </a>
   </span>
@@ -240,7 +249,7 @@ interface TrapListItemProps {
 }
 
 
-export const TrapListItem: React.SFC<TrapListItemProps> = (props: TrapListItemProps) => {
+export const TrapListItem: React.FunctionComponent<TrapListItemProps> = (props: TrapListItemProps) => {
   const multiplicityIndicator =
     props.multiplicity && props.multiplicity !== 1 &&
     props.multiplicity.toString() + 'x ';
@@ -271,7 +280,7 @@ interface NodeListItemProps {
   noHover?: boolean
 }
 
-export const NodeListItem: React.SFC<NodeListItemProps> = (props: NodeListItemProps) => {
+export const NodeListItem: React.FunctionComponent<NodeListItemProps> = (props: NodeListItemProps) => {
   if (props.noHover) {
     return <a
       onClick={

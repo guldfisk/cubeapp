@@ -46,11 +46,31 @@ export class Imageable extends Atomic {
 }
 
 
+export interface BaseCubeable extends Atomic {
+  getType: () => string;
+  getSortValue: () => string;
+}
+
+
+export interface CardboardCubeable extends BaseCubeable {
+
+}
+
+
+export const cardboardCubeableFromRemote = (remote: any): CardboardCubeable => {
+  return cardboardCubeablesMap[remote['type']].fromRemote(remote)
+}
+
+
 export class Cubeable extends Imageable {
 
   public static fromRemote(remote: any): Cubeable {
     return cubeablesMap[remote['type']].fromRemote(remote)
   }
+
+  representation = (): string => {
+    return ''
+  };
 
   getType = (): string => {
     return 'Cubeable';
@@ -80,7 +100,12 @@ export class Expansion extends Atomic {
 }
 
 
-export class Cardboard extends Imageable {
+export interface BaseFlatCubeable extends Imageable {
+  fullName: () => string;
+}
+
+
+export class Cardboard extends Imageable implements BaseFlatCubeable {
   name: string;
   color: string[];
   types: string[];
@@ -108,10 +133,18 @@ export class Cardboard extends Imageable {
     return this.name;
   };
 
+  fullName(): string {
+    return this.name;
+  }
+
+  representation = (): string => {
+    return this.name
+  }
+
 }
 
 
-export class Printing extends Cubeable {
+export class Printing extends Cubeable implements BaseFlatCubeable {
   name: string;
   cmc: number;
   expansionCode: string;
@@ -154,21 +187,75 @@ export class Printing extends Cubeable {
     return this.name;
   };
 
-  full_name = (): string => {
+  fullName = (): string => {
     return this.name + '|' + this.expansionCode;
+  };
+
+  representation = (): string => {
+    return this.fullName();
   };
 
 }
 
 
-export class PrintingNode extends Atomic {
-  children: MultiplicityList<Printing | PrintingNode>;
+export class BaseNode<T extends BaseFlatCubeable> extends Atomic {
+  children: MultiplicityList<T | this>;
   type: string;
 
-  constructor(id: string, children: MultiplicityList<Printing | PrintingNode>, type: string) {
+  constructor(id: string, children: MultiplicityList<T | BaseNode<T>>, type: string) {
     super(id);
-    this.children = children;
+    this.children = children as MultiplicityList<T | this>;
     this.type = type;
+  }
+
+  representation = (): string => {
+    return '(' + this.children.items.map(
+      ([child, multiplicity]) =>
+        (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
+        + (child instanceof Imageable ? child.fullName() : child.representation())
+    ).join(
+      this.type === 'AllNode' ? '; ' : ' || '
+    ) + ')'
+  };
+
+  * flattened(): IterableIterator<T> {
+    for (const [child, multiplicity] of this.children.items) {
+      for (let i = 0; i < multiplicity; i++) {
+        if (child instanceof Imageable) {
+          yield child
+        } else {
+          yield* (child as BaseNode<T>).flattened()
+        }
+      }
+    }
+  };
+
+}
+
+
+export class CardboardNode extends BaseNode<Cardboard> {
+
+  public static fromRemote(remote: any): CardboardNode {
+    return new CardboardNode(
+      remote.id,
+      new MultiplicityList(
+        remote.children.map(
+          ([child, multiplicity]: [any, number]) => [
+            child.type === 'cardboard' ? Cardboard.fromRemote(child) : CardboardNode.fromRemote(child),
+            multiplicity,
+          ]
+        )
+      ),
+      remote.type
+    )
+  };
+
+}
+
+export class PrintingNode extends BaseNode<Printing> {
+
+  * printings(): IterableIterator<Printing> {
+    yield* this.flattened()
   }
 
   public static fromRemote(remote: any): PrintingNode {
@@ -186,28 +273,6 @@ export class PrintingNode extends Atomic {
     )
   };
 
-  * printings(): IterableIterator<Printing> {
-    for (const [child, multiplicity] of this.children.items) {
-      for (let i = 0; i < multiplicity; i++) {
-        if (child instanceof Printing) {
-          yield child
-        } else {
-          yield* (child as PrintingNode).printings()
-        }
-      }
-    }
-  };
-
-  representation = (): string => {
-    return '(' + this.children.items.map(
-      ([child, multiplicity]: [Printing | PrintingNode, number]) =>
-        (multiplicity == 1 ? "" : multiplicity.toString() + "# ")
-        + (child instanceof Printing ? child.full_name() : child.representation())
-    ).join(
-      this.type === 'AllNode' ? '; ' : ' || '
-    ) + ')'
-  };
-
   serialize = (): any => {
     return {
       type: this.type,
@@ -222,8 +287,42 @@ export class PrintingNode extends Atomic {
 
 }
 
+export interface BaseTrap<T extends BaseFlatCubeable> extends BaseCubeable {
+  node: BaseNode<T>;
+  intentionType: string;
+}
 
-export class Trap extends Cubeable {
+
+export class CardboardTrap implements BaseTrap<Cardboard>, CardboardCubeable {
+  id: string;
+  intentionType: string;
+  node: BaseNode<Cardboard>;
+
+  constructor(id: string, node: CardboardNode, intentionType: string) {
+    this.id = id;
+    this.node = node;
+    this.intentionType = intentionType;
+  }
+
+  public static fromRemote(remote: any): CardboardTrap {
+    return new CardboardTrap(
+      remote.id,
+      CardboardNode.fromRemote(remote.node),
+      remote.intention_type,
+    )
+  }
+
+  getSortValue(): string {
+    return "";
+  }
+
+  getType(): string {
+    return "CardboardTrap";
+  }
+
+}
+
+export class Trap extends Cubeable implements BaseTrap<Printing> {
   node: PrintingNode;
   intentionType: string;
 
@@ -272,6 +371,10 @@ export class Trap extends Cubeable {
       node: this.node.serialize(),
       intention_type: this.intentionType,
     }
+  };
+
+  representation = (): string => {
+    return this.node.representation();
   };
 
 }
@@ -352,7 +455,42 @@ export class DistributionPossibility extends Atomic {
 }
 
 
-export class Ticket extends Cubeable {
+export interface BaseTicket<T extends BaseFlatCubeable> extends BaseCubeable {
+  name: string;
+  options: T[];
+}
+
+
+export class CardboardTicket implements BaseTicket<Cardboard> {
+  id: string;
+  name: string;
+  options: Cardboard[];
+
+  constructor(id: string, name: string, options: Cardboard[]) {
+    this.id = id;
+    this.name = name;
+    this.options = options;
+  }
+
+  getType = (): string => {
+    return 'CardboardTicket';
+  };
+
+  getSortValue = (): string => {
+    return 'CardboardTicket';
+  };
+
+  public static fromRemote(remote: any): CardboardTicket {
+    return new CardboardTicket(
+      remote.id,
+      remote.name,
+      remote.options.map((option: any) => Cardboard.fromRemote(option)),
+    )
+  }
+
+}
+
+export class Ticket extends Cubeable implements BaseTicket<Printing> {
   name: string;
   options: Printing[];
 
@@ -385,10 +523,46 @@ export class Ticket extends Cubeable {
     }
   }
 
+  representation = (): string => {
+    return this.name;
+  };
+
 }
 
 
-export class Purple extends Cubeable {
+export interface BasePurple<T extends BaseFlatCubeable> extends BaseCubeable {
+  name: string;
+
+}
+
+export class CardboardPurple implements BasePurple<Cardboard> {
+  name: string;
+  id: string;
+
+  constructor(id: string, name: string) {
+    this.id = id;
+    this.name = name;
+  }
+
+  getSortValue(): string {
+    return "CardboardPurple";
+  }
+
+  getType(): string {
+    return "CardboardPurple";
+  }
+
+  public static fromRemote(remote: any): CardboardPurple {
+    return new CardboardPurple(
+      remote.id,
+      remote.name,
+    )
+  }
+
+}
+
+
+export class Purple extends Cubeable implements BasePurple<Printing> {
   name: string;
 
   constructor(id: string, name: string) {
@@ -415,8 +589,20 @@ export class Purple extends Cubeable {
     }
   }
 
+  representation = (): string => {
+    return this.name;
+  };
+
 }
 
+
+const cardboardCubeablesMap: { [key: string]: Remoteable<CardboardCubeable> } = {
+  cardboard: Cardboard,
+  CardboardTrap: CardboardTrap,
+  CardboardTicket: CardboardTicket,
+  CardboardPurple: CardboardPurple,
+
+};
 
 const cubeablesMap: { [key: string]: Remoteable<Cubeable> } = {
   printing: Printing,
@@ -448,7 +634,6 @@ export class User extends Atomic {
       )
     )
   };
-
 
 }
 
@@ -510,6 +695,14 @@ export class MinimalCube extends Atomic {
           "Authorization": `Token ${store.getState().token}`,
         }
       },
+    )
+  };
+
+  static ratingMap = (id: string): Promise<RatingMap> => {
+    return axios.get(
+      apiPath + 'ratings/versioned-cube/' + id + '/',
+    ).then(
+      response => RatingMap.fromRemote(response.data)
     )
   };
 
@@ -3957,4 +4150,57 @@ export class League extends Atomic {
     )
   }
 
+}
+
+
+export class CardboardCubeableRating extends Atomic {
+  rating: number;
+  cardboardCubeableId: string;
+  exampleCubeable: Cubeable;
+
+  constructor(
+    id: string,
+    rating: number,
+    cardboardCubeableId: string,
+    exampleCubeable: Cubeable,
+  ) {
+    super(id);
+    this.rating = rating;
+    this.cardboardCubeableId = cardboardCubeableId;
+    this.exampleCubeable = exampleCubeable;
+  }
+
+  public static fromRemote(remote: any): CardboardCubeableRating {
+    return new CardboardCubeableRating(
+      remote.id,
+      remote.rating,
+      remote.cardboard_cubeable_id,
+      Cubeable.fromRemote(remote.example_cubeable),
+    )
+  }
+
+}
+
+
+export class RatingMap extends Atomic {
+  ratings: CardboardCubeableRating[];
+  createdAt: Date;
+
+  constructor(
+    id: string,
+    ratings: CardboardCubeableRating[],
+    createdAt: Date,
+  ) {
+    super(id);
+    this.ratings = ratings;
+    this.createdAt = createdAt;
+  }
+
+  public static fromRemote(remote: any): RatingMap {
+    return new RatingMap(
+      remote.id,
+      remote.ratings.map((rating: any) => CardboardCubeableRating.fromRemote(rating)),
+      new Date(remote.created_at),
+    )
+  }
 }

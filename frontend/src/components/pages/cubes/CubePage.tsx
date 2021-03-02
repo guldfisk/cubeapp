@@ -128,6 +128,7 @@ class CubePage extends React.Component<CubePageProps, CubePageState> {
               </Card.Header>
               <Card.Body>
                 <p><Link to={'/cube/' + this.props.match.params.id + '/patches/'}>Patches</Link></p>
+                <p><Link to={'/cube/' + this.props.match.params.id + '/ratings/'}>Ratings</Link></p>
                 {
                   this.props.authenticated ? [
                     <p>

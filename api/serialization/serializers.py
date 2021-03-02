@@ -6,10 +6,11 @@ from distutils.util import strtobool
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
-from magiccube.collections.laps import TrapCollection
-
+from mtgorp.models.interfaces import Cardboard, Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.raw import RawStrategy
+
+from magiccube.collections.laps import TrapCollection
 
 from api import models
 from api.serialization import orpserialize
@@ -34,6 +35,10 @@ class OrpSerializerField(serializers.Field):
 
     def to_representation(self, value):
         if self.context.get('request') and strtobool(self.context['request'].query_params.get('native', '0')):
+            if isinstance(value, Cardboard):
+                return value.name
+            if isinstance(value, Printing):
+                return value.id
             return RawStrategy.serialize(value)
         return self._model_serializer.serialize(
             value

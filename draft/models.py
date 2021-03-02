@@ -62,5 +62,5 @@ class DraftPick(models.Model):
     seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
-    pack = OrpField(DraftBooster)
+    pack: DraftBooster = OrpField(DraftBooster)
     pick = OrpField(Pick)

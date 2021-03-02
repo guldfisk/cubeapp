@@ -39,6 +39,7 @@ const MatchPage = React.lazy(() => import("../pages/tournaments/matchPage"));
 const LeaguePage = React.lazy(() => import("../pages/leagues/LeaguePage"));
 const LeaguesPage = React.lazy(() => import("../pages/leagues/LeaguesPage"));
 const UserPage = React.lazy(() => import("../pages/users/UserPage"));
+const CubeRatingsPage = React.lazy(() => import("../pages/cubes/RatingPage"));
 
 
 export const routes: [
@@ -61,6 +62,7 @@ export const routes: [
       )
     }
   ],
+  ['/cube/:id(\\d+)/ratings', CubeRatingsPage, false, {}],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
   ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
