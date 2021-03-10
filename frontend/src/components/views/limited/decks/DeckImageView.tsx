@@ -7,7 +7,6 @@ import {ImageableImage} from "../../../images";
 import {alphabeticalPropertySortMethodFactory} from "../../../utils/utils";
 
 import '../../../../styling/stack.css';
-import {PrintingsTooltip, TrapTooltip} from "../../../utils/listitems";
 
 
 class Stack extends React.Component {
@@ -50,8 +49,6 @@ export default class DeckImageView extends React.Component<CardContainerProps> {
 
   render() {
     return <Row>
-      <PrintingsTooltip/>
-      <TrapTooltip/>
       {
         this.props.deck.maindeck.cmcGroupedPrintings().map(
           printings => <Col>

@@ -5,7 +5,7 @@ import cellEditFactory from 'react-bootstrap-table2-editor';
 
 import {CardboardWish, Requirement, Wish} from '../../models/models';
 import RequirementsView from "./RequirementsView";
-import {CardboardListItem, CardboardTooltip, DateListItem} from "../../utils/listitems";
+import {CardboardListItem, DateListItem} from "../../utils/listitems";
 
 import '../../../styling/WishView.css';
 
@@ -115,7 +115,6 @@ export default class WishView extends React.Component<WishViewProps> {
     );
 
     return <div>
-      <CardboardTooltip/>
       <BootstrapTable
         keyField='id'
         data={data}

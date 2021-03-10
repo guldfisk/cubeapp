@@ -5,7 +5,7 @@ import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider from 'react-bootstrap-table2-toolkit';
 
 import {Cardboard, Infinites} from '../../models/models';
-import {CardboardListItem, CardboardTooltip} from "../../utils/listitems";
+import {CardboardListItem} from "../../utils/listitems";
 
 
 interface InfinitesViewProps {
@@ -46,7 +46,6 @@ export default class InfinitesView extends React.Component<InfinitesViewProps, n
     ];
 
     return <div>
-      <CardboardTooltip/>
       <ToolkitProvider
         keyField='key'
         data={this.props.infinites.cardboards}

@@ -29,15 +29,16 @@ from mtgorp.tools.search.extraction import CardboardStrategy, PrintingStrategy, 
 
 from mtgimg.interface import SizeSlug, ImageFetchException, ImageRequest
 
-from magiccube.collections.infinites import Infinites
-from magiccube.update.report import UpdateReport
 from magiccube.collections.cube import Cube
+from magiccube.collections.infinites import Infinites
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
-from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.laps.purples.purple import Purple
 from magiccube.laps.tickets.ticket import Ticket
 from magiccube.laps.traps.trap import Trap, IntentionType
 from magiccube.laps.traps.tree.parse import PrintingTreeParser, PrintingTreeParserException
+from magiccube.tools.cube_difference import cube_difference
+from magiccube.update.cubeupdate import CubePatch, CubeUpdater
+from magiccube.update.report import UpdateReport
 
 from cubeapp import settings
 
@@ -192,8 +193,8 @@ class SearchView(generics.ListAPIView):
                 'artist': lambda model: tuple(strategy.extract_artist(model)),
                 'release_date': lambda model: tuple(
                     expansion.release_date
-                        for expansion in
-                        strategy.extract_expansion(model)
+                    for expansion in
+                    strategy.extract_expansion(model)
                 ),
             }
 
@@ -444,8 +445,8 @@ class InviteUserEndpoint(generics.GenericAPIView):
         for _ in range(128):
             key = ''.join(
                 random.choice(string.ascii_letters)
-                    for _ in
-                    range(255)
+                for _ in
+                range(255)
             )
 
             hasher = hashlib.sha3_256()
@@ -759,8 +760,9 @@ def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
         return Response(status = status.HTTP_400_BAD_REQUEST)
 
     from_meta_cube = from_release.as_meta_cube()
+    to_meta_cube = to_release.as_meta_cube()
 
-    cube_patch = CubePatch.from_meta_delta(from_meta_cube, to_release.as_meta_cube())
+    cube_patch = CubePatch.from_meta_delta(from_meta_cube, to_meta_cube)
 
     try:
         pdf_url = models.LapChangePdf.objects.get(
@@ -783,7 +785,8 @@ def release_delta(request: Request, to_pk: int, from_pk: int) -> Response:
                 UpdateReport(
                     CubeUpdater(from_meta_cube, cube_patch)
                 )
-            )
+            ),
+            'difference': cube_difference(from_meta_cube, to_meta_cube),
         }
     )
 

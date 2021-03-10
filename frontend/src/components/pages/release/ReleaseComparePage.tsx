@@ -22,6 +22,7 @@ interface ReleaseComparePageState {
   pdfUrl: string | null
   ws: WebSocket | null
   generating: boolean
+  difference: number | null
 }
 
 
@@ -36,6 +37,7 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       pdfUrl: null,
       ws: null,
       generating: false,
+      difference: null,
     }
   }
 
@@ -50,9 +52,9 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       this.props.match.params.id_from,
       this.props.match.params.id,
     ).then(
-      ([patch, verbosePatch, pdfUrl, report]) => {
+      ([patch, verbosePatch, pdfUrl, report, difference]) => {
         this.setState(
-          {patch, verbosePatch, pdfUrl, report},
+          {patch, verbosePatch, pdfUrl, report, difference},
           this.connectWs,
         )
       }
@@ -69,7 +71,6 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
       this.setState({generating: true})
 
     }
-
   };
 
   connectWs = (): void => {
@@ -141,21 +142,28 @@ export default class ReleaseComparePage extends React.Component<ReleaseComparePa
           {pdfButton}
         </Col>
       </Row>
-      <Row>
-        <Col>
-          {this.state.report ? <ReportView report={this.state.report}/> : <Loading/>}
-        </Col>
-      </Row>
-      <Row>
-        <Col>
-          {
-            !this.state.patch ? <Loading/> : <PatchMultiView
-              patch={this.state.patch}
-              verbosePatch={this.state.verbosePatch}
-            />
-          }
-        </Col>
-      </Row>
+      {
+        this.state.difference === null ? <Loading/> : <>
+          <Row>
+            <Col>
+              <h4>{'Difference: ' + this.state.difference}</h4>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <ReportView report={this.state.report}/>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <PatchMultiView
+                patch={this.state.patch}
+                verbosePatch={this.state.verbosePatch}
+              />
+            </Col>
+          </Row>
+        </>
+      }
     </Container>;
   }
 

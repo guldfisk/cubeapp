@@ -5,8 +5,7 @@ import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
 import {CardboardCubeableRating, Cubeable, RatingMap} from '../../models/models';
-import {ImageableListItem, PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
-import ReactTooltip from "react-tooltip";
+import {ImageableListItem} from "../../utils/listitems";
 
 
 interface RatingMapViewProps {
@@ -45,8 +44,8 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
     const {SearchBar} = Search;
 
     return <div>
-      <PrintingsTooltip/>
-      <TrapTooltip/>
+      {/*<PrintingsTooltip/>*/}
+      {/*<TrapTooltip/>*/}
       <ToolkitProvider
         keyField='key'
         data={this.props.ratingMap.ratings}
@@ -70,12 +69,6 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
                       hidePageListOnlyOnePage: true,
                       showTotal: true,
                       sizePerPage: 50,
-                      onPageChange: () => {
-                        // TODO Jesus react tool tip is so fucking bad, switch to something else.
-                        (new Promise(resolve => setTimeout(resolve, 1000))).then(
-                          ReactTooltip.rebuild
-                        );
-                      },
                     }
                   )
                 }

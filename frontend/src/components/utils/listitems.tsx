@@ -1,6 +1,10 @@
 import React, {ComponentElement} from "react";
-import ReactTooltip from "react-tooltip";
+
 import dateFormat from 'dateformat';
+import ListGroup from "react-bootstrap/ListGroup";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import {flip, preventOverflow} from "@popperjs/core";
+import {Tooltip} from "react-bootstrap";
 
 import {
   Cardboard,
@@ -13,75 +17,6 @@ import {
   Trap
 } from "../models/models";
 import {ImageableImage} from "../images";
-import ListGroup from "react-bootstrap/ListGroup";
-
-
-export const PrintingsTooltip: React.FunctionComponent = (props: any) => {
-  return <ReactTooltip
-    place="bottom"
-    type="dark"
-    effect="float"
-    id='printing-tt'
-    className="printing-list-tooltip"
-    getContent={
-      (id: string) => <ImageableImage
-        id={id}
-        type='Printing'
-        allowStatic={false}
-      />
-    }
-  />
-};
-
-
-export const CardboardTooltip: React.FunctionComponent = (props: any) => {
-  return <ReactTooltip
-    place="bottom"
-    type="dark"
-    effect="float"
-    id='cardboard-tt'
-    className="printing-list-tooltip"
-    getContent={
-      (id: string) => <ImageableImage
-        id={id}
-        type='Cardboard'
-      />
-    }
-  />
-};
-
-
-export const TrapTooltip: React.FunctionComponent = (props: any) => {
-  return <ReactTooltip
-    place="bottom"
-    type="dark"
-    effect="float"
-    id='trap-tt'
-    className="printing-list-tooltip"
-    getContent={
-      (dataTip: string) => {
-        if (!dataTip) {
-          return <div/>
-        }
-        const [trapId, printingId] = dataTip.split('/');
-        return <span>
-          {
-            trapId && <ImageableImage
-              id={trapId}
-              type='Trap'
-            />
-          }
-          <ImageableImage
-            id={printingId}
-            type='printing'
-            allowStatic={false}
-          />
-      </span>
-      }
-
-    }
-  />
-};
 
 
 interface DateListItemProps {
@@ -90,25 +25,20 @@ interface DateListItemProps {
 
 
 export const DateListItem: React.FunctionComponent<DateListItemProps> = (props: DateListItemProps) => {
-  const short = dateFormat(props.date, 'dd/mm/yy');
-  const long = props.date.toUTCString();
-  return <span>
-    <a
-      data-tip=""
-      data-for={long}
-    >
-      {short}
-    </a>
-    <ReactTooltip
-      place="top"
-      type="dark"
-      effect="float"
-      id={long}
-      className="date-list-tooltip"
-    >
-      {long}
-    </ReactTooltip>
-  </span>
+  return <OverlayTrigger
+    placement="top"
+    delay={{show: 0, hide: 0}}
+    overlay={
+      (_props: any) => <Tooltip id='date-item' {..._props}>
+        {props.date.toUTCString()}
+      </Tooltip>
+    }
+    popperConfig={{
+      modifiers: [flip, preventOverflow],
+    }}
+  >
+    <span>{dateFormat(props.date, 'dd/mm/yy')}</span>
+  </OverlayTrigger>
 };
 
 
@@ -139,10 +69,21 @@ export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = 
     </a>
   }
 
-  return <span>
+  return <OverlayTrigger
+    placement='left'
+    delay={{show: 250, hide: 0}}
+    overlay={
+      <ImageableImage
+        id={props.printing.id}
+        type='Printing'
+        hover={false}
+      />
+    }
+    popperConfig={{
+      modifiers: [flip, preventOverflow],
+    }}
+  >
     <a
-      data-for='printing-tt'
-      data-tip={props.printing.id.toString()}
       onClick={
         props.onClick && (
           () => {
@@ -153,7 +94,7 @@ export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = 
     >
       {display_name}
     </a>
-  </span>
+  </OverlayTrigger>
 };
 
 
@@ -184,41 +125,79 @@ export const CardboardListItem: React.FunctionComponent<CardboardListItemProps> 
     </a>
   }
 
-  return <a
-    data-tip={props.cardboard.id.toString()}
-    data-for='cardboard-tt'
-    onClick={
-      props.onClick && (
-        () => {
-          props.onClick(props.cardboard, props.multiplicity);
-        }
-      )
+  return <OverlayTrigger
+    placement='left'
+    delay={{show: 250, hide: 0}}
+    overlay={
+      <ImageableImage
+        id={props.cardboard.id}
+        type='Cardboard'
+        hover={false}
+      />
     }
+    popperConfig={{
+      modifiers: [flip, preventOverflow],
+    }}
   >
-    {display_name}
-  </a>
+    <a
+      onClick={
+        props.onClick && (
+          () => {
+            props.onClick(props.cardboard, props.multiplicity);
+          }
+        )
+      }
+    >
+      {display_name}
+    </a>
+  </OverlayTrigger>
 };
 
 
 const trap_representation = (
   [item, multiplicity]: [Printing | PrintingNode, number],
-  trap: Trap | undefined = undefined,
-  onClick: ((trap: Trap, multiplicity: number) => void) | undefined = undefined,
+  trap: Trap | null = null,
+  onClick: ((trap: Trap, multiplicity: number) => void) | null = null,
 ): any => {
   if (item instanceof Printing) {
-
-    return <span>
-    <a
-      data-tip={(trap ? trap.id.toString() : '') + '/' + item.id.toString()}
-      data-for='trap-tt'
-    >
-      {
-        `${(multiplicity && multiplicity !== 1) ?
-          multiplicity.toString() + '# '
-          : ''}${item.fullName()}`
+    return <OverlayTrigger
+      placement='left'
+      delay={{show: 250, hide: 0}}
+      overlay={
+        <div>
+          {
+            trap && <ImageableImage
+              id={trap.id}
+              type='Trap'
+            />
+          }
+          <ImageableImage
+            id={item.id}
+            type='printing'
+            allowStatic={false}
+          />
+        </div>
       }
-    </a>
-  </span>
+      popperConfig={{
+        modifiers: [flip, preventOverflow],
+      }}
+    >
+      <a
+        onClick={
+          onClick && (
+            () => {
+              onClick(trap, multiplicity);
+            }
+          )
+        }
+      >
+        {
+          `${(multiplicity && multiplicity !== 1) ?
+            multiplicity.toString() + '# '
+            : ''}${item.fullName()}`
+        }
+      </a>
+    </OverlayTrigger>
   }
 
   return <span
@@ -340,7 +319,7 @@ interface PurpleListItemProps {
 }
 
 
-export const PurpleListItem: React.SFC<PurpleListItemProps> = (props) => {
+export const PurpleListItem: React.FunctionComponent<PurpleListItemProps> = (props) => {
   const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
     props.multiplicity.toString() + 'x '
     : ''}${props.purple.name}`;

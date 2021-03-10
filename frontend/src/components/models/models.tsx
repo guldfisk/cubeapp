@@ -1130,7 +1130,7 @@ export class CubeRelease extends CubeReleaseMeta {
   public static compare = (
     from_id: number,
     to_id: number,
-  ): Promise<[Patch, VerbosePatch, string | null, UpdateReport]> => {
+  ): Promise<[Patch, VerbosePatch, string | null, UpdateReport, number]> => {
     return axios.get(
       apiPath + 'cube-releases/' + to_id + '/delta-from/' + from_id + '/'
     ).then(
@@ -1139,6 +1139,7 @@ export class CubeRelease extends CubeReleaseMeta {
         VerbosePatch.fromRemote(response.data.verbose_patch),
         response.data.pdf_url,
         UpdateReport.fromRemote(response.data.report),
+        response.data.difference,
       ]
     )
   };

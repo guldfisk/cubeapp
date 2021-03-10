@@ -6,7 +6,7 @@ import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
 import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
-import {NodeListItem, PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
+import {NodeListItem} from "../../utils/listitems";
 
 
 interface ConstrainedNodesViewProps {
@@ -137,8 +137,6 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
     const {SearchBar} = Search;
 
     return <div>
-      <PrintingsTooltip/>
-      <TrapTooltip/>
       <ToolkitProvider
         keyField='key'
         data={data}

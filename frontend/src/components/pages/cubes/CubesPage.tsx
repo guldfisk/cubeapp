@@ -1,14 +1,14 @@
 import React from 'react';
 
-import {Cube} from '../../models/models';
-
-import CubesView from '../../views/cubeview/CubesView';
-
+import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
 import PaginationBar from "../../utils/PaginationBar";
 import Row from "react-bootstrap/Row";
-import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
+
+import {Cube} from '../../models/models';
+import CubesView from '../../views/cubeview/CubesView';
 
 
 const pageSize: number = 10;
@@ -53,41 +53,43 @@ export default class CubesPage extends React.Component<null, CubesPageState> {
   };
 
   render() {
-    return <Row>
-      <Col sm={2}>
-        <Card>
-          <Card.Header>
-            Actions
-          </Card.Header>
-          <Card.Body>
-            <p>
-              <Link
-                to={"/create-cube/"}
-              >
-                Create Cube
-              </Link>
-            </p>
-          </Card.Body>
-        </Card>
-      </Col>
-      <Col>
-        <Row>
-          <h3>Cubes</h3>
-        </Row>
-        <Row>
-          <PaginationBar
-            hits={this.state.hits}
-            offset={this.state.offset}
-            handleNewOffset={this.fetchCubes}
-            pageSize={pageSize}
-            maxPageDisplay={7}
-          />
-          <CubesView
-            cubes={this.state.cubes}
-          />
-        </Row>
-      </Col>
-    </Row>
+    return <Container fluid>
+      <Row>
+        <Col sm={2}>
+          <Card>
+            <Card.Header>
+              Actions
+            </Card.Header>
+            <Card.Body>
+              <p>
+                <Link
+                  to={"/create-cube/"}
+                >
+                  Create Cube
+                </Link>
+              </p>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col>
+          <Row>
+            <h3>Cubes</h3>
+          </Row>
+          <Row>
+            <PaginationBar
+              hits={this.state.hits}
+              offset={this.state.offset}
+              handleNewOffset={this.fetchCubes}
+              pageSize={pageSize}
+              maxPageDisplay={7}
+            />
+            <CubesView
+              cubes={this.state.cubes}
+            />
+          </Row>
+        </Col>
+      </Row>
+    </Container>
   }
 
 }

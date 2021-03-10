@@ -4,11 +4,10 @@ import Row from 'react-bootstrap/Row';
 
 import ListGroup from "react-bootstrap/ListGroup";
 import Container from "react-bootstrap/Container";
-import ReactTooltip from "react-tooltip";
 
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
 import {CubeablesContainer, Cubeable, PrintingCounter} from "../../models/models";
-import {ImageableListItem, PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
+import {ImageableListItem} from "../../utils/listitems";
 
 
 interface RawCubeListViewProps {
@@ -25,10 +24,6 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
   static defaultProps = {
     allowStaticImages: true,
   };
-
-  componentDidUpdate(prevProps: Readonly<RawCubeListViewProps>, prevState: Readonly<{}>, snapshot?: any): void {
-    ReactTooltip.rebuild();
-  }
 
   render() {
     const printingCounter = (
@@ -110,8 +105,6 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
     }
 
     return <Container fluid>
-      <PrintingsTooltip/>
-      <TrapTooltip/>
       <Row>
         {
           groups.map(

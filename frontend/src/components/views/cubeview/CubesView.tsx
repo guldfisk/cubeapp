@@ -1,9 +1,9 @@
 import React from 'react';
 
 import {Link} from "react-router-dom";
+import BootstrapTable from 'react-bootstrap-table-next';
 
-import Table from "react-bootstrap/Table";
-import {Cube} from "../../models/models";
+import {Cube, CubeReleaseMeta, User} from "../../models/models";
 import {DateListItem} from "../../utils/listitems";
 
 
@@ -11,67 +11,70 @@ interface CubesViewProps {
   cubes: Cube[]
 }
 
-class CubesView extends React.Component<CubesViewProps> {
+export default class CubesView extends React.Component<CubesViewProps> {
 
   render() {
-    return <Table>
-      <thead>
-      <tr>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Author</th>
-        <th>Last Release</th>
-        <th>Last Update</th>
-        <th>Releases</th>
-        <th>Created At</th>
-      </tr>
-      </thead>
-      <tbody>
-      {
-        this.props.cubes.map(
-          (cube: Cube) => {
-            return <tr>
-              <td>
-                <Link to={"/cube/" + cube.id}>
-                  {cube.name}
-                </Link>
-              </td>
-              <td>{cube.description}</td>
-              <td>{cube.author.username}</td>
-              <td>
-                {
-                  cube.latestRelease() !== null ?
-                    <Link to={'/release/' + cube.latestRelease().id}>
-                      {cube.latestRelease().name}
-                    </Link>
-                    :
-                    "No releases"
-                }
-              </td>
-              <td>
-                {
-                  cube.latestRelease() !== null ?
-                    <DateListItem
-                      date={cube.latestRelease().createdAt}
-                    /> :
-                    "No releases"
-                }
-              </td>
-              <td>{cube.releases.length}</td>
-              <td>
-                <DateListItem
-                  date={cube.createdAt}
-                />
-              </td>
-            </tr>
-          }
-        )
-      }
-      </tbody>
-    </Table>
 
+    const columns = [
+      {
+        dataField: 'id',
+        text: 'Key',
+        hidden: true,
+      },
+      {
+        dataField: 'name',
+        text: 'Name',
+        formatter: (cell: string, row: Cube, rowIndex: number, formatExtraData: any) => <Link to={"/cube/" + row.id}>
+          {cell}
+        </Link>,
+      },
+      {
+        dataField: 'description',
+        text: 'Description',
+      },
+      {
+        dataField: 'author',
+        text: 'Author',
+        formatter: (cell: User, row: Cube, rowIndex: number, formatExtraData: any) => cell.username,
+      },
+      {
+        dataField: 'id',
+        text: 'Latest Release',
+        formatter: (cell: any, row: Cube, rowIndex: number, formatExtraData: any) => row.latestRelease() !== null ?
+          <Link to={'/release/' + row.latestRelease().id}>
+            {row.latestRelease().name}
+          </Link> : "No releases",
+      },
+      {
+        dataField: 'id',
+        text: 'Last Update',
+        formatter: (cell: any, row: Cube, rowIndex: number, formatExtraData: any) => row.latestRelease() !== null ?
+          <DateListItem
+            date={row.latestRelease().createdAt}
+          /> : "No releases",
+      },
+      {
+        dataField: 'releases',
+        text: 'Releases',
+        formatter: (cell: CubeReleaseMeta[], row: Cube, rowIndex: number, formatExtraData: any) => cell.length,
+      },
+      {
+        dataField: 'createdAt',
+        text: 'Created At',
+        formatter: (cell: Date, row: Cube, rowIndex: number, formatExtraData: any) => <DateListItem
+          date={cell}
+        />,
+      },
+
+    ];
+
+    return <BootstrapTable
+      keyField='id'
+      columns={columns}
+      data={this.props.cubes}
+      condensed
+      striped
+    />
   }
 
 }
-
-export default CubesView;

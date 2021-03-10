@@ -3,7 +3,6 @@ import React from 'react';
 import {ImageableImage} from '../../images';
 import {Cubeable, CubeablesContainer, PrintingCounter} from "../../models/models";
 import {alphabeticalPropertySortMethodFactory} from "../../utils/utils";
-import {PrintingsTooltip, TrapTooltip} from "../../utils/listitems";
 
 
 interface CubeablesCollectionSpoilerViewProps {
@@ -76,8 +75,6 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
     }
 
     return <div>
-      <PrintingsTooltip/>
-      <TrapTooltip/>
       {
         Array.from(this.groupsSortedChained(groups)).map(
           (cubeable) => {

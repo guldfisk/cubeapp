@@ -3,22 +3,23 @@
 {% load render_bundle from webpack_loader %}
 
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
-        <title>phdk</title>
+    <title>phdk</title>
 
-        <script>window.__debug__={{ is_debug }}</script>
+    <script>window.__debug__ ={{ is_debug }}</script>
 
-        {% load static %}
-    </head>
-    <body>
-    {% render_bundle 'vendors~app' %}
-    {% render_bundle 'app' %}
-    <div id="app" class="columns"><!-- React --></div>
-    </body>
+    {% load static %}
+</head>
+<body>
+{% render_bundle 'vendors~app' %}
+{% render_bundle 'app' %}
+<div id="app" class="columns"><!-- React --></div>
+
+</body>
 
 </html>
