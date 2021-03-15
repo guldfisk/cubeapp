@@ -1,5 +1,8 @@
 import datetime
 
+# from django.contrib.auth import get_user_model
+# from django.contrib.auth.models import AbstractUser
+# from django.contrib.contenttypes.fields import GenericRelation
 from django.db.models import Model, DateTimeField, Manager, BooleanField, QuerySet
 
 
@@ -61,3 +64,18 @@ class SoftDeletionQuerySet(QuerySet):
 
     def dead(self):
         return self.exclude(active = True)
+
+
+# class WithEditPermissions(object):
+#     edit_permissions = GenericRelation(
+#         'api.EditPermission',
+#         content_type_field = 'permission_for_content_type',
+#         object_id_field = 'permission_for_object_id',
+#     )
+#
+#     @property
+#     def allowed_editing_users(self) -> QuerySet[AbstractUser]:
+#         return get_user_model().objects.filter(edit_permissions__permission_for = self)
+#
+#     def can_edit(self, user: AbstractUser) -> bool:
+#         return self.allowed_editing_users.filter(id = user.id).exists()

@@ -8,10 +8,12 @@ from enum import Enum
 
 from botocore.client import BaseClient
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import UserModel
+# from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.timezone import now
-from django.contrib.auth import get_user_model
 
 from mocknames.generate import NameGenerator
 
@@ -20,11 +22,11 @@ from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
 
 from magiccube.collections.cube import Cube
-from magiccube.update.cubeupdate import CubePatch as Patch
 from magiccube.collections.nodecollection import NodeCollection, GroupMap
+from magiccube.update.cubeupdate import CubePatch as Patch
 
-from api.fields.orp import OrpField
 from api.boto import get_boto_client, SPACES_ENDPOINT
+from api.fields.orp import OrpField
 from utils import mixins
 from utils.fields import EnumField
 from utils.methods import get_random_name, remove_prefix
@@ -250,3 +252,14 @@ class ReleaseImageBundle(TimestampedModel, models.Model):
 
     class Meta:
         unique_together = ('release', 'target')
+
+
+# class EditPermission(TimestampedModel, models.Model):
+#     user = models.ForeignKey(get_user_model(), related_name = 'edit_permissions', on_delete = models.CASCADE)
+#
+#     permission_for_content_type = models.ForeignKey(ContentType, on_delete = models.CASCADE)
+#     permission_for_object_id = models.PositiveIntegerField()
+#     permission_for = GenericForeignKey('permission_for_content_type', 'permission_for_object_id', )
+#
+#     class Meta:
+#         unique_together = ('permission_for_content_type', 'permission_for_object_id')

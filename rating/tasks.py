@@ -14,7 +14,7 @@ from mtgorp.models.interfaces import Cardboard
 
 from magiccube.collections.cubeable import cardboardize
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
-from magiccube.laps.traps.tree.printingtree import CardboardNodeChild
+from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, NodeAny
 from magiccube.tools.cube_difference import cube_difference
 
 from elo.utils import rescale_eloeds, adjust_eloeds
@@ -103,9 +103,8 @@ def generate_ratings_map_for_release(release_id: int) -> None:
             difference = 1 - previous_releases_difference_map.get(pool_deck.release_id, 0.)
             for printing in pool_deck.deck.seventy_five:
                 deck_conversions[printing.cardboard] += difference
-            for trap in pool_deck.pool.pool.as_cardboards.garbage_traps:
-                for cardboard in trap.node.flattened:
-                    pool_occurrences[cardboard] += difference
+            for cardboard in pool_deck.pool.pool.as_cardboards.all_models:
+                pool_occurrences[cardboard] += difference
 
         conversion_rate_map = {
             cardboard: deck_conversions[cardboard] / p_occurrences
@@ -122,16 +121,20 @@ def generate_ratings_map_for_release(release_id: int) -> None:
 
         for cardboard_cubeable, rating in previous_rating_map.items():
             if isinstance(cardboard_cubeable, CardboardTrap) and cardboard_cubeable.intention_type == IntentionType.GARBAGE:
-                node_conversion_rates = (
+                node_conversion_rates = [
                     (
                         node,
                         conversion_rate_map.get(node, 0.)
                         if isinstance(node, Cardboard) else
-                        max(conversion_rate_map.get(child, 0.) for child in node.flattened)
+                        (
+                            min(sum(conversion_rate_map.get(child, 0.) for child in node), 1.)
+                            if isinstance(node, NodeAny) else
+                            max(conversion_rate_map.get(child, 0.) for child in node)
+                        )
                     )
                     for node in
                     cardboard_cubeable.node.children
-                )
+                ]
 
                 for node, weighted_rating in zip(
                     (n for n, _ in node_conversion_rates),
