@@ -56,3 +56,4 @@ bidict
 more_itertools
 jedi==0.17.2
 psycopg2
+scipy

@@ -1,8 +1,11 @@
 import itertools
+import math
 import typing as t
 from collections import defaultdict
 
 from numpy import average
+
+from scipy import stats
 
 from celery import shared_task
 
@@ -27,7 +30,19 @@ from rating import models
 from rating.values import AVERAGE_RATING
 
 
-def distribute_value_weighted(value: t.Union[int, float], weights: t.Sequence[float]) -> t.Sequence[float]:
+Number = t.Union[int, float]
+
+
+def ci_lower_bound(pos: Number, n: Number, confidence: Number = .95) -> float:
+    if n == 0:
+        return 0
+
+    z = stats.norm.cdf(1 - (1 - confidence) / 2)
+    phat = pos / n
+    return (phat + z * z / (2 * n) - z * math.sqrt((phat * (1 - phat) + z * z / (4 * n)) / n)) / (1 + z * z / n)
+
+
+def distribute_value_weighted(value: Number, weights: t.Sequence[Number]) -> t.Sequence[float]:
     summed = sum(weights)
     if summed == 0:
         return [value / len(weights) for _ in weights]
@@ -107,7 +122,7 @@ def generate_ratings_map_for_release(release_id: int) -> None:
                 pool_occurrences[cardboard] += difference
 
         conversion_rate_map = {
-            cardboard: deck_conversions[cardboard] / p_occurrences
+            cardboard: ci_lower_bound(deck_conversions[cardboard], p_occurrences)
             for cardboard, p_occurrences in
             pool_occurrences.items()
         }
@@ -138,7 +153,7 @@ def generate_ratings_map_for_release(release_id: int) -> None:
 
                 for node, weighted_rating in zip(
                     (n for n, _ in node_conversion_rates),
-                    distribute_value_weighted(rating, [v for _, v in node_conversion_rates]),
+                    distribute_value_weighted(rating, [v ** 2 for _, v in node_conversion_rates]),
                 ):
                     previous_ratings_node_map[node].append(weighted_rating)
 
