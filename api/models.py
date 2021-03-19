@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import typing as t
+import datetime
 import hashlib
 import random
 import string
+import typing as t
 from enum import Enum
 
 from botocore.client import BaseClient
 
+# from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import UserModel
-# from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.timezone import now
@@ -47,10 +48,22 @@ class VersionedCube(mixins.SoftDeletionModel, models.Model):
         null = True,
         on_delete = models.SET_NULL,
     )
+    forked_from_release = models.ForeignKey(
+        'CubeRelease',
+        related_name = 'forks',
+        null = True,
+        on_delete = models.PROTECT,
+    )
 
     @property
     def latest_release(self) -> CubeRelease:
-        return CubeRelease.objects.filter(versioned_cube = self).order_by('created_at').last()
+        return self.releases.order_by('created_at').last()
+
+    def full_release_history(self, before_inclusive: datetime.datetime) -> t.Iterator[CubeRelease]:
+        for release in self.releases.filter(created_at__lte=before_inclusive).order_by('-created_at'):
+            yield release
+        if self.forked_from_release_id:
+            yield from self.forked_from_release.versioned_cube.full_release_history(self.forked_from_release.created_at)
 
 
 class CubeRelease(models.Model):
@@ -81,8 +94,19 @@ class CubeRelease(models.Model):
             versioned_cube = self.versioned_cube,
         ).order_by('created_at').last()
 
+    def all_upstream_releases(self) -> t.Iterator[CubeRelease]:
+        for release in CubeRelease.objects.filter(
+            created_at__lt = self.created_at,
+            versioned_cube = self.versioned_cube,
+        ).order_by('-created_at'):
+            yield release
+        if self.versioned_cube.forked_from_release_id:
+            yield from self.versioned_cube.forked_from_release.versioned_cube.full_release_history(
+                self.versioned_cube.forked_from_release.created_at
+            )
+
     @classmethod
-    def create(cls, cube: Cube, versioned_cube: VersionedCube, infinites: Infinites) -> CubeRelease:
+    def create(cls, cube: Cube, versioned_cube: VersionedCube, infinites: Infinites, intended_size: int = 360) -> CubeRelease:
         return cls.objects.create(
             cube = cube,
             checksum = cube.persistent_hash(),
@@ -95,7 +119,7 @@ class CubeRelease(models.Model):
                 )
             ),
             versioned_cube = versioned_cube,
-            intended_size = 360,
+            intended_size = intended_size,
             infinites = infinites,
         )
 
@@ -252,7 +276,6 @@ class ReleaseImageBundle(TimestampedModel, models.Model):
 
     class Meta:
         unique_together = ('release', 'target')
-
 
 # class EditPermission(TimestampedModel, models.Model):
 #     user = models.ForeignKey(get_user_model(), related_name = 'edit_permissions', on_delete = models.CASCADE)

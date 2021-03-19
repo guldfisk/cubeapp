@@ -194,6 +194,11 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
                     Sample pack
                   </Link>
                 </p>
+                <p>
+                  <Link to={'/release/' + this.props.match.params.id + '/ratings/'}>
+                    Ratings
+                  </Link>
+                </p>
               </Card.Body>
             </Card>
           </Col>

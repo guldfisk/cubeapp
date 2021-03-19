@@ -17,31 +17,24 @@ export default class DistributionView extends React.Component<DistributionViewPr
         {
           chart: {
             id: 'chart',
-            animations: {enabled: false}
+            animations: {enabled: false},
           },
           xaxis: {
             type: 'numeric',
-            min: 0,
-            max: this.props.data.length ? this.props.data[0].length : 1,
-            crosshairs: {show: false},
-            axisTicks: {color: 'white'},
-            tooltip: {enabled: false},
             title: {
               text: "Generation",
-              color: "white",
-            }
+            },
+            min: 0,
+            max: this.props.data.length ? this.props.data[0].length : 1,
           },
           yaxis: {
             title: {
               text: "Fitness",
-              color: "white",
             },
             min: 0,
             max: 1,
-            crosshairs: {show: false},
-            axisTicks: {color: 'white'},
-            tooltip: {enabled: false},
-          }
+          },
+          theme: {mode: 'dark'},
         }
       }
       series={

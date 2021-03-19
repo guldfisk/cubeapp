@@ -34,7 +34,6 @@ export default class LatestReleasePage extends React.Component<LatestReleasePage
   }
 
   render() {
-
     return this.state.cube ? <Redirect to={'/release/' + this.state.cube.latestRelease().id}/> : <Loading/>;
   }
 

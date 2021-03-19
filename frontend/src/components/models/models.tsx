@@ -63,6 +63,7 @@ export const cardboardCubeableFromRemote = (remote: any): CardboardCubeable => {
 
 
 export class Cubeable extends Imageable {
+  cardboardCubeableId: string;
 
   public static fromRemote(remote: any): Cubeable {
     return cubeablesMap[remote['type']].fromRemote(remote)
@@ -109,12 +110,14 @@ export class Cardboard extends Imageable implements BaseFlatCubeable {
   name: string;
   color: string[];
   types: string[];
+  cardboardCubeableId: string;
 
   constructor(id: string, color: string[], types: string[]) {
     super(id);
     this.name = id;
     this.color = color;
     this.types = types;
+    this.cardboardCubeableId = id;
   }
 
   public static fromRemote(remote: any): Cardboard {
@@ -151,13 +154,22 @@ export class Printing extends Cubeable implements BaseFlatCubeable {
   color: string[];
   types: string[];
 
-  constructor(id: string, name: string, cmc: number, expansionCode: string, color: string[], types: string[]) {
+  constructor(
+    id: string,
+    name: string,
+    cmc: number,
+    expansionCode: string,
+    color: string[],
+    types: string[],
+    cardboardCubeableId: string,
+  ) {
     super(id);
     this.name = name;
     this.cmc = cmc;
     this.expansionCode = expansionCode;
     this.color = color;
     this.types = types;
+    this.cardboardCubeableId = cardboardCubeableId;
   }
 
   public static fromRemote(remote: any): Printing {
@@ -168,6 +180,7 @@ export class Printing extends Cubeable implements BaseFlatCubeable {
       remote.expansion_code,
       remote.color,
       remote.types,
+      remote.cardboard_cubeable_id,
     )
   }
 
@@ -326,10 +339,11 @@ export class Trap extends Cubeable implements BaseTrap<Printing> {
   node: PrintingNode;
   intentionType: string;
 
-  constructor(id: string, node: PrintingNode, intentionType: string) {
+  constructor(id: string, node: PrintingNode, intentionType: string, cardboardCubeableId: string) {
     super(id);
     this.node = node;
     this.intentionType = intentionType;
+    this.cardboardCubeableId = cardboardCubeableId;
   }
 
   public static fromRemote(remote: any): Trap {
@@ -337,6 +351,7 @@ export class Trap extends Cubeable implements BaseTrap<Printing> {
       remote.id,
       PrintingNode.fromRemote(remote.node),
       remote.intention_type,
+      remote.cardboard_cubeable_id,
     )
   }
 
@@ -494,10 +509,11 @@ export class Ticket extends Cubeable implements BaseTicket<Printing> {
   name: string;
   options: Printing[];
 
-  constructor(id: string, name: string, options: Printing[]) {
+  constructor(id: string, name: string, options: Printing[], cardboardCubeableId: string) {
     super(id);
     this.name = name;
     this.options = options;
+    this.cardboardCubeableId = cardboardCubeableId;
   }
 
   public static fromRemote(remote: any): Ticket {
@@ -505,6 +521,7 @@ export class Ticket extends Cubeable implements BaseTicket<Printing> {
       remote.id,
       remote.name,
       remote.options.map((option: any) => Printing.fromRemote(option)),
+      remote.cardboard_cubeable_id,
     )
   }
 
@@ -565,13 +582,14 @@ export class CardboardPurple implements BasePurple<Cardboard> {
 export class Purple extends Cubeable implements BasePurple<Printing> {
   name: string;
 
-  constructor(id: string, name: string) {
+  constructor(id: string, name: string, cardboardCubeableId: string) {
     super(id);
     this.name = name;
+    this.cardboardCubeableId = cardboardCubeableId;
   }
 
   public static fromRemote(remote: any): Purple {
-    return new Purple(remote.id, remote.name)
+    return new Purple(remote.id, remote.name, remote.cardboard_cubeable_id)
   }
 
   getType = (): string => {
@@ -601,6 +619,9 @@ const cardboardCubeablesMap: { [key: string]: Remoteable<CardboardCubeable> } = 
   CardboardTrap: CardboardTrap,
   CardboardTicket: CardboardTicket,
   CardboardPurple: CardboardPurple,
+  trap: CardboardTrap,
+  ticket: CardboardTicket,
+  purple: CardboardPurple,
 
 };
 
@@ -698,11 +719,11 @@ export class MinimalCube extends Atomic {
     )
   };
 
-  static ratingMap = (id: string): Promise<RatingMap> => {
+  static ratingMap = (id: string): Promise<MinimalRatingMap> => {
     return axios.get(
       apiPath + 'ratings/versioned-cube/' + id + '/',
     ).then(
-      response => RatingMap.fromRemote(response.data)
+      response => MinimalRatingMap.fromRemote(response.data)
     )
   };
 
@@ -1173,6 +1194,14 @@ export class CubeRelease extends CubeReleaseMeta {
       response => CubeablesContainer.fromRemote(response.data)
     )
   }
+
+  static ratingMap = (id: string): Promise<MinimalRatingMap> => {
+    return axios.get(
+      apiPath + 'ratings/release/' + id + '/',
+    ).then(
+      response => MinimalRatingMap.fromRemote(response.data)
+    )
+  };
 
 }
 
@@ -4154,19 +4183,67 @@ export class League extends Atomic {
 }
 
 
+export class NodeRatingComponent extends Atomic {
+  node: CardboardNode | Cardboard;
+  nodeId: string;
+  exampleNode: PrintingNode | Printing;
+  ratingComponent: number;
+
+  constructor(
+    id: string,
+    node: CardboardNode | Cardboard,
+    nodeId: string,
+    exampleNode: PrintingNode | Printing,
+    ratingComponent: number,
+  ) {
+    super(id);
+    this.node = node;
+    this.nodeId = nodeId;
+    this.exampleNode = exampleNode;
+    this.ratingComponent = ratingComponent;
+  }
+
+  public static fromRemote(remote: any): NodeRatingComponent {
+    console.log(remote);
+    return new NodeRatingComponent(
+      remote.id,
+      remote.node.type == 'cardboard' ? Cardboard.fromRemote(remote.node) : CardboardNode.fromRemote(remote.node),
+      remote.node_id,
+      remote.example_node.type == 'printing' ? Printing.fromRemote(remote.example_node) : PrintingNode.fromRemote(remote.example_node),
+      remote.rating_component,
+    )
+  }
+
+  public static getForRelease = (
+    releaseId: string,
+    nodeId: string,
+  ): Promise<NodeRatingComponent> => {
+    return axios.get(
+      apiPath + 'ratings/node-example/' + releaseId + '/' + nodeId + '/'
+    ).then(
+      response => NodeRatingComponent.fromRemote(response.data)
+    )
+  };
+
+}
+
+
 export class CardboardCubeableRating extends Atomic {
   rating: number;
+  cardboardCubeable: CardboardCubeable;
   cardboardCubeableId: string;
   exampleCubeable: Cubeable;
 
   constructor(
     id: string,
     rating: number,
+    cardboardCubeable: CardboardCubeable,
     cardboardCubeableId: string,
     exampleCubeable: Cubeable,
   ) {
     super(id);
     this.rating = rating;
+    this.cardboardCubeable = cardboardCubeable;
     this.cardboardCubeableId = cardboardCubeableId;
     this.exampleCubeable = exampleCubeable;
   }
@@ -4175,33 +4252,178 @@ export class CardboardCubeableRating extends Atomic {
     return new CardboardCubeableRating(
       remote.id,
       remote.rating,
+      cardboardCubeableFromRemote(remote.cardboard_cubeable),
       remote.cardboard_cubeable_id,
       Cubeable.fromRemote(remote.example_cubeable),
     )
   }
 
+  public static getForRelease = (
+    releaseId: string,
+    cardboardCubeableId: string,
+  ): Promise<CardboardCubeableRating> => {
+    return axios.get(
+      apiPath + 'ratings/example/' + releaseId + '/' + cardboardCubeableId + '/'
+    ).then(
+      response => CardboardCubeableRating.fromRemote(response.data)
+    )
+  };
+
 }
 
 
-export class RatingMap extends Atomic {
-  ratings: CardboardCubeableRating[];
+export class MinimalRatingMap extends Atomic {
   createdAt: Date;
+  eventType: string;
+  release: CubeReleaseName;
 
   constructor(
     id: string,
-    ratings: CardboardCubeableRating[],
     createdAt: Date,
+    eventType: string,
+    release: CubeReleaseName,
   ) {
     super(id);
-    this.ratings = ratings;
     this.createdAt = createdAt;
+    this.eventType = eventType;
+    this.release = release;
+  }
+
+  explain = (): string => {
+    return this.release.name + ' (' + this.eventType + ')'
+  };
+
+  public static fromRemote(remote: any): MinimalRatingMap {
+    return new MinimalRatingMap(
+      remote.id,
+      new Date(remote.created_at),
+      remote.event_type,
+      CubeReleaseName.fromRemote(remote.release),
+    )
+  }
+}
+
+
+export class CardboardCubeableRatingHistoryPoint extends Atomic {
+  rating: number;
+  ratingMap: MinimalRatingMap;
+
+  constructor(
+    id: string,
+    rating: number,
+    ratingMap: MinimalRatingMap,
+  ) {
+    super(id);
+    this.rating = rating;
+    this.ratingMap = ratingMap;
+  }
+
+  public static fromRemote(remote: any): CardboardCubeableRatingHistoryPoint {
+    return new CardboardCubeableRatingHistoryPoint(
+      remote.id,
+      remote.rating,
+      MinimalRatingMap.fromRemote(remote.rating_map),
+    )
+  }
+
+  public static getHistory = (
+    releaseMapId: string,
+    cardboardCubeableId: string,
+  ): Promise<CardboardCubeableRatingHistoryPoint[]> => {
+    return axios.get(
+      apiPath + 'ratings/history/' + releaseMapId + '/' + cardboardCubeableId + '/'
+    ).then(
+      response => response.data.map(
+        (point: any) => CardboardCubeableRatingHistoryPoint.fromRemote(point)
+      )
+    )
+  };
+
+}
+
+
+export class NodeRatingComponentRatingHistoryPoint extends Atomic {
+  ratingComponent: number;
+  ratingMap: MinimalRatingMap;
+  rating: number;
+
+  constructor(
+    id: string,
+    ratingComponent: number,
+    ratingMap: MinimalRatingMap,
+  ) {
+    super(id);
+    this.ratingComponent = ratingComponent;
+    this.ratingMap = ratingMap;
+    this.rating = ratingComponent;
+  }
+
+  public static fromRemote(remote: any): NodeRatingComponentRatingHistoryPoint {
+    return new NodeRatingComponentRatingHistoryPoint(
+      remote.id,
+      remote.rating_component,
+      MinimalRatingMap.fromRemote(remote.rating_map),
+    )
+  }
+
+  public static getNodeHistory = (
+    releaseMapId: string,
+    nodeId: string,
+  ): Promise<NodeRatingComponentRatingHistoryPoint[]> => {
+    return axios.get(
+      apiPath + 'ratings/node-history/' + releaseMapId + '/' + nodeId + '/'
+    ).then(
+      response => response.data.map(
+        (point: any) => NodeRatingComponentRatingHistoryPoint.fromRemote(point)
+      )
+    )
+  };
+
+}
+
+
+export class RatingMap extends MinimalRatingMap {
+  ratings: CardboardCubeableRating[];
+  nodeRatingComponents: NodeRatingComponent[];
+  parent: MinimalRatingMap | null;
+  children: MinimalRatingMap[];
+
+  constructor(
+    id: string,
+    createdAt: Date,
+    eventType: string,
+    release: CubeReleaseName,
+    ratings: CardboardCubeableRating[],
+    nodeRatingComponents: NodeRatingComponent[],
+    parent: MinimalRatingMap | null,
+    children: MinimalRatingMap[],
+  ) {
+    super(id, createdAt, eventType, release);
+    this.ratings = ratings;
+    this.nodeRatingComponents = nodeRatingComponents;
+    this.parent = parent;
+    this.children = children;
   }
 
   public static fromRemote(remote: any): RatingMap {
     return new RatingMap(
       remote.id,
-      remote.ratings.map((rating: any) => CardboardCubeableRating.fromRemote(rating)),
       new Date(remote.created_at),
+      remote.event_type,
+      CubeReleaseName.fromRemote(remote.release),
+      remote.ratings.map((rating: any) => CardboardCubeableRating.fromRemote(rating)),
+      remote.node_rating_components.map((component: any) => NodeRatingComponent.fromRemote(component)),
+      remote.parent && MinimalRatingMap.fromRemote(remote.parent),
+      remote.children.map((child: any) => MinimalRatingMap.fromRemote(child)),
     )
   }
+
+  public static get = (id: string): Promise<RatingMap> => {
+    return axios.get(
+      apiPath + 'ratings/' + id + '/'
+    ).then(
+      response => RatingMap.fromRemote(response.data)
+    )
+  };
+
 }

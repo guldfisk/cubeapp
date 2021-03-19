@@ -10,6 +10,7 @@ from mtgorp.models.formats.format import LimitedSideboard
 from api.models import VersionedCube, CubeRelease
 from draft.models import DraftSession
 from limited.models import CubeBoosterSpecification
+from rating.models import RatingMap
 from rating.tasks import generate_ratings_map_for_release, generate_ratings_map_for_draft
 
 
@@ -49,3 +50,10 @@ class Command(BaseCommand):
                         generate_ratings_map_for_draft(rating_event.id)
                 except ValueError as e:
                     print(e, ' (skipped)')
+
+            for rating_map in RatingMap.objects.all():
+                ratings_for = rating_map.ratings_for
+                created_at = ratings_for.created_at if isinstance(ratings_for, CubeRelease) else ratings_for.started_at
+                rating_map.created_at = created_at
+                rating_map.updated_at = created_at
+                rating_map.save(update_fields = ('created_at', 'updated_at'))

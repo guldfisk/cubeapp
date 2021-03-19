@@ -25,10 +25,10 @@ from mtgimg.pipeline import ImageableProcessor, get_pipeline
 from magiccube.collections.laps import TrapCollection
 
 from api import models
+from api.boto import get_boto_client, SPACES_ENDPOINT
 from api.mail import mail_me
 from resources.staticimageloader import image_loader
 from utils.boto import MultipartUpload
-from api.boto import get_boto_client, SPACES_ENDPOINT
 
 
 def inject_boto_client(f: t.Callable) -> t.Callable:

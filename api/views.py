@@ -506,7 +506,7 @@ class VersionedCubesList(generics.ListCreateAPIView):
                 'versioned_cube_id',
             )
         ),
-    ).all()
+    ).all().order_by('created_at')
     serializer_class = serializers.VersionedCubeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
@@ -566,7 +566,10 @@ class ForkVersionedCube(generics.CreateAPIView):
         forked_versioned_cube: models.VersionedCube = self.get_object()
 
         with transaction.atomic():
-            new_versioned_cube = serializer.save(author = self.request.user, forked_from = forked_versioned_cube)
+            new_versioned_cube = serializer.save(
+                author = self.request.user,
+                forked_from_release = forked_versioned_cube.latest_release,
+            )
 
             release = models.CubeRelease.create(
                 cube = forked_versioned_cube.latest_release.cube,

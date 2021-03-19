@@ -1,9 +1,11 @@
 import typing as t
 
 import json
+from abc import abstractmethod
 
 from django.db import models
 
+from mtgorp.models.interfaces import Printing, Cardboard
 from mtgorp.models.serilization.serializeable import Serializeable
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
@@ -12,6 +14,7 @@ from magiccube.collections.cubeable import (
     Cubeable, deserialize_cubeable_string, serialize_cubeable_string,
     deserialize_cardboard_cubeable_string, CardboardCubeable, serialize_cardboard_cubeable_string
 )
+from magiccube.laps.traps.tree.printingtree import PrintingNodeChild, PrintingNode, CardboardNodeChild, CardboardNode
 
 from resources.staticdb import db
 from utils.methods import import_path
@@ -69,55 +72,84 @@ class OrpField(models.Field):
         return JsonId.serialize(self.value_from_object(obj))
 
 
-class CubeableField(models.Field):
+T = t.TypeVar('T')
+
+
+class TextSerializedField(models.Field, t.Generic[T]):
+
+    @abstractmethod
+    def from_native(self, value: str) -> T:
+        pass
+
+    @abstractmethod
+    def to_native(self, value: T) -> str:
+        pass
 
     def db_type(self, connection) -> str:
         return 'TEXT'
 
-    def from_db_value(self, value, expression, connection) -> t.Optional[Cubeable]:
+    def from_db_value(self, value, expression, connection) -> t.Optional[T]:
         if value is None:
             return
-        return deserialize_cubeable_string(value, RawStrategy(db))
+        return self.from_native(value)
 
     def to_python(self, value) -> t.Optional[Cubeable]:
         if value is None:
             return
-        return deserialize_cubeable_string(value, RawStrategy(db))
+        return self.from_native(value)
 
     def get_prep_value(self, value: Cubeable) -> t.Optional[str]:
         if value is None:
             return None
+        return self.to_native(value)
+
+    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
+        return self.to_native(value)
+
+    def value_to_string(self, obj):
+        return self.to_native(self.value_from_object(obj))
+        # return serialize_cubeable_string(self.value_from_object(obj))
+
+
+class CubeableField(TextSerializedField[Cubeable]):
+
+    def from_native(self, value: str) -> T:
+        return deserialize_cubeable_string(value, RawStrategy(db))
+
+    def to_native(self, value: T) -> str:
         return serialize_cubeable_string(value)
 
-    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
-        return self.get_prep_value(value)
 
-    def value_to_string(self, obj):
-        return serialize_cubeable_string(self.value_from_object(obj))
+class PrintingNodeChildField(TextSerializedField[PrintingNodeChild]):
+
+    def from_native(self, value: str) -> T:
+        if value[0] == '{':
+            return JsonId(db).deserialize(PrintingNode, value)
+        return db.printings[int(value)]
+
+    def to_native(self, value: T) -> str:
+        if isinstance(value, Printing):
+            return str(value.id)
+        return JsonId.serialize(value)
 
 
-class CardboardCubeableField(models.Field):
+class CardboardCubeableField(TextSerializedField[CardboardCubeable]):
 
-    def db_type(self, connection) -> str:
-        return 'TEXT'
-
-    def from_db_value(self, value, expression, connection) -> t.Optional[CardboardCubeable]:
-        if value is None:
-            return
+    def from_native(self, value: str) -> T:
         return deserialize_cardboard_cubeable_string(value, RawStrategy(db))
 
-    def to_python(self, value) -> t.Optional[CardboardCubeable]:
-        if value is None:
-            return
-        return deserialize_cardboard_cubeable_string(value, RawStrategy(db))
-
-    def get_prep_value(self, value: CardboardCubeable) -> t.Optional[str]:
-        if value is None:
-            return None
+    def to_native(self, value: T) -> str:
         return serialize_cardboard_cubeable_string(value)
 
-    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
-        return self.get_prep_value(value)
 
-    def value_to_string(self, obj):
-        return serialize_cardboard_cubeable_string(self.value_from_object(obj))
+class CardboardNodeChildField(TextSerializedField[CardboardNodeChild]):
+
+    def from_native(self, value: str) -> T:
+        if value[0] == '{':
+            return JsonId(db).deserialize(CardboardNode, value)
+        return db.cardboards[value]
+
+    def to_native(self, value: T) -> str:
+        if isinstance(value, Cardboard):
+            return value.name
+        return JsonId.serialize(value)

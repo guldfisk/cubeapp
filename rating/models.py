@@ -2,7 +2,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
-from api.fields.orp import CardboardCubeableField, CubeableField
+from magiccube.laps.traps.tree.printingtree import CardboardNode, PrintingNode
+
+from api.fields.orp import CardboardCubeableField, CubeableField, CardboardNodeChildField, PrintingNodeChildField
 from api.models import CubeRelease
 from utils.mixins import TimestampedModel
 
@@ -12,6 +14,12 @@ class RatingMap(TimestampedModel, models.Model):
     ratings_for_content_type = models.ForeignKey(ContentType, on_delete = models.CASCADE)
     ratings_for_object_id = models.PositiveIntegerField()
     ratings_for = GenericForeignKey('ratings_for_content_type', 'ratings_for_object_id', )
+    parent = models.ForeignKey(
+        'RatingMap',
+        related_name = 'children',
+        null = True,
+        on_delete = models.SET_NULL,
+    )
 
     class Meta:
         unique_together = ('ratings_for_content_type', 'ratings_for_object_id')
@@ -40,3 +48,20 @@ class CardboardCubeableRating(models.Model):
     @elo.setter
     def elo(self, value: int) -> None:
         self.rating = value
+
+
+class NodeRatingComponent(models.Model):
+    rating_map = models.ForeignKey(RatingMap, on_delete = models.CASCADE, related_name = 'node_rating_components')
+    node: CardboardNode = CardboardNodeChildField()
+    node_id = models.CharField(max_length = 2047)
+    example_node: PrintingNode = PrintingNodeChildField()
+    rating_component = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = ('node_id', 'rating_map')
+        ordering = ('-rating_component',)
+
+    def save(self, force_insert = False, force_update = False, using = None, update_fields = None):
+        if not self.node_id:
+            self.node_id = self.node.persistent_hash()
+        super().save(force_insert, force_update, using, update_fields)

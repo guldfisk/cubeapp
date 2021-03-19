@@ -16,8 +16,8 @@ from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
 from magiccube.laps.purples.purple import BasePurple
-from magiccube.laps.tickets.ticket import BaseTicket
-from magiccube.laps.traps.trap import BaseTrap
+from magiccube.laps.tickets.ticket import BaseTicket, Ticket
+from magiccube.laps.traps.trap import BaseTrap, Trap
 from magiccube.laps.traps.tree.printingtree import BaseNode
 from magiccube.update import cubeupdate
 from magiccube.update.report import UpdateReport, ReportNotification
@@ -94,6 +94,7 @@ class PrintingSerializer(ModelSerializer[Printing]):
                 printing.cardboard.front_card.type_line.types
             ],
             'type': 'printing',
+            'cardboard_cubeable_id': printing.cardboard.id,
         }
 
 
@@ -162,6 +163,7 @@ class CardboardSerializer(ModelSerializer[Cardboard]):
                 cardboard.back_cards
             ],
             'layout': cardboard.layout.name,
+            'type': 'cardboard',
         }
 
 
@@ -185,6 +187,7 @@ class FullPrintingSerializer(ModelSerializer[Printing]):
             'expansion': ExpansionSerializer.serialize(printing.expansion),
             'cardboard': CardboardSerializer.serialize(printing.cardboard),
             'type': printing.__class__.__name__,
+            'cardboard_cubeable_id': printing.cardboard.id,
         }
 
 
@@ -218,13 +221,16 @@ class TrapSerializer(ModelSerializer[BaseTrap]):
 
     @classmethod
     def serialize(cls, trap: BaseTrap) -> compacted_model:
-        return {
+        d = {
             'id': trap.persistent_hash(),
             'node': NodeSerializer.serialize(trap.node),
             'intention_type': trap.intention_type.name,
             'type': 'trap',
             'string_representation': trap.node.get_minimal_string(identified_by_id = False),
         }
+        if isinstance(trap, Trap):
+            d['cardboard_cubeable_id'] = trap.as_cardboards.id
+        return d
 
 
 class TicketSerializer(ModelSerializer[BaseTicket]):
@@ -237,12 +243,15 @@ class TicketSerializer(ModelSerializer[BaseTicket]):
 
     @classmethod
     def serialize(cls, ticket: BaseTicket) -> compacted_model:
-        return {
+        d = {
             'options': list(map(cls._serialize_option, ticket.options)),
             'name': ticket.name,
             'id': ticket.persistent_hash(),
             'type': 'ticket',
         }
+        if isinstance(ticket, Ticket):
+            d['cardboard_cubeable_id'] = ticket.as_cardboards.id
+        return d
 
 
 class PurpleSerializer(ModelSerializer[BasePurple]):
@@ -254,6 +263,7 @@ class PurpleSerializer(ModelSerializer[BasePurple]):
             'id': purple.persistent_hash(),
             'description': purple.description,
             'type': 'purple',
+            'cardboard_cubeable_id': purple.name,
         }
 
 
