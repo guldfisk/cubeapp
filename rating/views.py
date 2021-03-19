@@ -2,12 +2,9 @@ from abc import abstractmethod
 
 from django.db.models import QuerySet, Prefetch
 from django.http import Http404
-from django.shortcuts import get_object_or_404
 
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
-
-from api.models import VersionedCube
 
 from rating import serializers
 from rating import models
@@ -91,10 +88,11 @@ class CardboardCubeableRatingHistory(generics.GenericAPIView):
     serializer_class = serializers.DatedCardboardCubeableRatingSerializer
 
     def get(self, request, *args, **kwargs):
-        rating_map_id = get_object_or_404(
-            models.RatingMap.objects.values_list('id', flat = True),
-            release_id = kwargs['release_id'],
-        )
+        rating_map_id = models.RatingMap.objects.filter(
+            release_id = kwargs['release_id']
+        ).order_by('created_at').values_list('id', flat = True).last()
+        if rating_map_id is None:
+            return Response(status = status.HTTP_400_BAD_REQUEST)
         ratings = models.CardboardCubeableRating.objects.raw(
             '''
             SELECT * FROM rating_cardboardcubeablerating
@@ -133,10 +131,11 @@ class NodeRatingComponentHistory(generics.GenericAPIView):
     serializer_class = serializers.DatedNodeRatingComponentSerializer
 
     def get(self, request, *args, **kwargs):
-        rating_map_id = get_object_or_404(
-            models.RatingMap.objects.values_list('id', flat = True),
-            release_id = kwargs['release_id'],
-        )
+        rating_map_id = models.RatingMap.objects.filter(
+            release_id = kwargs['release_id']
+        ).order_by('created_at').values_list('id', flat = True).last()
+        if rating_map_id is None:
+            return Response(status = status.HTTP_400_BAD_REQUEST)
         ratings = models.NodeRatingComponent.objects.raw(
             '''
             SELECT * FROM rating_noderatingcomponent

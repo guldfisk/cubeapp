@@ -88,7 +88,6 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
         participants: 'players',
         state: 'state',
       };
-      console.log(filterMap, filters);
       for (const [key, value] of Object.entries(filterMap)) {
         if (filters[key]) {
           _filters[value + '_filter'] = filters[key].filterVal;

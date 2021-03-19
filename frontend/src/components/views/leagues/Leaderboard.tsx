@@ -85,7 +85,6 @@ export default class Leaderboard extends React.Component<LeaderboardProps, Leade
   };
 
   render() {
-    console.log(this.state.decks.map(deck => deck.averagePlacement));
     const columns: { [key: string]: any } = [
       {
         dataField: 'id',

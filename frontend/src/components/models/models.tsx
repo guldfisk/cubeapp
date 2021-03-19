@@ -3593,7 +3593,6 @@ export class ScoredDeck extends MinimalDeck {
   }
 
   public static fromRemote(remote: any): ScoredDeck {
-    console.log(remote.average_placement);
     return new ScoredDeck(
       remote.id,
       remote.name,
@@ -4204,7 +4203,6 @@ export class NodeRatingComponent extends Atomic {
   }
 
   public static fromRemote(remote: any): NodeRatingComponent {
-    console.log(remote);
     return new NodeRatingComponent(
       remote.id,
       remote.node.type == 'cardboard' ? Cardboard.fromRemote(remote.node) : CardboardNode.fromRemote(remote.node),
