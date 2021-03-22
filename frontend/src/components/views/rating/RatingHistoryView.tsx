@@ -8,7 +8,7 @@ import {
 
 
 interface RatingHistoryViewProps {
-  ratings: (CardboardCubeableRatingHistoryPoint | NodeRatingComponentRatingHistoryPoint)[],
+  ratings: [string, (CardboardCubeableRatingHistoryPoint | NodeRatingComponentRatingHistoryPoint)[]][],
   average?: number | null,
 }
 
@@ -16,6 +16,14 @@ interface RatingHistoryViewProps {
 export default class RatingHistoryView extends React.Component<RatingHistoryViewProps> {
 
   render() {
+    const releaseMarkers: { [key: string]: string } = {};
+    this.props.ratings.map(
+      ([name, series]) => {
+        series.filter(rating => rating.ratingMap.eventType == 'release').map(
+          rating => releaseMarkers[rating.ratingMap.createdAt.getTime()] = rating.ratingMap.release.name
+        )
+      }
+    )
     return <Chart
       type='line'
       options={
@@ -35,6 +43,9 @@ export default class RatingHistoryView extends React.Component<RatingHistoryView
               text: "Rating",
             },
           },
+          tooltip: {
+            shared: true,
+          },
           theme: {mode: 'dark'},
           annotations: {
             yaxis: this.props.average ? [
@@ -49,16 +60,16 @@ export default class RatingHistoryView extends React.Component<RatingHistoryView
                 }
               }
             ] : [],
-            xaxis: this.props.ratings.filter(rating => rating.ratingMap.eventType == 'release').map(
-              rating => {
+            xaxis: Object.entries(releaseMarkers).map(
+              ([time, name]) => {
                 return {
-                  x: rating.ratingMap.createdAt.getTime(),
+                  x: time,
                   label: {
                     style: {
                       color: 'black',
                       background: '#00E396'
                     },
-                    text: rating.ratingMap.release.name,
+                    text: name,
                   },
                 }
               }
@@ -67,14 +78,16 @@ export default class RatingHistoryView extends React.Component<RatingHistoryView
         }
       }
       series={
-        [
-          {
-            name: 'Ratings',
-            data: this.props.ratings.map(
-              rating => [rating.ratingMap.createdAt.getTime(), rating.rating]
-            )
+        this.props.ratings.map(
+          ([name, series]) => {
+            return {
+              name: name,
+              data: series.map(
+                rating => [rating.ratingMap.createdAt.getTime(), rating.rating]
+              )
+            }
           }
-        ]
+        )
       }
     />
   }

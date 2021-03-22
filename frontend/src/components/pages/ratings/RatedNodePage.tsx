@@ -60,7 +60,7 @@ export default class RatedNodePage extends React.Component<RatedNodePageProps, R
       }
       {
         this.state.ratings.length !== 0 ? <RatingHistoryView
-          ratings={this.state.ratings}
+          ratings={[[this.state.rating.node.representation(), this.state.ratings]]}
         /> : <Loading/>
       }
     </>

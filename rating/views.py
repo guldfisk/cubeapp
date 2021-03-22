@@ -56,7 +56,7 @@ class CardboardCubeableRatingExample(generics.RetrieveAPIView):
     def get_object(self):
         obj = models.CardboardCubeableRating.objects.filter(
             rating_map__release = self.kwargs['release_id'],
-            cardboard_cubeable_id = self.kwargs['cardboard_cubeable_id'],
+            cardboard_cubeable_id = self.kwargs['cardboard_cubeable_id'].replace('_', '/'),
         ).last()
 
         if obj is None:
@@ -73,7 +73,7 @@ class NodeRatingComponentExample(generics.RetrieveAPIView):
     def get_object(self):
         obj = models.NodeRatingComponent.objects.filter(
             rating_map__release = self.kwargs['release_id'],
-            node_id = self.kwargs['node_id'],
+            node_id = self.kwargs['node_id'].replace('_', '/'),
         ).last()
 
         if obj is None:
@@ -112,7 +112,7 @@ class CardboardCubeableRatingHistory(generics.GenericAPIView):
             ) AND cardboard_cubeable_id = %s
             ORDER BY rating_ratingmap.created_at;
             ''',
-            [rating_map_id, kwargs['cardboard_id']],
+            [rating_map_id, kwargs['cardboard_id'].replace('_', '/')],
         ).prefetch_related(
             'rating_map',
             Prefetch(
@@ -155,7 +155,7 @@ class NodeRatingComponentHistory(generics.GenericAPIView):
             ) AND node_id = %s
             ORDER BY rating_ratingmap.created_at;
             ''',
-            [rating_map_id, kwargs['node_id']],
+            [rating_map_id, kwargs['node_id'].replace('_', '/')],
         ).prefetch_related(
             'rating_map',
             Prefetch(

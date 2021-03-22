@@ -4217,7 +4217,7 @@ export class NodeRatingComponent extends Atomic {
     nodeId: string,
   ): Promise<NodeRatingComponent> => {
     return axios.get(
-      apiPath + 'ratings/node-example/' + releaseId + '/' + nodeId + '/'
+      apiPath + 'ratings/node-example/' + releaseId + '/' + nodeId.replace(/\//g, '_') + '/'
     ).then(
       response => NodeRatingComponent.fromRemote(response.data)
     )
@@ -4261,7 +4261,7 @@ export class CardboardCubeableRating extends Atomic {
     cardboardCubeableId: string,
   ): Promise<CardboardCubeableRating> => {
     return axios.get(
-      apiPath + 'ratings/example/' + releaseId + '/' + cardboardCubeableId + '/'
+      apiPath + 'ratings/example/' + releaseId.replace(/\//g, '_') + '/' + cardboardCubeableId + '/'
     ).then(
       response => CardboardCubeableRating.fromRemote(response.data)
     )
@@ -4329,7 +4329,7 @@ export class CardboardCubeableRatingHistoryPoint extends Atomic {
     cardboardCubeableId: string,
   ): Promise<CardboardCubeableRatingHistoryPoint[]> => {
     return axios.get(
-      apiPath + 'ratings/history/' + releaseMapId + '/' + cardboardCubeableId + '/'
+      apiPath + 'ratings/history/' + releaseMapId + '/' + cardboardCubeableId.replace(/\//g, '_') + '/'
     ).then(
       response => response.data.map(
         (point: any) => CardboardCubeableRatingHistoryPoint.fromRemote(point)
@@ -4369,7 +4369,7 @@ export class NodeRatingComponentRatingHistoryPoint extends Atomic {
     nodeId: string,
   ): Promise<NodeRatingComponentRatingHistoryPoint[]> => {
     return axios.get(
-      apiPath + 'ratings/node-history/' + releaseMapId + '/' + nodeId + '/'
+      apiPath + 'ratings/node-history/' + releaseMapId + '/' + nodeId.replace(/\//g, '_') + '/'
     ).then(
       response => response.data.map(
         (point: any) => NodeRatingComponentRatingHistoryPoint.fromRemote(point)

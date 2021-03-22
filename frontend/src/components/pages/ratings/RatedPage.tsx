@@ -9,7 +9,7 @@ import {Loading} from '../../utils/utils';
 import {
   Cardboard,
   CardboardCubeableRating,
-  CardboardCubeableRatingHistoryPoint, CardboardTrap,
+  CardboardCubeableRatingHistoryPoint, CardboardTrap, NodeRatingComponentRatingHistoryPoint,
 } from '../../models/models';
 import {ImageableImage} from "../../images";
 import RatingHistoryView from "../../views/rating/RatingHistoryView";
@@ -23,6 +23,7 @@ interface RatedPageProps {
 interface RatedPageState {
   rating: CardboardCubeableRating | null
   ratings: CardboardCubeableRatingHistoryPoint[]
+  nodeRatings: [string, NodeRatingComponentRatingHistoryPoint[]][]
 }
 
 
@@ -33,6 +34,7 @@ export default class RatedPage extends React.Component<RatedPageProps, RatedPage
     this.state = {
       rating: null,
       ratings: [],
+      nodeRatings: [],
     };
   }
 
@@ -41,9 +43,21 @@ export default class RatedPage extends React.Component<RatedPageProps, RatedPage
       this.props.match.params.releaseId,
       this.props.match.params.cardboardCubeableId,
     ).then(
-      rating => this.setState(
-        {rating},
-      )
+      rating => {
+        this.setState({rating});
+        if (rating.cardboardCubeable instanceof CardboardTrap) {
+          Promise.all(
+            (rating.cardboardCubeable as CardboardTrap).node.children.items.map(
+              ([node, multiplicity]) => NodeRatingComponentRatingHistoryPoint.getNodeHistory(
+                this.props.match.params.releaseId,
+                node.id,
+              ).then(series => [node.representation(), series])
+            )
+          ).then(
+            (nodeRatings: any) => this.setState({nodeRatings})
+          )
+        }
+      }
     );
     CardboardCubeableRatingHistoryPoint.getHistory(
       this.props.match.params.releaseId,
@@ -95,9 +109,16 @@ export default class RatedPage extends React.Component<RatedPageProps, RatedPage
       <Row>
         {
           this.state.ratings.length !== 0 ? <RatingHistoryView
-            ratings={this.state.ratings}
+            ratings={[[this.state.rating.exampleCubeable.representation(), this.state.ratings]]}
             average={1000}
           /> : <Loading/>
+        }
+      </Row>
+      <Row>
+        {
+          this.state.nodeRatings.length !== 0 ? <RatingHistoryView
+            ratings={this.state.nodeRatings}
+          /> : null
         }
       </Row>
     </Container>
