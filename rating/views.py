@@ -6,13 +6,24 @@ from django.http import Http404
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from api.models import CubeRelease
 from rating import serializers
 from rating import models
 
 
 class RatingMapDetail(generics.RetrieveAPIView):
     serializer_class = serializers.RatingMapSerializer
-    queryset = models.RatingMap.objects.all()
+    queryset = models.RatingMap.objects.all().prefetch_related(
+        'ratings',
+        'node_rating_components',
+        Prefetch(
+            'children__release',
+            queryset = CubeRelease.objects.all().only(
+                'id',
+                'name',
+            ),
+        ),
+    )
 
 
 class RelatedMap(generics.RetrieveAPIView):

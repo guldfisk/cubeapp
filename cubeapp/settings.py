@@ -13,6 +13,7 @@ SECRETS_PATH = os.path.join(project_name_to_secret_dir('cubeapp'), 'settings.cfg
 
 _config_parser = configparser.ConfigParser()
 _config_parser.read(SECRETS_PATH)
+
 DATABASE_PASSWORD = _config_parser['client']['password']
 DATABASE_HOST = _config_parser['client']['host']
 
@@ -172,7 +173,7 @@ INTERNAL_IPS = [
 if DEBUG:
     DEBUG_TOOLBAR_CONFIG = {
         'SHOW_TOOLBAR_CALLBACK': lambda _: False,
-        'RESULTS_CACHE_SIZE': 40,
+        'RESULTS_CACHE_SIZE': 200,
     }
 
 DEBUG_TOOLBAR_PANELS = [
@@ -196,7 +197,6 @@ WEBPACK_LOADER = {
         'LOADER_CLASS': 'webpack_loader.loader.WebpackLoader',
     }
 }
-
 
 # LOGGING = {
 #     'version': 1,

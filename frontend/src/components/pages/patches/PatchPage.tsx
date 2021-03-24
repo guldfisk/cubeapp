@@ -33,12 +33,12 @@ import Alert from "react-bootstrap/Alert";
 import EditHistoryView from "../../views/patchview/EditHistory";
 
 
-interface DeltaPageProps {
+interface PatchPageProps {
   match: any
   authenticated: boolean
 }
 
-interface DeltaPageState {
+interface PatchPageState {
   patch: null | Patch
   releasePatch: null | ReleasePatch
   verbosePatch: VerbosePatch | null
@@ -50,11 +50,12 @@ interface DeltaPageState {
   userGroup: UserGroup
   awaitingUpdate: boolean
   editHistory: EditEvent[]
+  nodeEditMode: boolean
 }
 
-class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
+class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
 
-  constructor(props: DeltaPageProps) {
+  constructor(props: PatchPageProps) {
     super(props);
     this.state = {
       patch: null,
@@ -68,6 +69,7 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       userGroup: new UserGroup(),
       awaitingUpdate: false,
       editHistory: [],
+      nodeEditMode: true,
     };
   }
 
@@ -81,7 +83,10 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
     releasePatch.preview().then(
       (preview) => {
         this.setState(
-          {preview}
+          {
+            preview,
+            nodeEditMode: !preview.constrainedNodes.nodes.isEmpty(),
+          }
         )
       }
     );
@@ -182,7 +187,13 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
-    if (cubeable instanceof Printing) {
+    if (!this.state.nodeEditMode) {
+      this.handleMultipleUpdatePatch(
+        [
+          [cubeable, -1],
+        ]
+      )
+    } else if (cubeable instanceof Printing) {
       this.handleMultipleUpdatePatch(
         [
           [cubeable, -multiplicity],
@@ -346,48 +357,59 @@ class PatchPage extends React.Component<DeltaPageProps, DeltaPageState> {
       <Container fluid>
         <Row>
           {
-            !this.props.authenticated ? undefined :
-              <Col sm={2}>
-                <Card>
-                  <Card.Header>
-                    {!this.state.releasePatch ? "" : this.state.releasePatch.name}
-                  </Card.Header>
-                  <Card.Body>
-                    <p>
-                      <Link
-                        to={"#"}
-                        onClick={
-                          () => this.setState(
-                            {confirmDelete: true}
-                          )
-                        }
-                      >
-                        Delete patch
-                      </Link>
-                    </p>
-                    <p>
-                      <Link
-                        to={"#"}
-                        onClick={this.handleForkPatch}
-                      >
-                        Fork patch
-                      </Link>
-                    </p>
-                    < p>
-                      < Link
-                        to={"/patch/" + this.props.match.params.id + '/apply'}
-                      >
-                        Apply patch
-                      </Link>
-                    </p>
-                    <Button
-                      onClick={() => this.state.editing ? this.stopEdit() : this.beginEdit()}
+            this.props.authenticated && <Col sm={2}>
+              <Card>
+                <Card.Header>
+                  {!this.state.releasePatch ? "" : this.state.releasePatch.name}
+                </Card.Header>
+                <Card.Body>
+                  <p>
+                    <Link
+                      to={"#"}
+                      onClick={
+                        () => this.setState(
+                          {confirmDelete: true}
+                        )
+                      }
                     >
-                      {this.state.editing ? "Stop Editing" : "Edit"}
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
+                      Delete patch
+                    </Link>
+                  </p>
+                  <p>
+                    <Link
+                      to={"#"}
+                      onClick={this.handleForkPatch}
+                    >
+                      Fork patch
+                    </Link>
+                  </p>
+                  < p>
+                    < Link
+                      to={"/patch/" + this.props.match.params.id + '/apply'}
+                    >
+                      Apply patch
+                    </Link>
+                  </p>
+                  <Button
+                    onClick={() => this.state.editing ? this.stopEdit() : this.beginEdit()}
+                  >
+                    {this.state.editing ? "Stop Editing" : "Edit"}
+                  </Button>
+                  {
+                    this.state.editing && <p>
+                      <input
+                        type="checkbox"
+                        id="node_edit_mode"
+                        name="node_edit_mode"
+                        checked={this.state.nodeEditMode}
+                        onClick={() => this.setState({nodeEditMode: !this.state.nodeEditMode})}
+                      />
+                      <label htmlFor='node_edit_mode'>Node edit mode</label>
+                    </p>
+                  }
+                </Card.Body>
+              </Card>
+            </Col>
           }
           <Col>
             {

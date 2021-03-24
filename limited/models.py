@@ -3,11 +3,10 @@ from __future__ import annotations
 import datetime
 import functools
 import math
+import operator
+import random
 import string
 import typing as t
-import random
-import operator
-
 from enum import Enum
 
 from django.contrib.auth import get_user_model
@@ -15,9 +14,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models, transaction
 
 from mtgorp.models.collections.deck import Deck
-from mtgorp.models.limited.boostergen import (
-    GenerateBoosterException, BoosterKey, RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
-)
+from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey
+from mtgorp.models.limited.constants import RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
@@ -27,14 +25,14 @@ from magiccube.collections.infinites import Infinites
 
 from typedmodels.models import TypedModel
 
-from tournaments.models import Tournament, TournamentParticipant
 from api.fields.orp import OrpField
 from api.models import CubeRelease
 from api.serialization.serializers import NameCubeReleaseSerializer
+from resources.staticdb import db
+from tournaments.models import Tournament, TournamentParticipant
 from utils.fields import EnumField, StringMapField, SerializeableField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
-from resources.staticdb import db
 
 
 PoolSpecificationOptions = t.Sequence[t.Mapping[str, t.Any]]
@@ -296,7 +294,7 @@ class LimitedSession(models.Model):
     def create_tournament(self) -> Tournament:
         if self.tournament is not None:
             raise ValueError('tournament already created')
-        if self.pools.filter(pool_decks__isnull=True).exists():
+        if self.pools.filter(pool_decks__isnull = True).exists():
             raise ValueError('not all participants have submitted a deck')
 
         with transaction.atomic():

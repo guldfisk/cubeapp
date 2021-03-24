@@ -37,6 +37,10 @@ export class Counter<T extends IDAble> {
     items.forEach(([item, multiplicity]) => this.add(item, multiplicity));
   }
 
+  isEmpty = (): boolean => {
+    return !!Object.keys(this).length;
+  };
+
   add = (item: T, amount: number = 1): void => {
     if (amount === 0) {
       return
