@@ -5,7 +5,6 @@ import Tabs from "react-bootstrap/Tabs";
 import {Container, Row} from 'react-bootstrap';
 import {Link} from "react-router-dom";
 
-import history from "../../routing/history";
 import RatingMapComponentsView from "../../views/rating/RatingMapComponentsView";
 import RatingMapView from "../../views/rating/RatingMapView";
 import {Loading} from '../../utils/utils';
@@ -88,11 +87,6 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
           <Tab eventKey='ratings' title='Ratings'>
             <RatingMapView
               ratingMap={this.state.ratingMap}
-              onRatingClicked={
-                rating => history.push(
-                  '/release/' + this.state.ratingMap.release.id + '/cubeable-details/' + rating.cardboardCubeableId + '/'
-                )
-              }
             />
           </Tab>
           <Tab eventKey='nodeComponents' title='Node Components'>

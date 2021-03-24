@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
     @transaction.atomic()
     def handle(self, *args, **options):
-        for versioned_cube in VersionedCube.objects.all():
+        for versioned_cube in VersionedCube.objects.all().order_by('created_at'):
             for rating_event in sorted(
                 itertools.chain(
                     versioned_cube.releases.all(),
@@ -43,13 +43,10 @@ class Command(BaseCommand):
                 key = self._rating_event_timestamp,
             ):
                 print(versioned_cube.name, versioned_cube.id, rating_event, self._rating_event_timestamp(rating_event))
-                try:
-                    if isinstance(rating_event, CubeRelease):
-                        generate_ratings_map_for_release(rating_event.id)
-                    else:
-                        generate_ratings_map_for_draft(rating_event.id)
-                except ValueError as e:
-                    print(e, ' (skipped)')
+                if isinstance(rating_event, CubeRelease):
+                    generate_ratings_map_for_release(rating_event.id)
+                else:
+                    generate_ratings_map_for_draft(rating_event.id)
 
             for rating_map in RatingMap.objects.all():
                 ratings_for = rating_map.ratings_for

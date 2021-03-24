@@ -90,12 +90,21 @@ def generate_ratings_map_for_release(release_id: int) -> None:
                 if isinstance(cardboard_cubeable, CardboardTrap) and cardboard_cubeable.intention_type == IntentionType.GARBAGE:
                     rating_seed = int(
                         sum(
-                            previous_ratings_node_map.get(
-                                node,
-                                AVERAGE_RATING / len(cardboard_cubeable.node.children),
+                            rating / 2 ** idx
+                            for idx, rating in
+                            enumerate(
+                                sorted(
+                                    (
+                                        previous_ratings_node_map.get(
+                                            node,
+                                            AVERAGE_RATING / len(cardboard_cubeable.node.children),
+                                        )
+                                        for node in
+                                        cardboard_cubeable.node.children
+                                    ),
+                                    reverse = True,
+                                )
                             )
-                            for node in
-                            cardboard_cubeable.node.children
                         )
                     )
                 else:

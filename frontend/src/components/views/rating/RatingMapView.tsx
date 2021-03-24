@@ -3,6 +3,7 @@ import React from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
+import {Link} from "react-router-dom";
 
 import {CardboardCubeableRating, Cubeable, RatingMap} from '../../models/models';
 import {ImageableListItem} from "../../utils/listitems";
@@ -10,12 +11,10 @@ import {ImageableListItem} from "../../utils/listitems";
 
 interface RatingMapViewProps {
   ratingMap: RatingMap
-  onRatingClicked?: (rating: CardboardCubeableRating) => void
 }
 
 
 export default class RatingMapView extends React.Component<RatingMapViewProps> {
-
 
   render() {
     const columns = [
@@ -28,10 +27,13 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
         dataField: 'exampleCubeable',
         text: 'Cubeable',
         formatter: (cell: Cubeable, row: CardboardCubeableRating, rowIndex: number, formatExtraData: any) =>
-          <ImageableListItem
-            cubeable={cell}
-            onClick={this.props.onRatingClicked && (() => this.props.onRatingClicked(row))}
-          />,
+          <Link
+            to={'/release/' + this.props.ratingMap.release.id + '/cubeable-details/' + row.cardboardCubeableId + '/'}
+          >
+            <ImageableListItem
+              cubeable={cell}
+            />
+          </Link>,
         filterValue: (cell: Cubeable, row: CardboardCubeableRating) => cell.representation(),
       },
       {
