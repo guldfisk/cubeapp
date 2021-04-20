@@ -12,6 +12,7 @@ from botocore.client import BaseClient
 # from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import UserModel
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.timezone import now
@@ -75,6 +76,12 @@ class CubeRelease(models.Model):
     infinites: Infinites = OrpField(model_type = Infinites)
 
     versioned_cube = models.ForeignKey(VersionedCube, on_delete = models.CASCADE, related_name = 'releases')
+
+    rating_maps = GenericRelation(
+        'rating.RatingMap',
+        'ratings_for_object_id',
+        'ratings_for_content_type',
+    )
 
     class Meta:
         ordering = ('-created_at',)

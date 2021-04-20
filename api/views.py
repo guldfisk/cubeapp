@@ -741,11 +741,22 @@ def sample_pack(request: Request, pk: int, size: int) -> Response:
     except models.CubePatch.DoesNotExist:
         return Response(status = status.HTTP_404_NOT_FOUND)
 
+    r = random.Random()
+    seed = request.GET.get('seed') or ''.join(
+        random.choice(string.ascii_letters)
+        for _ in
+        range(16)
+    )
+    r.seed(seed)
+
     try:
         return Response(
-            orpserialize.CubeSerializer.serialize(
-                Cube(random.sample(release.cube.cubeables, size))
-            )
+            {
+                'pack': orpserialize.CubeSerializer.serialize(
+                    Cube(r.sample(release.cube.cubeables, size))
+                ),
+                'seed': seed,
+            }
         )
     except ValueError:
         return Response('Pack to large', status = status.HTTP_400_BAD_REQUEST)
@@ -806,7 +817,12 @@ class ParseConstrainedNodeEndpoint(generics.GenericAPIView):
 
         try:
             constrained_node = ConstrainedNode(
-                node = PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                node = PrintingTreeParser(
+                    db,
+                    allow_volatile = True,
+                ).parse(
+                    serializer.validated_data['query']
+                ),
                 groups = [
                     group.rstrip().lstrip()
                     for group in
@@ -841,7 +857,10 @@ class ParseTrapEndpoint(generics.GenericAPIView):
 
         try:
             trap = Trap(
-                node = PrintingTreeParser(db).parse(serializer.validated_data['query']),
+                node = PrintingTreeParser(
+                    db,
+                    allow_volatile = True,
+                ).parse(serializer.validated_data['query']),
                 intention_type = intention_type,
             )
         except PrintingTreeParserException as e:

@@ -7,7 +7,7 @@ import {Link} from "react-router-dom";
 
 import RatingMapComponentsView from "../../views/rating/RatingMapComponentsView";
 import RatingMapView from "../../views/rating/RatingMapView";
-import {Loading} from '../../utils/utils';
+import {Loading, NotFound} from '../../utils/utils';
 import {RatingMap} from '../../models/models';
 
 
@@ -18,6 +18,7 @@ interface RatingMapPageProps {
 
 interface RatingMapPageState {
   ratingMap: RatingMap | null
+  error: any
 }
 
 
@@ -27,6 +28,7 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
     super(props);
     this.state = {
       ratingMap: null,
+      error: null,
     };
   }
 
@@ -37,11 +39,14 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
           {ratingMap},
         )
       }
-    );
+    ).catch(error => this.setState({error}));
   }
 
   render() {
     if (this.state.ratingMap === null) {
+      if (this.state.error) {
+        return <NotFound/>
+      }
       return <Loading/>
     }
     return <Container fluid>

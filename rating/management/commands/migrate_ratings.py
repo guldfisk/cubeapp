@@ -29,10 +29,14 @@ class Command(BaseCommand):
                     versioned_cube.releases.all(),
                     DraftSession.objects.annotate(
                         specifications_count = Count(
-                            'pool_specification__specifications'
+                            'pool_specification__specifications',
+                            distinct = True,
                         ),
+                        seat_count = Count('seats', distinct = True),
                     ).filter(
+                        state = DraftSession.DraftState.COMPLETED,
                         specifications_count = 1,
+                        seat_count__gt = 1,
                         limited_session__format = LimitedSideboard.name,
                         pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
                         pool_specification__specifications__release__versioned_cube_id = versioned_cube.id,

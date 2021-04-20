@@ -8,6 +8,7 @@ from django.db.models import Prefetch
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 
+from api.models import CubeRelease
 from magiccube.collections.cube import Cube
 
 from mtgdraft.client import draft_format_map
@@ -35,7 +36,7 @@ class DraftSessionList(generics.ListAPIView):
             'pool_specification__specifications',
             Prefetch(
                 'pool_specification__specifications__release',
-                queryset = models.CubeRelease.objects.all().only(
+                queryset = CubeRelease.objects.all().only(
                     'id',
                     'name',
                     'created_at',
@@ -47,7 +48,7 @@ class DraftSessionList(generics.ListAPIView):
             'limited_session__pool_specification__specifications',
             Prefetch(
                 'limited_session__pool_specification__specifications__release',
-                queryset = models.CubeRelease.objects.all().only(
+                queryset = CubeRelease.objects.all().only(
                     'id',
                     'name',
                     'created_at',

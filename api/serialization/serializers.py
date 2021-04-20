@@ -131,7 +131,7 @@ class CubeReleaseSerializer(MinimalCubeReleaseSerializer):
 
 class FullCubeReleaseSerializer(CubeReleaseSerializer):
     cube = OrpSerializerField(
-        model_serializer = orpserialize.CubeSerializer,
+        model_serializer = orpserialize.ReleasableSerializer,
     )
     constrained_nodes = ConstrainedNodesSerializer(read_only = True)
     image_bundles = ImageBundleSerializer(many = True)

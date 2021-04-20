@@ -1,5 +1,3 @@
-import typing as t
-
 from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import serializers
@@ -8,47 +6,15 @@ from rest_framework.fields import SerializerMethodField
 from mtgorp.models.interfaces import Cardboard, Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 
-from magiccube.collections.cubeable import CardboardCubeable, Cubeable
-from magiccube.laps.purples.purple import CardboardPurple, Purple
-from magiccube.laps.tickets.ticket import CardboardTicket, Ticket
-from magiccube.laps.traps.trap import CardboardTrap, Trap
 from magiccube.laps.traps.tree.printingtree import PrintingNodeChild, CardboardNodeChild
 
 from api.models import CubeRelease
 from api.serialization import orpserialize
+from api.serialization.orpserialize import CardboardCubeableSerializer, CubeableSerializer
 from api.serialization.serializers import NameCubeReleaseSerializer, OrpSerializerField
 from draft.models import DraftSession
 from rating import models
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
-
-
-T = t.TypeVar('T')
-
-
-class MappedSerializer(orpserialize.ModelSerializer[T]):
-    _serializer_map: t.Mapping[str, t.Type[orpserialize.ModelSerializer]]
-
-    @classmethod
-    def serialize(cls, serializeable: T) -> compacted_model:
-        return cls._serializer_map[serializeable.__class__.__name__].serialize(serializeable)
-
-
-class CubeableSerializer(MappedSerializer[Cubeable]):
-    _serializer_map: t.Mapping[str, t.Type[orpserialize.ModelSerializer]] = {
-        Printing.__name__: orpserialize.PrintingSerializer,
-        Trap.__name__: orpserialize.TrapSerializer,
-        Ticket.__name__: orpserialize.TicketSerializer,
-        Purple.__name__: orpserialize.PurpleSerializer,
-    }
-
-
-class CardboardCubeableSerializer(MappedSerializer[CardboardCubeable]):
-    _serializer_map: t.Mapping[str, t.Type[orpserialize.ModelSerializer]] = {
-        Cardboard.__name__: orpserialize.CardboardSerializer,
-        CardboardTrap.__name__: orpserialize.TrapSerializer,
-        CardboardTicket.__name__: orpserialize.TicketSerializer,
-        CardboardPurple.__name__: orpserialize.PurpleSerializer,
-    }
 
 
 class PrintingNodeChildSerializer(orpserialize.ModelSerializer[PrintingNodeChild]):

@@ -27,7 +27,11 @@ app.conf.beat_schedule = {
     },
     'create_seasons': {
         'task': 'league.tasks.create_seasons',
-        'schedule': timedelta(minutes = 15),
+        'schedule': timedelta(minutes = 5),
+    },
+    'check_new_rating_events': {
+        'task': 'rating.tasks.check_new_rating_events',
+        'schedule': timedelta(minutes = 10),
     },
 }
 

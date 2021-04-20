@@ -1,4 +1,4 @@
-import React from "react";
+import React, {FunctionComponent} from "react";
 
 import '../../styling/utils.css';
 
@@ -70,17 +70,17 @@ export const get_cardback_image_url = (size_slug: string = 'original', cropped: 
 };
 
 
-export const Loading: React.SFC = () => {
+export const Loading: React.FunctionComponent = () => {
   return <h3 className="loading">Loading...</h3>
 };
 
 
-export const NotAllowed: React.SFC = () => {
+export const NotAllowed: React.FunctionComponent = () => {
   return <h3 className="loading">Not Allowed</h3>
 };
 
 
-export const NotFound: React.SFC = () => {
+export const NotFound: React.FunctionComponent = () => {
   return <h3 className="loading">Not Found</h3>
 };
 
@@ -187,3 +187,14 @@ export function* range(start: number, stop: number, step: number = 1) {
     yield i;
   }
 }
+
+
+export const randomString = (length: number) => {
+  let result = '';
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const charactersLength = characters.length;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+};

@@ -20,6 +20,7 @@ class Command(BaseCommand):
             updaters = (
                 get_sql_database_updater(
                     SqlContext.scoped_session,
-                    SqlContext.engine),
+                    SqlContext.engine,
+                ),
             ),
         )

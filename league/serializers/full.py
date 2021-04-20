@@ -18,6 +18,7 @@ class LeagueSerializer(MinimalLeagueSerializer):
         fields = (
             'id', 'name', 'versioned_cube', 'previous_n_releases', 'season_size', 'top_n_from_previous_season',
             'low_participation_prioritization_amount', 'tournament_type', 'tournament_config', 'match_type', 'created_at',
+            'rating_change',
         )
 
 

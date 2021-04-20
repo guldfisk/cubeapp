@@ -10,17 +10,20 @@ from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
 
 from magiccube.collections.cube import Cube
-from magiccube.collections.cubeable import BaseCubeable, FlatBaseCubeable
+from magiccube.collections.cubeable import BaseCubeable, FlatBaseCubeable, Cubeable, CardboardCubeable
+from magiccube.collections.fantasysets import FantasySet
 from magiccube.collections.infinites import Infinites
 from magiccube.collections.laps import TrapCollection
 from magiccube.collections.meta import MetaCube
 from magiccube.collections.nodecollection import NodeCollection, ConstrainedNode, GroupMap
-from magiccube.laps.purples.purple import BasePurple
-from magiccube.laps.tickets.ticket import BaseTicket, Ticket
-from magiccube.laps.traps.trap import BaseTrap, Trap
+from magiccube.laps.purples.purple import BasePurple, Purple, CardboardPurple
+from magiccube.laps.tickets.ticket import BaseTicket, Ticket, CardboardTicket
+from magiccube.laps.traps.trap import BaseTrap, Trap, CardboardTrap
 from magiccube.laps.traps.tree.printingtree import BaseNode
 from magiccube.update import cubeupdate
 from magiccube.update.report import UpdateReport, ReportNotification
+
+from api.values import Releasable
 
 
 T = t.TypeVar('T')
@@ -304,6 +307,21 @@ class CubeSerializer(ModelSerializer[Cube]):
                 for purple, multiplicity in
                 cube.purples.items()
             ],
+            'type': 'cube',
+        }
+
+
+class FantasySetSerializer(ModelSerializer[FantasySet]):
+
+    @classmethod
+    def serialize(cls, serializeable: FantasySet) -> compacted_model:
+        return {
+            'rarities': {
+                rarity: CubeSerializer.serialize(cube)
+                for rarity, cube in
+                serializeable.rarity_map.items()
+            },
+            'type': 'fantasy_set',
         }
 
 
@@ -501,3 +519,36 @@ class MetaCubeSerializer(ModelSerializer[MetaCube]):
             'group_map': GroupMapSerializer.serialize(serializeable.group_map),
             'infinites': InfinitesSerializer.serialize(serializeable.infinites),
         }
+
+
+class MappedSerializer(ModelSerializer[T]):
+    _serializer_map: t.Mapping[str, t.Type[ModelSerializer]]
+
+    @classmethod
+    def serialize(cls, serializeable: T) -> compacted_model:
+        return cls._serializer_map[serializeable.__class__.__name__].serialize(serializeable)
+
+
+class CubeableSerializer(MappedSerializer[Cubeable]):
+    _serializer_map: t.Mapping[str, t.Type[ModelSerializer]] = {
+        Printing.__name__: PrintingSerializer,
+        Trap.__name__: TrapSerializer,
+        Ticket.__name__: TicketSerializer,
+        Purple.__name__: PurpleSerializer,
+    }
+
+
+class CardboardCubeableSerializer(MappedSerializer[CardboardCubeable]):
+    _serializer_map: t.Mapping[str, t.Type[ModelSerializer]] = {
+        Cardboard.__name__: CardboardSerializer,
+        CardboardTrap.__name__: TrapSerializer,
+        CardboardTicket.__name__: TicketSerializer,
+        CardboardPurple.__name__: PurpleSerializer,
+    }
+
+
+class ReleasableSerializer(MappedSerializer[Releasable]):
+    _serializer_map = {
+        Cube.__name__: CubeSerializer,
+        FantasySet.__name__: FantasySetSerializer,
+    }

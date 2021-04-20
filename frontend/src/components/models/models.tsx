@@ -1173,11 +1173,23 @@ export class CubeRelease extends CubeReleaseMeta {
     )
   };
 
-  public static samplePack = (id: string, size: number): Promise<CubeablesContainer> => {
+  public static samplePack = (
+    id: string,
+    size: number,
+    seed: string | null = null,
+  ): Promise<{ pack: CubeablesContainer, seed: string }> => {
     return axios.get(
-      apiPath + 'cube-releases/' + id + '/sample-pack/' + size + '/'
+      apiPath + 'cube-releases/' + id + '/sample-pack/' + size + '/',
+      {
+        params: {seed}
+      },
     ).then(
-      response => CubeablesContainer.fromRemote(response.data)
+      response => {
+        return {
+          pack: CubeablesContainer.fromRemote(response.data.pack),
+          seed: response.data.seed,
+        }
+      }
     )
   };
 
@@ -4063,6 +4075,7 @@ export class League extends Atomic {
   lowParticipationPrioritizationAmount: number;
   tournamentType: string;
   matchType: MatchType;
+  ratingChange: number;
   createdAt: Date;
 
   constructor(
@@ -4075,6 +4088,7 @@ export class League extends Atomic {
     lowParticipationPrioritizationAmount: number,
     tournamentType: string,
     matchType: MatchType,
+    ratingChange: number,
     createdAt: Date,
   ) {
     super(id);
@@ -4086,6 +4100,7 @@ export class League extends Atomic {
     this.lowParticipationPrioritizationAmount = lowParticipationPrioritizationAmount;
     this.tournamentType = tournamentType;
     this.matchType = matchType;
+    this.ratingChange = ratingChange;
     this.createdAt = createdAt;
   }
 
@@ -4100,6 +4115,7 @@ export class League extends Atomic {
       remote.low_participation_prioritization_amount,
       remote.tournament_type,
       MatchType.fromRemote(remote.match_type),
+      remote.rating_change,
       new Date(remote.created_at),
     )
   }

@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Redirect} from "react-router-dom";
 
-import {Loading} from '../../utils/utils';
+import {Loading, NotFound} from '../../utils/utils';
 import {CubeRelease, MinimalRatingMap} from '../../models/models';
 
 
@@ -13,6 +13,7 @@ interface ReleaseRatingsPageProps {
 
 interface ReleaseRatingsPageState {
   ratingMap: null | MinimalRatingMap
+  error: any
 }
 
 
@@ -22,6 +23,7 @@ export default class ReleaseRatingsPage extends React.Component<ReleaseRatingsPa
     super(props);
     this.state = {
       ratingMap: null,
+      error: null,
     };
   }
 
@@ -30,10 +32,15 @@ export default class ReleaseRatingsPage extends React.Component<ReleaseRatingsPa
       ratingMap => {
         this.setState({ratingMap})
       }
+    ).catch(
+      error => this.setState({error})
     );
   }
 
   render() {
+    if (this.state.error) {
+      return <NotFound/>;
+    }
     return this.state.ratingMap ? <Redirect to={'/rating-map/' + this.state.ratingMap.id}/> : <Loading/>;
   }
 

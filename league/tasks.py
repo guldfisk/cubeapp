@@ -43,7 +43,7 @@ def update_ratings() -> None:
                         deck_id = seat.participant.deck_id,
                         defaults = {
                             'rating': 1000,
-                        }
+                        },
                     )[0]
                     for seat in
                     match.seats.all()
@@ -51,7 +51,7 @@ def update_ratings() -> None:
 
                 for seat in match.seats.all():
                     if seat.participant_id != winner.id:
-                        adjust_eloeds(rating_map[winner.id], rating_map[seat.participant_id])
+                        adjust_eloeds(rating_map[winner.id], rating_map[seat.participant_id], k = season.league.rating_change)
 
                 for rating in rating_map.values():
                     rating.save(update_fields = ('rating',))

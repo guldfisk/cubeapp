@@ -78,7 +78,16 @@ export const routes: [
   ['/release/:releaseId(\\d+)/cubeable-details/:cardboardCubeableId([^/]+)/', RatedPage, false, {}],
   ['/release/:releaseId(\\d+)/node-details/:nodeId([^/]+)/', RatedNodePage, false, {}],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
-  ['/release/:id(\\d+)/sample-pack/', SamplePackPage, false, {}],
+  [
+    '/release/:id(\\d+)/sample-pack/',
+    SamplePackPage,
+    false,
+    {
+      render: (
+        (props: any) => <SamplePackPage {...props} key={props.location.search}/>
+      )
+    },
+  ],
   ['/release/:id(\\d+)/ratings/', CubeReleaseRatingsPage, false, {}],
   ['/release/:id(\\d+)', ReleasePage, false, {}],
   ['/login', SignInPage, false, {}],

@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 from typedmodels.models import TypedModel
@@ -12,7 +13,6 @@ from magiccube.collections.infinites import Infinites
 from mtgdraft.models import DraftBooster, Pick
 
 from api.fields.orp import OrpField
-from api.models import CubeRelease
 from limited.models import PoolSpecification, LimitedSession
 from utils.fields import EnumField
 from utils.mixins import TimestampedModel
@@ -41,6 +41,11 @@ class DraftSession(models.Model):
         on_delete = models.CASCADE,
         related_name = 'draft_session',
         null = True,
+    )
+    rating_maps = GenericRelation(
+        'rating.RatingMap',
+        'ratings_for_object_id',
+        'ratings_for_content_type',
     )
 
     @property

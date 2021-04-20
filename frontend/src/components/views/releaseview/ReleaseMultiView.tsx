@@ -66,7 +66,7 @@ class ReleaseMultiView extends React.Component<ReleaseMultiViewProps, ReleaseMul
   };
 
   render() {
-    let view = <div/>;
+    let view: JSX.Element;
 
     if (this.state.viewType === 'List') {
       view = <CubeablesCollectionListView

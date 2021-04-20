@@ -63,7 +63,6 @@ class RootComponent extends React.Component<RootProps> {
   ) => {
     return <Suspense fallback={<Loading/>}>
       <Switch>
-
         {
           routes.map(
             ([path, component, isPrivate, args]) => {
@@ -186,9 +185,7 @@ class RootComponent extends React.Component<RootProps> {
 
       </Navbar>
 
-      {
-        this.createRoutes(routes)
-      }
+      {this.createRoutes(routes)}
 
     </Router>
   }

@@ -71,6 +71,14 @@ export default class LeagueSettingsView extends React.Component<LeagueSettingsVi
         </label>
         {this.props.league.matchType.fullName()}
       </li>
+      <li>
+        <label
+          className='explain-label'
+        >
+          Rating Change
+        </label>
+        {this.props.league.ratingChange}
+      </li>
     </ul>
   }
 

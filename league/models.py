@@ -39,10 +39,11 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
     tournament_type: t.Type[to.Tournament] = StringMapField(to.Tournament.tournaments_map)
     tournament_config = models.JSONField()
     match_type: MatchType = SerializeableField(MatchType)
+    rating_change = models.PositiveSmallIntegerField()
 
     @property
     def eligible_decks(self) -> QuerySet:
-        return PoolDeck.objects.annotate(
+        decks = PoolDeck.objects.annotate(
             specifications_count = Count(
                 'tournament_entries__wins__tournament__limited_session__draft_session__pool_specification__specifications'
             ),
@@ -55,12 +56,22 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
             tournament_entries__wins__tournament__limited_session__draft_session__isnull = False,
             tournament_entries__wins__tournament__limited_session__format = LimitedSideboard.name,
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-            tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = Subquery(
-                self.versioned_cube.releases.order_by('-created_at').values('id')[:self.previous_n_releases]
-            ),
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
             tournament_entries__wins__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
         )
+
+        if self.previous_n_releases == 0:
+            decks = decks.filter(
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__versioned_cube_id = self.versioned_cube_id,
+            )
+        else:
+            decks = decks.filter(
+                tournament_entries__wins__tournament__limited_session__pool_specification__specifications__release__in = Subquery(
+                    self.versioned_cube.releases.order_by('-created_at').values('id')[:self.previous_n_releases]
+                ),
+            )
+
+        return decks
 
     def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
         possible_decks = set(self.eligible_decks)
