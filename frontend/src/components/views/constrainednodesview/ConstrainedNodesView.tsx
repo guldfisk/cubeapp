@@ -7,12 +7,14 @@ import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
 
 import {ConstrainedNode, ConstrainedNodes} from '../../models/models';
 import {NodeListItem} from "../../utils/listitems";
+import {NodeTreeEditor} from "../nodes/NodeTreeEditor";
 
 
 interface ConstrainedNodesViewProps {
   constrainedNodes: ConstrainedNodes
-  onNodeClick?: ((node: ConstrainedNode, multiplicity: number) => void) | null
+  onNodeClick?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeRemove?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   noHover?: boolean
   search?: boolean
@@ -23,9 +25,9 @@ interface ConstrainedNodesViewProps {
 
 export default class ConstrainedNodesView extends React.Component<ConstrainedNodesViewProps> {
 
-  sortNodes = (a: any, b: any, order: string = 'asc') => {
-    const aLow = a.props.node.representation().toLowerCase();
-    const bLow = b.props.node.representation().toLowerCase();
+  sortNodes = (a: ConstrainedNode, b: ConstrainedNode, order: string = 'asc') => {
+    const aLow = a.node.representation().toLowerCase();
+    const bLow = b.node.representation().toLowerCase();
 
     if (order === 'desc') {
       return aLow > bLow ? -1 : aLow < bLow ? 1 : 0;
@@ -36,18 +38,18 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
   render() {
     const columns = [
       {
-        dataField: 'key',
+        dataField: 'id',
         text: 'Key',
         hidden: true,
       },
       {
-        dataField: 'qty',
+        dataField: 'multiplicity',
         text: 'Qty',
         type: 'number',
         validator: (newValue: string, row: any, column: any): any => {
           if (
             (this.props.negative && /^(-\d+)|(-?0)$/.exec(newValue))
-            || /^\d+$/.exec(newValue)
+            || (!this.props.negative && /^\d+$/.exec(newValue))
           ) {
             return true
           }
@@ -63,20 +65,31 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           }
           return a - b;
         },
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6em', textAlign: 'center'};
         },
       },
       {
-        dataField: 'node',
+        dataField: 'constrainedNode',
         text: 'Node',
-        editable: false,
+        editable: !this.props.onlyEditQty,
+        formatter: (cell: ConstrainedNode, row: any) => <NodeListItem
+          node={cell.node}
+          onClick={
+            this.props.onlyEditQty ? () => this.props.onNodeClick(cell, row.multiplicity) : null
+          }
+          noHover={this.props.noHover}
+        />,
+        editorRenderer: (editorProps: any, value: ConstrainedNode, row: any) => <NodeTreeEditor
+          {...editorProps}
+          defaultValue={value.node}
+        />,
         sort: true,
         sortFunc: this.sortNodes,
-        filterValue: (cell: any, row: any) => cell.props.node.representation(),
+        filterValue: (cell: ConstrainedNode, row: any) => cell.node.representation(),
       },
       {
-        dataField: 'value',
+        dataField: 'weight',
         text: 'Weight',
         type: 'number',
         editable: !this.props.onlyEditQty,
@@ -96,7 +109,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           }
           return a - b;
         },
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6em', textAlign: 'center'};
         },
       },
@@ -119,19 +132,15 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
     const data = Array.from(this.props.constrainedNodes.nodes.items()).map(
       ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
         return {
-          qty: multiplicity,
-          node: <NodeListItem
-            node={constrainedNode.node}
-            onClick={(node, multiplicity) => this.props.onNodeClick(constrainedNode, multiplicity)}
-            noHover={this.props.noHover}
-          />,
-          value: constrainedNode.value,
+          constrainedNode,
+          multiplicity,
+          id: constrainedNode.id,
+          weight: constrainedNode.value,
           groups: constrainedNode.groups.join(', '),
-          key: constrainedNode.id,
         }
       }
     ).sort(
-      (a, b) => this.sortNodes(a.node, b.node)
+      (a, b) => this.sortNodes(a.constrainedNode, b.constrainedNode)
     );
 
     const {SearchBar} = Search;
@@ -148,24 +157,25 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           (props: any) => (
             <div>
               {
-                this.props.search ? <SearchBar
+                this.props.search && <SearchBar
                   {...props.searchProps}
-                /> : undefined
+                />
               }
               <BootstrapTable
                 {...props.baseProps}
                 condensed
                 striped
+                remote={{edit: !!this.props.onNodeEdit}}
                 defaultSorted={
                   [
                     {
-                      dataField: 'value',
+                      dataField: 'weight',
                       order: 'desc',
                     },
-                    {
-                      dataField: 'node',
-                      order: 'desc',
-                    },
+                    // {
+                    //   dataField: 'node',
+                    //   order: 'desc',
+                    // },
                   ]
                 }
                 pagination={
@@ -178,47 +188,50 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                   )
                 }
                 cellEdit={
-                  !this.props.onNodeEdit ? cellEditFactory({mode: 'click'}) : cellEditFactory(
+                  !this.props.onNodeEdit ? false : cellEditFactory(
                     {
                       mode: 'click',
+                      blurToSave: true,
                       beforeSaveCell: (
-                        (oldValue: any, newValue: any, row: any, column: any) => {
-                          if (oldValue == newValue) {
+                        (
+                          oldValue: any,
+                          newValue: any,
+                          row: { constrainedNode: ConstrainedNode, multiplicity: number },
+                          column: any,
+                        ) => {
+                          if (oldValue == newValue || newValue === null) {
                             return;
                           }
-                          const oldNode = new ConstrainedNode(
-                            row.node.props.id,
-                            row.node.props.node,
-                            row.value,
-                            row.groups.split(',').map(
-                              (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                            ).filter(
-                              (s: string) => s.length > 0
-                            )
-                          );
-                          if (column.dataField === 'qty') {
-                            this.props.onNodeQtyEdit(oldValue, newValue, oldNode);
+                          if (column.dataField === 'multiplicity') {
+                            this.props.onNodeQtyEdit(oldValue, newValue, row.constrainedNode);
                             return;
                           }
                           const newNode = new ConstrainedNode(
-                            row.node.props.id,
-                            oldNode.node,
-                            oldNode.value,
-                            oldNode.groups,
+                            row.constrainedNode.id,
+                            row.constrainedNode.node,
+                            row.constrainedNode.value,
+                            row.constrainedNode.groups,
                           );
-                          if (column.dataField === 'value') {
-                            newNode.value = newValue
+                          if (column.dataField === 'weight') {
+                            newNode.value = newValue;
                           } else if (column.dataField == 'groups') {
                             newNode.groups = newValue.split(',').map(
                               (group: string) => group.replace(/^\s+/, '').replace(/\s+$/, '')
-                            )
+                            );
+                          } else if (column.dataField == 'constrainedNode') {
+                            if (!newValue.children.items.length) {
+                              if (this.props.onNodeRemove) {
+                                this.props.onNodeRemove(row.constrainedNode, row.multiplicity)
+                              }
+                              return;
+                            }
+                            newNode.node = newValue;
                           } else {
-                            return
+                            return;
                           }
-                          this.props.onNodeEdit(oldNode, newNode, row.qty);
+                          this.props.onNodeEdit(row.constrainedNode, newNode, row.multiplicity);
                         }
                       ),
-                      blurToSave: true,
                     }
                   )
                 }

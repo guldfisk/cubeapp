@@ -38,7 +38,7 @@ export class Counter<T extends IDAble> {
   }
 
   isEmpty = (): boolean => {
-    return !!Object.keys(this).length;
+    return !Object.keys(this._counters).length;
   };
 
   add = (item: T, amount: number = 1): void => {

@@ -182,8 +182,10 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
   };
 
   handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]) => {
-    this.setState({awaitingUpdate: true});
-    ReleasePatch.updateWebsocket(this.state.editingConnection, updates);
+    this.setState(
+      {awaitingUpdate: true},
+      () => ReleasePatch.updateWebsocket(this.state.editingConnection, updates),
+    );
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
@@ -251,11 +253,11 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
         patch={this.state.patch}
         verbosePatch={this.state.verbosePatch}
         onItemClicked={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             this.handleUpdatePatch
         }
         onNodeEdit={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             (
               (oldNode, newNode, multiplicity) => {
                 this.handleMultipleUpdatePatch(
@@ -267,14 +269,19 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
               }
             )
         }
+        onNodeRemove={
+          this.canEdit() ?
+            (node, multiplicity) => this.handleUpdatePatch(node, -multiplicity)
+            : null
+        }
         onChangeClicked={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             (change, multiplicity) => {
               this.handleMultipleUpdatePatch([[change, multiplicity]])
             }
         }
         onNodeQtyEdit={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             (
               (oldValue, newValue, node) => {
                 this.handleMultipleUpdatePatch(
@@ -293,12 +300,17 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
       preview = <PatchPreview
         preview={this.state.preview}
         onCubeablesClicked={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             this.handleCubeableClicked
         }
         onNodeClicked={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             ((node, multiplicity) => this.handleUpdatePatch(node, -1))
+        }
+        onNodeRemove={
+          this.canEdit() ?
+            (node, multiplicity) => this.handleUpdatePatch(node, -multiplicity)
+            : null
         }
         onNodeEdit={
           !this.canEdit() ? undefined :
@@ -314,7 +326,7 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
             )
         }
         onNodeQtyEdit={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             (
               (oldValue, newValue, node) => {
                 this.handleMultipleUpdatePatch(
@@ -326,21 +338,21 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
             )
         }
         onGroupClicked={
-          !this.canEdit() ? undefined : (
+          !this.canEdit() ? null : (
             (group, weight) => {
               this.handleUpdatePatch(group, -weight)
             }
           )
         }
         onGroupEdit={
-          !this.canEdit() ? undefined : (
+          !this.canEdit() ? null : (
             (group, oldValue, newValue) => {
               this.handleUpdatePatch(group, newValue - oldValue)
             }
           )
         }
         onInfiniteClicked={
-          !this.canEdit() ? undefined : (
+          !this.canEdit() ? null : (
             cardboard => this.handleUpdatePatch(cardboard, -1)
           )
         }

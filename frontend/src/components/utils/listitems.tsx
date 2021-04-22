@@ -273,7 +273,7 @@ export const NodeListItem: React.FunctionComponent<NodeListItemProps> = (props: 
     </a>
   }
   return <span
-    onClick={() => props.onClick(props.node, 1)}
+    onClick={props.onClick && (() => props.onClick(props.node, 1))}
   >
     {
       trap_representation(

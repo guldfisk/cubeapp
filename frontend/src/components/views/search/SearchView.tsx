@@ -18,12 +18,12 @@ import {ImageableListItem} from "../../utils/listitems";
 interface SearchViewProps<T> {
   handleCubeableClicked?: (card: T) => void
   handleSearchRequest?: ((query: string, orderBy: string, sortDirection: string, offset: number) => void) | undefined
-  query: string
-  orderBy: string
-  sortDirection: string
-  offset: number
-  limit: number
-  resultView: string
+  query?: string
+  orderBy?: string
+  sortDirection?: string
+  offset?: number
+  limit?: number
+  resultView?: string
 }
 
 

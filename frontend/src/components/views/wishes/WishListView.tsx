@@ -889,7 +889,6 @@ class WishListView extends React.Component
             defaultValue: {number: null, comparator: Comparator.GTE},
             comparatorStyle: {width: '3em', padding: '0em', float: 'left'},
             numberStyle: {width: '3em', padding: '0em', float: 'right'},
-
           }
         ),
         sort: true,

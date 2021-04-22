@@ -13,6 +13,7 @@ interface DeltaViewProps {
   patch: Patch
   onItemClicked?: (item: Cubeable | ConstrainedNode, amount: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
+  onNodeRemove?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
 }
 
@@ -61,6 +62,7 @@ export default class PatchView extends React.Component<DeltaViewProps, null> {
               (node) => this.props.onItemClicked(node, -1)
             }
             onNodeEdit={this.props.onNodeEdit}
+            onNodeRemove={this.props.onNodeRemove}
             onNodeQtyEdit={this.props.onNodeQtyEdit}
             search
           />

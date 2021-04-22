@@ -3,23 +3,35 @@ import React from 'react';
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
-import {Trap} from "../../models/models";
+import {PrintingNode, Trap} from "../../models/models";
 import {Alert} from "react-bootstrap";
+import {NodeTreeBuilder} from "../nodes/NodeTreeBuilder";
+import {MultiplicityList} from "../../models/utils";
 
 
 interface TrapParseViewFormProps {
-  handleSubmit: ({query, intentionType}: { query: string, intentionType: string }) => void
+  handleSubmit: ({node, intentionType}: { node: PrintingNode, intentionType: string }) => void
+}
+
+interface TrapParseViewFormState {
+  node: PrintingNode
 }
 
 
-class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
+class TrapParseViewForm extends React.Component<TrapParseViewFormProps, TrapParseViewFormState> {
+
+  constructor(props: TrapParseViewFormProps) {
+    super(props);
+    this.state = {
+      node: new PrintingNode(null, new MultiplicityList(), 'AllNode'),
+    }
+  }
 
   handleSubmit = (event: any) => {
     this.props.handleSubmit(
       {
-        query: event.target.elements.query.value,
+        node: this.state.node,
         intentionType: event.target.elements.intentionType.value,
-        // intentionType: "SYNERGY",
       }
     );
     event.preventDefault();
@@ -30,10 +42,7 @@ class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
     return <Form
       onSubmit={this.handleSubmit}
     >
-      <Form.Group controlId="query">
-        <Form.Label>Trap</Form.Label>
-        <Form.Control type="text"/>
-      </Form.Group>
+      <NodeTreeBuilder node={this.state.node} changed={node => this.setState({node})}/>
       <Form.Group controlId="intentionType">
         <Form.Label>Intention Type</Form.Label>
         <Form.Control as="select">
@@ -41,7 +50,12 @@ class TrapParseViewForm extends React.Component<TrapParseViewFormProps> {
           <option>OR</option>
         </Form.Control>
       </Form.Group>
-      <Button type="submit">Add Trap</Button>
+      <Button
+        type="submit"
+        disabled={!this.state.node.children.items.length}
+      >
+        Add Trap
+      </Button>
     </Form>
   }
 
@@ -66,17 +80,15 @@ export default class TrapParseView extends React.Component<TrapParseViewProps, T
     }
   };
 
-  handleSubmit = ({query, intentionType}: { query: string, intentionType: string }): void => {
-    Trap.parse(query, intentionType).then(
-      (trap: Trap) => {
-        this.setState({errorMessage: null});
-        this.props.onSubmit(trap);
-      }
-    ).catch(
-      (error: any) => {
-        this.setState({errorMessage: error.response.data.toString()})
-      }
-    )
+  handleSubmit = ({node, intentionType}: { node: PrintingNode, intentionType: string }): void => {
+    this.props.onSubmit(
+      new Trap(
+        null,
+        node,
+        intentionType,
+        null,
+      )
+    );
   };
 
   render() {

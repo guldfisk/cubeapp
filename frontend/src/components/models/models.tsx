@@ -176,10 +176,10 @@ export class Printing extends Cubeable implements BaseFlatCubeable {
     return new Printing(
       remote.id,
       remote.name,
-      remote.cmc,
-      remote.expansion_code,
-      remote.color,
-      remote.types,
+      remote.cmc === undefined ? remote.cardboard.front_cards[0].cmc : remote.cmc,
+      remote.expansion_code || remote.expansion.code,
+      remote.color || remote.cardboard.front_cards[0].color,
+      remote.types || remote.cardboard.front_cards[0].type_line.types,
       remote.cardboard_cubeable_id,
     )
   }

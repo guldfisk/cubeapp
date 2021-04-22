@@ -14,6 +14,7 @@ interface PatchPreviewProps {
   preview: Preview
   onCubeablesClicked?: (cubeable: Cubeable, amount: number) => void
   onNodeClicked?: (node: ConstrainedNode, multiplicity: number) => void
+  onNodeRemove?: (node: ConstrainedNode, multiplicity: number) => void
   onNodeEdit?: (before: ConstrainedNode, after: ConstrainedNode, multiplicity: number) => void
   onNodeQtyEdit?: (before: number, after: number, node: ConstrainedNode) => void
   onGroupClicked?: (group: string, weight: number) => void
@@ -40,9 +41,9 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
                   Array.from(
                     this.props.preview.cubeables.allCubeables()
                   ).length
-                  }/${
+                }/${
                   360
-                  }`
+                }`
               }
             </span>
         </Row>
@@ -67,6 +68,7 @@ export default class PatchPreview extends React.Component<PatchPreviewProps> {
             <ConstrainedNodesView
               constrainedNodes={this.props.preview.constrainedNodes}
               onNodeClick={this.props.onNodeClicked}
+              onNodeRemove={this.props.onNodeRemove}
               onNodeEdit={this.props.onNodeEdit}
               onNodeQtyEdit={this.props.onNodeQtyEdit}
               search
