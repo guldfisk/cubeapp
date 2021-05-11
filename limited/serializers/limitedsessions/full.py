@@ -9,7 +9,6 @@ from limited import models
 from limited.serializers.limitedsessions.minimal import LimitedSessionNameSerializer
 from limited.serializers.pools.minimal import MinimalPoolSerializer
 from limited.serializers.poolspecifications import PoolSpecificationSerializer
-from limited.serializers.results import MatchResultSerializer
 
 
 class PoolUserField(serializers.RelatedField):
@@ -30,14 +29,13 @@ class LimitedSessionSerializer(LimitedSessionNameSerializer):
     players = PoolUserField(source = 'pools', read_only = True, many = True)
     state = EnumSerializerField(models.LimitedSession.LimitedSessionState)
     pool_specification = PoolSpecificationSerializer(read_only = True)
-    results = MatchResultSerializer(many = True, read_only = True)
     infinites = OrpSerializerField(model_serializer = orpserialize.InfinitesSerializer)
 
     class Meta:
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'open_pools', 'game_type', 'pool_specification', 'results', 'infinites',
+            'open_pools', 'game_type', 'pool_specification', 'infinites',
         )
 
 
@@ -49,5 +47,5 @@ class FullLimitedSessionSerializer(LimitedSessionSerializer):
         model = models.LimitedSession
         fields = (
             'id', 'name', 'format', 'created_at', 'playing_at', 'finished_at', 'players', 'state', 'open_decks',
-            'open_pools', 'game_type', 'pool_specification', 'pools', 'results', 'infinites', 'tournament',
+            'open_pools', 'game_type', 'pool_specification', 'pools', 'infinites', 'tournament',
         )

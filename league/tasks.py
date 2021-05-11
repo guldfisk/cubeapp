@@ -5,6 +5,7 @@ from celery import shared_task
 from elo.utils import adjust_eloeds
 
 from league.models import HOFLeague, LeagueError, Season, DeckRating
+from league.values import DEFAULT_RATING
 from tournaments.models import Tournament, ScheduledMatch
 
 
@@ -42,7 +43,7 @@ def update_ratings() -> None:
                         league_id = season.league_id,
                         deck_id = seat.participant.deck_id,
                         defaults = {
-                            'rating': 1000,
+                            'rating': DEFAULT_RATING,
                         },
                     )[0]
                     for seat in

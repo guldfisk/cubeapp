@@ -3223,29 +3223,6 @@ export class MatchPlayer extends Atomic {
 }
 
 
-export class MatchResult extends Atomic {
-  draws: number;
-  players: MatchPlayer[];
-
-  constructor(id: string, draws: number, players: MatchPlayer[]) {
-    super(id);
-    this.draws = draws;
-    this.players = players;
-  }
-
-  public static fromRemote(remote: any): MatchResult {
-    return new MatchResult(
-      remote.id,
-      remote.draws,
-      remote.players.map(
-        (player: any) => MatchPlayer.fromRemote(player)
-      ),
-    )
-  }
-
-}
-
-
 export class LimitedSessionName extends Atomic {
   name: string;
 
@@ -3275,7 +3252,6 @@ export class LimitedSession extends LimitedSessionName {
   openDecks: boolean;
   openPools: boolean;
   poolSpecification: PoolSpecification;
-  results: MatchResult[];
   infinites: Infinites;
 
   constructor(
@@ -3291,7 +3267,6 @@ export class LimitedSession extends LimitedSessionName {
     openDecks: boolean,
     openPools: boolean,
     poolSpecification: PoolSpecification,
-    results: MatchResult[],
     infintes: Infinites,
   ) {
     super(id, name);
@@ -3305,7 +3280,6 @@ export class LimitedSession extends LimitedSessionName {
     this.openDecks = openDecks;
     this.openPools = openPools;
     this.poolSpecification = poolSpecification;
-    this.results = results;
     this.infinites = infintes;
   }
 
@@ -3323,9 +3297,6 @@ export class LimitedSession extends LimitedSessionName {
       remote.open_decks,
       remote.open_pools,
       PoolSpecification.fromRemote(remote.pool_specification),
-      remote.results.map(
-        (result: any) => MatchResult.fromRemote(result)
-      ),
       Infinites.fromRemote(remote.infinites),
     )
   }
@@ -3446,7 +3417,6 @@ export class FullLimitedSession extends LimitedSession {
     openDecks: boolean,
     openPools: boolean,
     poolSpecification: PoolSpecification,
-    results: MatchResult[],
     infinites: Infinites,
     pools: PoolMeta[],
     tournament: Tournament | null,
@@ -3464,7 +3434,6 @@ export class FullLimitedSession extends LimitedSession {
       openDecks,
       openPools,
       poolSpecification,
-      results,
       infinites,
     );
     this.pools = pools;
@@ -3485,9 +3454,6 @@ export class FullLimitedSession extends LimitedSession {
       remote.open_decks,
       remote.open_pools,
       PoolSpecification.fromRemote(remote.pool_specification),
-      remote.results.map(
-        (result: any) => MatchResult.fromRemote(result)
-      ),
       Infinites.fromRemote(remote.infinites),
       remote.pools.map(
         (pool: any) => PoolMeta.fromRemote(pool)
@@ -4203,6 +4169,7 @@ export class NodeRatingComponent extends Atomic {
   nodeId: string;
   exampleNode: PrintingNode | Printing;
   ratingComponent: number;
+  weight: number;
 
   constructor(
     id: string,
@@ -4210,12 +4177,14 @@ export class NodeRatingComponent extends Atomic {
     nodeId: string,
     exampleNode: PrintingNode | Printing,
     ratingComponent: number,
+    weight: number,
   ) {
     super(id);
     this.node = node;
     this.nodeId = nodeId;
     this.exampleNode = exampleNode;
     this.ratingComponent = ratingComponent;
+    this.weight = weight;
   }
 
   public static fromRemote(remote: any): NodeRatingComponent {
@@ -4225,6 +4194,7 @@ export class NodeRatingComponent extends Atomic {
       remote.node_id,
       remote.example_node.type == 'printing' ? Printing.fromRemote(remote.example_node) : PrintingNode.fromRemote(remote.example_node),
       remote.rating_component,
+      remote.weight,
     )
   }
 
@@ -4360,16 +4330,19 @@ export class NodeRatingComponentRatingHistoryPoint extends Atomic {
   ratingComponent: number;
   ratingMap: MinimalRatingMap;
   rating: number;
+  weight: number;
 
   constructor(
     id: string,
     ratingComponent: number,
     ratingMap: MinimalRatingMap,
+    weight: number,
   ) {
     super(id);
     this.ratingComponent = ratingComponent;
     this.ratingMap = ratingMap;
     this.rating = ratingComponent;
+    this.weight = weight;
   }
 
   public static fromRemote(remote: any): NodeRatingComponentRatingHistoryPoint {
@@ -4377,6 +4350,7 @@ export class NodeRatingComponentRatingHistoryPoint extends Atomic {
       remote.id,
       remote.rating_component,
       MinimalRatingMap.fromRemote(remote.rating_map),
+      parseFloat(remote.weight),
     )
   }
 

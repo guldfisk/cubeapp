@@ -12,6 +12,7 @@ import Alert from "react-bootstrap/Alert";
 import {signIn} from "../../auth/controller";
 import {connect} from "react-redux";
 import {Link} from "react-router-dom";
+import queryString from "query-string";
 
 
 interface SignInFormProps {
@@ -51,6 +52,7 @@ class SignInForm extends React.Component<SignInFormProps> {
 
 
 interface SignInPageProps {
+  location: any
   authenticated: boolean
   errorMessage: null | string
   signIn: (username: string, password: string) => void
@@ -65,7 +67,14 @@ class SignInPage extends React.Component<SignInPageProps> {
 
   render() {
     if (this.props.authenticated) {
-      return <Redirect to="/"/>
+      const queryOptions = queryString.parse(this.props.location.search);
+      const next = !queryOptions['next'] ?
+        "/"
+        : (queryOptions['next'] instanceof Array ?
+            queryOptions['next'][0]
+            : queryOptions['next']
+        ) as string;
+      return <Redirect to={next}/>
     }
 
     return <Container>

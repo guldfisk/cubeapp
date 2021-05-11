@@ -392,21 +392,6 @@ class PoolDeck(models.Model):
         )
 
 
-class MatchResult(models.Model):
-    created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
-    draws = models.PositiveSmallIntegerField()
-    session = models.ForeignKey(LimitedSession, on_delete = models.CASCADE, related_name = 'results')
-
-
-class MatchPlayer(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete = models.PROTECT)
-    wins = models.PositiveSmallIntegerField()
-    match_result = models.ForeignKey(MatchResult, on_delete = models.CASCADE, related_name = 'players')
-
-    class Meta:
-        unique_together = ('user', 'match_result')
-
-
 class PoolSharingCode(TimestampedModel):
     code = models.CharField(max_length = 63)
     pool = models.OneToOneField(Pool, on_delete = models.CASCADE, related_name = 'code')

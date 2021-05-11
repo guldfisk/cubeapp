@@ -10,10 +10,17 @@ import {
 interface RatingHistoryViewProps {
   ratings: [string, (CardboardCubeableRatingHistoryPoint | NodeRatingComponentRatingHistoryPoint)[]][],
   average?: number | null,
+  field?: string
+  xLabel?: string
 }
 
 
 export default class RatingHistoryView extends React.Component<RatingHistoryViewProps> {
+
+  public static defaultProps = {
+    field: 'rating',
+    xLabel: 'Ratings',
+  };
 
   render() {
     const releaseMarkers: { [key: string]: string } = {};
@@ -35,12 +42,12 @@ export default class RatingHistoryView extends React.Component<RatingHistoryView
           xaxis: {
             type: 'datetime',
             title: {
-              text: "Date",
+              text: 'Date',
             }
           },
           yaxis: {
             title: {
-              text: "Rating",
+              text: this.props.xLabel,
             },
           },
           tooltip: {
@@ -83,7 +90,7 @@ export default class RatingHistoryView extends React.Component<RatingHistoryView
             return {
               name: name,
               data: series.map(
-                rating => [rating.ratingMap.createdAt.getTime(), rating.rating]
+                rating => [rating.ratingMap.createdAt.getTime(), (rating as any)[this.props.field]]
               )
             }
           }

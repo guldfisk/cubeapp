@@ -1,6 +1,5 @@
 import itertools
 import logging
-import typing as t
 
 from celery import shared_task
 
@@ -8,21 +7,17 @@ from django.db import transaction
 from django.db.models import Count
 
 from mtgorp.models.formats.format import LimitedSideboard
-from mtgorp.models.interfaces import Cardboard, Printing
 
 from magiccube.collections.cubeable import cardboardize
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
-from magiccube.laps.traps.tree.printingtree import CardboardNode, PrintingNode
-from magiccube.tools.cube_difference import cube_difference
 
 from elo.utils import rescale_eloeds, adjust_eloeds
 
 from api.models import CubeRelease
 from draft.models import DraftSession, DraftPick
 from limited.models import CubeBoosterSpecification
-
 from rating import models
-from rating.calc import get_previous_ratings_map_by_conversion_rate
+from rating.calc import get_previous_ratings_map_by_conversion_rate, get_previous_releases_for_release, get_node_rating_components
 from rating.values import AVERAGE_RATING
 
 
@@ -34,16 +29,9 @@ def generate_ratings_map_for_release(release_id: int) -> None:
         logging.info('Rating map already generated for release {}'.format(release_id))
         return
 
-    release_meta = release.as_meta_cube()
     cardboard_cube = release.cube.as_cardboards
 
-    previous_releases: t.List[t.Tuple[CubeRelease, float]] = []
-
-    for previous_release in release.all_upstream_releases():
-        difference = cube_difference(previous_release.as_meta_cube(), release_meta)
-        if difference >= .6:
-            break
-        previous_releases.append((previous_release, difference))
+    previous_releases = get_previous_releases_for_release(release)
 
     previous_rating_map = models.RatingMap.objects.filter(
         release_id = previous_releases[0][0].id,
@@ -56,6 +44,7 @@ def generate_ratings_map_for_release(release_id: int) -> None:
         ratings_for = release,
         parent = previous_rating_map,
     )
+    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=release.created_at)
 
     new_ratings = []
 
@@ -78,13 +67,6 @@ def generate_ratings_map_for_release(release_id: int) -> None:
             )
 
     else:
-        # TODO conversion rate weighting sux
-        # try:
-        #     previous_rating_map, previous_ratings_node_map = get_previous_ratings_map_by_regression(
-        #         previous_releases,
-        #         previous_rating_map,
-        #     )
-        # except RegressionError:
         previous_rating_map, previous_ratings_node_map = get_previous_ratings_map_by_conversion_rate(
             previous_releases,
             previous_rating_map,
@@ -131,33 +113,13 @@ def generate_ratings_map_for_release(release_id: int) -> None:
             reset_factor = previous_releases[0][1],
         )
 
-        node_example_map: t.MutableMapping[CardboardNode, t.Tuple[PrintingNode, int]] = {}
-
-        for trap in release.cube.garbage_traps:
-            for node in trap.node.children:
-                as_cardboards = node.cardboard if isinstance(node, Printing) else node.as_cardboards
-                node_example_map[as_cardboards] = (
-                    node,
-                    previous_ratings_node_map.get(
-                        as_cardboards,
-                        AVERAGE_RATING / len(trap.node.children),
-                    ),
-                )
-
-        node_rating_components = []
-
-        for node, (example, rating_component) in node_example_map.items():
-            node_rating_components.append(
-                models.NodeRatingComponent(
-                    rating_map = rating_map,
-                    node = node,
-                    node_id = node.id if isinstance(node, Cardboard) else node.persistent_hash(),
-                    example_node = example,
-                    rating_component = rating_component,
-                )
+        models.NodeRatingComponent.objects.bulk_create(
+            get_node_rating_components(
+                release,
+                previous_ratings_node_map,
+                rating_map,
             )
-
-        models.NodeRatingComponent.objects.bulk_create(node_rating_components)
+        )
 
     models.CardboardCubeableRating.objects.bulk_create(new_ratings)
 
@@ -186,6 +148,7 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
         ratings_for = draft_session,
         parent_id = previous_rating_map.id,
     )
+    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=draft_session.ended_at)
 
     new_ratings = {
         rating.cardboard_cubeable: models.CardboardCubeableRating(
@@ -210,6 +173,19 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
             )
 
     models.CardboardCubeableRating.objects.bulk_create(new_ratings.values())
+
+    _, previous_ratings_node_map = get_previous_ratings_map_by_conversion_rate(
+        get_previous_releases_for_release(booster_specification.release),
+        previous_rating_map,
+    )
+
+    models.NodeRatingComponent.objects.bulk_create(
+        get_node_rating_components(
+            booster_specification.release,
+            previous_ratings_node_map,
+            rating_map,
+        )
+    )
 
 
 @shared_task()

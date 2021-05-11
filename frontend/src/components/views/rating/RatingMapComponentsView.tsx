@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {Link} from "react-router-dom";
+
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import ToolkitProvider, {Search} from 'react-bootstrap-table2-toolkit';
@@ -24,14 +26,36 @@ export default class RatingMapComponentsView extends React.Component<RatingMapCo
       {
         dataField: 'exampleNode',
         text: 'Node',
-        formatter: (cell: PrintingNode | Printing, row: NodeRatingComponent, rowIndex: number, formatExtraData: any) =>
-          <span>{cell instanceof Cardboard ? cell.name : cell.representation()}</span>,
-        filterValue: (cell: Cubeable, row: NodeRatingComponent) => cell instanceof Printing ? cell.name : cell.representation(),
+        formatter: (cell: PrintingNode | Printing, row: NodeRatingComponent) =>
+          <Link
+            to={
+              '/release/'
+              + this.props.ratingMap.release.id
+              + '/node-details/'
+              + (row.node instanceof Cardboard ? row.node.name : row.node.id)
+            }
+          >
+            {
+              cell instanceof Printing ? cell.name : cell.representation()
+            }
+          </Link>,
+        filterValue: (cell: Cubeable) => (
+          cell instanceof Printing
+            ? cell.name
+            : cell.representation()
+        ),
       },
       {
         dataField: 'ratingComponent',
         text: 'Rating Component',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
+          return {width: '6em', textAlign: 'center'};
+        },
+      },
+      {
+        dataField: 'weight',
+        text: 'Weight',
+        headerStyle: () => {
           return {width: '6em', textAlign: 'center'};
         },
       },

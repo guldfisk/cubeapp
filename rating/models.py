@@ -56,6 +56,7 @@ class NodeRatingComponent(models.Model):
     node_id = models.CharField(max_length = 2047)
     example_node: PrintingNode = PrintingNodeChildField()
     rating_component = models.PositiveSmallIntegerField()
+    weight = models.DecimalField(max_digits = 8, decimal_places = 2)
 
     class Meta:
         unique_together = ('node_id', 'rating_map')

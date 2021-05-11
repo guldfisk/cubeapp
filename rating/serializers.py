@@ -41,7 +41,7 @@ class NodeRatingComponentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.NodeRatingComponent
-        fields = ('id', 'node', 'node_id', 'example_node', 'rating_component')
+        fields = ('id', 'node', 'node_id', 'example_node', 'rating_component', 'weight')
 
 
 class CardboardCubeableRatingSerializer(serializers.ModelSerializer):
@@ -86,7 +86,7 @@ class DatedNodeRatingComponentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.NodeRatingComponent
-        fields = ('id', 'rating_component', 'rating_map')
+        fields = ('id', 'rating_component', 'weight', 'rating_map')
 
 
 class RatingMapSerializer(MinimalRatingMapSerializer):

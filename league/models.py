@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import itertools
-import math
 import random
 import typing as t
 from collections import defaultdict
@@ -9,9 +7,8 @@ from collections import defaultdict
 import numpy as np
 
 from django.db import models, transaction
-from django.db.models import Count, Prefetch, QuerySet, Subquery
-
-from yeetlong.multiset import Multiset
+from django.db.models import Count, QuerySet, Subquery, OuterRef, IntegerField
+from django.db.models.functions import Coalesce
 
 from mtgorp.models.formats.format import LimitedSideboard
 from mtgorp.models.tournaments import tournaments as to
@@ -19,6 +16,7 @@ from mtgorp.models.tournaments.matches import MatchType
 
 from api.models import VersionedCube
 from draft.models import DraftSession
+from league.values import DEFAULT_RATING
 from limited.models import PoolDeck, CubeBoosterSpecification
 from tournaments.models import Tournament, TournamentWinner, TournamentParticipant
 from utils.fields import StringMapField, SerializeableField
@@ -74,50 +72,30 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
         return decks
 
     def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
-        possible_decks = set(self.eligible_decks)
+        all_decks = self.eligible_decks.annotate(
+            seasons = Coalesce(
+                Subquery(
+                    TournamentParticipant.objects.filter(
+                        tournament__season__league_id = self.id,
+                        deck_id = OuterRef('pk'),
+                    ).values('deck').annotate(cnt = Count('pk')).values('cnt'),
+                    output_field = IntegerField(),
+                ),
+                0,
+            ),
+        )
+
+        possible_decks = set(all_decks)
 
         if len(possible_decks) < self.season_size:
             raise LeagueError('Insufficient decks')
 
-        previous_seasons: t.List[Tournament] = list(
-            Tournament.objects.filter(
-                season__league = self,
-                state = Tournament.TournamentState.FINISHED,
-            ).prefetch_related(
-                'participants',
-                'participants__deck',
-                'rounds',
-                'rounds__matches',
-                'rounds__matches__seats',
-                'rounds__matches__seats__participant',
-                Prefetch(
-                    'rounds__matches__seats__participant__deck',
-                    queryset = PoolDeck.objects.all().only(
-                        'id',
-                        'name',
-                        'created_at',
-                        'pool_id',
-                    )
-                ),
-                'rounds__matches__seats__participant__player',
-                'rounds__matches__seats__result',
-                'rounds__matches__result',
-                'results',
-                'results__participant',
-                Prefetch(
-                    'results__participant__deck',
-                    queryset = PoolDeck.objects.all().only(
-                        'id',
-                        'name',
-                        'created_at',
-                        'pool_id',
-                    )
-                ),
-                'results__participant__player',
-            ).order_by('created_at')
-        )
+        previous_season = Tournament.objects.filter(
+            season__league_id = self.id,
+            state = Tournament.TournamentState.FINISHED,
+        ).last()
 
-        if not previous_seasons:
+        if previous_season is None:
             return {
                 deck: 0.
                 for deck in
@@ -126,7 +104,6 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
         decks: t.Set[PoolDeck] = set()
 
-        previous_season = previous_seasons[-1]
         for participant in previous_season.tournament.top_n(
             previous_season.completed_rounds,
             self.top_n_from_previous_season,
@@ -136,45 +113,42 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
         possible_decks -= decks
 
-        weight_map = defaultdict(float)
-        appearances = Multiset()
+        deck_season_map = defaultdict(list)
 
-        for season in previous_seasons:
-            ranked_participants = season.tournament.get_ranked_players(season.completed_rounds)
-            for participants, weight in zip(ranked_participants, np.linspace(1, -1, len(ranked_participants))):
-                for participant in participants:
-                    weight_map[participant.deck] += weight
-                    appearances.add(participant.deck)
+        for deck in possible_decks:
+            deck_season_map[deck.seasons].append(deck)
 
         remaining = self.low_participation_prioritization_amount
 
-        for key, items in itertools.groupby(
-            sorted(appearances.elements()[deck] for deck in possible_decks),
-        ):
-            items = len(list(items))
-            if remaining <= 0:
-                break
-            if items <= remaining:
-                for deck in possible_decks:
-                    if appearances.elements()[deck] == key:
-                        decks.add(deck)
-                remaining -= items
-            else:
-                for deck in random.sample([deck for deck in possible_decks if appearances.elements()[deck] == key], remaining):
+        for _, _decks in sorted(deck_season_map.items(), key = lambda p: p[0]):
+            if len(_decks) <= remaining:
+                for deck in random.sample(_decks, remaining):
                     decks.add(deck)
                 break
+            else:
+                for deck in _decks:
+                    decks.add(deck)
+                remaining -= len(_decks)
 
         remaining = self.season_size - len(decks)
 
+        ratings_map = {
+            d.deck_id: d.rating
+            for d in
+            DeckRating.objects.filter(
+                league = self,
+                deck__in = all_decks,
+            )
+        }
+
         if remaining > 0:
             possible_decks -= decks
-
             possible_decks_list = list(possible_decks)
 
             weights = np.array(
                 [
-                    1 / (1 + math.e ** (-.5 * weight_map[deck]))
-                    for deck in
+                    ratings_map.get(d.id, DEFAULT_RATING) ** 5 / (d.seasons + 1) ** .5
+                    for d in
                     possible_decks_list
                 ]
             )
@@ -188,9 +162,15 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
                 decks.add(deck)
 
         return {
-            deck: -weight_map[deck]
-            for deck in
-            decks
+            deck: idx
+            for idx, deck in
+            enumerate(
+                sorted(
+                    decks,
+                    key = lambda d: ratings_map.get(d.id, DEFAULT_RATING),
+                    reverse = True,
+                )
+            )
         }
 
     def create_season(self) -> Season:

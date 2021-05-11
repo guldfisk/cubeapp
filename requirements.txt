@@ -21,7 +21,7 @@ djangorestframework>=3.9
 lazy-property
 multiset
 appdirs
-frozendict
+frozendict==1.2.0
 requests
 antlr4-python3-runtime
 promise

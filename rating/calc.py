@@ -7,23 +7,23 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
-from numpy import average
 
 from scipy import stats
 
 from django.db.models import Count, F
 
 from mtgorp.models.formats.format import LimitedSideboard
-from mtgorp.models.interfaces import Cardboard
+from mtgorp.models.interfaces import Cardboard, Printing
 
 from magiccube.collections.cubeable import CardboardCubeable
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
-from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, NodeAny, NodeAll
+from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, NodeAny, NodeAll, CardboardNode, PrintingNode
+from magiccube.tools.cube_difference import cube_difference
 
 from api.models import CubeRelease
 from limited.models import CubeBoosterSpecification, PoolDeck
-
 from rating import models
+from rating.values import AVERAGE_RATING
 
 
 Number = t.Union[int, float]
@@ -214,6 +214,29 @@ def get_previous_ratings_map_by_regression(
     )
 
 
+def _get_node_conversion_rate(node: CardboardNodeChild, conversion_rate_map: t.Mapping[Cardboard, float]) -> float:
+    return (
+        conversion_rate_map.get(node, 0.)
+        if isinstance(node, Cardboard) else
+        (
+            min(
+                sum(
+                    _get_node_conversion_rate(child, conversion_rate_map)
+                    for child in
+                    node
+                ),
+                1.,
+            )
+            if isinstance(node, NodeAny) else
+            max(
+                _get_node_conversion_rate(child, conversion_rate_map)
+                for child in
+                node
+            )
+        )
+    )
+
+
 def get_previous_ratings_map_by_conversion_rate(
     previous_releases: t.Iterable[t.Tuple[CubeRelease, float]],
     previous_rating_map: models.RatingMap,
@@ -260,13 +283,7 @@ def get_previous_ratings_map_by_conversion_rate(
             node_conversion_rates = [
                 (
                     node,
-                    conversion_rate_map.get(node, 0.)
-                    if isinstance(node, Cardboard) else
-                    (
-                        min(sum(conversion_rate_map.get(child, 0.) for child in node), 1.)
-                        if isinstance(node, NodeAny) else
-                        max(conversion_rate_map.get(child, 0.) for child in node)
-                    )
+                    _get_node_conversion_rate(node, conversion_rate_map),
                 )
                 for node in
                 cardboard_cubeable.node.children
@@ -279,7 +296,65 @@ def get_previous_ratings_map_by_conversion_rate(
                 previous_ratings_node_map[node].append(weighted_rating)
 
     return previous_rating_map, {
-        k: int(average(v))
+        k: int(np.average(v))
         for k, v in
         previous_ratings_node_map.items()
     }
+
+
+def get_previous_releases_for_release(release: CubeRelease, difference_cut_off: float = .6) -> t.Sequence[t.Tuple[CubeRelease, float]]:
+    meta = release.as_meta_cube()
+    previous_releases: t.List[t.Tuple[CubeRelease, float]] = []
+
+    for previous_release in release.all_upstream_releases():
+        difference = cube_difference(previous_release.as_meta_cube(), meta)
+        if difference >= difference_cut_off:
+            break
+        previous_releases.append((previous_release, difference))
+
+    return previous_releases
+
+
+def get_node_rating_components(
+    release: CubeRelease,
+    previous_ratings_node_map: t.Mapping[CardboardNodeChild, int],
+    rating_map: models.RatingMap,
+) -> t.Sequence[models.NodeRatingComponent]:
+    node_weights = {
+        (
+            node.node.children.__iter__().__next__().cardboard
+            if len(node.node.children) == 1 else
+            node.node.as_cardboards
+        ): node.value
+        for node in
+        release.constrained_nodes.constrained_nodes
+    }
+
+    node_example_map: t.MutableMapping[CardboardNode, t.Tuple[PrintingNode, int]] = {}
+
+    for trap in release.cube.garbage_traps:
+        for node in trap.node.children:
+            as_cardboards = node.cardboard if isinstance(node, Printing) else node.as_cardboards
+            node_example_map[as_cardboards] = (
+                node,
+                previous_ratings_node_map.get(
+                    as_cardboards,
+                    AVERAGE_RATING / len(trap.node.children),
+                ),
+            )
+
+    node_rating_components = []
+
+    for node, (example, rating_component) in node_example_map.items():
+        node_rating_components.append(
+            models.NodeRatingComponent(
+                rating_map = rating_map,
+                node = node,
+                node_id = node.id if isinstance(node, Cardboard) else node.persistent_hash(),
+                example_node = example,
+                rating_component = rating_component,
+                weight = node_weights.get(node, 0),
+            )
+        )
+
+    return node_rating_components

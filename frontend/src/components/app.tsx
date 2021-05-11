@@ -50,7 +50,7 @@ class RootComponent extends React.Component<RootProps> {
         if (this.props.auth.loading) {
           return <Loading/>;
         } else if (!this.props.auth.authenticated) {
-          return <SignInPage/>;
+          return <SignInPage {...props}/>;
         } else {
           return <ChildComponent {...props} />
         }
@@ -175,9 +175,19 @@ class RootComponent extends React.Component<RootProps> {
                 <LinkContainer to='/logout/'>
                   <Nav.Link>Sign Out</Nav.Link>
                 </LinkContainer>
-                : <LinkContainer to='/login/'>
-                  <Nav.Link>Sign In</Nav.Link>
-                </LinkContainer>
+                : <a
+                  href='#'
+                  style={
+                    {
+                      color: "#222",
+                      paddingRight: "0.5rem",
+                      paddingTop: "0.5rem",
+                    }
+                  }
+                  onClick={() => history.push('/login/?next=' + window.location.pathname + window.location.search)}
+                >
+                  Sign In
+                </a>
             }
 
           </Nav>

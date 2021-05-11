@@ -68,7 +68,6 @@ export default class RatedPage extends React.Component<RatedPageProps, RatedPage
   }
 
   render() {
-
     return <Container fluid>
       <Row>
         {
@@ -114,15 +113,22 @@ export default class RatedPage extends React.Component<RatedPageProps, RatedPage
           /> : <Loading/>
         }
       </Row>
-      <Row>
-        {
-          this.state.nodeRatings.length !== 0 ? <RatingHistoryView
-            ratings={this.state.nodeRatings}
-          /> : null
-        }
-      </Row>
+      {
+        this.state.nodeRatings.length !== 0 && <>
+          <Row>
+            <RatingHistoryView
+              ratings={this.state.nodeRatings}
+            />
+          </Row>
+          <Row>
+            <RatingHistoryView
+              ratings={this.state.nodeRatings}
+              field='weight'
+              xLabel='Weights'
+            />
+          </Row>
+        </>
+      }
     </Container>
-
   }
-
 }

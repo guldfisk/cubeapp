@@ -101,5 +101,4 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
       </Row>
     </Container>
   }
-
 }

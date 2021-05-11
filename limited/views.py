@@ -360,9 +360,6 @@ class SessionList(generics.ListAPIView):
                 )
             ),
             'pools__user',
-            'results',
-            'results__players',
-            'results__players__user',
         )
         name_filter = self.request.GET.get('name_filter')
         if name_filter:
@@ -420,9 +417,6 @@ class SessionDetail(generics.RetrieveDestroyAPIView):
     queryset = models.LimitedSession.objects.all().prefetch_related(
         Prefetch('pools__pool_decks', queryset = models.PoolDeck.objects.all().only('id')),
         Prefetch('pools__user', queryset = get_user_model().objects.all().only('username')),
-        'results',
-        'results__players',
-        Prefetch('results__players__user', queryset = get_user_model().objects.all().only('username')),
     )
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
 
