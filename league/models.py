@@ -121,7 +121,7 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
         remaining = self.low_participation_prioritization_amount
 
         for _, _decks in sorted(deck_season_map.items(), key = lambda p: p[0]):
-            if len(_decks) <= remaining:
+            if len(_decks) >= remaining:
                 for deck in random.sample(_decks, remaining):
                     decks.add(deck)
                 break
