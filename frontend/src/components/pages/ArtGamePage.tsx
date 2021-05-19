@@ -35,6 +35,7 @@ class HiddenView extends React.Component<HiddenViewProps, null> {
             cropped={true}
             sizeSlug='original'
             allowStatic={false}
+            hover={false}
           /> : <BackImage
             cropped={true}
             sizeSlug='original'

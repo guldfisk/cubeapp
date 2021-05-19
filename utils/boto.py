@@ -64,7 +64,7 @@ class MultipartUpload(t.IO[bytes]):
     def readline(self, limit: int = ...) -> bytes:
         raise NotImplemented()
 
-    def readlines(self, hint: int = ...) -> list[bytes]:
+    def readlines(self, hint: int = ...) -> t.List[bytes]:
         raise NotImplemented()
 
     def seek(self, offset: int, whence: int = ...) -> int:

@@ -174,7 +174,6 @@ const trap_representation = (
           <ImageableImage
             id={item.id}
             type='printing'
-            allowStatic={false}
           />
         </div>
       }

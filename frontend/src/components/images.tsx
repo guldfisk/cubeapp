@@ -70,7 +70,7 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
     sizeSlug: 'medium',
     // @ts-ignore
     imageable: null,
-    allowStatic: false,
+    allowStatic: true,
   };
 
   render() {
