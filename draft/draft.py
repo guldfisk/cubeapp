@@ -128,13 +128,17 @@ class DraftInterface(ABC):
     def booster_queue(self) -> Queue[DraftBooster]:
         return self._booster_queue
 
+    @property
+    def booster_amount(self) -> int:
+        return self._booster_queue.qsize() + (1 if self._current_booster else 0)
+
     def give_booster(self, booster: DraftBooster) -> None:
         self._booster_queue.put(booster)
-        # self._draft.broadcast_message(
-        #     'received_booster',
-        #     drafter = self._drafter.user.pk,
-        #     queue_size = self._booster_queue.put(booster) + (1 if self._current_booster else 0),
-        # )
+        self._draft.broadcast_message(
+            'booster_amount_update',
+            drafter = self._drafter.user.pk,
+            queue_size = self.booster_amount,
+        )
 
     @property
     def pick_queue(self) -> Queue[Cubeable]:
@@ -226,6 +230,11 @@ class DraftInterface(ABC):
                 else:
                     self._draft.booster_empty(self._current_booster)
                 self._current_booster = None
+                self._draft.broadcast_message(
+                    'booster_amount_update',
+                    drafter = self._drafter.user.pk,
+                    queue_size = self.booster_amount,
+                )
                 break
 
 

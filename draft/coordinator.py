@@ -6,11 +6,12 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 
-from limited.models import PoolSpecification
-from magiccube.collections.infinites import Infinites
 from ring import Ring
 
+from magiccube.collections.infinites import Infinites
+
 from draft.draft import Draft, Drafter, DraftInterface
+from limited.models import PoolSpecification
 
 
 class DraftCoordinator(object):
