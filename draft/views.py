@@ -66,9 +66,6 @@ class DraftSessionList(generics.ListAPIView):
                 )
             ),
             'limited_session__pools__user',
-            'limited_session__results',
-            'limited_session__results__players',
-            'limited_session__results__players__user',
         )
 
         draft_format_filter = self.request.GET.get('draft_format_filter')
