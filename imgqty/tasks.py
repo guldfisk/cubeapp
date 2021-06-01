@@ -1,5 +1,7 @@
 import typing as t
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.db import transaction
 
@@ -40,7 +42,7 @@ def check_new_image_records() -> None:
         with transaction.atomic():
             if largest_image_pick:
                 pack_size = len(list(largest_image_pick.cubeables))
-                models.ImageQtyRecordPack.objects.create(
+                record = models.ImageQtyRecordPack.objects.create(
                     pick = largest_image_pick,
                     release = release,
                     image_amount = largest_image_amount,
@@ -50,8 +52,10 @@ def check_new_image_records() -> None:
 
             models.DraftChecked.objects.create(draft = draft_session)
 
+        if not settings.DEBUG:
+            send_record_notification_mail(record, get_user_model().objects.all())
 
-@shared_task()
+
 def send_record_notification_mail(record: models.ImageQtyRecordPack, users: t.Sequence[AbstractUser]) -> None:
     send_mail(
         subject = 'New image record!',

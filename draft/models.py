@@ -95,7 +95,7 @@ class DraftSeat(models.Model):
 class DraftPick(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
-    global_pick_number = models.PositiveSmallIntegerField(null = True)
+    global_pick_number = models.PositiveSmallIntegerField()
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
     pack: DraftBooster = OrpField(DraftBooster)

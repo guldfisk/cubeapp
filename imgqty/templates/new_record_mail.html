@@ -1,3 +1,5 @@
+{% load cube_utils %}
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -15,7 +17,7 @@
         <p>The pack contains {{ record.image_amount }} images ({{ record.average_image_amount }} images per pickable).</p>
         <p>The likelihood of opening at least this many images is {{ record.probability }}</p>
         {% for cubeable in record.pick.cubeables %}
-            <img src="http://prohunterdogkeeper.dk/images/{{ cubeable.id }}_m.png">
+            <img src="{% cubeable_image_link cubeable %}">
         {% endfor %}
     </body>
 </html>
