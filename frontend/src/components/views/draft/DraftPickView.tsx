@@ -16,8 +16,6 @@ interface DraftPickViewProps {
 export default class DraftPickView extends React.Component<DraftPickViewProps, null> {
 
   render() {
-
-
     return <Row>
       <PickView pick={this.props.pick.pick}/>
       <Col>

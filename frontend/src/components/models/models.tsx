@@ -656,6 +656,21 @@ export class User extends Atomic {
     )
   };
 
+  static edit = (values: any): Promise<User> => {
+    return axios.patch(
+      apiPath + 'user/',
+      values,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => User.fromRemote(response.data)
+    )
+  };
+
 }
 
 
@@ -844,6 +859,39 @@ export class CubeReleaseName extends Atomic {
       remote.name,
     )
   }
+
+  public static compare = (
+    from_id: number,
+    to_id: number,
+  ): Promise<[Patch, VerbosePatch, string | null, UpdateReport, number]> => {
+    return axios.get(
+      apiPath + 'cube-releases/' + to_id + '/delta-from/' + from_id + '/'
+    ).then(
+      (response: any) => [
+        Patch.fromRemote(response.data.patch),
+        VerbosePatch.fromRemote(response.data.verbose_patch),
+        response.data.pdf_url,
+        UpdateReport.fromRemote(response.data.report),
+        response.data.difference,
+      ]
+    )
+  };
+
+  public static imageDistribution = (
+    releaseId: string,
+    imageAmount: number,
+  ): Promise<{ probabilityDistributionPoints: [number, number][], cumulativePoints: [number, number][] }> => {
+    return axios.get(
+      apiPath + 'image-qty-records/release-probability-distribution/' + releaseId + '/' + imageAmount + '/',
+    ).then(
+      (response: any) => {
+        return {
+          probabilityDistributionPoints: response.data.probability_distribution_points,
+          cumulativePoints: response.data.cumulative_points,
+        }
+      }
+    )
+  };
 }
 
 
@@ -3954,6 +4002,7 @@ export class Booster extends Atomic {
 
 
 export class Pick {
+  totalPickables: () => number
 
   public static fromRemote(remote: any): Pick {
     return picksMap[remote['type']].fromRemote(remote)
@@ -3974,6 +4023,10 @@ export class SinglePick extends Pick {
       Cubeable.fromRemote(remote.pick),
     )
   }
+
+  totalPickables = (): number => {
+    return 1
+  }
 }
 
 
@@ -3993,6 +4046,11 @@ export class BurnPick extends Pick {
       remote.burn ? Cubeable.fromRemote(remote.burn) : null,
     )
   }
+
+  totalPickables = (): number => {
+    return this.burn === null ? 1 : 2;
+  }
+
 }
 
 
@@ -4006,16 +4064,30 @@ export class DraftPick extends Atomic {
   createdAt: Date;
   packNumber: number;
   pickNumber: number;
+  globalPickNumber: number;
   pick: Pick;
   pack: Booster;
 
-  constructor(id: string, createdAt: Date, packNumber: number, pickNumber: number, pick: Pick, pack: Booster) {
+  constructor(
+    id: string,
+    createdAt: Date,
+    packNumber: number,
+    pickNumber: number,
+    globalPickNumber: number,
+    pick: Pick,
+    pack: Booster,
+  ) {
     super(id);
     this.createdAt = createdAt;
     this.packNumber = packNumber;
     this.pickNumber = pickNumber;
+    this.globalPickNumber = globalPickNumber;
     this.pick = pick;
     this.pack = pack;
+  }
+
+  totalPickables = (): number => {
+    return Array.from(this.pack.cubeables.cubeables()).length + this.pick.totalPickables()
   }
 
   public static fromRemote(remote: any): DraftPick {
@@ -4024,6 +4096,7 @@ export class DraftPick extends Atomic {
       new Date(remote.created_at),
       remote.pack_number,
       remote.pick_number,
+      remote.global_pick_number,
       Pick.fromRemote(remote.pick),
       Booster.fromRemote(remote.pack),
     )
@@ -4414,4 +4487,75 @@ export class RatingMap extends MinimalRatingMap {
     )
   };
 
+}
+
+
+export class PackImageRecord extends Atomic {
+  pick: DraftPick
+  release: CubeReleaseName
+  seat: DraftSeat
+  imageAmount: number
+  averageImageAmount: number
+  probability: number
+
+  constructor(
+    id: string,
+    pick: DraftPick,
+    release: CubeReleaseName,
+    seat: DraftSeat,
+    imageAmount: number,
+    averageImageAmount: number,
+    probability: number,
+  ) {
+    super(id);
+    this.pick = pick;
+    this.release = release;
+    this.seat = seat;
+    this.imageAmount = imageAmount;
+    this.averageImageAmount = averageImageAmount;
+    this.probability = probability;
+  }
+
+  public static fromRemote(remote: any): PackImageRecord {
+    return new PackImageRecord(
+      remote.id,
+      DraftPick.fromRemote(remote.pick),
+      CubeReleaseName.fromRemote(remote.release),
+      DraftSeat.fromRemote(remote.seat),
+      remote.image_amount,
+      remote.average_image_amount,
+      remote.probability,
+    )
+  }
+
+  public static get = (id: string): Promise<PackImageRecord> => {
+    return axios.get(
+      apiPath + 'image-qty-records/' + id + '/'
+    ).then(
+      response => PackImageRecord.fromRemote(response.data)
+    )
+  };
+
+  public static listForRelease = (
+    releaseId: string,
+    offset: number = 0,
+    limit: number = 50,
+  ): Promise<PaginatedResponse<PackImageRecord>> => {
+    return axios.get(
+      apiPath + 'image-qty-records/for-versioned-cube/' + releaseId + '/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((deck: any) => PackImageRecord.fromRemote(deck)),
+          hits: response.data.count,
+        }
+      }
+    )
+  };
 }

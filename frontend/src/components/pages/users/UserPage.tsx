@@ -1,13 +1,10 @@
 import React, {RefObject} from 'react';
 
-import {FullDeck, FullScheduledMatch, FullUser, ScheduledMatch, Tournament} from '../../models/models';
-import {Loading} from "../../utils/utils";
-import TournamentView from "../../views/tournaments/TournamentView";
-import DeckView from "../../views/limited/decks/DeckView";
-import {UserView} from "../../views/users/UserView";
 import Paginator from "../../utils/Paginator";
-import MatchView from "../../views/tournaments/MatchView";
+import UserView from "../../views/users/UserView";
 import {FullMatchView} from "../../views/tournaments/FullMatchView";
+import {FullScheduledMatch, FullUser} from '../../models/models';
+import {Loading} from "../../utils/utils";
 
 
 interface UserPageProps {
@@ -16,7 +13,6 @@ interface UserPageProps {
 
 interface UserPageState {
   user: FullUser | null;
-  // decks: FullDeck[];
 }
 
 
@@ -28,7 +24,6 @@ export default class UserPage extends React.Component<UserPageProps, UserPageSta
     this.paginatorRef = React.createRef();
     this.state = {
       user: null,
-      // decks: [],
     };
   }
 
@@ -70,5 +65,4 @@ export default class UserPage extends React.Component<UserPageProps, UserPageSta
       />
     </>;
   }
-
 }

@@ -10,6 +10,7 @@ urlpatterns = [
     path('api/tournaments/', include('tournaments.urls')),
     path('api/leagues/', include('league.urls')),
     path('api/ratings/', include('rating.urls')),
+    path('api/image-qty-records/', include('imgqty.urls')),
 ]
 
 if settings.DEBUG:

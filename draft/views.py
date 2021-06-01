@@ -140,7 +140,7 @@ class SeatView(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         seat: models.DraftSeat = self.get_object()
-        picks = list(seat.picks.all().order_by('pack_number', 'pick_number')[:int(kwargs['pick']) + 1])
+        picks = list(seat.picks.all().order_by('global_pick_number')[:int(kwargs['pick']) + 1])
         return Response(
             {
                 'seat': serializers.DraftSeatSerializer(seat, context = {'request': request}).data,

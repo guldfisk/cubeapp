@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h2>
+            WOW! {{ record.pick.seat.user.username }} just achieved a new <a href="prohunterdogkeeper.dk/image-record/{{ record.id }}/">
+            pack image record
+            </a>! Congratulate them by
+            <a href="https://www.alibaba.com/trade/search?SearchText=crypto+currency">
+                tipping them with CubeCoins!
+            </a>
+        </h2>
+        <p>The pack contains {{ record.image_amount }} images ({{ record.average_image_amount }} images per pickable).</p>
+        <p>The likelihood of opening at least this many images is {{ record.probability }}</p>
+        {% for cubeable in record.pick.cubeables %}
+            <img src="http://prohunterdogkeeper.dk/images/{{ cubeable.id }}_m.png">
+        {% endfor %}
+    </body>
+</html>

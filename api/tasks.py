@@ -57,10 +57,7 @@ def check_mtg_json():
 
 @shared_task()
 def generate_release_images(cube_release_id: int):
-    try:
-        release = models.CubeRelease.objects.get(pk = cube_release_id)
-    except models.CubeRelease.DoesNotExist:
-        return
+    release = models.CubeRelease.objects.get(pk = cube_release_id)
 
     for cubeable, size_slug in itertools.product(
         set(

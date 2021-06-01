@@ -30,6 +30,7 @@ urlpatterns = [
     path('user/reset-password/', views.ResetPassword.as_view()),
     path('user/claim-reset-password/', views.ClaimReset.as_view()),
 
+    path('user/', views.PersonalUserDetail.as_view()),
     path('users/', views.UserList.as_view()),
     path('users/<int:pk>/', views.UserDetail.as_view()),
 

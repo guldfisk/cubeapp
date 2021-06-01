@@ -4,9 +4,6 @@ import logging
 from celery import shared_task
 
 from django.db import transaction
-from django.db.models import Count
-
-from mtgorp.models.formats.format import LimitedSideboard
 
 from magiccube.collections.cubeable import cardboardize
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
@@ -44,7 +41,7 @@ def generate_ratings_map_for_release(release_id: int) -> None:
         ratings_for = release,
         parent = previous_rating_map,
     )
-    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=release.created_at)
+    models.RatingMap.objects.filter(id = rating_map.id).update(created_at = release.created_at)
 
     new_ratings = []
 
@@ -148,7 +145,7 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
         ratings_for = draft_session,
         parent_id = previous_rating_map.id,
     )
-    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=draft_session.ended_at)
+    models.RatingMap.objects.filter(id = rating_map.id).update(created_at = draft_session.ended_at)
 
     new_ratings = {
         rating.cardboard_cubeable: models.CardboardCubeableRating(
@@ -192,23 +189,12 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
 def check_new_rating_events():
     for rating_event in sorted(
         itertools.chain(
-            CubeRelease.objects.filter(rating_maps__isnull = True, versioned_cube__active = True).only('created_at'),
-            DraftSession.objects.annotate(
-                specifications_count = Count(
-                    'pool_specification__specifications',
-                    distinct = True,
-                ),
-                seat_count = Count('seats', distinct = True),
-            ).filter(
+            CubeRelease.objects.filter(
                 rating_maps__isnull = True,
-                state = DraftSession.DraftState.COMPLETED,
-                specifications_count = 1,
-                seat_count__gt = 1,
-                limited_session__format = LimitedSideboard.name,
-                pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-                pool_specification__specifications__release__versioned_cube__active = True,
-                pool_specification__specifications__allow_intersection = False,
-                pool_specification__specifications__allow_repeat = False,
+                versioned_cube__active = True,
+            ).only('created_at'),
+            DraftSession.objects.competitive_drafts().filter(
+                rating_maps__isnull = True,
             ).only('started_at'),
         ),
         key = lambda e: e.created_at if isinstance(e, CubeRelease) else e.started_at,

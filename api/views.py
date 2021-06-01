@@ -593,6 +593,15 @@ class UserDetail(generics.RetrieveAPIView):
     serializer_class = serializers.FullUserSerializer
 
 
+class PersonalUserDetail(generics.RetrieveUpdateAPIView):
+    queryset = get_user_model().objects.all()
+    serializer_class = serializers.FullUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
 class PatchList(generics.ListCreateAPIView):
     queryset = models.CubePatch.objects.all()
     serializer_class = serializers.CubePatchSerializer

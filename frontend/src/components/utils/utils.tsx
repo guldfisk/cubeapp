@@ -198,3 +198,8 @@ export const randomString = (length: number) => {
   }
   return result;
 };
+
+
+export const roundToN = (v: number, n: number = 2) => {
+  return Math.round((v + Number.EPSILON) * 10 ** n) / (10 ** n)
+}

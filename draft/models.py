@@ -1,21 +1,49 @@
 from __future__ import annotations
 
+import itertools
+import typing as t
 from enum import Enum
 
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
+from django.db.models import Count
+from django_mysql.models import QuerySet
 
 from typedmodels.models import TypedModel
 
+from mtgorp.models.formats.format import LimitedSideboard
+
+from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.infinites import Infinites
 
 from mtgdraft.models import DraftBooster, Pick
 
 from api.fields.orp import OrpField
-from limited.models import PoolSpecification, LimitedSession
+from limited.models import PoolSpecification, LimitedSession, CubeBoosterSpecification
 from utils.fields import EnumField
 from utils.mixins import TimestampedModel
+
+
+class DraftSessionQueryset(QuerySet):
+
+    def competitive_drafts(self) -> QuerySet:
+        return self.annotate(
+            specifications_count = Count(
+                'pool_specification__specifications',
+                distinct = True,
+            ),
+            seat_count = Count('seats', distinct = True),
+        ).filter(
+            state = DraftSession.DraftState.COMPLETED,
+            specifications_count = 1,
+            seat_count__gt = 1,
+            limited_session__format = LimitedSideboard.name,
+            pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
+            pool_specification__specifications__release__versioned_cube__active = True,
+            pool_specification__specifications__allow_intersection = False,
+            pool_specification__specifications__allow_repeat = False,
+        )
 
 
 class DraftSession(models.Model):
@@ -48,6 +76,8 @@ class DraftSession(models.Model):
         'ratings_for_content_type',
     )
 
+    objects = DraftSessionQueryset.as_manager()
+
     @property
     def users(self):
         return (seat.user for seat in self.seats.all())
@@ -65,7 +95,12 @@ class DraftSeat(models.Model):
 class DraftPick(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
+    global_pick_number = models.PositiveSmallIntegerField(null = True)
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
     pack: DraftBooster = OrpField(DraftBooster)
-    pick = OrpField(Pick)
+    pick: Pick = OrpField(Pick)
+
+    @property
+    def cubeables(self) -> t.Iterator[Cubeable]:
+        return itertools.chain(self.pick.picked, self.pack.cubeables)

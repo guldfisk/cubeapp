@@ -1,4 +1,4 @@
-import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess} from "./actions";
+import {signingIn, authFailed, signInSuccess, reSignInSuccess, signOutSuccess, userEdited} from "./actions";
 import {User} from "../models/models";
 
 
@@ -33,7 +33,7 @@ export default function authReducer(state=initialState, action) {
     case reSignInSuccess:
       return {
         ...state,
-        user: action.data,
+        user: User.fromRemote(action.data),
         token: action.token,
         authenticated: true,
         loading: false,
@@ -46,6 +46,9 @@ export default function authReducer(state=initialState, action) {
 
     case authFailed:
       return {...state, loading: false, errorMessage: action.errorMessage};
+
+    case userEdited:
+      return {...state, user: action.user}
 
     default:
       return state;

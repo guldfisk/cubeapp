@@ -112,4 +112,4 @@ class DraftPickSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.DraftPick
-        fields = ('id', 'created_at', 'pack_number', 'pick_number', 'pick', 'pack')
+        fields = ('id', 'created_at', 'pack_number', 'pick_number', 'pick', 'pack', 'global_pick_number')

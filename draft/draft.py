@@ -219,6 +219,7 @@ class DraftInterface(ABC):
                     seat = self._draft_seat,
                     pack_number = self._draft.pack_counter,
                     pick_number = self._current_booster.pick_number,
+                    global_pick_number = self._pick_counter - 1,
                     pack = self._current_booster,
                     pick = pick,
                 )
