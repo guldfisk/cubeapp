@@ -7,7 +7,7 @@ from json import JSONDecodeError
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Prefetch, QuerySet
+from django.db.models import Prefetch, QuerySet, Q
 
 from rest_framework import generics, permissions, status
 from rest_framework.request import Request
@@ -204,7 +204,10 @@ class DeckDetail(generics.RetrieveAPIView):
 
 class DeckList(generics.ListAPIView):
     queryset = models.PoolDeck.objects.filter(
-        pool__session__state = models.LimitedSession.LimitedSessionState.FINISHED,
+        Q(pool__session__state = models.LimitedSession.LimitedSessionState.FINISHED) | Q(
+            pool__session__state = models.LimitedSession.LimitedSessionState.PLAYING,
+            pool__session__open_decks = True,
+        ),
         latest = True,
     ).select_related(
         'pool__user',
