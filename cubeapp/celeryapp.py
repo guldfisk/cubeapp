@@ -44,5 +44,9 @@ if not settings.DEBUG:
         'task': 'api.tasks.check_mtg_json',
         'schedule': timedelta(hours = 1),
     }
+    app.conf.beat_schedule['backup_db'] = {
+        'task': 'api.tasks.backup_db',
+        'schedule': crontab(hour = 4, minute = 30),
+    }
 
 app.autodiscover_tasks()

@@ -15,4 +15,10 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x -o /tmp/nodesource_setup.sh
 RUN bash /tmp/nodesource_setup.sh
 RUN apt-get update && apt-get install nodejs
 
+RUN apt -y install gnupg2
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
+RUN apt update
+RUN apt install -y postgresql-client-13
+
 CMD ["bash", "./entrypoint.sh"]

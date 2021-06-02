@@ -96,11 +96,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cubeapp.wsgi.application'
 
+DATABASE_NAME = 'cubespoiler'
+DATABASE_USER = 'phdk'
+DATABASE_PORT = '5432'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'cubespoiler',
-        'USER': 'phdk',
+        'NAME': DATABASE_NAME,
+        'USER': DATABASE_USER,
         'PASSWORD': DATABASE_PASSWORD,
         'HOST': DATABASE_HOST,
         'PORT': '',

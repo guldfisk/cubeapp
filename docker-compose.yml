@@ -15,18 +15,6 @@ services:
     networks:
       - database_network
 
-  #  rabbitmq:
-  #    image: 'bitnami/rabbitmq:latest'
-  #    networks:
-  #      - database_network
-  #    restart: always
-  #    environment:
-  #      DEBUG: 1
-  #    env_file:
-  #      - .env
-  #    ports:
-  #      - 1515:15672
-
   redis:
     image: 'bitnami/redis:latest'
     environment:
@@ -95,21 +83,6 @@ services:
       - .env
     environment:
       - DEBUG=1
-
-#  flower:
-#    image: app-image
-#    command: flower -A cubeapp
-#    depends_on:
-#      - celery_beat
-#      - celery_worker
-#      - redis
-#    networks:
-#      - database_network
-#    restart: always
-#    environment:
-#      - DEBUG=1
-#    ports:
-#      - 5000:5000
 
 networks:
   database_network:

@@ -1,8 +1,10 @@
-import os
-import typing as t
-import tempfile
-import itertools
+import datetime
 import functools
+import itertools
+import os
+import subprocess
+import tempfile
+import typing as t
 import zipfile
 from collections import defaultdict
 from contextlib import ExitStack
@@ -27,6 +29,7 @@ from magiccube.collections.laps import TrapCollection
 from api import models
 from api.boto import get_boto_client, SPACES_ENDPOINT
 from api.mail import mail_me
+from cubeapp import settings
 from resources.staticimageloader import image_loader
 from utils.boto import MultipartUpload
 
@@ -266,3 +269,40 @@ def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: b
             url = urljoin(SPACES_ENDPOINT, 'phdk/' + key),
             target = models.ReleaseImageBundle.Target.COCKATRICE,
         )
+
+
+@shared_task()
+def backup_db():
+    with MultipartUpload(
+        client = get_boto_client(),
+        bucket = 'phdk',
+        key = f'db-backups/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.dmp',
+    ) as out_file:
+        s = subprocess.Popen(
+            [
+                'pg_dump',
+                '--dbname=postgresql://{}:{}@{}:{}/{}'.format(
+                    settings.DATABASE_USER,
+                    settings.DATABASE_PASSWORD,
+                    settings.DATABASE_HOST,
+                    settings.DATABASE_PORT,
+                    settings.DATABASE_NAME,
+                ),
+                '-Fc',
+            ],
+            stdout = subprocess.PIPE,
+            stderr = subprocess.PIPE,
+        )
+        while True:
+            chunk = s.stdout.read(1024)
+            if not chunk and s.poll() is not None:
+                break
+            out_file.write(chunk)
+
+        if s.poll() != 0:
+            try:
+                error_message = s.stderr.read().decode('utf8')
+            except Exception as e:
+                error_message = str(e)
+            mail_me('DB backup failed :(', 'error: ' + error_message, force = True)
+            raise Exception('pg_dump failed')
