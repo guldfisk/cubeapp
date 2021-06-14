@@ -15,7 +15,7 @@ services:
       - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
       - /home/ftper/ftp/files:/opt/services/cubeapp/files
-      - /etc/letsencrypt/live/prohunterdogkeeper.dk:/root/certs
+      - /etc/letsencrypt/archive/prohunterdogkeeper.dk:/root/certs
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/media
     depends_on:
