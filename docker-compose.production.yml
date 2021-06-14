@@ -8,14 +8,18 @@ services:
 
   nginx:
     image: nginx:1.13
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     ports:
       - "${PORT_OUT}:80"
+      - "443:443"
     volumes:
       - ./config/nginx/conf.d:/etc/nginx/conf.d
       - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
       - /home/ftper/ftp/files:/opt/services/cubeapp/files
-      - /etc/letsencrypt/archive/prohunterdogkeeper.dk:/root/certs
+      #      - /etc/letsencrypt/archive/prohunterdogkeeper.dk:/root/certs
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/media
     depends_on:
@@ -27,6 +31,13 @@ services:
       - .env
     environment:
       DEBUG: 0
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   web_channels:
     entrypoint: ./channels_entrypoint.sh
@@ -66,7 +77,8 @@ services:
   redis:
     environment:
       DEBUG: 0
-
+/root/certs/cert1:
+  pem:
 #  rabbitmq:
 #    environment:
 #      DEBUG: 0
