@@ -77,8 +77,6 @@ services:
   redis:
     environment:
       DEBUG: 0
-/root/certs/cert1:
-  pem:
 #  rabbitmq:
 #    environment:
 #      DEBUG: 0
