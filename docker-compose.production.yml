@@ -17,7 +17,6 @@ services:
       - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
       - /home/ftper/ftp/files:/opt/services/cubeapp/files
-      #      - /etc/letsencrypt/archive/prohunterdogkeeper.dk:/root/certs
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
       - static_volume:/opt/services/cubeapp/static
