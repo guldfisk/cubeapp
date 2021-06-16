@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.urls import path, include, re_path
 
+
 urlpatterns = [
     path('api/', include('api.urls')),
     path('api/auth/', include('knox.urls')),
@@ -11,6 +12,7 @@ urlpatterns = [
     path('api/leagues/', include('league.urls')),
     path('api/ratings/', include('rating.urls')),
     path('api/image-qty-records/', include('imgqty.urls')),
+    path('api/kpd/', include('kpd.urls')),
 ]
 
 if settings.DEBUG:

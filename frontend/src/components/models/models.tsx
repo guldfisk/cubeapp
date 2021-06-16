@@ -4559,3 +4559,43 @@ export class PackImageRecord extends Atomic {
     )
   };
 }
+
+
+export class KPDPoint {
+  timestamp: Date
+  valueShort: number
+  valueMedium: number
+  valueLong: number
+
+  constructor(
+    timestamp: Date,
+    valueShort: number,
+    valueMedium: number,
+    valueLong: number,
+  ) {
+    this.timestamp = timestamp;
+    this.valueShort = valueShort;
+    this.valueMedium = valueMedium;
+    this.valueLong = valueLong;
+  }
+
+  public static fromRemote(remote: any): KPDPoint {
+    return new KPDPoint(
+      new Date(remote.timestamp),
+      remote.value_short,
+      remote.value_medium,
+      remote.value_long,
+    )
+  }
+
+  public static getHistory = (): Promise<KPDPoint[]> => {
+    return axios.get(
+      apiPath + 'kpd/points/'
+    ).then(
+      response => response.data.map(
+        (point: any) => KPDPoint.fromRemote(point)
+      )
+    )
+  };
+
+}

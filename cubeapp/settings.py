@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'draft.apps.DraftConfig',
     'frontend.apps.FrontendConfig',
     'imgqty.apps.ImgqtyConfig',
+    'kpd.apps.KPDConfig',
     'league.apps.LeagueConfig',
     'limited.apps.LimitedConfig',
     'lobbies.apps.ApiConfig',

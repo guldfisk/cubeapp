@@ -148,6 +148,10 @@ class RootComponent extends React.Component<RootProps> {
               <Nav.Link>About</Nav.Link>
             </LinkContainer>
 
+            <LinkContainer to='/kpd/'>
+              <Nav.Link>KPD</Nav.Link>
+            </LinkContainer>
+
           </Nav>
           <Nav className="justify-content-end">
             {

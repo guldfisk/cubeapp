@@ -18,6 +18,7 @@ const DraftPage = React.lazy(() => import("../pages/draft/DraftPage"));
 const DraftsPage = React.lazy(() => import("../pages/draft/DraftsPage"));
 const ImageRecordPage = React.lazy(() => import("../pages/imgrecords/ImageRecordPage"))
 const InvitePage = React.lazy(() => import("../pages/authentication/InvitePage"));
+const KPDPage = React.lazy((() => import("../pages/kpd/KPDPage")));
 const LatestReleasePage = React.lazy(() => import("../pages/release/LatestReleasePage"));
 const LeaguePage = React.lazy(() => import("../pages/leagues/LeaguePage"));
 const LeaguesPage = React.lazy(() => import("../pages/leagues/LeaguesPage"));
@@ -129,5 +130,6 @@ export const routes: [
   ['/wishlist/:id(\\d+)/', WishListPage, false, {}],
   ['/art-game/', ArtGamePage, false, {}],
   ['/about', AboutPage, false, {}],
+  ['/kpd', KPDPage, false, {}],
   [undefined, NotFoundPage, false, {}],
 ];
