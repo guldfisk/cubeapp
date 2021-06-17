@@ -3026,6 +3026,77 @@ export class Season extends Atomic {
 }
 
 
+export class QuickMatch extends Atomic {
+  league: number;
+  tournament: Tournament;
+  createdAt: Date;
+  rated: boolean
+
+  constructor(
+    id: string,
+    league: number,
+    tournament: Tournament,
+    createdAt: Date,
+    rated: boolean,
+  ) {
+    super(id);
+    this.league = league;
+    this.tournament = tournament;
+    this.createdAt = createdAt;
+    this.rated = rated;
+  }
+
+  public static fromRemote(remote: any): QuickMatch {
+    return new QuickMatch(
+      remote.id,
+      remote.league,
+      Tournament.fromRemote(remote.tournament),
+      new Date(remote.created_at),
+      remote.rated,
+    )
+  }
+
+  public static forLeague(
+    id: string,
+    offset: number,
+    limit: number,
+  ): Promise<PaginatedResponse<QuickMatch>> {
+    return axios.get(
+      apiPath + 'leagues/' + id + '/quick-matches/',
+      {
+        params: {
+          offset,
+          limit,
+        }
+      }
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map((match: any) => QuickMatch.fromRemote(match)),
+          hits: response.data.count,
+        }
+      }
+    )
+  }
+
+  public static createQuickMatch(leagueId: string, rated: boolean): Promise<QuickMatch> {
+    return axios.post(
+      apiPath + 'leagues/' + leagueId + '/quick-matches/',
+      {rated},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${store.getState().token}`,
+        }
+      },
+    ).then(
+      response => QuickMatch.fromRemote(response.data)
+    )
+  };
+
+}
+
+
 export class BoosterSpecification extends Atomic {
   sequenceNumber: number;
   amount: number;

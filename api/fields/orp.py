@@ -108,15 +108,23 @@ class TextSerializedField(models.Field, t.Generic[T]):
 
     def value_to_string(self, obj):
         return self.to_native(self.value_from_object(obj))
-        # return serialize_cubeable_string(self.value_from_object(obj))
+
+
+class CardboardField(TextSerializedField[Cardboard]):
+
+    def from_native(self, value: str) -> Cardboard:
+        return db.cardboards[value]
+
+    def to_native(self, value: Cardboard) -> str:
+        return value.name
 
 
 class CubeableField(TextSerializedField[Cubeable]):
 
-    def from_native(self, value: str) -> T:
+    def from_native(self, value: str) -> Cubeable:
         return deserialize_cubeable_string(value, RawStrategy(db))
 
-    def to_native(self, value: T) -> str:
+    def to_native(self, value: Cubeable) -> str:
         return serialize_cubeable_string(value)
 
 

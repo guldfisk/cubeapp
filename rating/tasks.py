@@ -172,7 +172,7 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
     models.CardboardCubeableRating.objects.bulk_create(new_ratings.values())
 
     _, previous_ratings_node_map = get_previous_ratings_map_by_conversion_rate(
-        get_previous_releases_for_release(booster_specification.release),
+        [(booster_specification.release, 0.)] + get_previous_releases_for_release(booster_specification.release),
         previous_rating_map,
     )
 

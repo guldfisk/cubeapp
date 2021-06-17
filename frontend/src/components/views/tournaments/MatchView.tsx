@@ -73,6 +73,7 @@ class ResultSubmitter extends React.Component<ResultSubmitterProps, ResultSubmit
                     type="number"
                     placeholder="wins"
                     value={this.state.winsMap[seat.id]}
+                    min={0}
                     onChange={
                       (event: any) => this.setState(
                         {

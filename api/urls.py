@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.VersionedCubesList.as_view(), name = 'index'),
 
     path('db-info/', views.db_info),
+    path('min-supported-client-version/', views.min_supported_client_version),
 
     path('cube-releases/<int:pk>/', views.CubeReleaseView.as_view()),
     path('cube-releases/<int:pk>/filter/', views.filter_release_view),

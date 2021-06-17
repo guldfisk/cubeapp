@@ -1,10 +1,12 @@
+import itertools
+
 from django.db import transaction
 
 from celery import shared_task
 
 from elo.utils import adjust_eloeds
 
-from league.models import HOFLeague, LeagueError, Season, DeckRating
+from league.models import HOFLeague, LeagueError, Season, DeckRating, QuickMatch
 from league.values import DEFAULT_RATING
 from tournaments.models import Tournament, ScheduledMatch
 
@@ -22,12 +24,22 @@ def create_seasons() -> None:
 @shared_task()
 def update_ratings() -> None:
     with transaction.atomic():
-        for season in Season.objects.filter(
-            ratings_processed = False,
-            tournament__state = Tournament.TournamentState.FINISHED,
-        ).order_by('created_at'):
+        for rating_event in sorted(
+            itertools.chain(
+                Season.objects.filter(
+                    ratings_processed = False,
+                    tournament__state = Tournament.TournamentState.FINISHED,
+                ),
+                QuickMatch.objects.filter(
+                    ratings_processed = False,
+                    rated = True,
+                    tournament__state = Tournament.TournamentState.FINISHED,
+                )
+            ),
+            key = lambda i: i.created_at,
+        ):
             for match in ScheduledMatch.objects.filter(
-                round__tournament_id = season.tournament_id,
+                round__tournament_id = rating_event.tournament_id,
             ).order_by('round__index').prefetch_related(
                 'seats',
                 'seats__result',
@@ -40,7 +52,7 @@ def update_ratings() -> None:
 
                 rating_map = {
                     seat.participant_id: DeckRating.objects.get_or_create(
-                        league_id = season.league_id,
+                        league_id = rating_event.league_id,
                         deck_id = seat.participant.deck_id,
                         defaults = {
                             'rating': DEFAULT_RATING,
@@ -52,10 +64,10 @@ def update_ratings() -> None:
 
                 for seat in match.seats.all():
                     if seat.participant_id != winner.id:
-                        adjust_eloeds(rating_map[winner.id], rating_map[seat.participant_id], k = season.league.rating_change)
+                        adjust_eloeds(rating_map[winner.id], rating_map[seat.participant_id], k = rating_event.league.rating_change)
 
                 for rating in rating_map.values():
                     rating.save(update_fields = ('rating',))
 
-            season.ratings_processed = True
-            season.save(update_fields = ('ratings_processed',))
+            rating_event.ratings_processed = True
+            rating_event.save(update_fields = ('ratings_processed',))

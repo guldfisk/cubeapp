@@ -1,14 +1,13 @@
+from __future__ import annotations
+
+import dataclasses
 import functools
-import itertools
-import math
-import operator
-import random
 import typing as t
 from collections import defaultdict
 
 import numpy as np
-
-from scipy import stats
+from lazy_property import LazyProperty
+from scipy.stats import beta
 
 from django.db.models import Count, F
 
@@ -17,25 +16,23 @@ from mtgorp.models.interfaces import Cardboard, Printing
 
 from magiccube.collections.cubeable import CardboardCubeable
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
-from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, NodeAny, NodeAll, CardboardNode, PrintingNode
+from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, NodeAny, CardboardNode, PrintingNode
 from magiccube.tools.cube_difference import cube_difference
 
 from api.models import CubeRelease
 from limited.models import CubeBoosterSpecification, PoolDeck
 from rating import models
 from rating.values import AVERAGE_RATING
+from tournaments.models import ScheduledMatch
 
 
 Number = t.Union[int, float]
+CVS = t.Mapping[Cardboard, float]
+CVSI = t.Mapping[Cardboard, int]
 
 
-def ci_lower_bound(pos: Number, n: Number, confidence: Number = .95) -> float:
-    if n == 0:
-        return 0
-
-    z = stats.norm.cdf(1 - (1 - confidence) / 2)
-    phat = pos / n
-    return (phat + z * z / (2 * n) - z * math.sqrt((phat * (1 - phat) + z * z / (4 * n)) / n)) / (1 + z * z / n)
+def ci_lower_bound(successes: Number, occurrences: Number) -> float:
+    return beta.interval(.98, successes + 1, occurrences - successes + 1)[0]
 
 
 def distribute_value_weighted(value: Number, weights: t.Sequence[Number]) -> t.Sequence[float]:
@@ -45,176 +42,7 @@ def distribute_value_weighted(value: Number, weights: t.Sequence[Number]) -> t.S
     return [value * w / summed for w in weights]
 
 
-def _update_occurrences(
-    traps: t.Iterable[CardboardTrap],
-    occurrences: t.MutableMapping[CardboardNodeChild, t.Set[CardboardNodeChild]],
-):
-    for trap in traps:
-        for child in trap.node.children:
-            other = set(trap.node.children.distinct_elements())
-            try:
-                occurrences[child].intersection_update(other)
-            except KeyError:
-                occurrences[child] = other
-
-    for child, others in occurrences.items():
-        for other in others - {child}:
-            others.intersection_update(occurrences[other])
-        if len(others) == 1:
-            others.clear()
-
-
-def _get_perfect_correlations(
-    traps: t.Iterable[t.Iterable[CardboardTrap]],
-) -> t.AbstractSet[t.FrozenSet[CardboardNodeChild]]:
-    occurrences = {}
-    for _traps in traps:
-        _update_occurrences(_traps, occurrences)
-        if not any(occurrences.values()):
-            break
-
-    return {
-        frozenset(v)
-        for v in
-        occurrences.values()
-        if v
-    }
-
-
-class RegressionError(Exception):
-    pass
-
-
-def rating_maps_to_matrix(
-    rating_maps: t.Sequence[models.RatingMap],
-) -> t.Tuple[
-    t.List[t.Union[CardboardNodeChild, t.FrozenSet[CardboardNodeChild]]],
-    t.List[models.CardboardCubeableRating],
-    np.ndarray,
-    np.ndarray,
-]:
-    nodes = {
-        (
-            node.children.__iter__().__next__()
-            if isinstance(node, NodeAll) and len(node.children) == 1 else
-            node
-        )
-        for node in
-        (
-            node.node.as_cardboards
-            for node in
-            itertools.chain(
-                *(
-                    rating_map.release.constrained_nodes.constrained_nodes.nodes.distinct_elements()
-                    for rating_map in
-                    rating_maps
-                )
-            )
-        )
-    }
-
-    if not nodes:
-        raise RegressionError('No nodes')
-
-    ratings = [
-        [
-            rating
-            for rating in
-            rating_map.ratings.all()
-            if isinstance(rating.cardboard_cubeable, CardboardTrap) and rating.cardboard_cubeable.intention_type == IntentionType.GARBAGE
-        ]
-        for rating_map in
-        rating_maps
-    ]
-
-    perfect_correlations = _get_perfect_correlations(
-        [
-            [rating.cardboard_cubeable for rating in release]
-            for release in
-            ratings
-        ]
-    )
-
-    for correlated in perfect_correlations:
-        nodes -= correlated
-
-    nodes = list(nodes) + list(perfect_correlations)
-    ratings = functools.reduce(operator.add, ratings)
-
-    if not len(ratings) > len(nodes):
-        raise RegressionError('Must have more rated traps than nodes')
-
-    ratings_vector = np.asarray([rating.rating for rating in ratings])
-
-    matrix = [
-        (
-            [1.] + [
-            abs(
-                int(
-                    node >= rating.cardboard_cubeable.node.children.distinct_elements()
-                    if isinstance(node, frozenset) else
-                    node in rating.cardboard_cubeable.node.children
-                ) - (random.random() / 1000)
-            )
-            for node in
-            nodes
-        ]
-        )
-        for rating in
-        ratings
-    ]
-
-    return nodes, ratings, np.asarray(matrix), ratings_vector
-
-
-def get_node_weights(
-    rating_maps: t.Sequence[models.RatingMap],
-) -> t.Iterator[t.Tuple[CardboardNodeChild, float]]:
-    nodes, ratings, matrix, ratings_vector = rating_maps_to_matrix(rating_maps)
-
-    weighted = np.matmul(
-        np.matmul(
-            np.linalg.inv(np.matmul(matrix.transpose(), matrix)),
-            matrix.transpose(),
-        ),
-        ratings_vector,
-    )
-    for r, node in zip(weighted, nodes):
-        if isinstance(node, frozenset):
-            for child in node:
-                yield child, r / len(node)
-        else:
-            yield node, r
-
-
-def get_previous_ratings_map_by_regression(
-    previous_releases: t.Iterable[t.Tuple[CubeRelease, float]],
-    previous_rating_map: models.RatingMap,
-) -> t.Tuple[t.Mapping[CardboardCubeable, int], t.Mapping[CardboardNodeChild, float]]:
-    previous_release_ids = {release.id for release, _ in previous_releases}
-    rating_maps = [previous_rating_map]
-    while rating_maps[-1].parent_id is not None:
-        parent = rating_maps[-1].parent
-        if parent.release_id in previous_release_ids:
-            rating_maps.append(parent)
-        else:
-            break
-
-    return (
-        {
-            rating.cardboard_cubeable: rating.rating
-            for rating in
-            previous_rating_map.ratings.all()
-        },
-        {
-            child: rating
-            for child, rating in
-            get_node_weights(rating_maps)
-        },
-    )
-
-
-def _get_node_conversion_rate(node: CardboardNodeChild, conversion_rate_map: t.Mapping[Cardboard, float]) -> float:
+def _get_node_conversion_rate(node: CardboardNodeChild, conversion_rate_map: CVS) -> float:
     return (
         conversion_rate_map.get(node, 0.)
         if isinstance(node, Cardboard) else
@@ -234,6 +62,310 @@ def _get_node_conversion_rate(node: CardboardNodeChild, conversion_rate_map: t.M
                 node
             )
         )
+    )
+
+
+def _wrap_default_float(f: t.Callable[[t.Any], CVS]) -> t.Callable[[t.Any], CVS]:
+    @functools.wraps(f)
+    def _f(i):
+        return defaultdict(float, f(i))
+
+    return _f
+
+
+@dataclasses.dataclass
+class CardboardStatsMaps(object):
+    pool_occurrences: CVS
+    real_pool_occurrences: CVSI
+    maindeck_occurrences: CVS
+    real_maindeck_occurrences: CVSI
+    sideboard_occurrences: CVS
+    real_sideboard_occurrences: CVSI
+    maindeck_matches: CVS
+    real_maindeck_matches: CVSI
+    sideboard_matches: CVS
+    real_sideboard_matches: CVSI
+    maindeck_wins: CVS
+    real_maindeck_wins: CVSI
+    sideboard_wins: CVS
+    real_sideboard_wins: CVSI
+
+    @LazyProperty
+    @_wrap_default_float
+    def deck_occurrences(self) -> CVS:
+        return {
+            cardboard: self.maindeck_occurrences[cardboard] + self.sideboard_occurrences[cardboard]
+            for cardboard in
+            self.maindeck_occurrences.keys() | self.sideboard_occurrences.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def real_deck_occurrences(self) -> CVSI:
+        return {
+            cardboard: self.real_maindeck_occurrences[cardboard] + self.real_sideboard_occurrences[cardboard]
+            for cardboard in
+            self.real_maindeck_occurrences.keys() | self.real_sideboard_occurrences.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def deck_conversion_rates(self) -> CVS:
+        return {
+            cardboard: self.deck_occurrences[cardboard] / occurrences if occurrences else .0
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_deck_conversion_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.deck_occurrences[cardboard],
+                occurrences,
+            )
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def maindeck_conversion_rates(self) -> CVS:
+        return {
+            cardboard: self.maindeck_occurrences[cardboard] / occurrences if occurrences else .0
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_maindeck_conversion_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.maindeck_occurrences[cardboard],
+                occurrences,
+            )
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def sideboard_conversion_rates(self) -> CVS:
+        return {
+            cardboard: self.sideboard_occurrences[cardboard] / occurrences if occurrences else .0
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_sideboard_conversion_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.sideboard_occurrences[cardboard],
+                occurrences,
+            )
+            for cardboard, occurrences in
+            self.pool_occurrences.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def matches(self) -> CVS:
+        return {
+            cardboard: self.maindeck_matches[cardboard] + self.sideboard_matches[cardboard]
+            for cardboard in
+            self.maindeck_matches.keys() | self.sideboard_matches.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def real_matches(self) -> CVSI:
+        return {
+            cardboard: self.real_maindeck_matches[cardboard] + self.real_sideboard_matches[cardboard]
+            for cardboard in
+            self.real_maindeck_matches.keys() | self.real_sideboard_matches.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def wins(self) -> CVS:
+        return {
+            cardboard: self.maindeck_wins[cardboard] + self.sideboard_wins[cardboard]
+            for cardboard in
+            self.maindeck_wins.keys() | self.sideboard_wins.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def real_wins(self) -> CVSI:
+        return {
+            cardboard: self.real_maindeck_wins[cardboard] + self.real_sideboard_wins[cardboard]
+            for cardboard in
+            self.real_maindeck_wins.keys() | self.real_sideboard_wins.keys()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def win_rates(self) -> CVS:
+        return {
+            cardboard: self.wins[cardboard] / matches if matches else .0
+            for cardboard, matches in
+            self.matches.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_win_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.wins[cardboard],
+                matches,
+            )
+            for cardboard, matches in
+            self.matches.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def maindeck_win_rates(self) -> CVS:
+        return {
+            cardboard: self.maindeck_wins[cardboard] / matches if matches else .0
+            for cardboard, matches in
+            self.maindeck_matches.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_maindeck_win_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.maindeck_wins[cardboard],
+                matches
+            )
+            for cardboard, matches in
+            self.maindeck_matches.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def sideboard_win_rates(self) -> CVS:
+        return {
+            cardboard: self.sideboard_wins[cardboard] / matches if matches else .0
+            for cardboard, matches in
+            self.sideboard_matches.items()
+        }
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_sideboard_win_rates(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.sideboard_wins[cardboard],
+                matches
+            )
+            for cardboard, matches in
+            self.sideboard_matches.items()
+        }
+
+
+class CardboardMap(object):
+
+    def __init__(self):
+        self.real: t.MutableMapping[Cardboard, int] = defaultdict(int)
+        self.weighted: t.MutableMapping[Cardboard, float] = defaultdict(float)
+
+    def add(self, cardboard: Cardboard, weight: float) -> None:
+        self.real[cardboard] += 1
+        self.weighted[cardboard] += weight
+
+
+def calculate_cardboard_stats(
+    weighted_releases: t.Iterable[t.Tuple[CubeRelease, float]],
+) -> CardboardStatsMaps:
+    previous_releases_difference_map: t.Mapping[int, float] = {r.id: d for r, d in weighted_releases}
+
+    pool_occurrences = CardboardMap()
+    maindeck_deck_conversions = CardboardMap()
+    sideboard_deck_conversions = CardboardMap()
+
+    for pool_deck in PoolDeck.objects.annotate(
+        specifications_count = Count(
+            'pool__session__pool_specification__specifications'
+        ),
+        release_id = F('pool__session__pool_specification__specifications__release_id'),
+    ).filter(
+        specifications_count = 1,
+        pool__session__format = LimitedSideboard.name,
+        pool__session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
+        pool__session__pool_specification__specifications__release__in = previous_releases_difference_map.keys(),
+        pool__session__pool_specification__specifications__allow_intersection = False,
+        pool__session__pool_specification__specifications__allow_repeat = False,
+    ).select_related('pool'):
+        difference = 1 - previous_releases_difference_map.get(pool_deck.release_id, 0.)
+        cardboard_deck = pool_deck.deck.as_cardboards
+        for cardboard in cardboard_deck.maindeck.distinct_elements():
+            maindeck_deck_conversions.add(cardboard, difference)
+        for cardboard in cardboard_deck.sideboard.distinct_elements():
+            sideboard_deck_conversions.add(cardboard, difference)
+        for cardboard in set(pool_deck.pool.pool.as_cardboards.all_models):
+            pool_occurrences.add(cardboard, difference)
+
+    maindeck_matches_count_map = CardboardMap()
+    sideboard_matches_count_map = CardboardMap()
+    maindeck_wins_count_map = CardboardMap()
+    sideboard_wins_count_map = CardboardMap()
+
+    for scheduled_match in ScheduledMatch.objects.annotate(
+        specifications_count = Count(
+            'round__tournament__limited_session__pool_specification__specifications__release_id'
+        ),
+        release_id = F('round__tournament__limited_session__pool_specification__specifications__release_id'),
+    ).filter(
+        specifications_count = 1,
+        result__isnull = False,
+        round__tournament__limited_session__pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
+        round__tournament__limited_session__pool_specification__specifications__release__in = previous_releases_difference_map.keys(),
+        round__tournament__limited_session__pool_specification__specifications__allow_intersection = False,
+        round__tournament__limited_session__pool_specification__specifications__allow_repeat = False,
+    ).prefetch_related(
+        'seats',
+        'seats__participant__deck',
+        'seats__result',
+    ):
+        difference = 1 - previous_releases_difference_map.get(scheduled_match.release_id, 0.)
+
+        winners = scheduled_match.winners
+        for seat in scheduled_match.seats.all():
+            cardboard_deck = seat.participant.deck.deck.as_cardboards
+            for cardboard in cardboard_deck.maindeck.distinct_elements():
+                maindeck_matches_count_map.add(cardboard, difference)
+            for cardboard in cardboard_deck.sideboard.distinct_elements():
+                sideboard_matches_count_map.add(cardboard, difference)
+
+            if seat.participant in winners:
+                for cardboard in cardboard_deck.maindeck.distinct_elements():
+                    maindeck_wins_count_map.add(cardboard, difference / len(winners))
+                for cardboard in cardboard_deck.sideboard.distinct_elements():
+                    sideboard_wins_count_map.add(cardboard, difference / len(winners))
+
+    return CardboardStatsMaps(
+        pool_occurrences = pool_occurrences.weighted,
+        real_pool_occurrences = pool_occurrences.real,
+        maindeck_occurrences = maindeck_deck_conversions.weighted,
+        real_maindeck_occurrences = maindeck_deck_conversions.real,
+        sideboard_occurrences = sideboard_deck_conversions.weighted,
+        real_sideboard_occurrences = sideboard_deck_conversions.real,
+        maindeck_matches = maindeck_matches_count_map.weighted,
+        real_maindeck_matches = maindeck_matches_count_map.real,
+        sideboard_matches = sideboard_matches_count_map.weighted,
+        real_sideboard_matches = sideboard_matches_count_map.real,
+        maindeck_wins = maindeck_wins_count_map.weighted,
+        real_maindeck_wins = maindeck_wins_count_map.real,
+        sideboard_wins = sideboard_wins_count_map.weighted,
+        real_sideboard_wins = sideboard_wins_count_map.real,
     )
 
 

@@ -5,9 +5,11 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser
 
 from django.db import models, transaction
-from django.db.models import Count, QuerySet, Subquery, OuterRef, IntegerField
+from django.db.models import Count, QuerySet, Subquery, OuterRef, IntegerField, Q, Func, F
 from django.db.models.functions import Coalesce
 
 from mtgorp.models.formats.format import LimitedSideboard
@@ -18,6 +20,7 @@ from api.models import VersionedCube
 from draft.models import DraftSession
 from league.values import DEFAULT_RATING
 from limited.models import PoolDeck, CubeBoosterSpecification
+from mtgorp.models.tournaments.tournaments import AllMatches
 from tournaments.models import Tournament, TournamentWinner, TournamentParticipant
 from utils.fields import StringMapField, SerializeableField
 from utils.mixins import TimestampedModel, SoftDeletionModel
@@ -71,12 +74,13 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
         return decks
 
-    def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
-        all_decks = self.eligible_decks.annotate(
+    @property
+    def eligible_decks_with_presence(self) -> QuerySet:
+        return self.eligible_decks.annotate(
             seasons = Coalesce(
                 Subquery(
                     TournamentParticipant.objects.filter(
-                        tournament__season__league_id = self.id,
+                        Q(tournament__season__league_id = self.id) | Q(tournament__quick_match__league_id = self.id),
                         deck_id = OuterRef('pk'),
                     ).values('deck').annotate(cnt = Count('pk')).values('cnt'),
                     output_field = IntegerField(),
@@ -84,6 +88,46 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
                 0,
             ),
         )
+
+    def get_decks_for_quick_match(self) -> t.Tuple[PoolDeck, PoolDeck]:
+        possible_decks_list = list(self.eligible_decks_with_presence)
+
+        weights = np.array(
+            [
+                1 / (1 + d.seasons ** .5)
+                for d in
+                possible_decks_list
+            ]
+        )
+
+        deck = np.random.choice(
+            a = possible_decks_list,
+            size = 1,
+            replace = False,
+            p = weights / sum(weights),
+        )[0]
+
+        try:
+            rating = deck.league_ratings.get(league = self).rating
+        except DeckRating.DoesNotExist:
+            rating = DEFAULT_RATING
+
+        return (
+            deck,
+            self.eligible_decks.filter(
+                league_ratings__league = self,
+            ).exclude(
+                id = deck.id,
+            ).annotate(
+                rating_difference = Func(
+                    F('league_ratings__rating') - rating,
+                    function = 'ABS',
+                )
+            ).order_by('rating_difference').first(),
+        )
+
+    def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
+        all_decks = self.eligible_decks_with_presence
 
         possible_decks = set(all_decks)
 
@@ -173,6 +217,31 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
             )
         }
 
+    def create_quick_match(self, user: AbstractUser, rated: bool) -> QuickMatch:
+        decks = self.get_decks_for_quick_match()
+        with transaction.atomic():
+            tournament = Tournament.objects.create(
+                name = '{} - Quick match {}'.format(self.name, self.quick_matches.count() + 1),
+                tournament_type = AllMatches,
+                tournament_config = {},
+                match_type = self.match_type,
+            )
+
+            for deck in decks:
+                TournamentParticipant.objects.create(
+                    tournament = tournament,
+                    deck = deck,
+                )
+
+            tournament.advance()
+
+            return QuickMatch.objects.create(
+                league = self,
+                tournament = tournament,
+                rated = rated,
+                created_by = user,
+            )
+
     def create_season(self) -> Season:
         decks = self.get_decks_for_season()
         with transaction.atomic():
@@ -202,6 +271,14 @@ class Season(TimestampedModel):
     league = models.ForeignKey(HOFLeague, on_delete = models.CASCADE, related_name = 'seasons')
     tournament = models.OneToOneField(Tournament, on_delete = models.CASCADE, related_name = 'season')
     ratings_processed = models.BooleanField(default = False)
+
+
+class QuickMatch(TimestampedModel):
+    league = models.ForeignKey(HOFLeague, on_delete = models.CASCADE, related_name = 'quick_matches')
+    tournament = models.OneToOneField(Tournament, on_delete = models.CASCADE, related_name = 'quick_match')
+    ratings_processed = models.BooleanField(default = False)
+    rated = models.BooleanField()
+    created_by = models.ForeignKey(get_user_model(), on_delete = models.PROTECT, related_name = 'created_quick_matches')
 
 
 class DeckRating(models.Model):

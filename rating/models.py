@@ -4,8 +4,9 @@ from django.db import models
 
 from magiccube.laps.traps.tree.printingtree import CardboardNode, PrintingNode
 
-from api.fields.orp import CardboardCubeableField, CubeableField, CardboardNodeChildField, PrintingNodeChildField
+from api.fields.orp import CardboardCubeableField, CubeableField, CardboardNodeChildField, PrintingNodeChildField, CardboardField
 from api.models import CubeRelease
+from mtgorp.models.interfaces import Cardboard
 from utils.mixins import TimestampedModel
 
 
@@ -66,3 +67,47 @@ class NodeRatingComponent(models.Model):
         if not self.node_id:
             self.node_id = self.node.persistent_hash()
         super().save(force_insert, force_update, using, update_fields)
+
+
+class CardboardStats(models.Model):
+    rating_map = models.ForeignKey(RatingMap, on_delete = models.CASCADE, related_name = 'cardboard_statistics')
+    cardboard: Cardboard = CardboardField()
+
+    pool_occurrences = models.FloatField()
+    maindeck_occurrences = models.FloatField()
+
+    sideboard_occurrences = models.FloatField()
+    real_sideboard_occurrences = models.IntegerField()
+    maindeck_matches = models.FloatField()
+    real_maindeck_matches = models.IntegerField()
+    sideboard_matches = models.FloatField()
+    real_sideboard_matches = models.IntegerField()
+    maindeck_wins = models.FloatField()
+    real_maindeck_wins = models.IntegerField()
+    sideboard_wins = models.FloatField()
+    real_sideboard_wins = models.IntegerField()
+
+    deck_occurrences = models.FloatField()
+    real_deck_occurrences = models.IntegerField()
+
+    deck_conversion_rate = models.FloatField()
+    ci_deck_conversion_rate = models.FloatField()
+
+    maindeck_conversion_rate = models.FloatField()
+    ci_maindeck_conversion_rate = models.FloatField()
+    sideboard_conversion_rate = models.FloatField()
+    ci_sideboard_conversion_rate = models.FloatField()
+
+    matches = models.FloatField()
+    real_matches = models.IntegerField()
+    wins = models.FloatField()
+    real_wins = models.IntegerField()
+    win_rate = models.FloatField()
+    ci_win_rate = models.FloatField()
+    maindeck_win_rate = models.FloatField()
+    ci_maindeck_win_rate = models.FloatField()
+    sideboard_win_rate = models.FloatField()
+    ci_sideboard_win_rate = models.FloatField()
+
+    class Meta:
+        unique_together = ('cardboard', 'rating_map')

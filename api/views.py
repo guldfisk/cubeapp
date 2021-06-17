@@ -40,13 +40,11 @@ from magiccube.tools.cube_difference import cube_difference
 from magiccube.update.cubeupdate import CubePatch, CubeUpdater
 from magiccube.update.report import UpdateReport
 
-from cubeapp import settings
-
 from api import models
-from api.serialization import serializers
-from api.serialization import orpserialize
 from api.mail import send_mail
-
+from api.serialization import orpserialize
+from api.serialization import serializers
+from cubeapp import settings
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
@@ -67,7 +65,7 @@ _IMAGE_SIZE_MAP = {
 }
 
 
-@api_view(['GET', ])
+@api_view(['GET'])
 def db_info(request: HttpRequest) -> HttpResponse:
     return JsonResponse(
         {
@@ -78,6 +76,15 @@ def db_info(request: HttpRequest) -> HttpResponse:
                 key = lambda e: e.release_date
             )[-1].name,
             'checksum': db.checksum.hex(),
+        }
+    )
+
+
+@api_view(['GET'])
+def min_supported_client_version(request: HttpRequest) -> HttpResponse:
+    return JsonResponse(
+        {
+            'version': '0.1.3',
         }
     )
 
@@ -93,7 +100,7 @@ class CubeReleaseView(generics.RetrieveAPIView):
     serializer_class = serializers.FullCubeReleaseSerializer
 
 
-@api_view(['GET', ])
+@api_view(['GET'])
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:
     pictured_type = _CUBEABLES_TYPE_MAP.get(
         request.GET.get(
@@ -762,7 +769,7 @@ def sample_pack(request: Request, pk: int, size: int) -> Response:
         return Response(
             {
                 'pack': orpserialize.CubeSerializer.serialize(
-                    Cube(r.sample(release.cube.cubeables, size))
+                    Cube(r.sample(sorted(release.cube.cubeables, key = lambda p: str(p.id)), size))
                 ),
                 'seed': seed,
             }

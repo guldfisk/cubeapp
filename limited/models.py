@@ -372,7 +372,7 @@ class Pool(models.Model):
 class PoolDeck(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     name = models.CharField(max_length = 255)
-    deck = OrpField(Deck)
+    deck: Deck = OrpField(Deck)
     pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'pool_decks')
     cheating = models.BooleanField(default = False)
     latest = models.BooleanField(default = True)

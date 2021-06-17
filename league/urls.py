@@ -10,4 +10,6 @@ urlpatterns = [
     path('<int:pk>/eligibles/', views.LeagueEligibles.as_view()),
     path('<int:pk>/seasons/', views.LeagueSeasons.as_view()),
     path('<int:pk>/leader-board/', views.LeagueLeaderBoard.as_view()),
+    path('<int:pk>/quick-match/', views.QuickMatchDetail.as_view()),
+    path('<int:pk>/quick-matches/', views.QuickMatchList.as_view()),
 ]

@@ -31,6 +31,15 @@ class SeasonSerializer(serializers.ModelSerializer):
         fields = ('id', 'league', 'tournament', 'created_at')
 
 
+class QuickMatchSerializer(serializers.ModelSerializer):
+    league = MinimalLeagueSerializer()
+    tournament = TournamentSerializer()
+
+    class Meta:
+        model = models.QuickMatch
+        fields = ('id', 'league', 'tournament', 'rated', 'created_at')
+
+
 class FullLeagueSerializer(LeagueSerializer):
     seasons = MinimalSeasonSerializer(many = True, read_only = True)
 

@@ -1,17 +1,15 @@
-from django.contrib.auth import get_user_model
-from django.db.models import Prefetch, Count, Avg, IntegerField, Subquery, OuterRef, FloatField, F, Q
+from django.db.models import Prefetch, Count, Avg, IntegerField, Subquery, OuterRef, FloatField, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
-from rest_framework import generics
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 
 from league import models
 from league import serializers
-from limited.models import LimitedSession, PoolDeck
+from league.utils import prefetch_league_tournament_related, USER_QUERY_SET
+from limited.models import LimitedSession
 from limited.serializers import FullPoolDeckSerializer
-
-
-USER_QUERY_SET = get_user_model().objects.all().only('id', 'username')
 
 
 class LeagueDetail(generics.RetrieveAPIView):
@@ -48,65 +46,12 @@ class LeagueSeasons(LeagueRelatedList):
 
     def get_queryset(self):
         league: models.HOFLeague = self.get_object()
-        return models.Season.objects.filter(
-            league = league,
-        ).order_by(
-            '-created_at',
-        ).prefetch_related(
-            'tournament__participants',
-            Prefetch(
-                'tournament__participants__deck',
-                queryset = PoolDeck.objects.all().only(
-                    'id',
-                    'name',
-                    'created_at',
-                    'pool_id',
-                )
-            ),
-            Prefetch(
-                'tournament__participants__player',
-                queryset = USER_QUERY_SET,
-            ),
-            'tournament__participants__deck__pool',
-            Prefetch(
-                'tournament__participants__deck__pool__user',
-                queryset = USER_QUERY_SET,
-            ),
-            'tournament__rounds',
-            'tournament__rounds__matches',
-            'tournament__rounds__matches__seats',
-            'tournament__rounds__matches__seats__participant',
-            Prefetch(
-                'tournament__rounds__matches__seats__participant__player',
-                queryset = USER_QUERY_SET,
-            ),
-            Prefetch(
-                'tournament__rounds__matches__seats__participant__deck',
-                queryset = PoolDeck.objects.all().only(
-                    'id',
-                    'name',
-                    'created_at',
-                    'pool_id',
-                )
-            ),
-            Prefetch(
-                'tournament__rounds__matches__seats__participant__deck__pool__user',
-                queryset = USER_QUERY_SET,
-            ),
-            'tournament__rounds__matches__seats__result',
-            'tournament__rounds__matches__result',
-            'tournament__results',
-            'tournament__results__participant',
-            Prefetch(
-                'tournament__results__participant__player',
-                queryset = USER_QUERY_SET,
-            ),
-            'tournament__results__participant__deck',
-            'tournament__results__participant__deck__pool',
-            Prefetch(
-                'tournament__results__participant__deck__pool__user',
-                queryset = USER_QUERY_SET,
-            ),
+        return prefetch_league_tournament_related(
+            models.Season.objects.filter(
+                league = league,
+            ).order_by(
+                '-created_at',
+            )
         )
 
 
@@ -195,4 +140,36 @@ class LeagueLeaderBoard(LeagueRelatedList):
                 'pool__user',
                 queryset = USER_QUERY_SET,
             ),
+        )
+
+
+class QuickMatchDetail(generics.RetrieveAPIView):
+    queryset = models.QuickMatch.objects.order_by('-created_at')
+    serializer_class = serializers.QuickMatchSerializer
+
+
+class QuickMatchList(LeagueRelatedList):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, ]
+    serializer_class = serializers.QuickMatchSerializer
+
+    def get_queryset(self):
+        league: models.HOFLeague = self.get_object()
+        return prefetch_league_tournament_related(
+            models.QuickMatch.objects.filter(
+                league = league,
+            ).order_by(
+                '-created_at',
+            )
+        )
+
+    def post(self, request, *args, **kwargs):
+        league: models.HOFLeague = self.get_object()
+        return Response(
+            serializers.QuickMatchSerializer(
+                league.create_quick_match(
+                    request.user,
+                    request.data.get('rated'),
+                ),
+            ).data,
+            status = status.HTTP_201_CREATED,
         )
