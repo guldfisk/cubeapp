@@ -24,6 +24,8 @@ def check_transactions():
     if last_date == current_date:
         return
 
+    last_date += datetime.timedelta(days = 1)
+
     events = []
 
     for bank_transaction in get_transactions(last_date, current_date):
