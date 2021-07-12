@@ -2,15 +2,14 @@ import traceback
 import typing as t
 
 from collections import OrderedDict
-from distutils.util import strtobool
 
 from asgiref.sync import async_to_sync
 
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
-from evolution import model
 from evolution import logging
+from evolution.constraints import ConstraintSet
 from evolution.environment import Environment
 
 from mtgorp.models.serilization.strategies.jsonid import JsonId
@@ -116,7 +115,7 @@ class DistributorConsumer(AuthenticatedConsumer):
 
         trap_amount = self._updater.new_garbage_trap_amount
 
-        constraint_set = model.ConstraintSet(
+        constraint_set = ConstraintSet(
             (
                 (
                     algorithm.SizeHomogeneityConstraint(

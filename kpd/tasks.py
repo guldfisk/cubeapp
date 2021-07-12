@@ -20,15 +20,13 @@ def check_transactions():
         or datetime.date(year = 1900, month = 1, day = 1)
     )
 
-    current_date = datetime.datetime.now().date()
-    if last_date == current_date:
+    target_date = datetime.datetime.now().date() - datetime.timedelta(days = 1)
+    if last_date >= target_date:
         return
-
-    last_date += datetime.timedelta(days = 1)
 
     events = []
 
-    for bank_transaction in get_transactions(last_date, current_date):
+    for bank_transaction in get_transactions(last_date, target_date):
         if any('PASHA KEBAB' in s for s in bank_transaction.get('remittance_information', ())):
             events.append(
                 models.KebabEvent(
@@ -55,7 +53,7 @@ def check_transactions():
     finished_dates_map = [
         0
         for _ in range(
-            (current_date - finished_dates[0]).days + 1
+            (target_date - finished_dates[0]).days + 1
         )
     ]
 
@@ -63,7 +61,7 @@ def check_transactions():
         finished_dates_map[(finished_date - finished_dates[0]).days] += 1
 
     from_date = finished_dates[0]
-    date_span = (current_date - from_date).days
+    date_span = (target_date - from_date).days
 
     series = pd.Series([0] + finished_dates_map)
 
@@ -88,4 +86,4 @@ def check_transactions():
 
     models.KebabPoint.objects.bulk_create(points)
 
-    models.RangeRequest.objects.create(requested_from = last_date, requested_to = current_date)
+    models.RangeRequest.objects.create(requested_from = last_date, requested_to = target_date)
