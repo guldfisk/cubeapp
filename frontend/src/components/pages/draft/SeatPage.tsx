@@ -2,16 +2,18 @@ import React from 'react';
 
 import axios from "axios";
 
-import {Loading} from '../../utils/utils';
-import {apiPath, CubeablesContainer, DraftPick, DraftSeat} from '../../models/models';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import CubeablesCollectionSpoilerView from "../../views/cubeablescollectionview/CubeablesCollectionSpoilerView";
+import Col from "react-bootstrap/Col";
+
+import {apiPath, DraftPick, DraftSeat, PickPool} from '../../models/models';
+import {Loading} from '../../utils/utils';
+
 import PaginationBar from "../../utils/PaginationBar";
 import DraftPickView from "../../views/draft/DraftPickView";
-import Col from "react-bootstrap/Col";
 import {connect} from "react-redux";
 import history from "../../routing/history";
+import PickPoolSpoiler from "../../views/cubeablescollectionview/PickPoolSpoiler";
 
 
 interface SeatPageProps {
@@ -24,7 +26,7 @@ interface SeatPageProps {
 interface SeatPageState {
   seat: DraftSeat | null;
   pick: DraftPick | null;
-  pool: CubeablesContainer | null;
+  pool: PickPool | null;
   pickNumber: number;
   pickCount: number;
   requiresAuthenticated: boolean;
@@ -58,7 +60,7 @@ class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
         {
           seat: DraftSeat.fromRemote(response.data.seat),
           pick: response.data.pick ? DraftPick.fromRemote(response.data.pick) : null,
-          pool: CubeablesContainer.fromRemote(response.data.pool),
+          pool: PickPool.fromRemote(response.data.pool),
           pickCount: response.data.pick_count,
           pickNumber: pickNumber,
         }
@@ -122,9 +124,9 @@ class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
       </Row>
       <Row>
         {
-          this.state.pool ? <CubeablesCollectionSpoilerView
-            cubeablesContainer={this.state.pool}
-            cubeableType="Cubeables"
+          this.state.pool ? <PickPoolSpoiler
+            pickPool={this.state.pool}
+            onCubeableClicked={((cubeable, pickNumber) => this.pickClicked(pickNumber))}
           /> : <Loading/>
         }
       </Row>

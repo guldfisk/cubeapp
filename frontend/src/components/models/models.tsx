@@ -1154,6 +1154,28 @@ export class CubeablesContainer {
 }
 
 
+export class PickPool {
+  picks: Cubeable[][];
+
+  constructor(
+    picks: Cubeable[][],
+  ) {
+    this.picks = picks;
+  }
+
+  public static fromRemote(remote: any): PickPool {
+    return new PickPool(
+      remote.map(
+        (pick: any) => pick.map(
+          (cubeable: any) => Cubeable.fromRemote(cubeable)
+        )
+      )
+    );
+  }
+
+}
+
+
 export class CubeRelease extends CubeReleaseMeta {
   cube: MinimalCube;
   cubeablesContainer: CubeablesContainer;

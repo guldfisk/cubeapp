@@ -7,8 +7,7 @@ from enum import Enum
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.db.models import Count
-from django_mysql.models import QuerySet
+from django.db.models import Count, QuerySet
 
 from typedmodels.models import TypedModel
 

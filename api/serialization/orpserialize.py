@@ -1,5 +1,8 @@
 import typing as t
 from abc import abstractmethod
+from distutils.util import strtobool
+
+from rest_framework.request import Request
 
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.persistent.card import Card
@@ -8,6 +11,7 @@ from mtgorp.models.persistent.expansion import Expansion
 from mtgorp.models.persistent.printing import Printing
 from mtgorp.models.serilization.serializeable import compacted_model
 from mtgorp.models.serilization.strategies.jsonid import JsonId
+from mtgorp.models.serilization.strategies.raw import RawStrategy
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import BaseCubeable, FlatBaseCubeable, Cubeable, CardboardCubeable
@@ -525,7 +529,13 @@ class MappedSerializer(ModelSerializer[T]):
     _serializer_map: t.Mapping[str, t.Type[ModelSerializer]]
 
     @classmethod
-    def serialize(cls, serializeable: T) -> compacted_model:
+    def serialize(cls, serializeable: T, request: t.Optional[Request] = None) -> compacted_model:
+        if request is not None and strtobool(request.query_params.get('native', '0')):
+            return (
+                serializeable.id
+                if isinstance(serializeable, Printing) or isinstance(serializeable, Cardboard)
+                else RawStrategy.serialize(serializeable)
+            )
         return cls._serializer_map[serializeable.__class__.__name__].serialize(serializeable)
 
 

@@ -1,5 +1,3 @@
-import itertools
-
 from distutils.util import strtobool
 
 from django.contrib.auth.models import AbstractUser
@@ -9,11 +7,10 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 
 from api.models import CubeRelease
-from magiccube.collections.cube import Cube
 
 from mtgdraft.client import draft_format_map
 
-from api.serialization.orpserialize import CubeSerializer
+from api.serialization.orpserialize import CubeableSerializer
 from limited.models import Pool
 from draft import models, serializers
 
@@ -144,17 +141,15 @@ class SeatView(generics.GenericAPIView):
         return Response(
             {
                 'seat': serializers.DraftSeatSerializer(seat, context = {'request': request}).data,
-                'pool': CubeSerializer.serialize(
-                    Cube(
-                        itertools.chain(
-                            *(
-                                pick.pick.added_cubeables
-                                for pick in
-                                picks[:-1]
-                            )
-                        )
-                    )
-                ),
+                'pool': [
+                    [
+                        CubeableSerializer.serialize(cubeable, request)
+                        for cubeable in
+                        pick.pick.added_cubeables
+                    ]
+                    for pick in
+                    picks[:-1]
+                ],
                 'pick': serializers.DraftPickSerializer(
                     picks[-1],
                     context = {'request': request},
