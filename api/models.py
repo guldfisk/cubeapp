@@ -61,10 +61,13 @@ class VersionedCube(mixins.SoftDeletionModel, models.Model):
         return self.releases.order_by('created_at').last()
 
     def full_release_history(self, before_inclusive: datetime.datetime) -> t.Iterator[CubeRelease]:
-        for release in self.releases.filter(created_at__lte=before_inclusive).order_by('-created_at'):
+        for release in self.releases.filter(created_at__lte = before_inclusive).order_by('-created_at'):
             yield release
         if self.forked_from_release_id:
             yield from self.forked_from_release.versioned_cube.full_release_history(self.forked_from_release.created_at)
+
+    def get_absolute_url(self) -> str:
+        return f'/cube/{self.id}'
 
 
 class CubeRelease(models.Model):
@@ -129,6 +132,9 @@ class CubeRelease(models.Model):
             intended_size = intended_size,
             infinites = infinites,
         )
+
+    def get_absolute_url(self) -> str:
+        return f'/release/{self.id}'
 
 
 class ConstrainedNodes(models.Model):

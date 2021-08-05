@@ -266,11 +266,17 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
                 tournament = tournament,
             )
 
+    def get_absolute_url(self) -> str:
+        return f'/leagues/{self.id}'
+
 
 class Season(TimestampedModel):
     league = models.ForeignKey(HOFLeague, on_delete = models.CASCADE, related_name = 'seasons')
     tournament = models.OneToOneField(Tournament, on_delete = models.CASCADE, related_name = 'season')
     ratings_processed = models.BooleanField(default = False)
+
+    def get_absolute_url(self) -> str:
+        return f'/tournaments/{self.tournament_id}'
 
 
 class QuickMatch(TimestampedModel):

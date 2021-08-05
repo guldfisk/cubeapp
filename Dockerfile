@@ -11,7 +11,7 @@ COPY ./appdirs/ /root/.local/share/
 
 RUN apt-get update && apt-get install --yes --force-yes curl git
 
-RUN curl -sL https://deb.nodesource.com/setup_10.x -o /tmp/nodesource_setup.sh
+RUN curl -sL https://deb.nodesource.com/setup_14.x -o /tmp/nodesource_setup.sh
 RUN bash /tmp/nodesource_setup.sh
 RUN apt-get update && apt-get install nodejs
 

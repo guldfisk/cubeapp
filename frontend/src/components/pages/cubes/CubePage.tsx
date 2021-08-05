@@ -15,6 +15,7 @@ import {Modal} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import CreateCubeForm from "../../views/cubeview/CreateCubeForm";
 import {connect} from "react-redux";
+import {FeedLink} from "../../utils/rss";
 
 
 interface ForkCubeDialogProps {
@@ -130,6 +131,11 @@ class CubePage extends React.Component<CubePageProps, CubePageState> {
                 <p><Link to={'/cube/' + this.props.match.params.id + '/patches/'}>Patches</Link></p>
                 <p><Link to={'/cube/' + this.props.match.params.id + '/ratings/'}>Ratings</Link></p>
                 <p><Link to={'/cube/' + this.props.match.params.id + '/image-records/'}>Image Records</Link></p>
+                <p>
+                  <FeedLink
+                    url={'/api/versioned-cubes/' + this.props.match.params.id + '/rss.xml'}
+                  />
+                </p>
                 {
                   this.props.authenticated ? [
                     <p>

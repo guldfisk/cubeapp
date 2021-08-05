@@ -12,7 +12,6 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/mocknames.git#egg=mocknames
 -e git+https://github.com/guldfisk/secretresources.git#egg=secretresources
 -e git+https://github.com/guldfisk/sheetclient.git#egg=sheetclient
--e git+https://github.com/guldfisk/mkmcheck.git#egg=mkmcheck
 -e git+https://github.com/guldfisk/django-typed-models.git#egg=django-typed-models
 -e git+https://github.com/guldfisk/cubeclient.git#egg=cubeclient
 -e git+https://github.com/guldfisk/mtgdraft.git#egg=mtgdraft

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from league import views
+from league import views, feeds
 
 
 urlpatterns = [
@@ -12,4 +12,5 @@ urlpatterns = [
     path('<int:pk>/leader-board/', views.LeagueLeaderBoard.as_view()),
     path('<int:pk>/quick-match/', views.QuickMatchDetail.as_view()),
     path('<int:pk>/quick-matches/', views.QuickMatchList.as_view()),
+    path('<int:pk>/rss.xml', feeds.SeasonsFeed()),
 ]

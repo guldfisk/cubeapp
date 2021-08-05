@@ -1,6 +1,6 @@
 from django.urls import path
 
-from api import views
+from api import views, feeds
 
 
 urlpatterns = [
@@ -27,6 +27,7 @@ urlpatterns = [
     path('versioned-cubes/<int:pk>/', views.VersionedCubeDetail.as_view()),
     path('versioned-cubes/<int:pk>/fork/', views.ForkVersionedCube.as_view()),
     path('versioned-cubes/<int:pk>/patches/', views.VersionedCubePatchList.as_view()),
+    path('versioned-cubes/<int:pk>/rss.xml', feeds.ReleaseFeed()),
 
     path('user/reset-password/', views.ResetPassword.as_view()),
     path('user/claim-reset-password/', views.ClaimReset.as_view()),

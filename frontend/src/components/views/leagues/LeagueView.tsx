@@ -16,7 +16,7 @@ import LeagueSettingsView from "./LeagueSettingsView";
 import {Form} from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import {connect} from "react-redux";
-import Row from "react-bootstrap/Row";
+import {FeedLink} from "../../utils/rss";
 
 
 interface LeagueViewProps {
@@ -80,6 +80,7 @@ class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
             />
           </Tab>
           <Tab eventKey='seasons' title='Seasons'>
+            <FeedLink url={'/api/leagues/' + this.props.league.id + '/rss.xml'}/>
             <Paginator
               ref={this.seasonsPaginatorRef}
               fetch={
