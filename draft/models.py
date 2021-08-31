@@ -81,6 +81,9 @@ class DraftSession(models.Model):
     def users(self):
         return (seat.user for seat in self.seats.all())
 
+    def get_absolute_url(self) -> str:
+        return f'/drafts/{self.id}'
+
 
 class DraftSeat(models.Model):
     sequence_number = models.PositiveSmallIntegerField()

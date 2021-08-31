@@ -140,6 +140,9 @@ class Tournament(TimestampedModel):
             self._complete_limited_session()
         return self
 
+    def get_absolute_url(self) -> str:
+        return f'/tournaments/{self.id}'
+
 
 class TournamentParticipant(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete = models.CASCADE, related_name = 'participants')

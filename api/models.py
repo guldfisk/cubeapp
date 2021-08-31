@@ -299,3 +299,7 @@ class ReleaseImageBundle(TimestampedModel, models.Model):
 #
 #     class Meta:
 #         unique_together = ('permission_for_content_type', 'permission_for_object_id')
+
+
+class ExpansionUpdate(TimestampedModel, models.Model):
+    expansion_code = models.CharField(max_length = 7)

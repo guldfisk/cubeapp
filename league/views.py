@@ -28,7 +28,7 @@ class RecentLeague(generics.RetrieveAPIView):
 class LeagueRelatedList(generics.ListAPIView):
     queryset = models.HOFLeague.objects.all().only('id')
 
-    def get_object(self):
+    def get_object(self) -> models.HOFLeague:
         queryset = self.queryset.all()
 
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -153,20 +153,18 @@ class QuickMatchList(LeagueRelatedList):
     serializer_class = serializers.QuickMatchSerializer
 
     def get_queryset(self):
-        league: models.HOFLeague = self.get_object()
         return prefetch_league_tournament_related(
             models.QuickMatch.objects.filter(
-                league = league,
+                league = self.get_object(),
             ).order_by(
                 '-created_at',
             )
         )
 
     def post(self, request, *args, **kwargs):
-        league: models.HOFLeague = self.get_object()
         return Response(
             serializers.QuickMatchSerializer(
-                league.create_quick_match(
+                self.get_object().create_quick_match(
                     request.user,
                     request.data.get('rated'),
                 ),

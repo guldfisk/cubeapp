@@ -1,6 +1,6 @@
 from django.urls import path
 
-from tournaments import views
+from tournaments import views, feeds
 
 
 urlpatterns = [
@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:pk>/cancel/', views.TournamentCancel.as_view()),
     path('scheduled-matches/<int:pk>/', views.ScheduledMatchDetail.as_view()),
     path('users/<int:pk>/scheduled-matches/', views.UserScheduledMatches.as_view()),
+    path('rss.xml', feeds.CompetitiveTournamentsFeed()),
 ]

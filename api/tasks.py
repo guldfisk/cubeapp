@@ -15,11 +15,14 @@ from asgiref.sync import async_to_sync
 from celery import shared_task
 from channels.layers import get_channel_layer
 
+from django.template.loader import get_template
+
 from proxypdf.streamwriter import StreamProxyWriter
 
-from mtgorp.models.persistent.printing import Printing
-from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
+from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+from mtgorp.models.persistent.cardboard import Cardboard
+from mtgorp.models.persistent.printing import Printing
 
 from mtgimg.interface import SizeSlug, ImageRequest
 from mtgimg.pipeline import ImageableProcessor, get_pipeline
@@ -46,14 +49,32 @@ def inject_boto_client(f: t.Callable) -> t.Callable:
 @shared_task()
 def check_mtg_json():
     update_db = get_update_db()
-    current_db_json_version = get_last_db_update(update_db = update_db)
-    if check_and_update(update_db = update_db):
-        new_db_version = get_last_db_update(update_db = update_db)
+    updated, dbs = check_and_update(update_db = update_db)
+    if not updated:
+        return
+
+    last_set_with_printings = max(
+        filter(
+            lambda e: (
+                e.expansion_type == ExpansionType.SET
+                and e.printings
+            ),
+            dbs[0].expansions.values(),
+        ),
+        key = lambda e: e.release_date,
+    )
+
+    if last_set_with_printings.code != models.ExpansionUpdate.objects.order_by(
+        'created_at',
+    ).values_list('expansion_code', flat = True).last():
+        models.ExpansionUpdate.objects.create(expansion_code = last_set_with_printings.code)
         mail_me(
-            'db out of date',
-            '<p>Current version: {}</p><p>Previous version: {}</p>'.format(
-                new_db_version.strftime(MTG_JSON_DATETIME_FORMAT) if new_db_version else "None",
-                current_db_json_version.strftime(MTG_JSON_DATETIME_FORMAT) if current_db_json_version else "None"
+            f'new mtg set in db [{last_set_with_printings.code}]',
+            get_template('db_updated_mail.html').render(
+                {
+                    'mtgjson_timestamp': get_last_db_update(update_db = update_db).strftime(MTG_JSON_DATETIME_FORMAT),
+                    'expansion': last_set_with_printings,
+                }
             ),
         )
 
