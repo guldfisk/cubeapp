@@ -1,10 +1,14 @@
 import datetime
 import typing as t
+import uuid
 
 import jwt
 import requests
 
-from kpd.settings import ACCOUNT_UID, CERT_PATH, APPLICATION_UID
+from django.conf import settings
+
+from kpd import models
+from kpd.settings import CERT_PATH, APPLICATION_UID, ASPSP_NAME, ASPSP_COUNTRY
 
 
 API_ORIGIN = 'https://api.tilisy.com'
@@ -30,7 +34,35 @@ def get_auth_headers() -> t.Mapping[str, str]:
         }
 
 
-def get_transactions(from_timestamp: datetime.date, to_timestamp: datetime.date) -> t.Sequence[t.Mapping[str, t.Any]]:
+def get_authentication_redirect() -> str:
+    return requests.post(
+        f'{API_ORIGIN}/auth',
+        json = {
+            'access': {
+                'valid_until': (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days = 90)).isoformat()
+            },
+            'aspsp': {'name': ASPSP_NAME, 'country': ASPSP_COUNTRY},
+            'state': str(uuid.uuid4()),
+            'redirect_url': f'{settings.HOST}/update-token',
+            'psu_type': 'personal',
+        },
+        headers = get_auth_headers(),
+    ).json()['url']
+
+
+def create_session(auth_code: str) -> models.SessionKey:
+    response = requests.post(
+        f"{API_ORIGIN}/sessions",
+        json = {"code": auth_code},
+        headers = get_auth_headers(),
+    ).json()
+    return models.SessionKey.objects.create(
+        key = response['accounts'][0]['uid'],
+        valid_until = datetime.datetime.fromisoformat(response['access']['valid_until']),
+    )
+
+
+def get_transactions(account_uid: str, from_timestamp: datetime.date, to_timestamp: datetime.date) -> t.Sequence[t.Mapping[str, t.Any]]:
     query = {
         'date_from': from_timestamp.isoformat(),
         'date_to': to_timestamp.isoformat(),
@@ -42,7 +74,7 @@ def get_transactions(from_timestamp: datetime.date, to_timestamp: datetime.date)
         if continuation_key:
             query['continuation_key'] = continuation_key
         response = requests.get(
-            f'{API_ORIGIN}/accounts/{ACCOUNT_UID}/transactions',
+            f'{API_ORIGIN}/accounts/{account_uid}/transactions',
             params = query,
             headers = headers,
         )

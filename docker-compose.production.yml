@@ -8,7 +8,6 @@ services:
 
   nginx:
     image: nginx:1.13
-#    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
     ports:
       - "${PORT_OUT}:80"
       - "443:443"
@@ -43,6 +42,7 @@ services:
     image: app-image
     volumes:
       - .:/code
+      - ./appdirs/:/root/.local/share/
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static

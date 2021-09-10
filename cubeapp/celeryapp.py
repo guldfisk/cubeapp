@@ -48,9 +48,9 @@ if not settings.DEBUG:
         'task': 'api.tasks.backup_db',
         'schedule': crontab(hour = 4, minute = 30),
     }
-    # app.conf.beat_schedule['kebab_check'] = {
-    #     'task': 'kpd.tasks.check_transactions',
-    #     'schedule': timedelta(hours = 1),
-    # }
+    app.conf.beat_schedule['kebab_check'] = {
+        'task': 'kpd.tasks.check_transactions',
+        'schedule': timedelta(hours = 1),
+    }
 
 app.autodiscover_tasks()

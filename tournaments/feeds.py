@@ -5,7 +5,7 @@ from django.contrib.syndication.views import Feed
 from tournaments.models import Tournament
 
 
-class CompetitiveTournamentsFeed(Feed):
+class TournamentFeed(Feed):
 
     def items(self):
         return Tournament.objects.order_by('-created_at').prefetch_related(
@@ -15,6 +15,9 @@ class CompetitiveTournamentsFeed(Feed):
 
     def link(self) -> str:
         return '/tournaments/'
+
+    def title(self) -> str:
+        return 'Tournaments'
 
     def item_link(self, item: Tournament) -> str:
         return item.get_absolute_url()

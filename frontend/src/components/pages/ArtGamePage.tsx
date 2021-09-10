@@ -4,7 +4,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container"
 
-import {getEditDistance, Loading} from '../utils/utils';
+import {getEditDistance} from '../utils/utils';
 import {Printing} from '../models/models';
 import {BackImage, ImageableImage} from "../images";
 import Form from "react-bootstrap/Form";

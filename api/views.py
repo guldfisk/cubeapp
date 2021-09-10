@@ -400,7 +400,7 @@ class ResetPassword(generics.GenericAPIView):
             subject = 'Password reset',
             content = get_template('reset_mail.html').render(
                 {
-                    'reset_link': 'http://{host}/claim-password-reset/?code={code}'.format(
+                    'reset_link': '{host}/claim-password-reset/?code={code}'.format(
                         host = settings.HOST,
                         code = reset.code,
                     ),
@@ -476,7 +476,7 @@ class InviteUserEndpoint(generics.GenericAPIView):
             content = get_template('invite_mail.html').render(
                 {
                     'inviter': issuer.username,
-                    'invite_link': 'http://{host}/sign-up/?invite_code={key}'.format(
+                    'invite_link': '{host}/sign-up/?invite_code={key}'.format(
                         host = settings.HOST,
                         key = key,
                     ),

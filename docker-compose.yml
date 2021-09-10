@@ -30,6 +30,7 @@ services:
     restart: always
     volumes:
       - .:/code
+      - ./appdirs/:/root/.local/share/
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static
@@ -49,6 +50,7 @@ services:
     command: celery -A cubeapp worker --loglevel=INFO --concurrency=1
     volumes:
       - .:/code
+      - ./appdirs/:/root/.local/share/
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static
@@ -69,6 +71,7 @@ services:
     command: celery -A cubeapp beat --loglevel=INFO
     volumes:
       - .:/code
+      - ./appdirs/:/root/.local/share/
       - ~/.local/share/mtgimg:/root/.local/share/mtgimg
       - ~/.local/share/mtgorp:/root/.local/share/mtgorp
       - static_volume:/opt/services/cubeapp/static
