@@ -52,15 +52,12 @@ def check_transactions():
 
         for bank_transaction in get_transactions(session_key.key, last_date - datetime.timedelta(days = 1), target_date):
             if any('PASHA KEBAB' in s for s in bank_transaction.get('remittance_information', ())):
-                try:
-                    models.KebabEvent.objects.create(
-                        timestamp = datetime.datetime.strptime(
-                            bank_transaction['entry_reference'],
-                            '%Y-%m-%d-%H.%S.%M.%f',
-                        ).replace(tzinfo = datetime.timezone.utc)
-                    )
-                except IntegrityError:
-                    pass
+                models.KebabEvent.objects.get_or_create(
+                    timestamp = datetime.datetime.strptime(
+                        bank_transaction['entry_reference'],
+                        '%Y-%m-%d-%H.%S.%M.%f',
+                    ).replace(tzinfo = datetime.timezone.utc)
+                )
 
         models.KebabPoint.objects.all().delete()
 
