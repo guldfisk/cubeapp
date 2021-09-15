@@ -50,10 +50,10 @@ const WishListPage = React.lazy(() => import('../pages/wishes/WishListPage'));
 const WishListsPage = React.lazy(() => import('../pages/wishes/WishListsPage'));
 
 export const routes: [
-    string | undefined,
-    (typeof React.Component) | React.FunctionComponent | any,
+  string | undefined,
+  (typeof React.Component) | React.FunctionComponent | any,
   boolean,
-  { [key: string]: any }
+  { [key: string]: any },
 ][] = [
   ['/', HomePage, false, {exact: true}],
   ['/users/:id(\\d+)/', UserPage, false, {}],
@@ -114,7 +114,7 @@ export const routes: [
   ['/leagues/:id(\\d+)', LeaguePage, false, {}],
   ['/drafts', DraftsPage, false, {}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
-  ['/seat/:id(\\d+)/:seat(\\d+)', SeatPage, false, {}],
+  ['/seat/:seatId(\\d+)/:pickNumber(\\d+)', SeatPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],
   ['/decks/', DecksPage, false, {}],
   ['/patch/:id(\\d+)/apply', ApplyPatchPage, true, {}],
@@ -124,7 +124,7 @@ export const routes: [
       render: (
         (props: any) => <PatchPage {...props} key={props.match.params.id}/>
       )
-    }
+    },
   ],
   ['/wishlists/', WishListsPage, false, {}],
   ['/wishlist/:id(\\d+)/', WishListPage, false, {}],

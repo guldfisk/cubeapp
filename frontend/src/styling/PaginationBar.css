@@ -1,3 +1,11 @@
 .pagination-bar {
     text-align: center;
 }
+
+.page-item {
+    width: 3em;
+}
+
+.pagination-navigation-item {
+    width: 2em;
+}

@@ -1,5 +1,7 @@
-import React from "react";
-import Pagination from "react-bootstrap/Pagination";
+import React from 'react';
+import Pagination from 'react-bootstrap/Pagination';
+
+import '../../styling/PaginationBar.css'
 
 
 interface PaginationBarProps {
@@ -16,7 +18,6 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
   createPage = (index: number, currentPage: number): React.ReactElement<any, string | React.JSXElementConstructor<any>> => {
     return <Pagination.Item
       disabled={index === currentPage}
-      active={index === currentPage}
       onClick={
         () =>
           this.props.handleNewOffset(
@@ -48,17 +49,17 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
         pages.push(
           this.createPage(0, currentPage)
         );
-        pages.push(<Pagination.Ellipsis/>);
       }
 
-      for (let i = pageOffset; i < lastPageMinified; i++) {
+      const targetLastPage = lastPageMinified - pages.length - (lastPageMinified < pageAmount ? 1 : 0);
+
+      for (let i = pageOffset; i < targetLastPage; i++) {
         pages.push(
           this.createPage(i, currentPage)
         );
       }
 
       if (lastPageMinified < pageAmount) {
-        pages.push(<Pagination.Ellipsis/>);
         pages.push(
           this.createPage(pageAmount - 1, currentPage)
         );
@@ -84,6 +85,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
             )
         }
         disabled={this.props.offset === 0}
+        className='pagination-navigation-item'
       />
       {pages}
       <Pagination.Next
@@ -100,6 +102,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
             )
         }
         disabled={this.props.offset + this.props.pageSize >= this.props.hits}
+        className='pagination-navigation-item'
       />
     </Pagination>
   }

@@ -138,6 +138,27 @@ class SeatView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         seat: models.DraftSeat = self.get_object()
         picks = list(seat.picks.all().order_by('global_pick_number')[:int(kwargs['pick']) + 1])
+        if picks:
+            current_pick = picks[-1]
+            try:
+                previous_pick = models.DraftPick.objects.get(
+                    booster_id = current_pick.booster_id,
+                    pick_number = current_pick.pick_number - 1
+                )
+            except models.DraftPick.DoesNotExist:
+                previous_pick = None
+            try:
+                next_pick = models.DraftPick.objects.get(
+                    booster_id = current_pick.booster_id,
+                    pick_number = current_pick.pick_number + 1
+                )
+            except models.DraftPick.DoesNotExist:
+                next_pick = None
+        else:
+            current_pick = None
+            previous_pick = None
+            next_pick = None
+
         return Response(
             {
                 'seat': serializers.DraftSeatSerializer(seat, context = {'request': request}).data,
@@ -151,9 +172,11 @@ class SeatView(generics.GenericAPIView):
                     picks[:-1]
                 ],
                 'pick': serializers.DraftPickSerializer(
-                    picks[-1],
+                    current_pick,
                     context = {'request': request},
-                ).data if picks else None,
+                ).data if current_pick else None,
                 'pick_count': seat.picks.all().count(),
+                'previous_seat': serializers.DraftPickSeatSerializer(previous_pick).data if previous_pick else None,
+                'next_seat': serializers.DraftPickSeatSerializer(next_pick).data if next_pick else None,
             }
         )

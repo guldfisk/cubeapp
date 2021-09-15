@@ -66,6 +66,8 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
           pageSize={this.state.pageSize}
           maxPageDisplay={7}
         />
+      </Row>
+      <Row>
         <span>
             {
               `Showing ${

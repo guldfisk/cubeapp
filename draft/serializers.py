@@ -85,7 +85,7 @@ class DraftSeatSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.DraftSeat
-        fields = ('id', 'user', 'sequence_number')
+        fields = ('id', 'user', 'sequence_number', 'session')
 
 
 class DraftSessionSerializer(serializers.ModelSerializer):
@@ -113,3 +113,9 @@ class DraftPickSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.DraftPick
         fields = ('id', 'created_at', 'pack_number', 'pick_number', 'pick', 'pack', 'global_pick_number')
+
+
+class DraftPickSeatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.DraftPick
+        fields = ('id', 'seat_id', 'global_pick_number')

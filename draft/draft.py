@@ -222,6 +222,7 @@ class DraftInterface(ABC):
                     global_pick_number = self._pick_counter - 1,
                     pack = self._current_booster,
                     pick = pick,
+                    booster_id = self._current_booster.booster_id,
                 )
 
                 self._current_booster.pick_number += 1

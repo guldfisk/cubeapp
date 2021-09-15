@@ -102,7 +102,15 @@ class DraftPick(models.Model):
     pick_number = models.PositiveSmallIntegerField()
     pack: DraftBooster = OrpField(DraftBooster)
     pick: Pick = OrpField(Pick)
+    booster_id = models.CharField(max_length = 36)
 
     @property
     def cubeables(self) -> t.Iterator[Cubeable]:
         return itertools.chain(self.pick.picked, self.pack.cubeables)
+
+    class Meta:
+        unique_together = (
+            ('seat', 'global_pick_number'),
+            ('seat', 'pack_number', 'pick_number'),
+            ('booster_id', 'pick_number'),
+        )

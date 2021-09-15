@@ -3961,17 +3961,20 @@ export class Pool extends Atomic {
 
 
 export class DraftSeat extends Atomic {
-  user: User;
+  user: User
+  sessionId: number | string
 
-  constructor(id: string, user: User) {
+  constructor(id: string, user: User, sessionId: number | string) {
     super(id);
     this.user = user;
+    this.sessionId = sessionId;
   }
 
   public static fromRemote(remote: any): DraftSeat {
     return new DraftSeat(
       remote.id,
       User.fromRemote(remote.user),
+      remote.session,
     )
   }
 
@@ -4062,7 +4065,7 @@ export class DraftSession extends Atomic {
     )
   }
 
-  public static get(id: string): Promise<DraftSession> {
+  public static get(id: string | number): Promise<DraftSession> {
     return axios.get(
       apiPath + 'draft/' + id + '/',
     ).then(
