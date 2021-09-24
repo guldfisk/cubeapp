@@ -11,6 +11,7 @@ from enum import Enum
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
 
 from mtgorp.models.collections.deck import Deck
@@ -376,6 +377,7 @@ class PoolDeck(models.Model):
     pool = models.ForeignKey(Pool, on_delete = models.CASCADE, related_name = 'pool_decks')
     cheating = models.BooleanField(default = False)
     latest = models.BooleanField(default = True)
+    printings = GenericRelation('api.RelatedPrinting', 'related_object_id', 'related_content_type')
 
     class Meta(object):
         ordering = ('created_at',)

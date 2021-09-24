@@ -27,6 +27,7 @@ from mtgorp.tools.search.pattern import Pattern
 from magiccube.collections.cube import Cube
 from magiccube.tools.subset import check_deck_subset_pool
 
+from api.models import RelatedPrinting
 from api.serialization import orpserialize
 from limited import models, serializers
 from limited.serializers.pools.full import FullPoolSerializer, PoolSerializer
@@ -156,27 +157,36 @@ class PoolDetail(generics.RetrieveDestroyAPIView):
                 or pool.session.open_decks and pool.pool_decks.exists()
             )
 
-            pool_deck = models.PoolDeck.objects.create(
-                deck = deck,
-                pool = pool,
-                name = request.data.get('name', 'decks'),
-                cheating = cheating,
-            )
+            with transaction.atomic():
+                pool_deck = models.PoolDeck.objects.create(
+                    deck = deck,
+                    pool = pool,
+                    name = request.data.get('name', 'decks'),
+                    cheating = cheating,
+                )
 
-            if (
-                pool.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING and
-                all(models.Pool.objects.filter(session = pool.session).values_list('pool_decks', flat = True))
-            ):
-                pool.session.create_tournament()
-                pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
-                pool.session.playing_at = datetime.datetime.now()
-                pool.session.save(update_fields = ('state', 'playing_at'))
+                RelatedPrinting.objects.bulk_create(
+                    RelatedPrinting(
+                        printing_id = p.id,
+                        related = pool_deck,
+                    ) for p in
+                    deck.seventy_five.distinct_elements()
+                )
 
-            elif pool.session.tournament and cheating:
-                TournamentParticipant.objects.filter(
-                    tournament = pool.session.tournament,
-                    player = request.user,
-                ).update(deck_id = pool_deck.id)
+                if (
+                    pool.session.state == models.LimitedSession.LimitedSessionState.DECK_BUILDING and
+                    all(models.Pool.objects.filter(session = pool.session).values_list('pool_decks', flat = True))
+                ):
+                    pool.session.create_tournament()
+                    pool.session.state = models.LimitedSession.LimitedSessionState.PLAYING
+                    pool.session.playing_at = datetime.datetime.now()
+                    pool.session.save(update_fields = ('state', 'playing_at'))
+
+                elif pool.session.tournament and cheating:
+                    TournamentParticipant.objects.filter(
+                        tournament = pool.session.tournament,
+                        player = request.user,
+                    ).update(deck_id = pool_deck.id)
 
         return Response(
             serializers.PoolDeckSerializer(pool_deck, context = {'request': request}).data,
@@ -234,22 +244,16 @@ class DeckList(generics.ListAPIView):
             queryset = queryset.all()
 
         if self.filters:
-            queryset = queryset.filter(
-                id__in = [
-                    deck.id
-                    for deck in
-                    queryset
-                    if all(
-                        any(
-                            filter_pattern.match(p)
-                            for p in
-                            deck.deck.seventy_five.distinct_elements()
-                        )
-                        for filter_pattern in
-                        self.filters
-                    )
-                ]
-            )
+            for pattern in self.filters:
+                queryset = queryset.filter(
+                    printings__printing_id__in = [
+                        p.id
+                        for p in
+                        db.printings.values()
+                        if pattern.match(p)
+                    ]
+                )
+            queryset = queryset.distinct()
 
         return queryset
 

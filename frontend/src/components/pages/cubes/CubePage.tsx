@@ -1,21 +1,21 @@
 import React from 'react';
 
-import {Link} from "react-router-dom";
-
-import history from '../../routing/history';
-import {Loading} from '../../utils/utils';
-import CubeView from '../../views/cubeview/CubeView';
-import {Cube, MinimalCube} from '../../models/models';
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import {ConfirmationDialog} from "../../utils/dialogs";
-import {Modal} from "react-bootstrap";
-import Button from "react-bootstrap/Button";
-import CreateCubeForm from "../../views/cubeview/CreateCubeForm";
 import {connect} from "react-redux";
+import {Link} from "react-router-dom";
+
+import CreateCubeForm from "../../views/cubeview/CreateCubeForm";
+import CubeView from '../../views/cubeview/CubeView';
+import history from '../../routing/history';
+import {ConfirmationDialog} from "../../utils/dialogs";
+import {Cube, MinimalCube} from '../../models/models';
 import {FeedLink} from "../../utils/rss";
+import {Loading} from '../../utils/utils';
+import {Modal} from "react-bootstrap";
 
 
 interface ForkCubeDialogProps {
@@ -27,7 +27,7 @@ interface ForkCubeDialogProps {
 }
 
 
-export const ForkCubeDialog: React.SFC<ForkCubeDialogProps> = (props: ForkCubeDialogProps) => {
+export const ForkCubeDialog: React.FunctionComponent<ForkCubeDialogProps> = (props: ForkCubeDialogProps) => {
   return <Modal
     show={props.show}
   >

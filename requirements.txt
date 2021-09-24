@@ -17,6 +17,7 @@ djangorestframework>=3.9
 -e git+https://github.com/guldfisk/mtgdraft.git#egg=mtgdraft
 -e git+https://github.com/guldfisk/django-webpack-loader.git#egg=django-webpack-loader
 -e git+https://github.com/guldfisk/elo.git#egg=elo
+-e git+https://github.com/guldfisk/dmiclient.git#egg=dmiclient
 lazy-property
 appdirs
 frozendict==1.2.0
@@ -46,7 +47,6 @@ ipython
 django-celery-beat==2.1.0
 django-debug-toolbar
 django-debug-panel
-django-debug-toolbar-request-history
 botocore
 bidict
 more_itertools

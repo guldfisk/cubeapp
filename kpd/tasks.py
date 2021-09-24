@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 
 from django.conf import settings
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.db.models import Max
 
 from celery import shared_task

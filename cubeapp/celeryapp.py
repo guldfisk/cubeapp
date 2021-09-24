@@ -52,5 +52,9 @@ if not settings.DEBUG:
         'task': 'kpd.tasks.check_transactions',
         'schedule': timedelta(hours = 1),
     }
+    app.conf.beat_schedule['weather_check'] = {
+        'task': 'weather.tasks.check_weather',
+        'schedule': timedelta(hours = 1),
+    }
 
 app.autodiscover_tasks()

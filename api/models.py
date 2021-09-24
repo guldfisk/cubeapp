@@ -9,9 +9,9 @@ from enum import Enum
 
 from botocore.client import BaseClient
 
-# from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import UserModel
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -80,6 +80,11 @@ class CubeRelease(models.Model):
 
     versioned_cube = models.ForeignKey(VersionedCube, on_delete = models.CASCADE, related_name = 'releases')
 
+    printings = GenericRelation(
+        'api.RelatedPrinting',
+        'related_object_id',
+        'related_content_type',
+    )
     rating_maps = GenericRelation(
         'rating.RatingMap',
         'ratings_for_object_id',
@@ -290,6 +295,7 @@ class ReleaseImageBundle(TimestampedModel, models.Model):
     class Meta:
         unique_together = ('release', 'target')
 
+
 # class EditPermission(TimestampedModel, models.Model):
 #     user = models.ForeignKey(get_user_model(), related_name = 'edit_permissions', on_delete = models.CASCADE)
 #
@@ -303,3 +309,13 @@ class ReleaseImageBundle(TimestampedModel, models.Model):
 
 class ExpansionUpdate(TimestampedModel, models.Model):
     expansion_code = models.CharField(max_length = 7)
+
+
+class RelatedPrinting(models.Model):
+    printing_id = models.PositiveIntegerField()
+    related_content_type = models.ForeignKey(ContentType, on_delete = models.CASCADE)
+    related_object_id = models.PositiveIntegerField()
+    related = GenericForeignKey('related_content_type', 'related_object_id')
+
+    class Meta:
+        unique_together = ('printing_id', 'related_content_type', 'related_object_id')

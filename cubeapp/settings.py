@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'rating.apps.RatingConfig',
     'sealed.apps.SealedConfig',
     'tournaments.apps.TournamentsConfig',
+    'weather.apps.WeatherConfig',
     'wishlist.apps.WishListConfig',
 
     'django.contrib.auth',
@@ -129,13 +130,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Copenhagen'
+USE_TZ = True
 
 USE_I18N = False
-
 USE_L10N = False
-
-USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join('/', 'opt', 'services', 'cubeapp', 'static')
@@ -180,10 +179,11 @@ if DEBUG:
     DEBUG_TOOLBAR_CONFIG = {
         'SHOW_TOOLBAR_CALLBACK': lambda _: False,
         'RESULTS_CACHE_SIZE': 200,
+        'RENDER_PANELS': False,
     }
 
 DEBUG_TOOLBAR_PANELS = [
-    'ddt_request_history.panels.request_history.RequestHistoryPanel',
+    'debug_toolbar.panels.history.HistoryPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.request.RequestPanel',

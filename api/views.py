@@ -5,16 +5,19 @@ import hashlib
 import random
 from distutils.util import strtobool
 
-from django.contrib.auth.backends import UserModel
-from django.db import transaction
-from django.db.models import Prefetch
-from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.contrib.auth import get_user_model
+from django.contrib.auth.backends import UserModel
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.db.models import Prefetch, Q, Exists, OuterRef
 from django.db.utils import IntegrityError
+from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.template.loader import get_template
 
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import ParseError
+from rest_framework.generics import get_object_or_404
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -45,6 +48,7 @@ from api.mail import send_mail
 from api.serialization import orpserialize
 from api.serialization import serializers
 from cubeapp import settings
+from mtgorp.tools.search.pattern import Pattern
 from resources.staticdb import db
 from resources.staticimageloader import image_loader
 from utils.values import JAVASCRIPT_DATETIME_FORMAT
@@ -911,12 +915,66 @@ def random_printing(request: Request) -> Response:
     )
 
 
-@api_view(['GET'])
-def cube_cubeable(request: Request, pk: int, cubeable_type: str, cubeable_id: str) -> Response:
-    print(request.data, pk, cubeable_type, cubeable_id)
-    try:
-        cubeable_type = _CUBEABLES_TYPE_MAP[cubeable_type.lower()]
-    except KeyError:
-        return Response('Invalid cubeable type', status = status.HTTP_400_BAD_REQUEST)
+class SearchReleases(generics.ListAPIView):
+    queryset = models.VersionedCube.objects.all().only('id')
+    _pattern: Pattern
 
-    return Response('ok', status = status.HTTP_200_OK)
+    def get_object(self):
+        queryset = self.queryset.all()
+        obj = get_object_or_404(queryset, **{'pk': self.kwargs['pk']})
+        return obj
+
+    def get_queryset(self):
+        versioned_cube: models.VersionedCube = self.get_object()
+        return models.CubeRelease.objects.filter(
+            versioned_cube_id = versioned_cube.id,
+        ).order_by('-created_at')
+
+    def filter_queryset(self, queryset):
+        return queryset.filter(
+            Q(
+                Exists(
+                    models.RelatedPrinting.objects.filter(
+                        related_object_id = OuterRef('pk'),
+                        related_content_type_id = ContentType.objects.get_for_model(models.CubeRelease),
+                        printing_id__in = [
+                            p.id
+                            for p in
+                            db.printings.values()
+                            if self._pattern.match(p)
+                        ]
+                    )
+                )
+            )
+        )
+
+    def list(self, request, *args, **kwargs):
+        try:
+            self._pattern = SearchParser(db).parse(self.kwargs['query'], PrintingStrategy)
+        except ParseException as e:
+            raise ParseError(str(e))
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+
+        native = strtobool(request.query_params.get('native', '0'))
+
+        return self.get_paginated_response(
+            [
+                {
+                    'release': serializers.MinimalCubeReleaseSerializer(release).data,
+                    'matches': [
+                        (
+                            RawStrategy
+                            if native else
+                            orpserialize.CubeableSerializer
+                        ).serialize(p)
+                        for p in
+                        release.cube.filter(self._pattern)
+                    ]
+                }
+                for release in
+                page
+            ]
+        )
