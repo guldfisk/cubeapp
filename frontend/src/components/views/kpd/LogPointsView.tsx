@@ -2,17 +2,18 @@ import React from 'react';
 import Chart from "react-apexcharts";
 
 import {
-  KPDPoint
+  LogPoint
 } from "../../models/models";
 import {roundToN} from "../../utils/utils";
 
 
-interface KPDHistoryViewProps {
-  points: KPDPoint[]
+interface LogPointsViewProps {
+  points: LogPoint[]
+  yaxisTitle: string
 }
 
 
-export default class KPDHistoryView extends React.Component<KPDHistoryViewProps> {
+export default class LogPointsView extends React.Component<LogPointsViewProps> {
 
   render() {
     return <Chart
@@ -32,7 +33,7 @@ export default class KPDHistoryView extends React.Component<KPDHistoryViewProps>
           },
           yaxis: {
             title: {
-              text: 'Kebab/Day',
+              text: this.props.yaxisTitle,
             },
           },
           tooltip: {

@@ -13,9 +13,12 @@ class BankPermissions(permissions.BasePermission):
 
 
 class PointList(generics.ListAPIView):
-    serializer_class = serializers.KebabPointSerializer
-    queryset = models.KebabPoint.objects.all().order_by('timestamp')
+    serializer_class = serializers.LogPointSerializer
+    queryset = models.LogPoint.objects.order_by('timestamp')
     pagination_class = None
+
+    def filter_queryset(self, queryset):
+        return queryset.filter(type = self.kwargs['query'])
 
 
 class GetAuthenticationLink(generics.GenericAPIView):

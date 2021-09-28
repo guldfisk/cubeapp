@@ -52,6 +52,10 @@ if not settings.DEBUG:
         'task': 'kpd.tasks.check_transactions',
         'schedule': timedelta(hours = 1),
     }
+    app.conf.beat_schedule['update_waffles'] = {
+        'task': 'kpd.tasks.update_waffles',
+        'schedule': crontab(hour = 3, minute = 0),
+    }
     app.conf.beat_schedule['weather_check'] = {
         'task': 'weather.tasks.check_weather',
         'schedule': timedelta(hours = 1),

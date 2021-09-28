@@ -1,6 +1,8 @@
 import datetime
+import subprocess
 
 import pandas as pd
+import psycopg2
 
 from django.conf import settings
 from django.db import transaction
@@ -8,6 +10,7 @@ from django.db.models import Max
 
 from celery import shared_task
 
+from api.boto import get_last_key, get_boto_client
 from api.mail import mail_me
 from kpd import models
 from kpd.service import get_transactions
@@ -59,7 +62,7 @@ def check_transactions():
                     ).replace(tzinfo = datetime.timezone.utc)
                 )
 
-        models.KebabPoint.objects.all().delete()
+        models.LogPoint.objects.filter(type = 'kebab').delete()
 
         finished_dates = [
             event.timestamp.date()
@@ -96,7 +99,8 @@ def check_transactions():
 
         for idx in range(date_span):
             points.append(
-                models.KebabPoint(
+                models.LogPoint(
+                    type = 'kebab',
                     timestamp = datetime.datetime.combine(
                         from_date + datetime.timedelta(days = idx),
                         datetime.datetime.min.time(),
@@ -108,4 +112,94 @@ def check_transactions():
                 )
             )
 
-        models.KebabPoint.objects.bulk_create(points)
+        models.LogPoint.objects.bulk_create(points)
+
+
+@shared_task()
+def update_waffles():
+    client = get_boto_client()
+    last_key = get_last_key(client, 'fml/db-backups')
+
+    if last_key is None:
+        return
+
+    s = subprocess.Popen(
+        [
+            'pg_restore',
+            '--dbname=postgresql://{}:{}@{}:{}/{}'.format(
+                settings.DATABASE_USER,
+                settings.DATABASE_PASSWORD,
+                settings.DATABASE_HOST,
+                settings.DATABASE_PORT,
+                settings.DATABASE_NAME,
+            ),
+            '--clean',
+            '--create',
+            '-Fc',
+        ],
+        stdout = subprocess.DEVNULL,
+        stderr = subprocess.DEVNULL,
+        stdin = subprocess.PIPE,
+    )
+
+    with s.stdin as f:
+        client.download_fileobj('phdk', last_key, f)
+
+    with psycopg2.connect(
+        host = settings.DATABASE_HOST,
+        user = settings.DATABASE_USER,
+        password = settings.DATABASE_PASSWORD,
+        dbname = 'fml',
+    ) as fml_connection:
+        fml_connection = fml_connection.cursor()
+
+        fml_connection.execute(
+            '''select started_at from alarm where (text='vafel' or text='vaffel') and canceled=false order by started_at;'''
+        )
+
+        waffle_times = [row[0] for row in fml_connection.fetchall()]
+
+    now = datetime.datetime.now()
+
+    finished_dates_map = [
+        0
+        for _ in range(
+            (now - waffle_times[0]).days + 1
+        )
+    ]
+
+    for waffle_time in waffle_times:
+        finished_dates_map[(waffle_time - waffle_times[0]).days] += 2
+
+    from_date = waffle_times[0]
+    date_span = (now - from_date).days + 1
+
+    series = pd.Series([0] + finished_dates_map)
+
+    half_lives = (1, 4, 16)
+    smooth_points = [
+        list(series.ewm(halflife = half_life).mean())[1:]
+        for half_life in
+        half_lives
+    ]
+
+    points = []
+
+    for idx in range(date_span):
+        points.append(
+            models.LogPoint(
+                type = 'waffle',
+                timestamp = datetime.datetime.combine(
+                    from_date + datetime.timedelta(days = idx),
+                    datetime.datetime.min.time(),
+                    tzinfo = datetime.timezone.utc
+                ),
+                value_short = smooth_points[0][idx],
+                value_medium = smooth_points[1][idx],
+                value_long = smooth_points[2][idx],
+            )
+        )
+
+    with transaction.atomic():
+        models.LogPoint.objects.filter(type = 'waffle').delete()
+        models.LogPoint.objects.bulk_create(points)

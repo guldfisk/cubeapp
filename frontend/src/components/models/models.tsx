@@ -4657,7 +4657,7 @@ export class PackImageRecord extends Atomic {
 }
 
 
-export class KPDPoint {
+export class LogPoint {
   timestamp: Date
   valueShort: number
   valueMedium: number
@@ -4675,8 +4675,8 @@ export class KPDPoint {
     this.valueLong = valueLong;
   }
 
-  public static fromRemote(remote: any): KPDPoint {
-    return new KPDPoint(
+  public static fromRemote(remote: any): LogPoint {
+    return new LogPoint(
       new Date(remote.timestamp),
       remote.value_short,
       remote.value_medium,
@@ -4684,12 +4684,12 @@ export class KPDPoint {
     )
   }
 
-  public static getHistory = (): Promise<KPDPoint[]> => {
+  public static getHistory = (type: string): Promise<LogPoint[]> => {
     return axios.get(
-      apiPath + 'kpd/points/'
+      `${apiPath}kpd/points/${type}/`
     ).then(
       response => response.data.map(
-        (point: any) => KPDPoint.fromRemote(point)
+        (point: any) => LogPoint.fromRemote(point)
       )
     )
   };

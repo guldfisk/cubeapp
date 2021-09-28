@@ -42,7 +42,7 @@ export default class DistributionView extends React.Component<DistributionViewPr
           (label, index) => {
             return {
               name: label,
-              data: this.props.data[index],
+              data: [0].concat(this.props.data[index]).map((v, idx) => [idx, v]),
             }
           }
         )

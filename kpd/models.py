@@ -18,8 +18,12 @@ class KebabEvent(models.Model):
     timestamp = models.DateTimeField(unique = True)
 
 
-class KebabPoint(models.Model):
-    timestamp = models.DateTimeField(unique = True)
+class LogPoint(models.Model):
+    timestamp = models.DateTimeField()
+    type = models.CharField(max_length = 31)
     value_short = models.FloatField()
     value_medium = models.FloatField()
     value_long = models.FloatField()
+
+    class Meta:
+        unique_together = ('timestamp', 'type')

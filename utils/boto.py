@@ -6,7 +6,7 @@ import typing as t
 from botocore.client import BaseClient
 
 
-class MultipartUpload(t.IO[bytes]):
+class MultipartUpload(t.IO[bytes], t.ContextManager):
     MIN_PART_SIZE = int(5 * 2 ** 20)
 
     def __init__(

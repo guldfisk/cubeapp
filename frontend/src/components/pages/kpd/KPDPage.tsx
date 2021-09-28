@@ -2,9 +2,9 @@ import React from 'react';
 
 import {Loading} from '../../utils/utils';
 import {
-  KPDPoint,
+  LogPoint,
 } from '../../models/models';
-import KPDHistoryView from "../../views/kpd/KPDHistoryView";
+import LogPointsView from "../../views/kpd/LogPointsView";
 
 
 interface KPDPageProps {
@@ -13,7 +13,8 @@ interface KPDPageProps {
 
 
 interface KPDPageState {
-  points: KPDPoint[]
+  kebabPoints: LogPoint[] | null
+  wafflePoints: LogPoint[] | null
 }
 
 
@@ -22,19 +23,24 @@ export default class KPDPage extends React.Component<KPDPageProps, KPDPageState>
   constructor(props: KPDPageProps) {
     super(props);
     this.state = {
-      points: null
+      kebabPoints: null,
+      wafflePoints: null,
     };
   }
 
   componentDidMount() {
-    KPDPoint.getHistory().then(points => this.setState({points}));
+    LogPoint.getHistory('kebab').then(points => this.setState({kebabPoints: points}));
+    LogPoint.getHistory('waffle').then(points => this.setState({wafflePoints: points}));
   }
 
   render() {
     return <>
       <h4>How much kebab can one person eat?</h4>
       {
-        this.state.points ? <KPDHistoryView points={this.state.points}/> : <Loading/>
+        this.state.kebabPoints ? <LogPointsView points={this.state.kebabPoints} yaxisTitle='Kebab/Day'/> : <Loading/>
+      }
+      {
+        this.state.wafflePoints ? <LogPointsView points={this.state.wafflePoints} yaxisTitle='Waffles/Day'/> : <Loading/>
       }
     </>
   }

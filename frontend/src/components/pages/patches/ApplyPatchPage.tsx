@@ -225,7 +225,7 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
 
   setStatus = (status: string) => {
     if (status == 'stopped') {
-      this.setState({data: [[], []], status})
+      this.setState({data: this.state.dataSeriesLabels.map((): number[] => []), status})
     } else {
       this.setState({status})
     }
@@ -335,7 +335,6 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
     forkName: string | null,
     forkDescription: string | null,
   ): void => {
-    console.log('apply', fork, distributionPossibility, forkName, forkDescription);
     this.submitMessage(
       {
         type: 'apply',
@@ -345,16 +344,6 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
         description: forkDescription,
       }
     );
-    // if (this.state.distributionPossibility && this.state.withDistribution) {
-    //   this.submitMessage(
-    //     {
-    //       type: 'apply',
-    //       possibility_id: this.state.distributionPossibility.id,
-    //     }
-    //   )
-    // } else {
-    //   this.submitMessage({type: 'apply'})
-    // }
   };
 
   render() {
@@ -464,11 +453,10 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
           </Col>
           <Col>
             {
-              this.state.status === 'prerun' ? undefined :
-                <DistributionView
-                  dataSeriesLabels={this.state.dataSeriesLabels}
-                  data={this.state.data}
-                />
+              this.state.status !== 'prerun' && <DistributionView
+                dataSeriesLabels={this.state.dataSeriesLabels}
+                data={this.state.data}
+              />
             }
           </Col>
         </Row>
@@ -548,20 +536,6 @@ export default class ApplyPatchPage extends React.Component<DeltaPageProps, Appl
                 Apply
               </Button>
             </Row>
-            {/*{*/}
-            {/*  this.state.distributionPossibility ? <Row>*/}
-            {/*    <Button*/}
-            {/*      onClick={*/}
-            {/*        () => this.setState({applying: true, withDistribution: true})*/}
-            {/*      }*/}
-            {/*      disabled={!this.state.releasePatch}*/}
-            {/*      size='lg'*/}
-            {/*      block*/}
-            {/*    >*/}
-            {/*      Apply with distribution*/}
-            {/*    </Button>*/}
-            {/*  </Row> : null*/}
-            {/*}*/}
           </Col>
         </Row>
       </Container>
