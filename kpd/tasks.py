@@ -123,7 +123,7 @@ def update_waffles():
     if last_key is None:
         return
 
-    s = subprocess.Popen(
+    with subprocess.Popen(
         [
             'pg_restore',
             '--dbname=postgresql://{}:{}@{}:{}/{}'.format(
@@ -140,9 +140,7 @@ def update_waffles():
         stdout = subprocess.DEVNULL,
         stderr = subprocess.DEVNULL,
         stdin = subprocess.PIPE,
-    )
-
-    with s.stdin as f:
+    ) as s, s.stdin as f:
         client.download_fileobj('phdk', last_key, f)
 
     with psycopg2.connect(

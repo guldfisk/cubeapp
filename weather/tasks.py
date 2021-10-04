@@ -9,6 +9,7 @@ from dmiclient.client import DMIClient
 
 from api.mail import mail_me
 from weather import models
+from weather import settings
 from weather.service import get_next_weekday
 
 
@@ -40,7 +41,7 @@ def check_weather():
     )
 
     if last_record is None:
-        if forecast_slice.total_precipitation > .5:
+        if forecast_slice.total_precipitation > settings.PRECIPITATION_MM_THRESHOLD:
             mail_me(
                 f'It\'s looking rainy!',
                 body,
@@ -52,17 +53,17 @@ def check_weather():
             )
     else:
         precipitation_delta = forecast_slice.total_precipitation - last_record.total_precipitation
-        if precipitation_delta > .5:
+        if precipitation_delta > settings.PRECIPITATION_MM_DELTA_THRESHOLD:
             mail_me(
                 f'Weather looking worse :(',
                 body,
             )
-        elif precipitation_delta < -.5:
+        elif precipitation_delta < -settings.PRECIPITATION_MM_DELTA_THRESHOLD:
             mail_me(
                 f'Weather looking better :)',
                 body,
             )
 
     vs = dataclasses.asdict(forecast_slice)
-    vs['precipitation_types'] = list(sorted(forecast_slice.precipitation_types))
+    vs['precipitation_types'] = sorted(forecast_slice.precipitation_types)
     models.ForecastSliceSnapShot.objects.create(**vs)
