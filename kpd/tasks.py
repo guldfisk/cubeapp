@@ -166,11 +166,15 @@ def update_waffles():
         )
     ]
 
-    for waffle_time in waffle_times:
-        finished_dates_map[(waffle_time - waffle_times[0]).days] += 2
+    from_date = datetime.datetime(
+        year = waffle_times[0].year,
+        month = waffle_times[0].month,
+        day = waffle_times[0].day,
+    )
+    date_span = (now - from_date).days
 
-    from_date = waffle_times[0]
-    date_span = (now - from_date).days + 1
+    for waffle_time in waffle_times:
+        finished_dates_map[(waffle_time - from_date).days] += 2
 
     series = pd.Series([0] + finished_dates_map)
 
