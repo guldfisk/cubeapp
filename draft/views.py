@@ -1,18 +1,29 @@
 from distutils.util import strtobool
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Prefetch
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Prefetch, Q, Exists, OuterRef
+from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, status, permissions
+from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 
-from api.models import CubeRelease
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+from mtgorp.tools.parsing.exceptions import ParseException
+from mtgorp.tools.parsing.search.parse import SearchParser
+from mtgorp.tools.search.extraction import PrintingStrategy
+from mtgorp.tools.search.pattern import Pattern
+
+from magiccube.collections.cube import Cube
 
 from mtgdraft.client import draft_format_map
 
-from api.serialization.orpserialize import CubeableSerializer
-from limited.models import Pool
+from api.models import CubeRelease, RelatedPrinting
+from api.serialization.orpserialize import CubeableSerializer, CubeSerializer
 from draft import models, serializers
+from limited.models import Pool
+from resources.staticdb import db
 
 
 class DraftSessionList(generics.ListAPIView):
@@ -105,9 +116,6 @@ class DraftSessionDetail(generics.RetrieveAPIView):
 
 class SeatPermissions(permissions.BasePermission):
 
-    def has_permission(self, request, view):
-        return True
-
     def has_object_permission(self, request, view, obj: models.DraftSeat):
         if request.user == obj.user:
             return True
@@ -180,3 +188,74 @@ class SeatView(generics.GenericAPIView):
                 'next_seat': serializers.DraftPickSeatSerializer(next_pick).data if next_pick else None,
             }
         )
+
+
+class PickSearchPermissions(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj: models.DraftSession):
+        if obj.limited_session:
+            return obj.limited_session.pools_public
+        return False
+
+
+class PickSearch(generics.ListAPIView):
+    queryset = models.DraftSession.objects.filter(
+        state__in = (models.DraftSession.DraftState.COMPLETED, models.DraftSession.DraftState.ABANDONED)
+    ).filter().only('id')
+    permission_classes = [PickSearchPermissions]
+
+    _pattern: Pattern
+
+    def get_object(self) -> models.DraftSession:
+        queryset = self.queryset.all()
+        obj = get_object_or_404(queryset, **{'pk': self.kwargs['pk']})
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        draft_session = self.get_object()
+        return models.DraftPick.objects.filter(
+            seat__session_id = draft_session.id,
+            pick_number = 1,
+        ).order_by('global_pick_number', 'seat__sequence_number')
+
+    def filter_queryset(self, queryset):
+        return queryset.filter(
+            Q(
+                Exists(
+                    RelatedPrinting.objects.filter(
+                        related_object_id = OuterRef('pk'),
+                        related_content_type_id = ContentType.objects.get_for_model(models.DraftPick),
+                        printing_id__in = [
+                            p.id
+                            for p in
+                            db.printings.values()
+                            if self._pattern.match(p)
+                        ],
+                    )
+                )
+            )
+        )
+
+    def list(self, request, *args, **kwargs):
+        try:
+            self._pattern = SearchParser(db).parse(self.kwargs['query'], PrintingStrategy)
+        except ParseException as e:
+            raise ParseError(str(e))
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        native = strtobool(request.query_params.get('native', '0'))
+
+        hits = []
+
+        for pick in self.paginate_queryset(queryset):
+            matches = Cube(pick.cubeables).filter(self._pattern)
+            hits.append(
+                {
+                    'pick': serializers.FullDraftPickSeatSerializer(pick, context = {'request': request}).data,
+                    'matches': RawStrategy.serialize(matches) if native else CubeSerializer.serialize(matches),
+                }
+            )
+
+        return self.get_paginated_response(hits)

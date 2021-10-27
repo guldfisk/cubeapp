@@ -104,6 +104,12 @@ class DraftPick(models.Model):
     pick: Pick = OrpField(Pick)
     booster_id = models.CharField(max_length = 36)
 
+    printings = GenericRelation(
+        'api.RelatedPrinting',
+        'related_object_id',
+        'related_content_type',
+    )
+
     @property
     def cubeables(self) -> t.Iterator[Cubeable]:
         return itertools.chain(self.pick.picked, self.pack.cubeables)

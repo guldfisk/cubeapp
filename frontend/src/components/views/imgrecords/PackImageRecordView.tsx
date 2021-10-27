@@ -38,7 +38,7 @@ export default class PackImageRecordView extends React.Component<PackImageRecord
         <Link
           to={'/seat/' + this.props.record.seat.id + '/' + this.props.record.pick.globalPickNumber + '/'}
         >
-          {'P' + this.props.record.pick.packNumber + 'P' + this.props.record.pick.pickNumber}
+          {this.props.record.pick.pp()}
         </Link>
         <Link
           to={'/release/' + this.props.record.release.id + '/'}

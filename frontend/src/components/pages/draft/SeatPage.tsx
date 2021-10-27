@@ -122,7 +122,7 @@ class SeatPage extends React.Component<SeatPageProps, SeatPageState> {
               >
                 {this.state.seat.user.username}
               </label>
-              {'P' + this.state.pick.packNumber + 'P' + this.state.pick.pickNumber}
+              {this.state.pick.pp()}
             </h3>
           </Col>
         </Row>

@@ -22,13 +22,14 @@ from magiccube.collections.infinites import Infinites
 
 from mtgdraft.models import DraftBooster, Pick, SinglePickPick, BurnPick
 
-from utils.queue import Queue
 from api.serialization.serializers import UserSerializer
-from lobbies.exceptions import StartGameException
+from draft.models import DraftSession, DraftSeat, DraftPick
+from draft.tasks import create_draft_session_related_printings
 from limited.models import PoolSpecification
 from limited.serializers import PoolSpecificationSerializer
+from lobbies.exceptions import StartGameException
 from resources.staticdb import db
-from draft.models import DraftSession, DraftSeat, DraftPick
+from utils.queue import Queue
 
 
 class Drafter(object):
@@ -302,8 +303,8 @@ class Draft(object):
 
         self._pack_amount = sum(
             booster_specification.amount
-                for booster_specification in
-                self._pool_specification.specifications.all()
+            for booster_specification in
+            self._pool_specification.specifications.all()
         )
 
         try:
@@ -406,6 +407,7 @@ class Draft(object):
         self._draft_session.state = DraftSession.DraftState.COMPLETED
         self._draft_session.ended_at = datetime.datetime.now()
         self._draft_session.save(update_fields = ('state', 'ended_at'))
+        create_draft_session_related_printings.delay(self._draft_session.id)
         self._finished_callback(self)
         for interface in self._drafter_interfaces.values():
             interface.send_message('completed')

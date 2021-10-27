@@ -1,9 +1,13 @@
 import datetime
+import itertools
 
 from celery import shared_task
 from django.db.models import Q, Count
 
+from api.models import RelatedPrinting
 from draft import models
+from draft.models import DraftPick
+from magiccube.collections.cube import Cube
 
 
 @shared_task()
@@ -29,3 +33,17 @@ def clean_drafts() -> None:
             draft.limited_session.delete()
 
         draft.delete()
+
+
+@shared_task()
+def create_draft_session_related_printings(draft_session_id: int) -> None:
+    RelatedPrinting.objects.bulk_create(
+        RelatedPrinting(
+            related = pick,
+            printing_id = printing.id,
+        )
+        for pick in
+        DraftPick.objects.filter(seat__session_id = draft_session_id)
+        for printing in
+        set(Cube(pick.cubeables).all_printings)
+    )

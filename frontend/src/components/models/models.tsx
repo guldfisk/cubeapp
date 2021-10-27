@@ -4186,6 +4186,10 @@ export class DraftPick extends Atomic {
     return Array.from(this.pack.cubeables.cubeables()).length + this.pick.totalPickables()
   }
 
+  pp = (): string => {
+    return `P${this.packNumber}P${this.pickNumber}`;
+  };
+
   public static fromRemote(remote: any): DraftPick {
     return new DraftPick(
       remote.id,
@@ -4195,6 +4199,87 @@ export class DraftPick extends Atomic {
       remote.global_pick_number,
       Pick.fromRemote(remote.pick),
       Booster.fromRemote(remote.pack),
+    )
+  }
+
+}
+
+
+export class SeatedDraftPick extends DraftPick {
+  seat: DraftSeat;
+
+  constructor(
+    id: string,
+    createdAt: Date,
+    packNumber: number,
+    pickNumber: number,
+    globalPickNumber: number,
+    pick: Pick,
+    pack: Booster,
+    seat: DraftSeat,
+  ) {
+    super(id, createdAt, packNumber, pickNumber, globalPickNumber, pick, pack);
+    this.seat = seat;
+  }
+
+  pp = (): string => {
+    return `${this.seat.user.username} P${this.packNumber}P${this.pickNumber}`;
+  };
+
+  public static fromRemote(remote: any): SeatedDraftPick {
+    return new SeatedDraftPick(
+      remote.id,
+      new Date(remote.created_at),
+      remote.pack_number,
+      remote.pick_number,
+      remote.global_pick_number,
+      Pick.fromRemote(remote.pick),
+      Booster.fromRemote(remote.pack),
+      DraftSeat.fromRemote(remote.seat),
+    )
+  }
+}
+
+
+export class DraftPickSearchHit {
+  pick: SeatedDraftPick;
+  matches: CubeablesContainer;
+
+  constructor(pick: SeatedDraftPick, matches: CubeablesContainer) {
+    this.pick = pick;
+    this.matches = matches;
+  }
+
+  public static fromRemote(remote: any): DraftPickSearchHit {
+    return new DraftPickSearchHit(
+      SeatedDraftPick.fromRemote(remote.pick),
+      CubeablesContainer.fromRemote(remote.matches),
+    )
+  }
+
+  public static search(
+    draftSessionId: number | string,
+    query: string,
+    offset: number = 0,
+    limit: number = 10,
+  ): Promise<PaginatedResponse<DraftPickSearchHit>> {
+    return axios.get(
+      `${apiPath}draft/${draftSessionId}/search/${query}/`,
+      {
+        params: {
+          offset,
+          limit,
+        },
+      },
+    ).then(
+      response => {
+        return {
+          objects: response.data.results.map(
+            (pick: any) => DraftPickSearchHit.fromRemote(pick)
+          ),
+          hits: response.data.count,
+        }
+      }
     )
   }
 

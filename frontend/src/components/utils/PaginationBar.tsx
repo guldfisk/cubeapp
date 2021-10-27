@@ -93,10 +93,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
           () =>
             this.props.handleNewOffset(
               Math.max(
-                Math.min(
-                  this.props.hits - this.props.pageSize,
-                  this.props.offset + this.props.pageSize,
-                ),
+                this.props.offset + this.props.pageSize,
                 0,
               )
             )

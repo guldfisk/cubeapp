@@ -5,10 +5,11 @@ import BootstrapTable from 'react-bootstrap-table-next';
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import {connect} from "react-redux";
-
-import {DraftSeat, DraftSession, User} from "../../models/models";
 import {Link} from "react-router-dom";
+
 import DraftInfo from "./DraftInfo";
+import DraftSearchView from "./DraftSearchView";
+import {DraftSeat, DraftSession, User} from "../../models/models";
 
 
 interface DraftViewProps {
@@ -63,6 +64,13 @@ class DraftView extends React.Component<DraftViewProps, null> {
           condensed
         />
       </Row>
+      {
+        this.props.draft.limitedSession &&
+        this.props.draft.limitedSession.publicPools() &&
+        <Row>
+          <DraftSearchView draftSessionId={this.props.draft.id}/>
+        </Row>
+      }
     </Container>
   }
 

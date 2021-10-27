@@ -7,27 +7,32 @@ import Col from "react-bootstrap/Col";
 
 interface PickViewProps {
   pick: Pick;
+  sizeSlug: string,
 }
 
 
 export default class PickView extends React.Component<PickViewProps, null> {
 
+  static defaultProps = {
+    sizeSlug: 'small',
+  };
+
   render() {
     if (this.props.pick instanceof SinglePick) {
       return <Col>
-          <h5>Pick</h5>
-          <ImageableImage
-            imageable={this.props.pick.pick}
-            sizeSlug="small"
-          />
-        </Col>
+        <h5>Pick</h5>
+        <ImageableImage
+          imageable={this.props.pick.pick}
+          sizeSlug={this.props.sizeSlug}
+        />
+      </Col>
     } else if (this.props.pick instanceof BurnPick) {
       return <>
         <Col>
           <h5>Pick</h5>
           <ImageableImage
             imageable={this.props.pick.pick}
-            sizeSlug="small"
+            sizeSlug={this.props.sizeSlug}
           />
         </Col>
         {
@@ -35,7 +40,7 @@ export default class PickView extends React.Component<PickViewProps, null> {
             <h5>Burn</h5>
             <ImageableImage
               imageable={this.props.pick.burn}
-              sizeSlug="small"
+              sizeSlug={this.props.sizeSlug}
             />
           </Col> : undefined
         }

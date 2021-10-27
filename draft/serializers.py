@@ -119,3 +119,10 @@ class DraftPickSeatSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.DraftPick
         fields = ('id', 'seat_id', 'global_pick_number')
+
+
+class FullDraftPickSeatSerializer(DraftPickSerializer):
+    seat = DraftSeatSerializer()
+
+    class Meta(DraftPickSerializer.Meta):
+        fields = DraftPickSerializer.Meta.fields + ('seat',)

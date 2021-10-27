@@ -18,7 +18,7 @@ interface PaginatorState<T> {
   offset: number
   hits: number
   pageSize: number
-
+  loading: boolean
 }
 
 
@@ -31,6 +31,7 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
       offset: 0,
       hits: 0,
       pageSize: 10,
+      loading: false,
     };
   }
 
@@ -43,17 +44,22 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
   }
 
   fetch = (offset: number = 0): void => {
-    this.props.fetch(offset, this.state.pageSize).then(
-      ({objects, hits}) => {
-        this.setState(
-          {
-            items: objects,
-            hits,
-            offset,
-          }
-        )
-      }
-    );
+    this.setState(
+      {loading: true},
+      () => this.props.fetch(offset, this.state.pageSize).then(
+        ({objects, hits}) => {
+          this.setState(
+            {
+              items: objects,
+              hits,
+              offset,
+            }
+          )
+        }
+      ).catch().then(
+        () => this.setState({loading: false})
+      )
+    )
   };
 
   render() {
@@ -70,7 +76,7 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
       <Row>
         <span>
             {
-              `Showing ${
+              this.state.loading ? 'loading...' : `Showing ${
                 this.state.offset
               } - ${
                 Math.min(this.state.offset + this.state.pageSize, this.state.hits)
