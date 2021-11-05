@@ -1498,25 +1498,45 @@ export class ReleasePatch extends Atomic {
     )
   };
 
-  static all = (): Promise<ReleasePatch[]> => {
-    // TODO pagination lol
+  static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<ReleasePatch>> => {
     return axios.get(
-      apiPath + 'patches/'
+      `${apiPath}patches/`,
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
     ).then(
-      response => response.data.results.map(
-        (patch: any) => ReleasePatch.fromRemote(patch)
-      )
+      response => {
+        return {
+          objects: response.data.results.map(
+            (wish: any) => ReleasePatch.fromRemote(wish)
+          ),
+          hits: response.data.count,
+        }
+      }
     )
   };
 
-  static forCube = (cubeId: number): Promise<ReleasePatch[]> => {
-    // TODO pagination lol
+  static forCube = (cubeId: number, offset: number = 0, limit: number = 10): Promise<PaginatedResponse<ReleasePatch>> => {
     return axios.get(
-      apiPath + 'versioned-cubes/' + cubeId + '/patches/'
+      `${apiPath}versioned-cubes/${cubeId}/patches/`,
+      {
+        params: {
+          offset,
+          limit,
+        }
+      },
     ).then(
-      response => response.data.results.map(
-        (patch: any) => ReleasePatch.fromRemote(patch)
-      )
+      response => {
+        return {
+          objects: response.data.results.map(
+            (wish: any) => ReleasePatch.fromRemote(wish)
+          ),
+          hits: response.data.count,
+        }
+      }
     )
   };
 
@@ -2850,9 +2870,6 @@ export class ScheduledMatch extends Atomic {
   }
 
   canSubmit = (user: User): boolean => {
-    if (this.result) {
-      return false;
-    }
     const users = Array.from(
       this.seats.filter(
         seat => seat.participant.player

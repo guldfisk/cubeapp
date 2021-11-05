@@ -631,7 +631,7 @@ class VersionedCubePatchList(generics.ListAPIView):
     def get_queryset(self):
         return models.CubePatch.objects.filter(
             versioned_cube_id = self.kwargs['pk']
-        )
+        ).order_by('-created_at')
 
 
 class PatchDetail(generics.RetrieveDestroyAPIView):

@@ -28,7 +28,6 @@ export default class RoundView extends React.Component<RoundViewProps, RoundView
     this.state = {}
   }
 
-
   render() {
     return <Container fluid>
       <Row><h4>{'Round ' + (this.props.round.index + 1)}</h4></Row>
@@ -37,6 +36,7 @@ export default class RoundView extends React.Component<RoundViewProps, RoundView
           match => <Row>
             <MatchView
               match={match}
+              round={this.props.round}
               tournament={this.props.tournament}
               handleSubmitted={this.props.handleMatchSubmitted}
             />

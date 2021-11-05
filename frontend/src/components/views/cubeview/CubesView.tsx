@@ -24,7 +24,7 @@ export default class CubesView extends React.Component<CubesViewProps> {
       {
         dataField: 'name',
         text: 'Name',
-        formatter: (cell: string, row: Cube, rowIndex: number, formatExtraData: any) => <Link to={"/cube/" + row.id}>
+        formatter: (cell: string, row: Cube) => <Link to={`/cube/${row.id}`}>
           {cell}
         </Link>,
       },
@@ -35,20 +35,29 @@ export default class CubesView extends React.Component<CubesViewProps> {
       {
         dataField: 'author',
         text: 'Author',
-        formatter: (cell: User, row: Cube, rowIndex: number, formatExtraData: any) => cell.username,
+        formatter: (cell: User) => cell.username,
       },
       {
         dataField: 'id',
         text: 'Latest Release',
-        formatter: (cell: any, row: Cube, rowIndex: number, formatExtraData: any) => row.latestRelease() !== null ?
-          <Link to={'/release/' + row.latestRelease().id}>
+        formatter: (cell: any, row: Cube) => row.latestRelease() !== null ?
+          <Link to={`/release/${row.latestRelease().id}`}>
             {row.latestRelease().name}
           </Link> : "No releases",
       },
       {
         dataField: 'id',
+        text: 'Latest Patch',
+        formatter: (cell: string | number) => (
+          <Link to={`/cube/${cell}/latest-patch/`}>
+            patch
+          </Link>
+        )
+      },
+      {
+        dataField: 'id',
         text: 'Last Update',
-        formatter: (cell: any, row: Cube, rowIndex: number, formatExtraData: any) => row.latestRelease() !== null ?
+        formatter: (cell: any, row: Cube) => row.latestRelease() !== null ?
           <DateListItem
             date={row.latestRelease().createdAt}
           /> : "No releases",
@@ -56,12 +65,12 @@ export default class CubesView extends React.Component<CubesViewProps> {
       {
         dataField: 'releases',
         text: 'Releases',
-        formatter: (cell: CubeReleaseMeta[], row: Cube, rowIndex: number, formatExtraData: any) => cell.length,
+        formatter: (cell: CubeReleaseMeta[]) => cell.length,
       },
       {
         dataField: 'createdAt',
         text: 'Created At',
-        formatter: (cell: Date, row: Cube, rowIndex: number, formatExtraData: any) => <DateListItem
+        formatter: (cell: Date) => <DateListItem
           date={cell}
         />,
       },

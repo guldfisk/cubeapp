@@ -95,12 +95,11 @@ class ScheduledMatchDetail(generics.RetrieveAPIView, ScheduledMatchView):
         if scheduled_match.round.tournament.state != models.Tournament.TournamentState.ONGOING:
             return Response({'errors': ['tournament in invalid state for submitting']}, status = status.HTTP_400_BAD_REQUEST)
 
-        try:
-            scheduled_match.result
-        except models.MatchResult.DoesNotExist:
-            pass
-        else:
-            return Response({'errors': ['results already submitted']}, status = status.HTTP_400_BAD_REQUEST)
+        if not models.ScheduledMatch.objects.filter(
+            round = scheduled_match.round,
+            result__isnull = True,
+        ).exists():
+            return Response({'errors': ['round already completed']}, status = status.HTTP_400_BAD_REQUEST)
 
         serializer = serializers.ResultSubmitSerializer(data = request.data)
         serializer.is_valid(raise_exception = True)
@@ -118,6 +117,9 @@ class ScheduledMatchDetail(generics.RetrieveAPIView, ScheduledMatchView):
             return Response({'errors': ['invalid seats']}, status = status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
+            models.MatchResult.objects.filter(scheduled_match = scheduled_match).delete()
+            models.SeatResult.objects.filter(scheduled_seat__match = scheduled_match).delete()
+
             models.MatchResult.objects.create(
                 draws = completed_match.draws,
                 scheduled_match = scheduled_match,

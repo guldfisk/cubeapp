@@ -19,6 +19,7 @@ const DraftsPage = React.lazy(() => import('../pages/draft/DraftsPage'));
 const ImageRecordPage = React.lazy(() => import('../pages/imgrecords/ImageRecordPage'))
 const InvitePage = React.lazy(() => import('../pages/authentication/InvitePage'));
 const KPDPage = React.lazy((() => import('../pages/kpd/KPDPage')));
+const LatestPatchPage = React.lazy(() => import('../pages/patches/LatestPatchPage'));
 const LatestReleasePage = React.lazy(() => import('../pages/release/LatestReleasePage'));
 const LeaguePage = React.lazy(() => import('../pages/leagues/LeaguePage'));
 const LeaguesPage = React.lazy(() => import('../pages/leagues/LeaguesPage'));
@@ -42,9 +43,9 @@ const SessionsPage = React.lazy(() => import('../pages/limited/SessionsPage'));
 const SignInPage = React.lazy(() => import('../pages/authentication/SignInPage'));
 const SignOutPage = React.lazy(() => import('../pages/authentication/SignOutPage'));
 const SignUpPage = React.lazy(() => import('../pages/authentication/SignUpPage'));
-const UpdateTokenPage = React.lazy(() => import('../pages/kpd/UpdateTokenPage'));
 const TournamentPage = React.lazy(() => import('../pages/tournaments/tournamentPage'));
 const TournamentsPage = React.lazy(() => import('../pages/tournaments/tournamentsPage'));
+const UpdateTokenPage = React.lazy(() => import('../pages/kpd/UpdateTokenPage'));
 const UserPage = React.lazy(() => import('../pages/users/UserPage'));
 const WishListPage = React.lazy(() => import('../pages/wishes/WishListPage'));
 const WishListsPage = React.lazy(() => import('../pages/wishes/WishListsPage'));
@@ -61,6 +62,7 @@ export const routes: [
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],
+  ['/cube/:id(\\d+)/latest-patch', LatestPatchPage, false, {}],
   [
     '/cube/:id(\\d+)', CubePage, false,
     {

@@ -20,8 +20,8 @@ class PatchesPage extends React.Component<null, DeltasPageState> {
 
   componentDidMount() {
     ReleasePatch.all().then(
-      deltas => {
-        this.setState({patches: deltas})
+      ({objects}) => {
+        this.setState({patches: objects})
       }
     );
   }

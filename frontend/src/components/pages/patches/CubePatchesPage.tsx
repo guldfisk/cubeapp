@@ -1,13 +1,13 @@
 import React from 'react';
 
-import {ReleasePatch} from '../../models/models';
-
-import PatchesView from '../../views/patchview/PatchesView';
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
+
+import PatchesView from '../../views/patchview/PatchesView';
+import {ReleasePatch} from '../../models/models';
 
 
 interface CubeDeltasPageProps {
@@ -31,14 +31,13 @@ class CubePatchesPage extends React.Component<CubeDeltasPageProps, CubeDeltasPag
     ReleasePatch.forCube(
       this.props.match.params.id
     ).then(
-      deltas => {
-        this.setState({patches: deltas})
+      ({objects}) => {
+        this.setState({patches: objects})
       }
     );
   }
 
   render() {
-
     return <Container fluid>
       <Row>
         <Col sm={2}>

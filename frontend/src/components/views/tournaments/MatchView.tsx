@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {
-  ScheduledMatch, Tournament, TournamentParticipant, User,
+  ScheduledMatch, Tournament, TournamentParticipant, TournamentRound, User,
 } from "../../models/models";
 import BootstrapTable from 'react-bootstrap-table-next';
 
@@ -115,11 +115,12 @@ class ResultSubmitter extends React.Component<ResultSubmitterProps, ResultSubmit
 }
 
 interface MatchViewProps {
-  match: ScheduledMatch;
-  tournament?: Tournament | null;
-  authenticated: boolean;
-  user: User | null;
-  handleSubmitted?: ((match: ScheduledMatch) => void) | null;
+  match: ScheduledMatch
+  round?: TournamentRound | null
+  tournament?: Tournament | null
+  authenticated: boolean
+  user: User | null
+  handleSubmitted?: ((match: ScheduledMatch) => void) | null
 }
 
 
@@ -177,12 +178,13 @@ class MatchView extends React.Component<MatchViewProps, MatchViewState> {
         {
           this.props.authenticated
           && this.props.match.canSubmit(this.props.user)
+          && (!this.props.round || !this.props.round.matches.every((match) => match.result))
           && (!this.props.tournament || this.props.tournament.state == 'ONGOING')
           && <Button
             onClick={() => this.setState({submitting: !this.state.submitting})}
             className='ml-auto'
           >
-            {this.state.submitting ? 'Cancel' : 'Submit'}
+            {this.state.submitting ? 'Cancel' : (this.props.match.result ? 'Resubmit' : 'Submit')}
           </Button>
         }
       </Card.Header>
