@@ -23,7 +23,7 @@ def check_weather():
     target_from = next_sunday + datetime.timedelta(hours = 9)
     target_to = next_sunday + datetime.timedelta(hours = 14)
 
-    if target_to > now + datetime.timedelta(days = 2):
+    if target_to > now + datetime.timedelta(days = 1, hours = 23):
         return
 
     forecast_slice = DMIClient().get_forecast(HARESKOVEN).values_in_range(target_from, target_to)
