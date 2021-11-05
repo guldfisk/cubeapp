@@ -90,7 +90,7 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
     const canUseStatic = this.props.allowStatic && _type !== 'Cardboard' && !window.__debug__ && !this.props.cropped;
 
     const srcUrl = canUseStatic ? get_imageable_image_static_url(
-      this.props.imageable === null ? this.props.id.toString() : this.props.imageable.id,
+      this.props.imageable ? this.props.imageable.id : this.props.id.toString(),
       _type,
       this.props.sizeSlug,
       this.props.cropped,
@@ -139,6 +139,5 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
     >
       {image}
     </OverlayTrigger>
-    // return
   }
 }

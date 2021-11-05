@@ -23,9 +23,13 @@ const sizeSlugMap: { [key: string]: string } = {
 
 const typeDirectoryMap: { [key: string]: string } = {
   Printing: '',
+  printing: '',
   Trap: '_cube_traps/',
+  trap: '_cube_traps/',
   Ticket: '_tickets/',
+  ticket: '_tickets/',
   Purple: '_purples/',
+  purple: '_purples/',
 };
 
 
