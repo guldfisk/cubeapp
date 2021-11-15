@@ -319,3 +319,9 @@ class RelatedPrinting(models.Model):
 
     class Meta:
         unique_together = ('printing_id', 'related_content_type', 'related_object_id')
+
+
+class EEError(TimestampedModel, models.Model):
+    user = models.ForeignKey(get_user_model(), null = True, on_delete = models.SET_NULL)
+    error = models.TextField()
+    trace = models.TextField()

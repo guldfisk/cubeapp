@@ -259,3 +259,9 @@ class DistributionPossibilitySerializer(serializers.ModelSerializer):
             'added_traps',
             'removed_traps',
         )
+
+
+class EEErrorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.EEError
+        fields = ('error', 'trace')

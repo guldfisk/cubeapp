@@ -19,6 +19,7 @@ from django.template.loader import get_template
 
 from proxypdf.streamwriter import StreamProxyWriter
 
+from mtgorp.managejson.paths import LOG_PATH
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -68,15 +69,17 @@ def check_mtg_json():
         'created_at',
     ).values_list('expansion_code', flat = True).last():
         models.ExpansionUpdate.objects.create(expansion_code = last_set_with_printings.code)
-        mail_me(
-            f'new mtg set in db [{last_set_with_printings.code}]',
-            get_template('db_updated_mail.html').render(
-                {
-                    'mtgjson_timestamp': get_last_db_update(update_db = update_db).strftime(MTG_JSON_DATETIME_FORMAT),
-                    'expansion': last_set_with_printings,
-                }
-            ),
-        )
+        with open(LOG_PATH, 'r') as log_file:
+            mail_me(
+                f'new mtg set in db [{last_set_with_printings.code}]',
+                get_template('db_updated_mail.html').render(
+                    {
+                        'mtgjson_timestamp': get_last_db_update(update_db = update_db).strftime(MTG_JSON_DATETIME_FORMAT),
+                        'expansion': last_set_with_printings,
+                    }
+                ),
+                (('log.txt', log_file.read()),),
+            )
 
 
 @shared_task()
@@ -325,5 +328,5 @@ def backup_db():
                 error_message = s.stderr.read().decode('utf8')
             except Exception as e:
                 error_message = str(e)
-            mail_me('DB backup failed :(', 'error: ' + error_message, force = True)
+            mail_me('DB backup failed :(', 'error: ' + error_message)
             raise Exception('pg_dump failed')

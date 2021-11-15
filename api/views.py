@@ -978,3 +978,11 @@ class SearchReleases(generics.ListAPIView):
                 page
             ]
         )
+
+
+class ClientErrorView(generics.CreateAPIView):
+    queryset = models.EEError.objects.all()
+    serializer_class = serializers.EEErrorSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user = self.request.user if self.request.user.is_authenticated else None)
