@@ -88,7 +88,7 @@ def db_info(request: HttpRequest) -> HttpResponse:
 def min_supported_client_version(request: HttpRequest) -> HttpResponse:
     return JsonResponse(
         {
-            'version': '0.1.3',
+            'version': '0.1.7',
         }
     )
 
