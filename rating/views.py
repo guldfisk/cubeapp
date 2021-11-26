@@ -1,5 +1,7 @@
 from abc import abstractmethod
+from collections import defaultdict
 
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import QuerySet, Prefetch
 from django.http import Http404
 
@@ -7,6 +9,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from api.models import CubeRelease
+from draft.models import DraftSession
 from rating import serializers
 from rating import models
 
@@ -179,3 +182,47 @@ class NodeRatingComponentHistory(generics.GenericAPIView):
         )
 
         return Response(self.get_serializer(ratings, many = True).data)
+
+
+class RatingMapStatsView(generics.GenericAPIView):
+
+    def get(self, request, pk: int, *args, **kwargs):
+        stat_map = defaultdict(dict)
+
+        for stat in models.CardboardStat.objects.filter(rating_map_id = pk):
+            stat_map[stat.cardboard.name][stat.stat] = stat.value
+
+        return Response(
+            stat_map
+        )
+
+
+class CardboardStatsHistory(generics.GenericAPIView):
+
+    def get(self, request, rating_map_id: int, cardboard_id: str, **kwargs):
+        series = defaultdict(list)
+        for stat in models.CardboardStat.objects.raw(
+            '''
+            SELECT * FROM rating_cardboardstat
+            INNER JOIN rating_ratingmap on rating_cardboardstat.rating_map_id = rating_ratingmap.id
+            WHERE rating_map_id IN (
+                WITH RECURSIVE traverse_maps AS (
+                    SELECT id, parent_id
+                    FROM rating_ratingmap
+                    WHERE id = %s
+                    UNION
+                    SELECT r.id, r.parent_id
+                    FROM rating_ratingmap r
+                    INNER JOIN traverse_maps s ON r.id = s.parent_id
+                )
+                SELECT id
+                FROM traverse_maps
+            ) AND cardboard = %s
+            AND rating_ratingmap.ratings_for_content_type_id = %s
+            ORDER BY rating_ratingmap.created_at;
+            ''',
+            [rating_map_id, cardboard_id.replace('_', '/'), ContentType.objects.get_for_model(DraftSession).id],
+        ).prefetch_related('rating_map'):
+            series[stat.stat].append((stat.rating_map.created_at, stat.value))
+
+        return Response(series)

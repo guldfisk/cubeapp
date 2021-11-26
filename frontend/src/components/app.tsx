@@ -71,14 +71,12 @@ class RootComponent extends React.Component<RootProps> {
                   <this.PrivateRoute
                     path={path}
                     key={path}
-                    exact
                     component={component}
                     {...args}
                   /> :
                   <Route
                     path={path}
                     key={path}
-                    exact
                     component={args.render ? undefined : component}
                     {...args}
                   />

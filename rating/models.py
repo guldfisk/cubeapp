@@ -11,7 +11,7 @@ from utils.mixins import TimestampedModel
 
 
 class RatingMap(TimestampedModel, models.Model):
-    release = models.ForeignKey(CubeRelease, on_delete = models.CASCADE, related_name = 'rating_maps')
+    release = models.ForeignKey(CubeRelease, on_delete = models.CASCADE, related_name = 'all_rating_maps')
     ratings_for_content_type = models.ForeignKey(ContentType, on_delete = models.CASCADE)
     ratings_for_object_id = models.PositiveIntegerField()
     ratings_for = GenericForeignKey('ratings_for_content_type', 'ratings_for_object_id', )
@@ -75,41 +75,5 @@ class CardboardStat(models.Model):
     stat = models.CharField(max_length = 63)
     value = models.FloatField()
 
-    # pool_occurrences = models.FloatField()
-    # maindeck_occurrences = models.FloatField()
-    #
-    # sideboard_occurrences = models.FloatField()
-    # real_sideboard_occurrences = models.IntegerField()
-    # maindeck_matches = models.FloatField()
-    # real_maindeck_matches = models.IntegerField()
-    # sideboard_matches = models.FloatField()
-    # real_sideboard_matches = models.IntegerField()
-    # maindeck_wins = models.FloatField()
-    # real_maindeck_wins = models.IntegerField()
-    # sideboard_wins = models.FloatField()
-    # real_sideboard_wins = models.IntegerField()
-    #
-    # deck_occurrences = models.FloatField()
-    # real_deck_occurrences = models.IntegerField()
-    #
-    # deck_conversion_rate = models.FloatField()
-    # ci_deck_conversion_rate = models.FloatField()
-    #
-    # maindeck_conversion_rate = models.FloatField()
-    # ci_maindeck_conversion_rate = models.FloatField()
-    # sideboard_conversion_rate = models.FloatField()
-    # ci_sideboard_conversion_rate = models.FloatField()
-    #
-    # matches = models.FloatField()
-    # real_matches = models.IntegerField()
-    # wins = models.FloatField()
-    # real_wins = models.IntegerField()
-    # win_rate = models.FloatField()
-    # ci_win_rate = models.FloatField()
-    # maindeck_win_rate = models.FloatField()
-    # ci_maindeck_win_rate = models.FloatField()
-    # sideboard_win_rate = models.FloatField()
-    # ci_sideboard_win_rate = models.FloatField()
-    #
     class Meta:
         unique_together = ('cardboard', 'rating_map', 'stat')

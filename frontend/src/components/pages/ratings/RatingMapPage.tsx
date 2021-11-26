@@ -1,12 +1,12 @@
 import React from 'react';
 
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
 import {Container, Row} from 'react-bootstrap';
 import {Link} from "react-router-dom";
 
 import RatingMapComponentsView from "../../views/rating/RatingMapComponentsView";
+import RatingMapStatsView from "../../views/rating/RatingMapStatsView";
 import RatingMapView from "../../views/rating/RatingMapView";
+import RoutedTabs from "../../utils/RoutedTabs";
 import {Loading, NotFound} from '../../utils/utils';
 import {RatingMap} from '../../models/models';
 
@@ -49,7 +49,8 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
       }
       return <Loading/>
     }
-    return <Container fluid>
+
+    return <Container>
       <Row>
         <h3>
           Ratings for <Link to={"/release/" + this.state.ratingMap.release.id}>
@@ -84,20 +85,29 @@ export default class RatingMapPage extends React.Component<RatingMapPageProps, R
         </Row>
       }
       <Row>
-        <Tabs
-          id='ratings-tabs'
-          defaultActiveKey='ratings'
-          mountOnEnter={true}
-        >
-          <Tab eventKey='ratings' title='Ratings'>
-            <RatingMapView
-              ratingMap={this.state.ratingMap}
-            />
-          </Tab>
-          <Tab eventKey='nodeComponents' title='Node Components'>
-            <RatingMapComponentsView ratingMap={this.state.ratingMap}/>
-          </Tab>
-        </Tabs>
+        <RoutedTabs
+          match={this.props.match}
+          tabs={
+            [
+              [
+                'ratings',
+                'Ratings',
+                () => <RatingMapView ratingMap={this.state.ratingMap}/>,
+              ],
+              [
+                'node-components',
+                'Node Components',
+                () => <RatingMapComponentsView ratingMap={this.state.ratingMap}/>,
+              ],
+              [
+                'stats',
+                'Stats',
+                () => <RatingMapStatsView ratingMap={this.state.ratingMap}/>,
+              ],
+            ]
+          }
+          defaultTab="ratings"
+        />
       </Row>
     </Container>
   }

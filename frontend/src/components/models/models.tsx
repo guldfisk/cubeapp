@@ -4586,7 +4586,7 @@ export class CardboardCubeableRatingHistoryPoint extends Atomic {
     cardboardCubeableId: string,
   ): Promise<CardboardCubeableRatingHistoryPoint[]> => {
     return axios.get(
-      apiPath + 'ratings/history/' + releaseMapId + '/' + cardboardCubeableId.replace(/\//g, '_') + '/'
+      `${apiPath}ratings/history/${releaseMapId}/${cardboardCubeableId.replace(/\//g, '_')}/`
     ).then(
       response => response.data.map(
         (point: any) => CardboardCubeableRatingHistoryPoint.fromRemote(point)
@@ -4630,7 +4630,7 @@ export class NodeRatingComponentRatingHistoryPoint extends Atomic {
     nodeId: string,
   ): Promise<NodeRatingComponentRatingHistoryPoint[]> => {
     return axios.get(
-      apiPath + 'ratings/node-history/' + releaseMapId + '/' + nodeId.replace(/\//g, '_') + '/'
+      `${apiPath}ratings/node-history/${releaseMapId}/${nodeId.replace(/\//g, '_')}/`
     ).then(
       response => response.data.map(
         (point: any) => NodeRatingComponentRatingHistoryPoint.fromRemote(point)
@@ -4679,9 +4679,66 @@ export class RatingMap extends MinimalRatingMap {
 
   public static get = (id: string): Promise<RatingMap> => {
     return axios.get(
-      apiPath + 'ratings/' + id + '/'
+      `${apiPath}ratings/${id}/`
     ).then(
       response => RatingMap.fromRemote(response.data)
+    )
+  };
+
+}
+
+
+export class StatMap {
+  stats: { [cardboardName: string]: { [stat: string]: number } }
+
+  constructor(stats: { [cardboardName: string]: { [stat: string]: number } }) {
+    this.stats = stats
+  }
+
+  public static fromRemote(remote: any): StatMap {
+    return new StatMap(
+      remote
+    )
+  }
+
+  public static get = (ratingMapId: number | string): Promise<StatMap> => {
+    return axios.get(
+      `${apiPath}ratings/stats/${ratingMapId}/`
+    ).then(
+      response => StatMap.fromRemote(response.data)
+    )
+  };
+
+}
+
+
+export class CardboardStatHistory {
+  stats: {[stat: string]: [Date, number][]}
+
+    constructor(stats: {[stat: string]: [Date, number][]}) {
+    this.stats = stats
+  }
+
+    public static fromRemote(remote: any): CardboardStatHistory {
+    return new CardboardStatHistory(
+      Object.fromEntries(
+        Object.entries(remote).map(
+          ([stat, series]: [string, any]) => [
+            stat,
+            series.map(
+              ([date, value]: [string, number]) => [new Date(date), value]
+            )
+          ]
+        )
+      )
+    )
+  }
+
+  public static get = (cardboardName: string, ratingMapId: string | number): Promise<CardboardStatHistory> => {
+    return axios.get(
+      `${apiPath}ratings/stats/history/${cardboardName.replace('/', '_')}/${ratingMapId}/`,
+    ).then(
+      response => CardboardStatHistory.fromRemote(response.data)
     )
   };
 

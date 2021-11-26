@@ -204,6 +204,11 @@ export const randomString = (length: number) => {
 };
 
 
-export const roundToN = (v: number, n: number = 2) => {
+export const roundToN = (v: number, n: number = 2): number => {
   return Math.round((v + Number.EPSILON) * 10 ** n) / (10 ** n)
+}
+
+
+export const urlJoin = (first: string, second: string): string => {
+  return `${first.endsWith('/') ? first.substr(0, first.length - 1) : first}/${second.startsWith('/') ? second.substr(1, second.length - 1) : second}`
 }

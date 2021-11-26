@@ -6,7 +6,6 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
-from lazy_property import LazyProperty
 from scipy.stats import beta
 
 from django.db.models import Count, F
@@ -65,6 +64,27 @@ def _get_node_conversion_rate(node: CardboardNodeChild, conversion_rate_map: CVS
     )
 
 
+class LazyProperty(property):
+
+    def __init__(self, method):
+        self.method = method
+        self.cache_name = "_{}".format(self.method.__name__)
+
+        super().__init__(fset = lambda s, v: None)
+
+    def __get__(self, instance: t.Any, owner: t.Optional[type] = None) -> t.Any:
+        if instance is None:
+            return self
+
+        if hasattr(instance, self.cache_name):
+            result = getattr(instance, self.cache_name)
+        else:
+            result = self.method(instance)
+            setattr(instance, self.cache_name, result)
+
+        return result
+
+
 def _wrap_default_float(f: t.Callable[[t.Any], CVS]) -> t.Callable[[t.Any], CVS]:
     @functools.wraps(f)
     def _f(i):
@@ -75,199 +95,235 @@ def _wrap_default_float(f: t.Callable[[t.Any], CVS]) -> t.Callable[[t.Any], CVS]
 
 @dataclasses.dataclass
 class CardboardStatsMaps(object):
-    pool_occurrences: CVS
-    real_pool_occurrences: CVSI
-    maindeck_occurrences: CVS
-    real_maindeck_occurrences: CVSI
-    sideboard_occurrences: CVS
-    real_sideboard_occurrences: CVSI
-    maindeck_matches: CVS
-    real_maindeck_matches: CVSI
-    sideboard_matches: CVS
-    real_sideboard_matches: CVSI
-    maindeck_wins: CVS
-    real_maindeck_wins: CVSI
-    sideboard_wins: CVS
-    real_sideboard_wins: CVSI
+    weighted_pool_occurrences: CVS
+    pool_occurrences: CVSI
+    weighted_maindeck_occurrences: CVS
+    maindeck_occurrences: CVSI
+    weighted_sideboard_occurrences: CVS
+    sideboard_occurrences: CVSI
+    weighted_maindeck_matches: CVS
+    maindeck_matches: CVSI
+    weighted_sideboard_matches: CVS
+    sideboard_matches: CVSI
+    weighted_maindeck_wins: CVS
+    maindeck_wins: CVSI
+    weighted_sideboard_wins: CVS
+    sideboard_wins: CVSI
+
+    weighted_deck_occurrences: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def deck_occurrences(self) -> CVS:
+    def weighted_deck_occurrences(self) -> CVS:
+        return {
+            cardboard: self.weighted_maindeck_occurrences[cardboard] + self.weighted_sideboard_occurrences[cardboard]
+            for cardboard in
+            self.weighted_maindeck_occurrences.keys() | self.weighted_sideboard_occurrences.keys()
+        }
+
+    deck_occurrences: CVSI = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def deck_occurrences(self) -> CVSI:
         return {
             cardboard: self.maindeck_occurrences[cardboard] + self.sideboard_occurrences[cardboard]
             for cardboard in
             self.maindeck_occurrences.keys() | self.sideboard_occurrences.keys()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def real_deck_occurrences(self) -> CVSI:
-        return {
-            cardboard: self.real_maindeck_occurrences[cardboard] + self.real_sideboard_occurrences[cardboard]
-            for cardboard in
-            self.real_maindeck_occurrences.keys() | self.real_sideboard_occurrences.keys()
-        }
+    deck_conversion_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def deck_conversion_rates(self) -> CVS:
+    def deck_conversion_rate(self) -> CVS:
         return {
             cardboard: self.deck_occurrences[cardboard] / occurrences if occurrences else .0
             for cardboard, occurrences in
             self.pool_occurrences.items()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def ci_deck_conversion_rates(self) -> CVS:
-        return {
-            cardboard: ci_lower_bound(
-                self.deck_occurrences[cardboard],
-                occurrences,
-            )
-            for cardboard, occurrences in
-            self.pool_occurrences.items()
-        }
+    ci_deck_conversion_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def maindeck_conversion_rates(self) -> CVS:
+    def ci_deck_conversion_rate(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.weighted_deck_occurrences[cardboard],
+                occurrences,
+            )
+            for cardboard, occurrences in
+            self.weighted_pool_occurrences.items()
+        }
+
+    maindeck_conversion_rate: CVS = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def maindeck_conversion_rate(self) -> CVS:
         return {
             cardboard: self.maindeck_occurrences[cardboard] / occurrences if occurrences else .0
             for cardboard, occurrences in
             self.pool_occurrences.items()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def ci_maindeck_conversion_rates(self) -> CVS:
-        return {
-            cardboard: ci_lower_bound(
-                self.maindeck_occurrences[cardboard],
-                occurrences,
-            )
-            for cardboard, occurrences in
-            self.pool_occurrences.items()
-        }
+    ci_maindeck_conversion_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def sideboard_conversion_rates(self) -> CVS:
+    def ci_maindeck_conversion_rate(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.weighted_maindeck_occurrences[cardboard],
+                occurrences,
+            )
+            for cardboard, occurrences in
+            self.weighted_pool_occurrences.items()
+        }
+
+    sideboard_conversion_rate: CVS = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def sideboard_conversion_rate(self) -> CVS:
         return {
             cardboard: self.sideboard_occurrences[cardboard] / occurrences if occurrences else .0
             for cardboard, occurrences in
             self.pool_occurrences.items()
         }
 
+    ci_sideboard_conversion_rates: CVS = dataclasses.field(init = False)
+
     @LazyProperty
     @_wrap_default_float
     def ci_sideboard_conversion_rates(self) -> CVS:
         return {
             cardboard: ci_lower_bound(
-                self.sideboard_occurrences[cardboard],
+                self.weighted_sideboard_occurrences[cardboard],
                 occurrences,
             )
             for cardboard, occurrences in
-            self.pool_occurrences.items()
+            self.weighted_pool_occurrences.items()
         }
+
+    weighted_matches: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def matches(self) -> CVS:
+    def weighted_matches(self) -> CVS:
+        return {
+            cardboard: self.weighted_maindeck_matches[cardboard] + self.weighted_sideboard_matches[cardboard]
+            for cardboard in
+            self.weighted_maindeck_matches.keys() | self.weighted_sideboard_matches.keys()
+        }
+
+    matches: CVSI = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def matches(self) -> CVSI:
         return {
             cardboard: self.maindeck_matches[cardboard] + self.sideboard_matches[cardboard]
             for cardboard in
             self.maindeck_matches.keys() | self.sideboard_matches.keys()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def real_matches(self) -> CVSI:
-        return {
-            cardboard: self.real_maindeck_matches[cardboard] + self.real_sideboard_matches[cardboard]
-            for cardboard in
-            self.real_maindeck_matches.keys() | self.real_sideboard_matches.keys()
-        }
+    weighted_wins: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def wins(self) -> CVS:
+    def weighted_wins(self) -> CVS:
+        return {
+            cardboard: self.weighted_maindeck_wins[cardboard] + self.weighted_sideboard_wins[cardboard]
+            for cardboard in
+            self.weighted_maindeck_wins.keys() | self.weighted_sideboard_wins.keys()
+        }
+
+    wins: CVSI = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def wins(self) -> CVSI:
         return {
             cardboard: self.maindeck_wins[cardboard] + self.sideboard_wins[cardboard]
             for cardboard in
             self.maindeck_wins.keys() | self.sideboard_wins.keys()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def real_wins(self) -> CVSI:
-        return {
-            cardboard: self.real_maindeck_wins[cardboard] + self.real_sideboard_wins[cardboard]
-            for cardboard in
-            self.real_maindeck_wins.keys() | self.real_sideboard_wins.keys()
-        }
+    win_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def win_rates(self) -> CVS:
+    def win_rate(self) -> CVS:
         return {
             cardboard: self.wins[cardboard] / matches if matches else .0
             for cardboard, matches in
             self.matches.items()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def ci_win_rates(self) -> CVS:
-        return {
-            cardboard: ci_lower_bound(
-                self.wins[cardboard],
-                matches,
-            )
-            for cardboard, matches in
-            self.matches.items()
-        }
+    ci_win_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def maindeck_win_rates(self) -> CVS:
+    def ci_win_rate(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.weighted_wins[cardboard],
+                matches,
+            )
+            for cardboard, matches in
+            self.weighted_matches.items()
+        }
+
+    maindeck_win_rate: CVS = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def maindeck_win_rate(self) -> CVS:
         return {
             cardboard: self.maindeck_wins[cardboard] / matches if matches else .0
             for cardboard, matches in
             self.maindeck_matches.items()
         }
 
-    @LazyProperty
-    @_wrap_default_float
-    def ci_maindeck_win_rates(self) -> CVS:
-        return {
-            cardboard: ci_lower_bound(
-                self.maindeck_wins[cardboard],
-                matches
-            )
-            for cardboard, matches in
-            self.maindeck_matches.items()
-        }
+    ci_maindeck_win_rate: CVS = dataclasses.field(init = False)
 
     @LazyProperty
     @_wrap_default_float
-    def sideboard_win_rates(self) -> CVS:
-        return {
-            cardboard: self.sideboard_wins[cardboard] / matches if matches else .0
-            for cardboard, matches in
-            self.sideboard_matches.items()
-        }
-
-    @LazyProperty
-    @_wrap_default_float
-    def ci_sideboard_win_rates(self) -> CVS:
+    def ci_maindeck_win_rate(self) -> CVS:
         return {
             cardboard: ci_lower_bound(
-                self.sideboard_wins[cardboard],
+                self.weighted_maindeck_wins[cardboard],
                 matches
             )
             for cardboard, matches in
-            self.sideboard_matches.items()
+            self.weighted_maindeck_matches.items()
+        }
+
+    sideboard_win_rate: CVS = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def sideboard_win_rate(self) -> CVS:
+        return {
+            cardboard: self.weighted_sideboard_wins[cardboard] / matches if matches else .0
+            for cardboard, matches in
+            self.weighted_sideboard_matches.items()
+        }
+
+    ci_sideboard_win_rate: CVS = dataclasses.field(init = False)
+
+    @LazyProperty
+    @_wrap_default_float
+    def ci_sideboard_win_rate(self) -> CVS:
+        return {
+            cardboard: ci_lower_bound(
+                self.weighted_sideboard_wins[cardboard],
+                matches
+            )
+            for cardboard, matches in
+            self.weighted_sideboard_matches.items()
         }
 
 
@@ -352,20 +408,20 @@ def calculate_cardboard_stats(
                     sideboard_wins_count_map.add(cardboard, difference / len(winners))
 
     return CardboardStatsMaps(
-        pool_occurrences = pool_occurrences.weighted,
-        real_pool_occurrences = pool_occurrences.real,
-        maindeck_occurrences = maindeck_deck_conversions.weighted,
-        real_maindeck_occurrences = maindeck_deck_conversions.real,
-        sideboard_occurrences = sideboard_deck_conversions.weighted,
-        real_sideboard_occurrences = sideboard_deck_conversions.real,
-        maindeck_matches = maindeck_matches_count_map.weighted,
-        real_maindeck_matches = maindeck_matches_count_map.real,
-        sideboard_matches = sideboard_matches_count_map.weighted,
-        real_sideboard_matches = sideboard_matches_count_map.real,
-        maindeck_wins = maindeck_wins_count_map.weighted,
-        real_maindeck_wins = maindeck_wins_count_map.real,
-        sideboard_wins = sideboard_wins_count_map.weighted,
-        real_sideboard_wins = sideboard_wins_count_map.real,
+        weighted_pool_occurrences = pool_occurrences.weighted,
+        pool_occurrences = pool_occurrences.real,
+        weighted_maindeck_occurrences = maindeck_deck_conversions.weighted,
+        maindeck_occurrences = maindeck_deck_conversions.real,
+        weighted_sideboard_occurrences = sideboard_deck_conversions.weighted,
+        sideboard_occurrences = sideboard_deck_conversions.real,
+        weighted_maindeck_matches = maindeck_matches_count_map.weighted,
+        maindeck_matches = maindeck_matches_count_map.real,
+        weighted_sideboard_matches = sideboard_matches_count_map.weighted,
+        sideboard_matches = sideboard_matches_count_map.real,
+        weighted_maindeck_wins = maindeck_wins_count_map.weighted,
+        maindeck_wins = maindeck_wins_count_map.real,
+        weighted_sideboard_wins = sideboard_wins_count_map.weighted,
+        sideboard_wins = sideboard_wins_count_map.real,
     )
 
 

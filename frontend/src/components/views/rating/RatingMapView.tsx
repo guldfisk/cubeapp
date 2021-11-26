@@ -26,7 +26,7 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
       {
         dataField: 'exampleCubeable',
         text: 'Cubeable',
-        formatter: (cell: Cubeable, row: CardboardCubeableRating, rowIndex: number, formatExtraData: any) =>
+        formatter: (cell: Cubeable, row: CardboardCubeableRating) =>
           <Link
             to={'/release/' + this.props.ratingMap.release.id + '/cubeable-details/' + row.cardboardCubeableId + '/'}
           >

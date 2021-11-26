@@ -98,60 +98,65 @@ export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = 
 };
 
 
-interface CardboardListItemProps {
-  cardboard: Cardboard
+interface CardboardListItemProps<T extends string | Cardboard> {
+  cardboard: T
   multiplicity: number
-  onClick?: (cardboard: Cardboard, multiplicity: number) => void
+  onClick?: (cardboard: T, multiplicity: number) => void
   noHover?: boolean
 }
 
 
-export const CardboardListItem: React.FunctionComponent<CardboardListItemProps> = (props: CardboardListItemProps) => {
-  const display_name = `${(props.multiplicity && props.multiplicity !== 1) ?
-    props.multiplicity.toString() + 'x '
-    : ''}${props.cardboard.name}`;
+export class CardboardListItem<T extends string | Cardboard> extends React.Component<CardboardListItemProps<T>> {
+  render() {
+    const cardboard_name = (
+      this.props.cardboard instanceof Cardboard ? this.props.cardboard.name : this.props.cardboard
+    ) as string
+    const display_name = `${(this.props.multiplicity && this.props.multiplicity !== 1) ?
+      this.props.multiplicity.toString() + 'x '
+      : ''}${cardboard_name}`;
 
-  if (props.noHover) {
-    return <a
-      onClick={
-        props.onClick && (
-          () => {
-            props.onClick(props.cardboard, props.multiplicity);
-          }
-        )
-      }
-    >
-      {display_name}
-    </a>
-  }
-
-  return <OverlayTrigger
-    placement='left'
-    delay={{show: 250, hide: 0}}
-    overlay={
-      <ImageableImage
-        id={props.cardboard.id}
-        type='Cardboard'
-        hover={false}
-      />
+    if (this.props.noHover) {
+      return <a
+        onClick={
+          this.props.onClick && (
+            () => {
+              this.props.onClick(this.props.cardboard, this.props.multiplicity);
+            }
+          )
+        }
+      >
+        {display_name}
+      </a>
     }
-    popperConfig={{
-      modifiers: [flip, preventOverflow],
-    }}
-  >
-    <a
-      onClick={
-        props.onClick && (
-          () => {
-            props.onClick(props.cardboard, props.multiplicity);
-          }
-        )
+
+    return <OverlayTrigger
+      placement='left'
+      delay={{show: 250, hide: 0}}
+      overlay={
+        <ImageableImage
+          id={cardboard_name}
+          type='Cardboard'
+          hover={false}
+        />
       }
+      popperConfig={{
+        modifiers: [flip, preventOverflow],
+      }}
     >
-      {display_name}
-    </a>
-  </OverlayTrigger>
-};
+      <a
+        onClick={
+          this.props.onClick && (
+            () => {
+              this.props.onClick(this.props.cardboard, this.props.multiplicity);
+            }
+          )
+        }
+      >
+        {display_name}
+      </a>
+    </OverlayTrigger>
+  }
+}
 
 
 const trap_representation = (

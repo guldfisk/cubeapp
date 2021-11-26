@@ -1,34 +1,31 @@
 import React, {RefObject} from 'react';
 
-import {
-  FullDeck,
-  League, QuickMatch, Season,
-} from "../../models/models";
+import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
+import {connect} from "react-redux";
+import {Form} from "react-bootstrap";
 import {Link} from "react-router-dom";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
-import Paginator from "../../utils/Paginator";
+
 import DecksMultiView from "../limited/decks/DecksMultiView";
-import TournamentView from "../tournaments/TournamentView";
 import Leaderboard from "./Leaderboard";
 import LeagueSettingsView from "./LeagueSettingsView";
-import {Form} from "react-bootstrap";
-import Button from "react-bootstrap/Button";
-import {connect} from "react-redux";
+import Paginator from "../../utils/Paginator";
+import RoutedTabs from "../../utils/RoutedTabs";
+import TournamentView from "../tournaments/TournamentView";
 import {FeedLink} from "../../utils/rss";
+import {FullDeck, League, QuickMatch, Season} from "../../models/models";
 
 
 interface LeagueViewProps {
-  authenticated: boolean;
-  league: League;
+  match: any
+  authenticated: boolean
+  league: League
 }
 
 
 interface LeagueViewState {
-  quickMatchRated: boolean;
+  quickMatchRated: boolean
 }
-
 
 class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
   seasonsPaginatorRef: RefObject<Paginator<Season>>;
@@ -60,109 +57,128 @@ class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
         </Link>
       </Card.Header>
       <Card.Body>
-        <Tabs
-          id='league-tabs'
-          defaultActiveKey='decks'
-          mountOnEnter={true}
-        >
-          <Tab eventKey='decks' title='Decks'>
-            <Paginator
-              fetch={
-                (offset, limit) => League.eligibleDecks(
-                  this.props.league.id,
-                  offset,
-                  limit,
-                )
-              }
-              renderBody={
-                (items: FullDeck[]) => <DecksMultiView decks={items}/>
-              }
-            />
-          </Tab>
-          <Tab eventKey='seasons' title='Seasons'>
-            <FeedLink url={'/api/leagues/' + this.props.league.id + '/rss.xml'}/>
-            <Paginator
-              ref={this.seasonsPaginatorRef}
-              fetch={
-                (offset, limit) => Season.forLeague(
-                  this.props.league.id,
-                  offset,
-                  limit,
-                )
-              }
-              renderBody={
-                (items: Season[]) => items.map(
-                  season => <TournamentView
-                    tournament={season.tournament}
-                    handleCanceled={() => this.seasonsPaginatorRef.current.refresh()}
-                    handleMatchSubmitted={() => this.seasonsPaginatorRef.current.refresh()}
-                  />
-                )
-              }
-            />
-          </Tab>
-          <Tab eventKey='quickMatches' title='Quick Matches'>
-            {
-              this.props.authenticated && <Form
-                onSubmit={
-                  (event: any) => {
-                    QuickMatch.createQuickMatch(this.props.league.id, this.state.quickMatchRated).then(
-                      () => this.quickMatchesPaginatorRef.current.refresh()
-                    );
-                    event.preventDefault();
-                    event.stopPropagation();
+        <RoutedTabs
+          match={this.props.match}
+          tabs={
+            [
+              [
+                'decks',
+                'Decks',
+                () => <Paginator
+                  key="decks"
+                  fetch={
+                    (offset, limit) => League.eligibleDecks(
+                      this.props.league.id,
+                      offset,
+                      limit,
+                    )
                   }
-                }
-              >
-                <Form.Group controlId="rated">
-                  <Form.Label>Rated</Form.Label>
-                  <input
-                    type="checkbox"
-                    checked={this.state.quickMatchRated}
-                    onClick={
-                      (event: any) => this.setState({quickMatchRated: event.target.checked})
+                  renderBody={
+                    (items: FullDeck[]) => <DecksMultiView decks={items}/>
+                  }
+                />,
+              ],
+              [
+                'seasons',
+                'Seasons',
+                () => <>
+                  <FeedLink url={'/api/leagues/' + this.props.league.id + '/rss.xml'}/>
+                  <Paginator
+                    key="seasons"
+                    ref={this.seasonsPaginatorRef}
+                    fetch={
+                      (offset, limit) => Season.forLeague(
+                        this.props.league.id,
+                        offset,
+                        limit,
+                      )
+                    }
+                    renderBody={
+                      (items: Season[]) => items.map(
+                        season => <TournamentView
+                          tournament={season.tournament}
+                          handleCanceled={() => this.seasonsPaginatorRef.current.refresh()}
+                          handleMatchSubmitted={() => this.seasonsPaginatorRef.current.refresh()}
+                        />
+                      )
                     }
                   />
-                </Form.Group>
-                <Button
-                  type="submit"
-                  style={
-                    {
-                      marginBottom: '2em',
-                    }
+                </>,
+              ],
+              [
+                'quick-matches',
+                'Quick Matches',
+                () => <>
+                  {
+                    this.props.authenticated && <Form
+                      onSubmit={
+                        (event: any) => {
+                          QuickMatch.createQuickMatch(this.props.league.id, this.state.quickMatchRated).then(
+                            () => this.quickMatchesPaginatorRef.current.refresh()
+                          );
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }
+                      }
+                    >
+                      <Form.Group controlId="rated">
+                        <Form.Label>Rated</Form.Label>
+                        <input
+                          type="checkbox"
+                          checked={this.state.quickMatchRated}
+                          onClick={
+                            (event: any) => this.setState({quickMatchRated: event.target.checked})
+                          }
+                        />
+                      </Form.Group>
+                      <Button
+                        type="submit"
+                        style={
+                          {
+                            marginBottom: '2em',
+                          }
+                        }
+                      >
+                        New Quick Match
+                      </Button>
+                    </Form>
                   }
-                >
-                  New Quick Match
-                </Button>
-              </Form>
-            }
-            <Paginator
-              ref={this.quickMatchesPaginatorRef}
-              fetch={
-                (offset, limit) => QuickMatch.forLeague(
-                  this.props.league.id,
-                  offset,
-                  limit,
-                )
-              }
-              renderBody={
-                (items: QuickMatch[]) => items.map(
-                  season => <TournamentView
-                    tournament={season.tournament}
-                    handleCanceled={() => this.quickMatchesPaginatorRef.current.refresh()}
-                    handleMatchSubmitted={() => this.quickMatchesPaginatorRef.current.refresh()}
+                  <Paginator
+                    key="quick-matches"
+                    ref={this.quickMatchesPaginatorRef}
+                    fetch={
+                      (offset, limit) => QuickMatch.forLeague(
+                        this.props.league.id,
+                        offset,
+                        limit,
+                      )
+                    }
+                    renderBody={
+                      (items: QuickMatch[]) => items.map(
+                        season => <TournamentView
+                          tournament={season.tournament}
+                          handleCanceled={() => this.quickMatchesPaginatorRef.current.refresh()}
+                          handleMatchSubmitted={() => this.quickMatchesPaginatorRef.current.refresh()}
+                        />
+                      )
+                    }
                   />
-                )
-              }
-            />
-          </Tab>
-          <Tab eventKey='leaderboard' title='Leaderboard'>
-            <Leaderboard leagueId={this.props.league.id}/>
-          </Tab>
-          <Tab eventKey='settings' title='Settings'>
-            <LeagueSettingsView league={this.props.league}/>
-          </Tab>
-        </Tabs>
+                </>,
+              ],
+              [
+                'leaderboard',
+                'Leaderboard',
+                () => <Leaderboard leagueId={this.props.league.id}/>,
+              ],
+              [
+                'settings',
+                'Settings',
+                () => <LeagueSettingsView league={this.props.league}/>,
+              ],
+            ]
+          }
+          defaultTab="decks"
+        />
       </Card.Body>
     </Card>
   }

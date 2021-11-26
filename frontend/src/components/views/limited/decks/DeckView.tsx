@@ -1,23 +1,19 @@
 import React from 'react';
 
-import Container from "react-bootstrap/Container";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
+import Container from "react-bootstrap/Container";
+import {connect} from "react-redux";
+import {Link} from "react-router-dom";
 import {Modal} from "react-bootstrap";
-import DeckTextView from "./DeckTextView";
+
+import CubeablesCollectionSpoilerView from "../../cubeablescollectionview/CubeablesCollectionSpoilerView";
 import DeckImageView from "./DeckImageView";
-import {
-  Cubeable,
-  CubeablesContainer,
-  Deck,
-  LimitedSessionName, TournamentRecord,
-  User
-} from "../../../models/models";
+import DeckTextView from "./DeckTextView";
+import {Cubeable, CubeablesContainer, Deck, LimitedSessionName, TournamentRecord, User} from "../../../models/models";
 import {DateListItem} from "../../../utils/listitems";
 
 import '../../../../styling/DeckView.css';
-import {Link} from "react-router-dom";
-import CubeablesCollectionSpoilerView from "../../cubeablescollectionview/CubeablesCollectionSpoilerView";
 
 
 interface DeckExportDialogProps {
@@ -25,6 +21,7 @@ interface DeckExportDialogProps {
   close: () => void
   show: boolean
   code?: string
+  authenticated: boolean
 }
 
 
@@ -38,7 +35,7 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
   constructor(props: DeckExportDialogProps) {
     super(props);
     this.state = {
-      extension: 'cod',
+      extension: 'dec',
     }
   }
 
@@ -58,6 +55,7 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
           <option value="mwDeck">.mwDeck</option>
           <option value="json">.json</option>
           <option value="cod">.cod</option>
+          {this.props.authenticated && <option value="pdf">.pdf</option>}
         </select>
       </Modal.Body>
       <Modal.Footer>
@@ -83,24 +81,23 @@ class DeckExportDialog extends React.Component<DeckExportDialogProps, DeckExport
 }
 
 interface DeckViewProps {
-  deck: Deck;
-  user: User;
-  limitedSession?: LimitedSessionName | null;
-  record?: TournamentRecord | null;
+  deck: Deck
+  user: User
+  limitedSession?: LimitedSessionName | null
+  record?: TournamentRecord | null
   onCubeableClicked?: (cubeable: Cubeable, amount: number) => void
-  noHover?: boolean;
-  code?: string;
+  noHover?: boolean
+  code?: string
+  authenticated: boolean
 }
-
 
 interface DeckViewState {
-  exporting: boolean;
-  viewType: string;
-  sampleHand: null | CubeablesContainer;
+  exporting: boolean
+  viewType: string
+  sampleHand: null | CubeablesContainer
 }
 
-
-export default class DeckView extends React.Component<DeckViewProps, DeckViewState> {
+class DeckView extends React.Component<DeckViewProps, DeckViewState> {
 
   constructor(props: DeckViewProps) {
     super(props);
@@ -112,13 +109,13 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
   }
 
   render() {
-
     return <>
       <DeckExportDialog
         deck={this.props.deck}
         close={() => this.setState({exporting: false})}
         show={this.state.exporting}
         code={this.props.code}
+        authenticated={this.props.authenticated}
       />
       <Card
         style={
@@ -208,4 +205,14 @@ export default class DeckView extends React.Component<DeckViewProps, DeckViewSta
       </ Card>
     </>
   }
+}
+
+
+const mapStateToProps = (state: any) => {
+  return {
+    authenticated: state.authenticated,
+  };
 };
+
+
+export default connect(mapStateToProps)(DeckView);

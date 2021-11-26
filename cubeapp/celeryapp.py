@@ -33,6 +33,10 @@ app.conf.beat_schedule = {
         'task': 'rating.tasks.check_new_rating_events',
         'schedule': timedelta(minutes = 10),
     },
+    'update_stats': {
+        'task': 'rating.tasks.update_stats',
+        'schedule': timedelta(minutes = 10),
+    },
     'check_new_image_records': {
         'task': 'imgqty.tasks.check_new_image_records',
         'schedule': timedelta(hours = 1),

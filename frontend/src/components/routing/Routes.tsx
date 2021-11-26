@@ -4,6 +4,7 @@ import HomePage from '../pages/HomePage';
 const AboutPage = React.lazy(() => import('../pages/AboutPage'));
 const ApplyPatchPage = React.lazy(() => import('../pages/patches/ApplyPatchPage'));
 const ArtGamePage = React.lazy(() => import('../pages/ArtGamePage'));
+const CardboardDetailPage = React.lazy(() => import('../pages/ratings/CardboardDetailPage'));
 const ClaimResetPage = React.lazy(() => import('../pages/authentication/ClaimResetPage'));
 const CreateCubePage = React.lazy(() => import('../pages/cubes/CreateCubePage'));
 const CreatePatchPage = React.lazy(() => import('../pages/patches/CreatePatchPage'));
@@ -51,14 +52,14 @@ const WishListPage = React.lazy(() => import('../pages/wishes/WishListPage'));
 const WishListsPage = React.lazy(() => import('../pages/wishes/WishListsPage'));
 
 export const routes: [
-  string | undefined,
-  (typeof React.Component) | React.FunctionComponent | any,
+    string | undefined,
+    (typeof React.Component) | React.FunctionComponent | any,
   boolean,
   { [key: string]: any },
 ][] = [
   ['/', HomePage, false, {exact: true}],
   ['/users/:id(\\d+)/', UserPage, false, {}],
-  ['/cubes', CubesPage, false, {}],
+  ['/cubes', CubesPage, false, {exact: true}],
   ['/cube/:id(\\d+)/patches/create', CreatePatchPage, true, {}],
   ['/cube/:id(\\d+)/patches', CubePatchesPage, false, {}],
   ['/cube/:id(\\d+)/latest-release', LatestReleasePage, false, {}],
@@ -68,7 +69,8 @@ export const routes: [
     {
       render: (
         (props: any) => <CubePage {...props} key={props.match.params.id}/>
-      )
+      ),
+      exact: true,
     }
   ],
   ['/cube/:id(\\d+)/ratings', CubeRatingsPage, false, {}],
@@ -84,6 +86,7 @@ export const routes: [
   ],
   ['/release/:releaseId(\\d+)/cubeable-details/:cardboardCubeableId([^/]+)/', RatedPage, false, {}],
   ['/release/:releaseId(\\d+)/node-details/:nodeId([^/]+)/', RatedNodePage, false, {}],
+  ['/release/:releaseId(\\d+)/cardboard-details/:cardboardId([^/]+)/', CardboardDetailPage, false, {}],
   ['/release/:id(\\d+)/delta-from/:id_from(\\d+)', ReleaseComparePage, false, {}],
   [
     '/release/:id(\\d+)/sample-pack/',
@@ -109,12 +112,12 @@ export const routes: [
   ['/search', SearchPage, false, {}],
   ['/limited/:id(\\d+)', SessionPage, false, {}],
   ['/limited', SessionsPage, false, {}],
-  ['/tournaments', TournamentsPage, false, {}],
+  ['/tournaments', TournamentsPage, false, {exact: true}],
   ['/tournaments/:id(\\d+)', TournamentPage, false, {}],
   ['/match/:id(\\d+)', MatchPage, false, {}],
-  ['/leagues', LeaguesPage, false, {}],
+  ['/leagues', LeaguesPage, false, {exact: true}],
   ['/leagues/:id(\\d+)', LeaguePage, false, {}],
-  ['/drafts', DraftsPage, false, {}],
+  ['/drafts', DraftsPage, false, {exact: true}],
   ['/drafts/:id(\\d+)', DraftPage, false, {}],
   ['/seat/:seatId(\\d+)/:pickNumber(\\d+)', SeatPage, false, {}],
   ['/pools/:id(\\d+)', PoolPage, false, {}],

@@ -1,3 +1,4 @@
+import dataclasses
 import itertools
 import logging
 
@@ -14,7 +15,12 @@ from api.models import CubeRelease
 from draft.models import DraftSession, DraftPick
 from limited.models import CubeBoosterSpecification
 from rating import models
-from rating.calc import get_previous_ratings_map_by_conversion_rate, get_previous_releases_for_release, get_node_rating_components
+from rating.calc import (
+    calculate_cardboard_stats,
+    get_previous_ratings_map_by_conversion_rate,
+    get_previous_releases_for_release,
+    get_node_rating_components,
+)
 from rating.values import AVERAGE_RATING
 
 
@@ -172,7 +178,7 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
     models.CardboardCubeableRating.objects.bulk_create(new_ratings.values())
 
     _, previous_ratings_node_map = get_previous_ratings_map_by_conversion_rate(
-        [(booster_specification.release, 0.)] + get_previous_releases_for_release(booster_specification.release),
+        [(booster_specification.release, 0.)] + list(get_previous_releases_for_release(booster_specification.release)),
         previous_rating_map,
     )
 
@@ -203,3 +209,35 @@ def check_new_rating_events():
             generate_ratings_map_for_release.delay(rating_event.id)
         else:
             generate_ratings_map_for_draft.delay(rating_event.id)
+
+
+@shared_task()
+def generate_stats_for_map(rating_map_id):
+    release = CubeRelease.objects.get(all_rating_maps__id = rating_map_id)
+
+    stats = calculate_cardboard_stats(
+        [(release, 0.)] + list(get_previous_releases_for_release(release))
+    )
+    with transaction.atomic():
+        models.CardboardStat.objects.bulk_create(
+            (
+                models.CardboardStat(
+                    rating_map_id = rating_map_id,
+                    cardboard = cardboard,
+                    stat = field.name,
+                    value = getattr(stats, field.name)[cardboard],
+                )
+                for cardboard in
+                set(release.cube.as_cardboards.all_cardboards)
+                for field in
+                dataclasses.fields(stats)
+            )
+        )
+
+
+@shared_task()
+def update_stats():
+    for rating_map_id in models.RatingMap.objects.filter(
+        cardboard_statistics__isnull = True,
+    ).order_by('created_at', ).values_list('id', flat = True):
+        generate_stats_for_map.delay(rating_map_id)

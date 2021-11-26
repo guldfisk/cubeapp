@@ -34,6 +34,7 @@ export default class LeaguePage extends React.Component<LeaguePageProps, LeagueP
 
   render() {
     return this.state.league ? <LeagueView
+      match={this.props.match}
       league={this.state.league}
     /> : <Loading/>;
   }

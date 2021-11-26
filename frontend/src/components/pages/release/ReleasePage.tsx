@@ -1,23 +1,22 @@
 import React from 'react';
 
-import Row from "react-bootstrap/Row";
+import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container"
-
-import {Loading} from '../../utils/utils';
-import {Cube, CubeRelease, CubeReleaseMeta} from '../../models/models';
-import ReleaseMultiView from '../../views/releaseview/ReleaseMultiView'
-import ConstrainedNodesView from '../../views/constrainednodesview/ConstrainedNodesView';
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
-import Button from "react-bootstrap/Button";
-import {Modal} from "react-bootstrap";
-import ReleasesView from "../../views/releaseview/ReleasesView";
-import history from '../../routing/history';
+import Row from "react-bootstrap/Row";
 import {Link} from "react-router-dom";
-import Card from "react-bootstrap/Card";
-import InfinitesView from "../../views/infinites/InfinitesView";
+import {Loading} from '../../utils/utils';
+import {Modal} from "react-bootstrap";
+
+import ConstrainedNodesView from '../../views/constrainednodesview/ConstrainedNodesView';
 import GroupMapView from "../../views/groupmap/GroupMapView";
+import history from '../../routing/history';
+import InfinitesView from "../../views/infinites/InfinitesView";
+import ReleaseMultiView from '../../views/releaseview/ReleaseMultiView'
+import ReleasesView from "../../views/releaseview/ReleasesView";
+import {Cube, CubeRelease, CubeReleaseMeta} from '../../models/models';
+import RoutedTabs from "../../utils/RoutedTabs";
 
 
 interface ReleaseSelectionDialogProps {
@@ -112,46 +111,48 @@ class ReleasePage extends React.Component<ReleasePageProps, ReleasePageState> {
   render() {
     let element = <Loading/>;
     if (this.state.release !== null) {
-      element = <Tabs
-        id="release-info-tabs"
-        defaultActiveKey="cards"
-        mountOnEnter={true}
-      >
-        <Tab eventKey="cards" title="Cards">
-          <ReleaseMultiView
-            release={this.state.release}
-          />
-        </Tab>
-        <Tab eventKey="nodes" title="Nodes" disabled={this.state.release.constrainedNodes == null}>
-          {
-            this.state.release.constrainedNodes == null ?
-              <div/> :
-              <ConstrainedNodesView
-                constrainedNodes={this.state.release.constrainedNodes}
-                search
-              />
-          }
-        </Tab>
-        <Tab eventKey="infinites" title="Infinites">
-          {
-            this.state.release.infinites == null ?
-              <div/> :
-              <InfinitesView
-                infinites={this.state.release.infinites}
-              />
-          }
-        </Tab>
-        <Tab eventKey="groups" title="Groups">
-          {
-            this.state.release.groupMap == null ?
-              <div/> :
-              <GroupMapView
-                groupMap={this.state.release.groupMap}
-                search
-              />
-          }
-        </Tab>
-      </Tabs>
+      element = <RoutedTabs
+        match={this.props.match}
+        tabs={
+          [
+            [
+              'cards',
+              'Cards',
+              () => <ReleaseMultiView release={this.state.release}/>,
+            ],
+            [
+              'nodes',
+              'Nodes',
+              () => this.state.release.constrainedNodes == null ?
+                <div/> :
+                <ConstrainedNodesView
+                  constrainedNodes={this.state.release.constrainedNodes}
+                  search
+                />,
+            ],
+            [
+              'infinites',
+              'Infinites',
+              () => this.state.release.infinites == null ?
+                <div/> :
+                <InfinitesView
+                  infinites={this.state.release.infinites}
+                />,
+            ],
+            [
+              'groups',
+              'Groups',
+              () => this.state.release.groupMap == null ?
+                <div/> :
+                <GroupMapView
+                  groupMap={this.state.release.groupMap}
+                  search
+                />,
+            ],
+          ]
+        }
+        defaultTab="cards"
+      />
     }
 
     return <>

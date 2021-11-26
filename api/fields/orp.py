@@ -103,12 +103,6 @@ class TextSerializedField(models.Field, t.Generic[T]):
             return None
         return self.to_native(value)
 
-    def get_db_prep_value(self, value, connection, prepared = False) -> t.Optional[str]:
-        return self.to_native(value)
-
-    def value_to_string(self, obj):
-        return self.to_native(self.value_from_object(obj))
-
 
 class CardboardField(TextSerializedField[Cardboard]):
 

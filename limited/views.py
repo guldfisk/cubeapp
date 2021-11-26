@@ -1,4 +1,6 @@
 import datetime
+import io
+import itertools
 import random
 import typing as t
 
@@ -8,8 +10,10 @@ from json import JSONDecodeError
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Prefetch, QuerySet, Q
+from django.http import StreamingHttpResponse
 
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -31,7 +35,9 @@ from api.models import RelatedPrinting
 from api.serialization import orpserialize
 from limited import models, serializers
 from limited.serializers.pools.full import FullPoolSerializer, PoolSerializer
+from proxypdf.streamwriter import StreamProxyWriter
 from resources.staticdb import db
+from resources.staticimageloader import image_loader
 from tournaments.models import SeatResult, TournamentParticipant
 
 
@@ -275,9 +281,39 @@ class DeckExport(generics.GenericAPIView):
     queryset = models.PoolDeck.objects.all()
     permission_classes = [DeckPermissionsWithCode]
 
-    def get(self, request: Request, *args, **kwargs) -> Response:
+    @classmethod
+    def generate_pdf(cls, deck: models.PoolDeck) -> t.Iterator[bytes]:
+        with io.BytesIO() as f:
+            with StreamProxyWriter(
+                f,
+                margin_size = .5,
+                close_stream = False,
+            ) as writer:
+                for printing, multiplicity in itertools.chain(
+                    *(
+                        sorted(pair, key = lambda v: (v[0].cardboard.name, v[0].expansion.code))
+                        for pair in
+                        (deck.deck.maindeck.items(), deck.deck.sideboard.items())
+                    )
+                ):
+                    writer.add_proxy(image_loader.get_image(printing).get(), multiplicity)
+                    f.seek(0)
+                    yield f.read()
+                    f.truncate(0)
+                    f.seek(0)
+            f.seek(0)
+            yield f.read()
+            f.truncate(0)
+            f.seek(0)
+
+    def get(self, request: Request, *args, **kwargs):
+        export_type = request.query_params.get('extension', 'dec')
+        if export_type == 'pdf':
+            if not self.request.user.is_authenticated:
+                raise NotAuthenticated()
+            return StreamingHttpResponse(self.generate_pdf(self.get_object()))
         try:
-            serializer_type = DeckSerializer.extension_to_serializer[request.query_params.get('extension', 'dec')]
+            serializer_type = DeckSerializer.extension_to_serializer[export_type]
         except KeyError:
             return Response(
                 data = 'Invalid extension',
