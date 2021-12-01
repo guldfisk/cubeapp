@@ -3118,10 +3118,17 @@ export class QuickMatch extends Atomic {
     )
   }
 
-  public static createQuickMatch(leagueId: string, rated: boolean): Promise<QuickMatch> {
+  public static createQuickMatch(
+    leagueId: string,
+    rated: boolean,
+    deckIds: (string | number)[] = [],
+  ): Promise<QuickMatch> {
     return axios.post(
       apiPath + 'leagues/' + leagueId + '/quick-matches/',
-      {rated},
+      {
+        rated,
+        deck_ids: deckIds,
+      },
       {
         headers: {
           "Content-Type": "application/json",
@@ -4387,7 +4394,7 @@ export class League extends Atomic {
   };
 
   public static eligibleDecks(
-    id: string,
+    id: number | string,
     offset: number = 0,
     limit: number = 10,
   ): Promise<PaginatedResponse<FullDeck>> {
@@ -4713,13 +4720,13 @@ export class StatMap {
 
 
 export class CardboardStatHistory {
-  stats: {[stat: string]: [Date, number][]}
+  stats: { [stat: string]: [Date, number][] }
 
-    constructor(stats: {[stat: string]: [Date, number][]}) {
+  constructor(stats: { [stat: string]: [Date, number][] }) {
     this.stats = stats
   }
 
-    public static fromRemote(remote: any): CardboardStatHistory {
+  public static fromRemote(remote: any): CardboardStatHistory {
     return new CardboardStatHistory(
       Object.fromEntries(
         Object.entries(remote).map(

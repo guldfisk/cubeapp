@@ -5,9 +5,9 @@ import typing as t
 from collections import defaultdict
 
 import numpy as np
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
-
 from django.db import models, transaction
 from django.db.models import Count, QuerySet, Subquery, OuterRef, IntegerField, Q, Func, F
 from django.db.models.functions import Coalesce
@@ -15,12 +15,12 @@ from django.db.models.functions import Coalesce
 from mtgorp.models.formats.format import LimitedSideboard
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
+from mtgorp.models.tournaments.tournaments import AllMatches
 
 from api.models import VersionedCube
 from draft.models import DraftSession
 from league.values import DEFAULT_RATING
 from limited.models import PoolDeck, CubeBoosterSpecification
-from mtgorp.models.tournaments.tournaments import AllMatches
 from tournaments.models import Tournament, TournamentWinner, TournamentParticipant
 from utils.fields import StringMapField, SerializeableField
 from utils.mixins import TimestampedModel, SoftDeletionModel
@@ -89,23 +89,28 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
             ),
         )
 
-    def get_decks_for_quick_match(self) -> t.Tuple[PoolDeck, PoolDeck]:
-        possible_decks_list = list(self.eligible_decks_with_presence)
+    def get_decks_for_quick_match(self, deck: t.Optional[PoolDeck] = None) -> t.Tuple[PoolDeck, PoolDeck]:
+        if deck is None:
+            possible_decks_list = list(self.eligible_decks_with_presence)
 
-        weights = np.array(
-            [
-                1 / (1 + d.seasons ** .5)
-                for d in
-                possible_decks_list
-            ]
-        )
+            weights = np.array(
+                [
+                    1 / (1 + d.seasons ** .5)
+                    for d in
+                    possible_decks_list
+                ]
+            )
 
-        deck = np.random.choice(
-            a = possible_decks_list,
-            size = 1,
-            replace = False,
-            p = weights / sum(weights),
-        )[0]
+            deck = np.random.choice(
+                a = possible_decks_list,
+                size = 1,
+                replace = False,
+                p = weights / sum(weights),
+            )[0]
+
+        else:
+            if not self.eligible_decks.filter(id = deck.id).exists():
+                raise LeagueError(f'Specified deck "{deck.name}" ({deck.id}) not in league.')
 
         try:
             rating = deck.league_ratings.get(league = self).rating
@@ -114,7 +119,7 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
 
         return (
             deck,
-            self.eligible_decks.filter(
+            self.eligible_decks_with_presence.filter(
                 league_ratings__league = self,
             ).exclude(
                 id = deck.id,
@@ -123,7 +128,7 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
                     F('league_ratings__rating') - rating,
                     function = 'ABS',
                 )
-            ).order_by('rating_difference').first(),
+            ).order_by('rating_difference', 'seasons', '-pool__session__created_at').first(),
         )
 
     def get_decks_for_season(self) -> t.Mapping[PoolDeck, float]:
@@ -217,8 +222,16 @@ class HOFLeague(SoftDeletionModel, TimestampedModel, models.Model):
             )
         }
 
-    def create_quick_match(self, user: AbstractUser, rated: bool) -> QuickMatch:
-        decks = self.get_decks_for_quick_match()
+    def create_quick_match(self, user: AbstractUser, rated: bool, decks: t.Sequence[PoolDeck] = ()) -> QuickMatch:
+        if len(decks) > 2:
+            raise LeagueError('Quick Match must not have more than 2 participants.')
+        if decks and len(decks) != self.eligible_decks.filter(id__in=[d.id for d in decks]).count():
+            raise LeagueError('Invalid decks for Quick Match')
+        if len(decks) == 0:
+            decks = self.get_decks_for_quick_match()
+        elif len(decks) == 1:
+            decks = self.get_decks_for_quick_match(decks[0])
+
         with transaction.atomic():
             tournament = Tournament.objects.create(
                 name = '{} - Quick match {}'.format(self.name, self.quick_matches.count() + 1),

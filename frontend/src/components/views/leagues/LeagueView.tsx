@@ -1,11 +1,10 @@
 import React, {RefObject} from 'react';
 
-import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import {connect} from "react-redux";
-import {Form} from "react-bootstrap";
 import {Link} from "react-router-dom";
 
+import CreateQuickMatchForm from "./CreateQuickMatchForm";
 import DecksMultiView from "../limited/decks/DecksMultiView";
 import Leaderboard from "./Leaderboard";
 import LeagueSettingsView from "./LeagueSettingsView";
@@ -110,38 +109,18 @@ class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
                 'Quick Matches',
                 () => <>
                   {
-                    this.props.authenticated && <Form
-                      onSubmit={
-                        (event: any) => {
-                          QuickMatch.createQuickMatch(this.props.league.id, this.state.quickMatchRated).then(
-                            () => this.quickMatchesPaginatorRef.current.refresh()
-                          );
-                          event.preventDefault();
-                          event.stopPropagation();
-                        }
+                    this.props.authenticated && <CreateQuickMatchForm
+                      handleSubmit={
+                        (rated, deckIds) => QuickMatch.createQuickMatch(
+                          this.props.league.id,
+                          rated,
+                          deckIds,
+                        ).then(
+                          () => this.quickMatchesPaginatorRef.current.refresh()
+                        )
                       }
-                    >
-                      <Form.Group controlId="rated">
-                        <Form.Label>Rated</Form.Label>
-                        <input
-                          type="checkbox"
-                          checked={this.state.quickMatchRated}
-                          onClick={
-                            (event: any) => this.setState({quickMatchRated: event.target.checked})
-                          }
-                        />
-                      </Form.Group>
-                      <Button
-                        type="submit"
-                        style={
-                          {
-                            marginBottom: '2em',
-                          }
-                        }
-                      >
-                        New Quick Match
-                      </Button>
-                    </Form>
+                      leagueId={this.props.league.id}
+                    />
                   }
                   <Paginator
                     key="quick-matches"

@@ -28,7 +28,6 @@ class ClaimResetForm extends React.Component<ClaimResetFormProps> {
     code: ""
   };
 
-
   handleSubmit = (event: any) => {
     this.props.handleSubmit(
       {

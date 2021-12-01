@@ -3,10 +3,12 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from league import models
 from league import serializers
+from league.models import LeagueError
 from league.utils import prefetch_league_tournament_related, USER_QUERY_SET
 from limited.models import LimitedSession
 from limited.serializers import FullPoolDeckSerializer
@@ -162,12 +164,24 @@ class QuickMatchList(LeagueRelatedList):
         )
 
     def post(self, request, *args, **kwargs):
-        return Response(
-            serializers.QuickMatchSerializer(
-                self.get_object().create_quick_match(
-                    request.user,
-                    request.data.get('rated'),
-                ),
-            ).data,
-            status = status.HTTP_201_CREATED,
-        )
+        serializer = serializers.CreateQuickMatchSerializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+        decks = [
+            get_object_or_404(models.PoolDeck.objects.all(), pk = pk)
+            for pk in
+            serializer.validated_data['deck_ids']
+        ] if serializer.validated_data.get('deck_ids') else ()
+
+        try:
+            return Response(
+                serializers.QuickMatchSerializer(
+                    self.get_object().create_quick_match(
+                        request.user,
+                        serializer.validated_data['rated'],
+                        decks,
+                    ),
+                ).data,
+                status = status.HTTP_201_CREATED,
+            )
+        except LeagueError as e:
+            raise ValidationError(e)

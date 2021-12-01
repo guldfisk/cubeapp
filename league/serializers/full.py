@@ -40,6 +40,17 @@ class QuickMatchSerializer(serializers.ModelSerializer):
         fields = ('id', 'league', 'tournament', 'rated', 'created_at')
 
 
+class CreateQuickMatchSerializer(serializers.Serializer):
+    rated = serializers.BooleanField()
+    deck_ids = serializers.ListField(child = serializers.IntegerField(), required = False)
+
+    def update(self, instance, validated_data):
+        raise NotImplemented()
+
+    def create(self, validated_data):
+        raise NotImplemented()
+
+
 class FullLeagueSerializer(LeagueSerializer):
     seasons = MinimalSeasonSerializer(many = True, read_only = True)
 

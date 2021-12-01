@@ -19,7 +19,8 @@ from django.template.loader import get_template
 
 from proxypdf.streamwriter import StreamProxyWriter
 
-from mtgorp.managejson.paths import LOG_PATH
+from mtgorp.db.create import update_pickle_database
+from mtgorp.managejson.paths import LOG_PATH, APP_DATA_PATH
 from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.cardboard import Cardboard
@@ -50,7 +51,12 @@ def inject_boto_client(f: t.Callable) -> t.Callable:
 @shared_task()
 def check_mtg_json():
     update_db = get_update_db()
-    updated, dbs = check_and_update(update_db = update_db)
+    updated, dbs = check_and_update(
+        update_db = update_db,
+        updaters = (
+            functools.partial(update_pickle_database, db_path = os.path.join(APP_DATA_PATH, 'staging')),
+        ),
+    )
     if not updated:
         return
 
