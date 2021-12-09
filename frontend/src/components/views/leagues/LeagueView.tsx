@@ -12,7 +12,7 @@ import Paginator from "../../utils/Paginator";
 import RoutedTabs from "../../utils/RoutedTabs";
 import TournamentView from "../tournaments/TournamentView";
 import {FeedLink} from "../../utils/rss";
-import {FullDeck, League, QuickMatch, Season} from "../../models/models";
+import {FullDeck, League, PaginatedResponse, QuickMatch, Season} from "../../models/models";
 
 
 interface LeagueViewProps {
@@ -27,8 +27,8 @@ interface LeagueViewState {
 }
 
 class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
-  seasonsPaginatorRef: RefObject<Paginator<Season>>;
-  quickMatchesPaginatorRef: RefObject<Paginator<QuickMatch>>;
+  seasonsPaginatorRef: RefObject<Paginator<Season, PaginatedResponse<Season>>>;
+  quickMatchesPaginatorRef: RefObject<Paginator<QuickMatch, PaginatedResponse<QuickMatch>>>;
 
   constructor(props: LeagueViewProps) {
     super(props);
@@ -95,6 +95,7 @@ class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
                     renderBody={
                       (items: Season[]) => items.map(
                         season => <TournamentView
+                          key={season.tournament.name}
                           tournament={season.tournament}
                           handleCanceled={() => this.seasonsPaginatorRef.current.refresh()}
                           handleMatchSubmitted={() => this.seasonsPaginatorRef.current.refresh()}
@@ -135,6 +136,7 @@ class LeagueView extends React.Component<LeagueViewProps, LeagueViewState> {
                     renderBody={
                       (items: QuickMatch[]) => items.map(
                         season => <TournamentView
+                          key={season.tournament.name}
                           tournament={season.tournament}
                           handleCanceled={() => this.quickMatchesPaginatorRef.current.refresh()}
                           handleMatchSubmitted={() => this.quickMatchesPaginatorRef.current.refresh()}

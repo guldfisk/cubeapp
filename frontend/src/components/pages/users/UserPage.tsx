@@ -3,7 +3,7 @@ import React, {RefObject} from 'react';
 import Paginator from "../../utils/Paginator";
 import UserView from "../../views/users/UserView";
 import {FullMatchView} from "../../views/tournaments/FullMatchView";
-import {FullScheduledMatch, FullUser} from '../../models/models';
+import {FullScheduledMatch, FullUser, PaginatedResponse} from '../../models/models';
 import {Loading} from "../../utils/utils";
 
 
@@ -17,7 +17,7 @@ interface UserPageState {
 
 
 export default class UserPage extends React.Component<UserPageProps, UserPageState> {
-  paginatorRef: RefObject<Paginator<FullScheduledMatch>>;
+  paginatorRef: RefObject<Paginator<FullScheduledMatch, PaginatedResponse<FullScheduledMatch>>>;
 
   constructor(props: UserPageProps) {
     super(props);

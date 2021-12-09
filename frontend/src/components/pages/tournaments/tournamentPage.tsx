@@ -61,6 +61,7 @@ export default class TournamentPage extends React.Component<TournamentPageProps,
       {
         this.state.decks.map(
           deck => <DeckView
+            key={deck.id}
             deck={deck}
             user={deck.user}
             limitedSession={deck.limitedSession}

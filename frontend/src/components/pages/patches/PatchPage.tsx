@@ -1,16 +1,15 @@
-import React from 'react';
-import {Link} from "react-router-dom";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
-import Card from "react-bootstrap/Card";
-import {connect} from "react-redux";
+import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import Container from "react-bootstrap/Container";
+import React from 'react';
+import Row from "react-bootstrap/Row";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
+import {connect} from "react-redux";
+import {Link} from "react-router-dom";
 
-import history from '../../routing/history';
-import {Loading} from '../../utils/utils';
 import {
   ConstrainedNode,
   Cubeable,
@@ -19,18 +18,19 @@ import {
   Preview,
   Printing, Trap, VerbosePatch, Patch, User, EditEvent, Cardboard
 } from '../../models/models';
-import {CardboardSearchView, PrintingSearchView} from "../../views/search/SearchView";
-import TrapParseView from "../../views/traps/TrapParseView";
-import {ConfirmationDialog} from "../../utils/dialogs";
-import PatchPreview from "../../views/patchview/PatchPreview";
 import ConstrainedNodeParseView from "../../views/traps/ConstrainedNodeParseView";
-import {signIn} from "../../auth/controller";
-import PatchMultiView from "../../views/patchview/PatchMultiView";
-import {UserGroup} from "../../utils/utils";
-import UserGroupView from "../../views/users/UserGroupView";
-import GroupAddView from "../../views/groupmap/GroupAddView";
-import Alert from "react-bootstrap/Alert";
 import EditHistoryView from "../../views/patchview/EditHistory";
+import GroupAddView from "../../views/groupmap/GroupAddView";
+import history from '../../routing/history';
+import PatchMultiView from "../../views/patchview/PatchMultiView";
+import PatchPreview from "../../views/patchview/PatchPreview";
+import TrapParseView from "../../views/traps/TrapParseView";
+import UserGroupView from "../../views/users/UserGroupView";
+import {CardboardSearchView, PrintingSearchView} from "../../views/search/SearchView";
+import {ConfirmationDialog} from "../../utils/dialogs";
+import {Loading} from '../../utils/utils';
+import {signIn} from "../../auth/controller";
+import {UserGroup} from "../../utils/utils";
 
 
 interface PatchPageProps {

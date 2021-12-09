@@ -36,7 +36,7 @@ export default class InfinitesView extends React.Component<InfinitesViewProps, n
           }
           return a > b ? 1 : a < b ? -1 : 0;
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <CardboardListItem
+        formatter: (cell: any, row: any) => <CardboardListItem
           cardboard={row}
           multiplicity={1}
           noHover={this.props.noHover}

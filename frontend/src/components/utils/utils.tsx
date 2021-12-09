@@ -7,6 +7,7 @@ import axios from 'axios';
 import {apiPath} from "../models/models";
 
 import store from '../state/store';
+import queryString from "query-string";
 
 
 const imagesPath = '/api/images/';
@@ -211,4 +212,14 @@ export const roundToN = (v: number, n: number = 2): number => {
 
 export const urlJoin = (first: string, second: string): string => {
   return `${first.endsWith('/') ? first.substr(0, first.length - 1) : first}/${second.startsWith('/') ? second.substr(1, second.length - 1) : second}`
+}
+
+
+export const getQueryParameter = (searchLocation: string, targetKey: string, defaultValue: string): string => {
+  for (const [key, value] of Object.entries(queryString.parse(searchLocation))) {
+    if (key === targetKey) {
+      return decodeURIComponent(value instanceof Array ? value[0] : value)
+    }
+  }
+  return defaultValue;
 }

@@ -34,12 +34,12 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
               cubeable={cell}
             />
           </Link>,
-        filterValue: (cell: Cubeable, row: CardboardCubeableRating) => cell.representation(),
+        filterValue: (cell: Cubeable) => cell.representation(),
       },
       {
         dataField: 'rating',
         text: 'Rating',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6em', textAlign: 'center'};
         },
       },
@@ -49,7 +49,7 @@ export default class RatingMapView extends React.Component<RatingMapViewProps> {
 
     return <div>
       <ToolkitProvider
-        keyField='key'
+        keyField='cardboardCubeableId'
         data={this.props.ratingMap.ratings}
         columns={columns}
         bootstrap4

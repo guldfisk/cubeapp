@@ -79,9 +79,11 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
     }
     const [width, height]: [number, number] = this.props.cropped ? croppedImageSizeMap[this.props.sizeSlug] : imageSizeMap[this.props.sizeSlug];
     const _type = this.props.imageable === null ? this.props.type : this.props.imageable.getType();
+    const imageableId = this.props.imageable ? this.props.imageable.id : this.props.id.toString();
+    const explanation = this.props.imageable ? this.props.imageable.representation() : this.props.id.toString();
 
     const apiUrl = get_imageable_image_url(
-      this.props.imageable === null ? this.props.id.toString() : this.props.imageable.id,
+      imageableId,
       _type,
       this.props.sizeSlug,
       this.props.cropped,
@@ -90,14 +92,18 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
     const canUseStatic = this.props.allowStatic && _type !== 'Cardboard' && !window.__debug__ && !this.props.cropped;
 
     const srcUrl = canUseStatic ? get_imageable_image_static_url(
-      this.props.imageable ? this.props.imageable.id : this.props.id.toString(),
+      imageableId,
       _type,
       this.props.sizeSlug,
       this.props.cropped,
     ) : apiUrl;
 
     const image = <LazyImage
-      error={canUseStatic ? (() => <img src={apiUrl}/>) : null}
+      error={
+        () => <div className="image-error" style={{width, height}}>
+          <span>{explanation}</span>
+        </div>
+      }
       src={srcUrl}
       placeholder={({imageProps, ref}) => (
         <img
@@ -110,13 +116,13 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
         />
       )}
       actual={({imageProps}) => <img style={this.props.style} {...imageProps} />}
+      alt={explanation}
       {...(this.props.onClick === null ? {} : {onClick: () => this.props.onClick(this.props.imageable)})}
     />;
 
     if (!this.props.hover) {
       return image
     }
-
 
     return <OverlayTrigger
       placement='left'

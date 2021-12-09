@@ -83,7 +83,7 @@ export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = 
       modifiers: [flip, preventOverflow],
     }}
   >
-    <a
+    <span
       onClick={
         props.onClick && (
           () => {
@@ -93,7 +93,7 @@ export const PrintingListItem: React.FunctionComponent<PrintingListItemProps> = 
       }
     >
       {display_name}
-    </a>
+    </span>
   </OverlayTrigger>
 };
 
@@ -116,7 +116,7 @@ export class CardboardListItem<T extends string | Cardboard> extends React.Compo
       : ''}${cardboard_name}`;
 
     if (this.props.noHover) {
-      return <a
+      return <span
         onClick={
           this.props.onClick && (
             () => {
@@ -126,7 +126,7 @@ export class CardboardListItem<T extends string | Cardboard> extends React.Compo
         }
       >
         {display_name}
-      </a>
+      </span>
     }
 
     return <OverlayTrigger
@@ -143,7 +143,7 @@ export class CardboardListItem<T extends string | Cardboard> extends React.Compo
         modifiers: [flip, preventOverflow],
       }}
     >
-      <a
+      <span
         onClick={
           this.props.onClick && (
             () => {
@@ -153,7 +153,7 @@ export class CardboardListItem<T extends string | Cardboard> extends React.Compo
         }
       >
         {display_name}
-      </a>
+      </span>
     </OverlayTrigger>
   }
 }
@@ -162,17 +162,19 @@ export class CardboardListItem<T extends string | Cardboard> extends React.Compo
 const trap_representation = (
   [item, multiplicity]: [Printing | PrintingNode, number],
   trap: Trap | null = null,
+  key: string,
   onClick: ((trap: Trap, multiplicity: number) => void) | null = null,
 ): any => {
   if (item instanceof Printing) {
     return <OverlayTrigger
+      key={key}
       placement='left'
       delay={{show: 250, hide: 0}}
       overlay={
         <div>
           {
             trap && <ImageableImage
-              id={trap.id}
+              imageable={trap}
               type='Trap'
             />
           }
@@ -186,7 +188,7 @@ const trap_representation = (
         modifiers: [flip, preventOverflow],
       }}
     >
-      <a
+      <span
         onClick={
           onClick && (
             () => {
@@ -200,11 +202,12 @@ const trap_representation = (
             multiplicity.toString() + '# '
             : ''}${item.fullName()}`
         }
-      </a>
+      </span>
     </OverlayTrigger>
   }
 
   return <span
+    key={key}
     onClick={
       onClick &&
       (() => onClick(trap, multiplicity))
@@ -213,7 +216,11 @@ const trap_representation = (
     (
     {
       item.children.items.map(
-        ([child, _multiplicity]) => trap_representation([child, _multiplicity], trap)
+        ([child, _multiplicity], idx) => trap_representation(
+          [child, _multiplicity],
+          trap,
+          `${key}-${idx}`,
+        )
       ).reduce(
         (previous, current) => previous.concat([current, item.type === 'AllNode' ? '; ' : ' || ']),
         [],
@@ -252,7 +259,7 @@ export const TrapListItem: React.FunctionComponent<TrapListItemProps> = (props: 
   }
   return <span>
     {multiplicityIndicator}
-    {trap_representation([props.trap.node, props.multiplicity], props.trap, props.onClick)}
+    {trap_representation([props.trap.node, props.multiplicity], props.trap, '0', props.onClick)}
   </span>
 };
 
@@ -281,7 +288,7 @@ export const NodeListItem: React.FunctionComponent<NodeListItemProps> = (props: 
   >
     {
       trap_representation(
-        [props.node, 1],
+        [props.node, 1], null, '0'
       )
     }
   </span>

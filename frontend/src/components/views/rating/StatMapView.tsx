@@ -31,6 +31,7 @@ export default class StatMapView extends React.Component<StatMapViewProps, StatM
         {value: 'ci_win_rate', label: 'Ci Win Rate'},
         {value: 'win_rate', label: 'Win Rate'},
         {value: 'matches', label: 'Matches'},
+        {value: 'deck_conversion_rate', label: 'Deck Conversion Rate'},
       ]
     };
   }

@@ -34,6 +34,7 @@ interface Remoteable<T> {
 
 
 export class Imageable extends Atomic {
+  representation: () => string
 
   getType = (): string => {
     return 'Imageable';
@@ -778,6 +779,11 @@ export interface PaginatedResponse<T> {
 }
 
 
+export interface PaginatedQueryResponse<T> extends PaginatedResponse<T> {
+  queryExplained: string
+}
+
+
 export class Cube extends MinimalCube {
   releases: CubeReleaseMeta[];
 
@@ -898,12 +904,13 @@ export class CubeReleaseName extends Atomic {
 export class CubeReleaseMeta extends CubeReleaseName {
   createdAt: Date;
   intendedSize: string;
+  cubeId: string;
 
-  constructor(id: string, name: string, createdAt: Date, intendedSize: string) {
+  constructor(id: string, name: string, createdAt: Date, intendedSize: string, cubeId: string) {
     super(id, name);
     this.createdAt = createdAt;
-    // this.createAtTimestamp = Date.parse(createdAt);
     this.intendedSize = intendedSize;
+    this.cubeId = cubeId;
   };
 
   public static fromRemote(remote: any): CubeReleaseMeta {
@@ -912,8 +919,18 @@ export class CubeReleaseMeta extends CubeReleaseName {
       remote.name,
       new Date(remote.created_at),
       remote.intended_size,
+      remote.versioned_cube_id,
     )
   };
+
+  public static get = (id: string): Promise<CubeReleaseMeta> => {
+    return axios.get(
+      `${apiPath}cube-releases/${id}/?minimal=true`
+    ).then(
+      response => CubeReleaseMeta.fromRemote(response.data)
+    )
+  };
+
 
 }
 
@@ -1194,7 +1211,7 @@ export class CubeRelease extends CubeReleaseMeta {
     infinites: Infinites,
     groupMap: GroupMap,
   ) {
-    super(id, name, createdAt, intendedSize);
+    super(id, name, createdAt, intendedSize, cube.id);
     this.cube = cube;
     this.constrainedNodes = constrainedNodes;
     this.cubeablesContainer = cubeablesContainer;
@@ -3127,7 +3144,7 @@ export class QuickMatch extends Atomic {
       apiPath + 'leagues/' + leagueId + '/quick-matches/',
       {
         rated,
-        deck_ids: deckIds,
+        deck_ids: deckIds.filter(v => v),
       },
       {
         headers: {
@@ -3883,7 +3900,7 @@ export class FullDeck extends Deck {
     offset: number = 0,
     limit: number = 10,
     filter: string = "",
-  ): Promise<PaginatedResponse<FullDeck>> {
+  ): Promise<PaginatedQueryResponse<FullDeck>> {
     return axios.get(
       apiPath + 'limited/deck/',
       {
@@ -3898,6 +3915,7 @@ export class FullDeck extends Deck {
         return {
           objects: response.data.results.map((deck: any) => FullDeck.fromRemote(deck)),
           hits: response.data.count,
+          queryExplained: response.data.query_explained,
         }
       }
     )

@@ -24,6 +24,7 @@ export default class PaginationBar extends React.Component<PaginationBarProps> {
             index * this.props.pageSize
           )
       }
+      key={index}
     >
       {index}
     </Pagination.Item>

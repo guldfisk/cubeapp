@@ -62,7 +62,9 @@ class LeagueEligibles(LeagueRelatedList):
 
     def get_queryset(self):
         league: models.HOFLeague = self.get_object()
-        return league.eligible_decks.select_related(
+        return models.PoolDeck.objects.filter(
+            id__in = Subquery(league.eligible_decks.values('id'))
+        ).annotate_records().select_related(
             'pool__user',
             'pool__session__tournament',
         ).prefetch_related(

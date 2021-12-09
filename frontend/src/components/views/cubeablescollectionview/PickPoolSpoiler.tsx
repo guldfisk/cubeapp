@@ -28,6 +28,7 @@ export default class PickPoolSpoiler extends React.Component<PickPoolSpoilerProp
           (pick, pickNumber) => pick.map(
             cubeable => {
               return <ImageableImage
+                key={pickNumber}
                 imageable={cubeable}
                 sizeSlug={this.props.sizeSlug}
                 hover={true}

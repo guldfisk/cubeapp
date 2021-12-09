@@ -33,7 +33,7 @@ export default class RoundView extends React.Component<RoundViewProps, RoundView
       <Row><h4>{'Round ' + (this.props.round.index + 1)}</h4></Row>
       {
         this.props.round.matches.map(
-          match => <Row>
+          (match, idx) => <Row key={idx}>
             <MatchView
               match={match}
               round={this.props.round}

@@ -9,11 +9,11 @@ from json import JSONDecodeError
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Prefetch, QuerySet, Q
+from django.db.models import Prefetch, Q
 from django.http import StreamingHttpResponse
 
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import NotAuthenticated
+from rest_framework.exceptions import NotAuthenticated, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -24,9 +24,6 @@ from mtgorp.models.serilization.strategies.jsonid import JsonId
 from mtgorp.models.serilization.strategies.raw import RawStrategy
 from mtgorp.tools.deckio import DeckSerializer
 from mtgorp.tools.parsing.exceptions import ParseException
-from mtgorp.tools.parsing.search.parse import SearchParser
-from mtgorp.tools.search.extraction import PrintingStrategy
-from mtgorp.tools.search.pattern import Pattern
 
 from magiccube.collections.cube import Cube
 from magiccube.tools.subset import check_deck_subset_pool
@@ -34,6 +31,7 @@ from magiccube.tools.subset import check_deck_subset_pool
 from api.models import RelatedPrinting
 from api.serialization import orpserialize
 from limited import models, serializers
+from limited.search.parse import SearchParser, SearchPatternParseException
 from limited.serializers.pools.full import FullPoolSerializer, PoolSerializer
 from proxypdf.streamwriter import StreamProxyWriter
 from resources.staticdb import db
@@ -213,7 +211,10 @@ class PoolExport(generics.GenericAPIView):
 
 
 class DeckDetail(generics.RetrieveAPIView):
-    queryset = models.PoolDeck.objects.all()
+    queryset = models.PoolDeck.objects.all().annotate_records().select_related(
+        'pool',
+        'pool__session'
+    )
     serializer_class = serializers.FullPoolDeckSerializer
     permission_classes = [DeckPermissionsWithCode]
 
@@ -225,7 +226,7 @@ class DeckList(generics.ListAPIView):
             pool__session__open_decks = True,
         ),
         latest = True,
-    ).select_related(
+    ).annotate_records().select_related(
         'pool__user',
         'pool__session__tournament',
     ).prefetch_related(
@@ -242,39 +243,25 @@ class DeckList(generics.ListAPIView):
     )
     serializer_class = serializers.FullPoolDeckSerializer
 
-    filters: t.List[Pattern] = []
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
 
-    def get_queryset(self):
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            queryset = queryset.all()
+        filter_query = self.request.GET.get('filter')
+        explanation = ''
+        if filter_query:
+            try:
+                search = SearchParser(db).parse(filter_query)
+            except (SearchPatternParseException, ParseException) as e:
+                raise ValidationError(e)
 
-        if self.filters:
-            for pattern in self.filters:
-                queryset = queryset.filter(
-                    printings__printing_id__in = [
-                        p.id
-                        for p in
-                        db.printings.values()
-                        if pattern.match(p)
-                    ]
-                )
-            queryset = queryset.distinct()
+            queryset = search.freeze(db).filter(queryset)
+            explanation = search.node.explain()
 
-        return queryset
+        page = self.paginate_queryset(queryset)
+        response = self.get_paginated_response(self.get_serializer(page, many = True).data)
+        response.data['query_explained'] = explanation
 
-    def get(self, request, *args, **kwargs):
-        if 'filter' in request.GET:
-            self.filters = []
-            search_parser = SearchParser(db)
-
-            for filter_pattern in request.GET.getlist('filter', []):
-                try:
-                    self.filters.append(search_parser.parse(filter_pattern, PrintingStrategy))
-                except ParseException as e:
-                    return Response(str(e), status = status.HTTP_400_BAD_REQUEST)
-
-        return super().get(request, *args, **kwargs)
+        return response
 
 
 class DeckExport(generics.GenericAPIView):

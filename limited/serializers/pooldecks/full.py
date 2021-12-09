@@ -28,6 +28,9 @@ class FullPoolDeckSerializer(PoolDeckSerializer):
 
     @classmethod
     def get_record(cls, instance: models.PoolDeck) -> t.Mapping[str, t.Any]:
+        if hasattr(instance, 'win_record') and hasattr(instance, 'loss_record') and hasattr(instance, 'draw_record'):
+            return {'wins': instance.win_record, 'losses': instance.loss_record, 'draws': instance.draw_record}
+
         try:
             tournament = instance.pool.session.tournament
         except Tournament.DoesNotExist:

@@ -172,10 +172,6 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                       dataField: 'weight',
                       order: 'desc',
                     },
-                    // {
-                    //   dataField: 'node',
-                    //   order: 'desc',
-                    // },
                   ]
                 }
                 pagination={

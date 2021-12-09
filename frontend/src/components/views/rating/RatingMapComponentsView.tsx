@@ -65,7 +65,7 @@ export default class RatingMapComponentsView extends React.Component<RatingMapCo
 
     return <div>
       <ToolkitProvider
-        keyField='key'
+        keyField='nodeId'
         data={this.props.ratingMap.nodeRatingComponents}
         columns={columns}
         bootstrap4

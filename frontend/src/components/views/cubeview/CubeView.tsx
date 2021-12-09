@@ -37,17 +37,15 @@ class CubeView extends React.Component<CubeViewProps> {
           <tbody>
           {
             this.props.cube.releases.map(
-              release => {
-                return <tr>
-                  <td>
-                    <Link to={"/release/" + release.id}>
-                      {release.name}
-                    </Link>
-                  </td>
-                  <td><DateListItem date={release.createdAt}/></td>
-                  <td>{release.intendedSize}</td>
-                </tr>
-              }
+              (release) => <tr key={release.id}>
+                <td>
+                  <Link to={"/release/" + release.id}>
+                    {release.name}
+                  </Link>
+                </td>
+                <td><DateListItem date={release.createdAt}/></td>
+                <td>{release.intendedSize}</td>
+              </tr>
             )
           }
           </tbody>

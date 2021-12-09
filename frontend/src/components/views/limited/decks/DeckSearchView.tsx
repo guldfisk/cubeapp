@@ -3,23 +3,21 @@ import React from "react";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 
-import PaginationBar from "../../../utils/PaginationBar";
-import {FullDeck} from "../../../models/models";
-import {range} from "../../../utils/utils";
 import DecksMultiView from "./DecksMultiView";
+import Paginator from "../../../utils/Paginator";
+import {FullDeck, PaginatedQueryResponse} from "../../../models/models";
+import {getQueryParameter} from "../../../utils/utils";
+import history from '../../../routing/history';
 
 
 interface DeckSearchViewProps {
+  location: any
 }
 
 
 interface DeckSearchViewState {
-  decks: FullDeck[]
-  offset: number
-  hits: number
   filter: string
   filterInput: string
-  pageSize: number
 }
 
 
@@ -28,47 +26,15 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
   constructor(props: null) {
     super(props);
     this.state = {
-      decks: [],
-      offset: 0,
-      hits: 0,
       filter: "",
-      filterInput: "",
-      pageSize: 10,
+      filterInput: getQueryParameter(this.props.location.search, 'query', ''),
     };
   }
 
-  componentDidMount() {
-    this.fetch();
-  }
-
-  fetch = (offset: number = 0) => {
-    FullDeck.recent(
-      offset,
-      this.state.pageSize,
-      this.state.filter,
-    ).then(
-      ({objects, hits}) => {
-        this.setState(
-          {
-            decks: objects,
-            hits,
-            offset,
-          }
-        )
-      }
-    );
-  };
-
   render() {
+    const filter = getQueryParameter(this.props.location.search, 'query', '');
     return <Col>
       <Row>
-        <PaginationBar
-          hits={this.state.hits}
-          offset={this.state.offset}
-          handleNewOffset={this.fetch}
-          pageSize={this.state.pageSize}
-          maxPageDisplay={7}
-        />
         <input
           type="text"
           value={this.state.filterInput}
@@ -76,50 +42,32 @@ export default class DeckSearchView extends React.Component<DeckSearchViewProps,
           onKeyDown={
             event => {
               if (event.key == 'Enter') {
-                this.setState({filter: this.state.filterInput}, this.fetch);
+                history.push(`${this.props.location.pathname}?query=${this.state.filterInput}`)
               }
               return true;
             }
           }
         />
       </Row>
-      <span>
-        {
-          `Showing ${
-            this.state.offset
-          } - ${
-            Math.min(this.state.offset + this.state.pageSize, this.state.hits)
-          } out of ${
-            this.state.hits
-          } results.`
+      <Paginator
+        fetch={
+          (offset, limit) => FullDeck.recent(
+            offset,
+            limit,
+            filter,
+          )
         }
-      </span>
-      <DecksMultiView decks={this.state.decks}/>
-      <Row>
-        <PaginationBar
-          hits={this.state.hits}
-          offset={this.state.offset}
-          handleNewOffset={this.fetch}
-          pageSize={this.state.pageSize}
-          maxPageDisplay={7}
-        />
-        <select
-          name="pageSize"
-          value={this.state.pageSize}
-          onChange={
-            event => this.setState(
-              {pageSize: parseInt(event.target.value)},
-              () => this.fetch(this.state.offset),
-            )
-          }
-        >
-          {
-            Array.from(range(5, 35, 5)).map(
-              v => <option value={v}>{v}</option>
-            )
-          }
-        </select>
-      </Row>
+        renderAdditionalInformation={
+          (response: PaginatedQueryResponse<FullDeck>) => (
+            response.queryExplained &&
+            <span>{response.queryExplained}</span>
+          )
+        }
+        renderBody={
+          (decks: FullDeck[]) => <DecksMultiView decks={decks}/>
+        }
+        key={filter}
+      />
     </Col>
   }
 

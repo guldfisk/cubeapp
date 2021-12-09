@@ -26,7 +26,7 @@ export default class ParticipantsView extends React.Component<ParticipantsViewPr
     return <>
       {
         this.props.participants.map(
-          participant => <ParticipantView participant={participant}/>
+          participant => <ParticipantView participant={participant} key={participant.id}/>
         )
       }
     </>

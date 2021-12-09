@@ -13,6 +13,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
+from django.db.models import QuerySet, Subquery, OuterRef, Max, F, Count
+from django.db.models.functions import Coalesce
 
 from mtgorp.models.collections.deck import Deck
 from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey
@@ -30,7 +32,7 @@ from api.fields.orp import OrpField
 from api.models import CubeRelease
 from api.serialization.serializers import NameCubeReleaseSerializer
 from resources.staticdb import db
-from tournaments.models import Tournament, TournamentParticipant
+from tournaments.models import Tournament, TournamentParticipant, ScheduledMatch, SeatResult
 from utils.fields import EnumField, StringMapField, SerializeableField
 from utils.methods import get_random_name
 from utils.mixins import TimestampedModel
@@ -370,6 +372,42 @@ class Pool(models.Model):
         )
 
 
+class PoolDeckQuerySet(QuerySet):
+
+    def _annotate_record(self, name: str, comparison: str):
+        return self.annotate(
+            **{
+                name: Coalesce(
+                    Subquery(
+                        ScheduledMatch.objects.filter(
+                            round__tournament__limited_session__pools__pool_decks__id = OuterRef('pk'),
+                        ).annotate(
+                            wins = Subquery(
+                                SeatResult.objects.filter(
+                                    scheduled_seat__match_id = OuterRef('pk'),
+                                    scheduled_seat__participant__deck_id = OuterRef(OuterRef('pk')),
+                                ).values('wins')
+                            ),
+                            loses = Subquery(
+                                SeatResult.objects.filter(
+                                    scheduled_seat__match_id = OuterRef('pk'),
+                                ).exclude(
+                                    scheduled_seat__participant__deck_id = OuterRef(OuterRef('pk')),
+                                ).values('scheduled_seat__match_id').annotate(loses = Max('wins')).values('loses')
+                            )
+                        ).filter(**{'wins__' + comparison: F('loses')}).values(
+                            'round__tournament__limited_session__pools__pool_decks__id'
+                        ).annotate(cnt = Count('pk')).values('cnt')
+                    ),
+                    0,
+                ),
+            }
+        )
+
+    def annotate_records(self) -> PoolDeckQuerySet:
+        return self._annotate_record('win_record', 'gt')._annotate_record('loss_record', 'lt')._annotate_record('draw_record', 'exact')
+
+
 class PoolDeck(models.Model):
     created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
     name = models.CharField(max_length = 255)
@@ -378,6 +416,8 @@ class PoolDeck(models.Model):
     cheating = models.BooleanField(default = False)
     latest = models.BooleanField(default = True)
     printings = GenericRelation('api.RelatedPrinting', 'related_object_id', 'related_content_type')
+
+    objects = PoolDeckQuerySet.as_manager()
 
     class Meta(object):
         ordering = ('created_at',)

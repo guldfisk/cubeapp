@@ -38,7 +38,8 @@ export default class CubesView extends React.Component<CubesViewProps> {
         formatter: (cell: User) => cell.username,
       },
       {
-        dataField: 'id',
+        dataField: 'latest-release',
+        idDummyField: true,
         text: 'Latest Release',
         formatter: (cell: any, row: Cube) => row.latestRelease() !== null ?
           <Link to={`/release/${row.latestRelease().id}`}>
@@ -46,16 +47,18 @@ export default class CubesView extends React.Component<CubesViewProps> {
           </Link> : "No releases",
       },
       {
-        dataField: 'id',
+        dataField: 'latest-patch',
+        idDummyField: true,
         text: 'Latest Patch',
-        formatter: (cell: string | number) => (
-          <Link to={`/cube/${cell}/latest-patch/`}>
+        formatter: (cell: string | number, row: Cube) => (
+          <Link to={`/cube/${row.id}/latest-patch/`}>
             patch
           </Link>
         )
       },
       {
-        dataField: 'id',
+        dataField: 'latest-update',
+        idDummyField: true,
         text: 'Last Update',
         formatter: (cell: any, row: Cube) => row.latestRelease() !== null ?
           <DateListItem

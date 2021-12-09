@@ -49,19 +49,20 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
       {
         dataField: 'user',
         text: 'Player',
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.username,
+        formatter: (cell: any) => cell.username,
       },
       {
         dataField: 'decks',
         text: 'Deck',
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => !!cell.length,
+        formatter: (cell: any) => !!cell.length,
       },
       {
+        dataField: 'view',
         text: '',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '3em', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => (
+        formatter: (cell: any, row: any) => (
           this.props.session.publicPools()
           || this.props.authenticated && (
             this.props.user.id == row.user.id
@@ -70,11 +71,11 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
               pool => pool.decks && pool.user.id == this.props.user.id
             )
           )
-        ) ? <Link
+        ) && <Link
           to={'/pools/' + row.id + '/'}
         >
           view
-        </Link> : undefined,
+        </Link>,
         sort: false,
         editable: false,
         isDummyField: true,
@@ -184,15 +185,15 @@ class SessionView extends React.Component<SessionViewProps, SessionViewState> {
         <TournamentView
           tournament={this.state.tournament}
           handleMatchSubmitted={
-              () => Tournament.get(
-                this.state.tournament.id
-              ).then(
-                tournament => {
-                  this.setState({tournament});
-                  if (tournament.state == 'FINISHED' && this.props.onChange) {
-                    this.props.onChange()
-                  }
+            () => Tournament.get(
+              this.state.tournament.id
+            ).then(
+              tournament => {
+                this.setState({tournament});
+                if (tournament.state == 'FINISHED' && this.props.onChange) {
+                  this.props.onChange()
                 }
+              }
             )
           }
           handleCanceled={
@@ -217,10 +218,4 @@ const mapStateToProps = (state: any) => {
   };
 };
 
-
-const mapDispatchToProps = (dispatch: any) => {
-  return {};
-};
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(SessionView);
+export default connect(mapStateToProps)(SessionView);

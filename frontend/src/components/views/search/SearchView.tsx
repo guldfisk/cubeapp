@@ -1,18 +1,18 @@
 import axios from 'axios/index';
 import React from 'react';
 
-import {apiPath, Cardboard, Imageable} from "../../models/models";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
+import Alert from "react-bootstrap/Alert";
 import Col from "react-bootstrap/Col";
-import {Printing} from "../../models/models";
-import Table from "react-bootstrap/Table";
+import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Table from "react-bootstrap/Table";
 
 import PaginationBar from '../../utils/PaginationBar';
+import {apiPath, Cardboard, Imageable} from "../../models/models";
 import {ImageableImage} from "../../images";
-import Alert from "react-bootstrap/Alert";
 import {ImageableListItem} from "../../utils/listitems";
+import {Printing} from "../../models/models";
 
 
 interface SearchViewProps<T> {
@@ -259,7 +259,7 @@ class SearchView<T extends Printing | Cardboard> extends React.Component<SearchV
         </Row>
 
         {
-          this.state.queryExplained !== null ? <h4>{'where ' + this.state.queryExplained}</h4> : null
+          this.state.queryExplained !== null ? <h4>{`where ${this.state.queryExplained}`}</h4> : null
         }
 
         <Row>

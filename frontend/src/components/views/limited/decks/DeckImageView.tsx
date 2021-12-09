@@ -51,15 +51,14 @@ export default class DeckImageView extends React.Component<CardContainerProps> {
     return <Row>
       {
         this.props.deck.maindeck.cmcGroupedPrintings().map(
-          printings => <Col>
+          (printings, idx) => <Col key={idx}>
             <Stack>
               {
                 printings.map(
-                  printing => <Stacked>
+                  (printing, idx) => <Stacked key={idx}>
                     <ImageableImage
                       imageable={printing}
                       sizeSlug="small"
-                      hover={true}
                     />
                   </Stacked>
                 )
@@ -76,11 +75,10 @@ export default class DeckImageView extends React.Component<CardContainerProps> {
             Array.from(this.props.deck.sideboard.iter()).sort(
               alphabeticalPropertySortMethodFactory(p => p.name)
             ).map(
-              printing => <Stacked>
+              (printing, idx) => <Stacked key={idx}>
                 <ImageableImage
                   imageable={printing}
                   sizeSlug="small"
-                  hover={true}
                 />
               </Stacked>
             )

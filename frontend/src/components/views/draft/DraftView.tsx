@@ -32,21 +32,22 @@ class DraftView extends React.Component<DraftViewProps, null> {
         {
           dataField: 'user',
           text: 'Seat',
-          formatter: (cell: User, row: any, rowIndex: number, formatExtraData: any) => cell.username,
+          formatter: (cell: User) => cell.username,
         },
         {
+          dataField: 'view',
           text: '',
-          headerStyle: (column: any, colIndex: number) => {
+          headerStyle: () => {
             return {width: '3em', textAlign: 'center'};
           },
-          formatter: (cell: any, row: DraftSeat, rowIndex: number, formatExtraData: any) => (
+          formatter: (cell: any, row: DraftSeat) => (
             this.props.draft.limitedSession && this.props.draft.limitedSession.publicPools()
             || this.props.authenticated && this.props.user.id == row.user.id
-          ) ? <Link
+          ) && <Link
             to={'/seat/' + row.id + '/0/'}
           >
             view
-          </Link> : undefined,
+          </Link>,
           isDummyField: true,
         },
       ]
@@ -84,9 +85,4 @@ const mapStateToProps = (state: any) => {
 };
 
 
-const mapDispatchToProps = (dispatch: any) => {
-  return {};
-};
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(DraftView);
+export default connect(mapStateToProps)(DraftView);

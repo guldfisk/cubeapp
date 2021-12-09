@@ -18,7 +18,7 @@ export default class DecksSpoilerView extends React.Component<DecksSpoilerViewPr
     >
       {
         this.props.decks.map(
-          deck => <Row>
+          (deck) => <Row key={deck.id}>
             <DeckView
               deck={deck}
               user={deck.user}

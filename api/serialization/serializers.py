@@ -76,21 +76,18 @@ class MinimalVersionedCubeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'created_at', 'author', 'description')
 
 
-class NameCubeReleaseSerializer(serializers.Serializer):
-    id = serializers.IntegerField(read_only = True)
-    name = serializers.CharField(read_only = True)
-
-    def update(self, instance, validated_data):
-        raise NotImplemented()
-
-    def create(self, validated_data):
-        raise NotImplemented()
+class NameCubeReleaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.CubeRelease
+        fields = ('id', 'name')
 
 
 class MinimalCubeReleaseSerializer(NameCubeReleaseSerializer):
     created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
-    checksum = serializers.CharField(read_only = True)
-    intended_size = serializers.IntegerField(read_only = True)
+
+    class Meta:
+        model = models.CubeRelease
+        fields = ('id', 'name', 'created_at', 'checksum', 'intended_size', 'versioned_cube_id')
 
 
 class ConstrainedNodesSerializer(serializers.ModelSerializer):
@@ -136,6 +133,10 @@ class FullCubeReleaseSerializer(CubeReleaseSerializer):
     constrained_nodes = ConstrainedNodesSerializer(read_only = True)
     image_bundles = ImageBundleSerializer(many = True)
     infinites = OrpSerializerField(model_serializer = orpserialize.InfinitesSerializer)
+
+    class Meta:
+        model = models.CubeRelease
+        fields = ('id', 'name', 'created_at', 'checksum', 'intended_size', 'versioned_cube', 'constrained_nodes', 'image_bundles', 'infinites', 'cube')
 
 
 class LoginSerializer(serializers.Serializer):

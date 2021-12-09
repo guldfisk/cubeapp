@@ -30,3 +30,15 @@
 #react-select-2-listbox {
     color: black;
 }
+
+.image-error {
+    background: #6a1a21;
+    border-radius: 16px;
+    border: 7px solid #000;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.image-error span {
+    text-align: center;
+}

@@ -58,7 +58,7 @@ export default class DraftSearchView extends React.Component<DraftSearchViewProp
           }
           renderBody={
             (hits: DraftPickSearchHit[]) => hits.map(
-              hit => <DraftPickSearchHitView hit={hit}/>
+              (hit, idx) => <DraftPickSearchHitView key={idx} hit={hit}/>
             )
           }
         />

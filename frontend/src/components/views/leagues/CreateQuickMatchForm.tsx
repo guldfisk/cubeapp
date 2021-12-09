@@ -13,8 +13,8 @@ interface CreateQuickMatchFormProps {
 
 interface CreateQuickMatchFormState {
   rated: boolean
-  firstDeckId: string | number | null
-  secondDeckId: string | number | null
+  firstDeckId: string | number
+  secondDeckId: string | number
   availableDecks: Deck[]
 }
 
@@ -24,9 +24,9 @@ export default class CreateQuickMatchForm extends React.Component<CreateQuickMat
   constructor(props: CreateQuickMatchFormProps) {
     super(props);
     this.state = {
-      rated: false,
-      firstDeckId: null,
-      secondDeckId: null,
+      rated: true,
+      firstDeckId: '',
+      secondDeckId: '',
       availableDecks: [],
     }
   }
@@ -55,13 +55,13 @@ export default class CreateQuickMatchForm extends React.Component<CreateQuickMat
         <input
           type="checkbox"
           checked={this.state.rated}
-          onClick={
+          onChange={
             (event: any) => this.setState({rated: event.target.checked})
           }
         />
       </Form.Group>
       {
-        this.state.availableDecks.length > 1 && [
+        this.state.availableDecks.length > 1 && <>
           <Form.Group
             controlId="first-deck"
           >
@@ -71,16 +71,21 @@ export default class CreateQuickMatchForm extends React.Component<CreateQuickMat
               onChange={(event) => this.setState({firstDeckId: event.target.value})}
               value={this.state.firstDeckId}
             >
-              <option value="">Random</option>
+              <option value="" key="">Random</option>
               {
                 this.state.availableDecks.filter(
                   (deck) => deck.id != this.state.secondDeckId
                 ).map(
-                  (deck) => <option value={deck.id}>{`${deck.name} - ${deck.user.username} - ${deck.id}`}</option>
+                  (deck) => <option
+                    value={deck.id}
+                    key={deck.id}
+                  >
+                    {`${deck.name} - ${deck.user.username} - ${deck.id}`}
+                  </option>
                 )
               }
             </Form.Control>
-          </Form.Group>,
+          </Form.Group>
           <Form.Group
             controlId="second-deck"
           >
@@ -90,17 +95,22 @@ export default class CreateQuickMatchForm extends React.Component<CreateQuickMat
               onChange={(event) => this.setState({secondDeckId: event.target.value})}
               value={this.state.secondDeckId}
             >
-              <option value="">Random</option>
+              <option value="" key="">Random</option>
               {
                 this.state.availableDecks.filter(
                   (deck) => deck.id != this.state.firstDeckId
                 ).map(
-                  (deck) => <option value={deck.id}>{`${deck.name} - ${deck.user.username} - ${deck.id}`}</option>
+                  (deck) => <option
+                    value={deck.id}
+                    key={deck.id}
+                  >
+                    {`${deck.name} - ${deck.user.username} - ${deck.id}`}
+                  </option>
                 )
               }
             </Form.Control>
-          </Form.Group>,
-        ]
+          </Form.Group>
+        </>
       }
       <Button
         type="submit"

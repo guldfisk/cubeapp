@@ -119,10 +119,10 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
               ]
             }
           ).filter(
-            ([header, items]) => items.length
+            ([, items]) => items.length
           ).map(
-            ([[color, title], items]) => {
-              return <ListGroup variant="flush">
+            ([[color, title], items], idx) => {
+              return <ListGroup variant="flush" key={idx}>
                 <ListGroup.Item className="py-2">
                   <span
                     style={{color: color}}
@@ -139,7 +139,8 @@ export default class CubeablesCollectionListView extends React.Component<RawCube
                 </ListGroup.Item>
                 {
                   items.map(
-                    ([cubeable, multiplicity]) => <ImageableListItem
+                    ([cubeable, multiplicity], idx) => <ImageableListItem
+                      key={idx}
                       cubeable={cubeable}
                       multiplicity={multiplicity}
                       onClick={this.props.onCubeableClicked}

@@ -177,10 +177,10 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'name',
         text: 'Name',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '10%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
+        formatter: (cell: any, row: any) => <Link
           to={'/limited/' + row.id + '/'}
         >
           {cell}
@@ -191,7 +191,7 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'gameType',
         text: 'Game Type',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '7%', textAlign: 'center'};
         },
         sort: true,
@@ -207,7 +207,7 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'format',
         text: 'Format',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '8%', textAlign: 'center'};
         },
         sort: true,
@@ -223,7 +223,7 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'state',
         text: 'State',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '8%', textAlign: 'center'};
         },
         sort: true,
@@ -241,10 +241,10 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
         dataField: 'players',
         text: 'Players',
         editable: false,
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell.map(
+        formatter: (cell: any) => cell.map(
           (player: User) => player.username
         ).join(', '),
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6%', textAlign: 'center'};
         },
         filter: textFilter(),
@@ -252,14 +252,14 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'openDecks',
         text: 'Open Decks',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6%', textAlign: 'center'};
         },
       },
       {
         dataField: 'openPools',
         text: 'Open Pools',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6%', textAlign: 'center'};
         },
       },
@@ -267,20 +267,20 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
         dataField: 'poolSpecification',
         text: 'Pool Specification',
         editable: false,
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <PoolSpecificationView
+        formatter: (cell: any) => <PoolSpecificationView
           specification={cell}
         />,
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {textAlign: 'center'};
         },
       },
       {
         dataField: 'createdAt',
         text: 'Created',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '5%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <DateListItem
+        formatter: (cell: any) => <DateListItem
           date={cell}
         />,
         sort: true,
@@ -288,10 +288,10 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'playingAt',
         text: 'Playing',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '5%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
+        formatter: (cell: any) => cell && <DateListItem
           date={cell}
         />,
         sort: true,
@@ -299,10 +299,10 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
       {
         dataField: 'finishedAt',
         text: 'Finished',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '5%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
+        formatter: (cell: any) => cell && <DateListItem
           date={cell}
         />,
         sort: true,
@@ -312,14 +312,15 @@ class SessionsPage extends React.Component<SessionsPageProps, SessionsPageState>
     if (this.props.authenticated) {
       columns.push(
         {
+          dataField: 'delete',
           text: '',
           isDummyField: true,
           editable: false,
-          formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <i
+          formatter: (cell: any, row: any) => <i
             className="fa fa-times-circle"
             onClick={() => this.setState({deleting: row})}
           />,
-          headerStyle: (column: any, colIndex: number) => {
+          headerStyle: () => {
             return {width: '4%', textAlign: 'center'};
           },
         }
@@ -367,10 +368,4 @@ const mapStateToProps = (state: any) => {
   };
 };
 
-
-const mapDispatchToProps = (dispatch: any) => {
-  return {};
-};
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(SessionsPage);
+export default connect(mapStateToProps)(SessionsPage);

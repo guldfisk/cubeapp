@@ -146,7 +146,7 @@ export default class TournamentView extends React.Component<TournamentViewProps,
             <Row>
               {
                 this.props.tournament.rounds.map(
-                  round => <Col>
+                  (round, idx) => <Col key={idx}>
                     <RoundView
                       round={round}
                       tournament={this.props.tournament}

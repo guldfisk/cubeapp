@@ -103,6 +103,22 @@ class CubeReleaseView(generics.RetrieveAPIView):
     ).all()
     serializer_class = serializers.FullCubeReleaseSerializer
 
+    def get_serializer_class(self):
+        if strtobool(self.request.GET.get('minimal', '0')):
+            return serializers.MinimalCubeReleaseSerializer
+        return serializers.FullCubeReleaseSerializer
+
+    def get_queryset(self):
+        if strtobool(self.request.GET.get('minimal', '0')):
+            return models.CubeRelease.objects.all().only('id', 'name', 'created_at', 'checksum', 'intended_size', 'versioned_cube_id')
+        return models.CubeRelease.objects.select_related(
+            'versioned_cube',
+            'versioned_cube__author',
+            'constrained_nodes',
+        ).prefetch_related(
+            'image_bundles',
+        ).all()
+
 
 @api_view(['GET'])
 def image_view(request: HttpRequest, pictured_id: str) -> HttpResponse:

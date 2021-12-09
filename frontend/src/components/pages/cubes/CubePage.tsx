@@ -37,7 +37,7 @@ export const ForkCubeDialog: React.FunctionComponent<ForkCubeDialogProps> = (pro
     <Modal.Body>
       <CreateCubeForm
         handleSubmit={props.callback}
-        defaultDescription={props.cube ? 'Forked from ' + props.cube.name : null}
+        defaultDescription={props.cube ? `Forked from ${props.cube.name}` : null}
         enabled={props.enabled}
       />
     </Modal.Body>
@@ -128,33 +128,33 @@ class CubePage extends React.Component<CubePageProps, CubePageState> {
                 Actions
               </Card.Header>
               <Card.Body>
-                <p><Link to={'/cube/' + this.props.match.params.id + '/patches/'}>Patches</Link></p>
-                <p><Link to={'/cube/' + this.props.match.params.id + '/ratings/'}>Ratings</Link></p>
-                <p><Link to={'/cube/' + this.props.match.params.id + '/image-records/'}>Image Records</Link></p>
+                <p><Link to={`/cube/${this.props.match.params.id}/patches/`}>Patches</Link></p>
+                <p><Link to={`/cube/${this.props.match.params.id}/ratings/`}>Ratings</Link></p>
+                <p><Link to={`/cube/${this.props.match.params.id}/image-records/`}>Image Records</Link></p>
                 <p>
                   <FeedLink
-                    url={'/api/versioned-cubes/' + this.props.match.params.id + '/rss.xml'}
+                    url={`/api/versioned-cubes/${this.props.match.params.id}/rss.xml`}
                   />
                 </p>
                 {
-                  this.props.authenticated ? [
+                  this.props.authenticated && <>
                     <p>
                       <Link
-                        to={"#"}
+                        to="#"
                         onClick={() => this.setState({forking: true})}
                       >
                         Fork cube
                       </Link>
-                    </p>,
+                    </p>
                     <p>
                       <Link
-                        to={"#"}
+                        to="#"
                         onClick={() => this.setState({deleting: true})}
                       >
                         Delete
                       </Link>
-                    </p>,
-                  ] : undefined
+                    </p>
+                  </>
                 }
               </Card.Body>
             </Card>
@@ -176,10 +176,4 @@ const mapStateToProps = (state: any) => {
   };
 };
 
-
-const mapDispatchToProps = (dispatch: any) => {
-  return {};
-};
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(CubePage);
+export default connect(mapStateToProps)(CubePage);

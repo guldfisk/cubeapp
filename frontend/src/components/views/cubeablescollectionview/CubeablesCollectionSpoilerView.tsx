@@ -77,8 +77,9 @@ export default class CubeablesCollectionSpoilerView extends React.Component<Cube
     return <div>
       {
         Array.from(this.groupsSortedChained(groups)).map(
-          (cubeable) => {
+          (cubeable, idx) => {
             return <ImageableImage
+              key={idx}
               imageable={cubeable}
               sizeSlug={this.props.sizeSlug}
               hover={true}

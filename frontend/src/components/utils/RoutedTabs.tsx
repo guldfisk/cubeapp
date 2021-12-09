@@ -22,7 +22,7 @@ const RoutedTabs = (props: RoutedTabsProps) => {
         {
           props.tabs.map(
             ([key, name]) => (
-              <NavTab to={urlJoin(props.match.url, key)}>
+              <NavTab to={urlJoin(props.match.url, key)} key={key}>
                 {name}
               </NavTab>
             )
@@ -40,6 +40,7 @@ const RoutedTabs = (props: RoutedTabsProps) => {
           props.tabs.map(
             ([key, , render]) => (
               <Route
+                key={key}
                 path={urlJoin(props.match.url, key)}
                 render={render}
               />

@@ -8,23 +8,26 @@ import PaginationBar from "./PaginationBar";
 import {PaginatedResponse} from "../models/models";
 
 
-interface PaginatorProps<T> {
-  fetch: (offset: number, limit: number) => Promise<PaginatedResponse<T>>
+interface PaginatorProps<T, A extends PaginatedResponse<T>> {
+  fetch: (offset: number, limit: number) => Promise<A>
   renderBody: (items: T[]) => any
+  renderAdditionalInformation?: ((response: A) => any) | null
 }
 
-interface PaginatorState<T> {
+interface PaginatorState<T, A extends PaginatedResponse<T>> {
   items: T[]
   offset: number
   hits: number
   pageSize: number
   loading: boolean
+  response: A | null
+  error: string | null
 }
 
 
-export default class Paginator<T> extends React.Component<PaginatorProps<T>, PaginatorState<T>> {
+export default class Paginator<T, A extends PaginatedResponse<T>> extends React.Component<PaginatorProps<T, A>, PaginatorState<T, A>> {
 
-  constructor(props: PaginatorProps<T>) {
+  constructor(props: PaginatorProps<T, A>) {
     super(props);
     this.state = {
       items: [],
@@ -32,6 +35,8 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
       hits: 0,
       pageSize: 10,
       loading: false,
+      response: null,
+      error: null,
     };
   }
 
@@ -45,25 +50,32 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
 
   fetch = (offset: number = 0): void => {
     this.setState(
-      {loading: true},
+      {loading: true, error: null},
       () => this.props.fetch(offset, this.state.pageSize).then(
-        ({objects, hits}) => {
+        (response) => {
           this.setState(
             {
-              items: objects,
-              hits,
-              offset,
+              items: response.objects,
+              hits: response.hits,
+              offset: offset,
+              response,
+              loading: false,
             }
           )
         }
-      ).catch().then(
-        () => this.setState({loading: false})
+      ).catch(
+        () => this.setState({loading: false, error: 'Invalid query'})
       )
     )
   };
 
   render() {
     return <Container fluid>
+      {
+        this.props.renderAdditionalInformation && this.state.response && <Row>
+          {this.props.renderAdditionalInformation(this.state.response)}
+        </Row>
+      }
       <Row>
         <PaginationBar
           hits={this.state.hits}
@@ -73,7 +85,9 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
           maxPageDisplay={7}
         />
       </Row>
-      <Row>
+      {
+        this.state.error ? <span>{this.state.error}</span> : <>
+          <Row>
         <span>
             {
               this.state.loading ? 'loading...' : `Showing ${
@@ -85,10 +99,12 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
               } results.`
             }
           </span>
-      </Row>
-      <Row>
-        {this.props.renderBody(this.state.items)}
-      </Row>
+          </Row>
+          <Row>
+            {this.props.renderBody(this.state.items)}
+          </Row>
+        </>
+      }
       <Row>
         <PaginationBar
           hits={this.state.hits}
@@ -109,7 +125,7 @@ export default class Paginator<T> extends React.Component<PaginatorProps<T>, Pag
         >
           {
             Array.from(range(5, 35, 5)).map(
-              v => <option value={v}>{v}</option>
+              v => <option value={v} key={v}>{v}</option>
             )
           }
         </select>

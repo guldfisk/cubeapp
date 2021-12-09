@@ -77,7 +77,7 @@ class RootComponent extends React.Component<RootProps> {
                   <Route
                     path={path}
                     key={path}
-                    component={args.render ? undefined : component}
+                    component={args.render ? null : component}
                     {...args}
                   />
               )

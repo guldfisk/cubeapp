@@ -21,30 +21,32 @@ export default class PoolSpecificationView extends React.Component<PoolSpecifica
       },
 
       {
+        dataField: 'type',
         text: 'Type',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '15%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => row.name(),
+        formatter: (cell: any, row: any) => row.name(),
         isDummyField: true,
       },
       {
         dataField: 'amount',
         text: 'Amount',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '10%', textAlign: 'center'};
         },
       },
       {
+        dataField: 'values',
         text: 'Values',
-        formatter: (cell: any, row: BoosterSpecification, rowIndex: number, formatExtraData: any) => {
+        formatter: (cell: any, row: BoosterSpecification) => {
           const values = row.values();
           return <BootstrapTable
             keyField='id'
             data={[Object.fromEntries(values)]}
             columns={
               values.map(
-                ([name, value]) => {
+                ([name]) => {
                   return {
                     dataField: name,
                     text: name,

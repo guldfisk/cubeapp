@@ -137,10 +137,10 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
       {
         dataField: 'name',
         text: 'Name',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '10%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <Link
+        formatter: (cell: any, row: any) => <Link
           to={'/tournaments/' + row.id + '/'}
         >
           {cell}
@@ -151,7 +151,7 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
       {
         dataField: 'tournamentType',
         text: 'Type',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '8%', textAlign: 'center'};
         },
         sort: true,
@@ -168,16 +168,16 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
       {
         dataField: 'matchType',
         text: 'Match Type',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '4%', textAlign: 'center'};
         },
         sort: false,
-        formatter: (cell: MatchType, row: any, rowIndex: number, formatExtraData: any) => cell.fullName(),
+        formatter: (cell: MatchType) => cell.fullName(),
       },
       {
         dataField: 'state',
         text: 'State',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '8%', textAlign: 'center'};
         },
         sort: true,
@@ -194,43 +194,45 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
       {
         dataField: 'participants',
         text: 'Players',
-        formatter: (cell: TournamentParticipant[], row: any, rowIndex: number, formatExtraData: any) =>
+        formatter: (cell: TournamentParticipant[]) =>
           <ParticipantsView
             participants={cell}
           />,
         filter: textFilter(),
       },
       {
-        dataField: 'rounds',
+        dataField: 'completed-rounds',
+        isDummyField: true,
         text: 'Completed Rounds',
         editable: false,
-        formatter: (cell: any, row: Tournament, rowIndex: number, formatExtraData: any) =>
+        formatter: (cell: any, row: Tournament) =>
           <span>{row.completedRounds() + '/' + row.roundAmount}</span>,
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6%', textAlign: 'center'};
         },
       },
       {
-        dataField: 'rounds',
+        dataField: 'completed-matches',
+        isDummyField: true,
         text: 'Completed Matches For Round',
         editable: false,
-        formatter: (cell: any, row: Tournament, rowIndex: number, formatExtraData: any) => {
+        formatter: (cell: any, row: Tournament) => {
           const lastRound = row.rounds[row.rounds.length - 1];
           return <span>
             {lastRound.matches.filter(match => match.result).length + '/' + lastRound.matches.length}
           </span>;
         },
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '6%', textAlign: 'center'};
         },
       },
       {
         dataField: 'createdAt',
         text: 'Created',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '5%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => <DateListItem
+        formatter: (cell: any) => <DateListItem
           date={cell}
         />,
         sort: true,
@@ -238,10 +240,10 @@ export default class TournamentsPage extends React.Component<TournamentsPageProp
       {
         dataField: 'finishedAt',
         text: 'Finished',
-        headerStyle: (column: any, colIndex: number) => {
+        headerStyle: () => {
           return {width: '5%', textAlign: 'center'};
         },
-        formatter: (cell: any, row: any, rowIndex: number, formatExtraData: any) => cell && <DateListItem
+        formatter: (cell: any) => cell && <DateListItem
           date={cell}
         />,
         sort: true,
