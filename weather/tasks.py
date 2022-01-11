@@ -1,6 +1,8 @@
 import dataclasses
 import datetime
 
+import pytz
+
 from celery import shared_task
 
 from django.template.loader import get_template
@@ -18,7 +20,8 @@ HARESKOVEN = 2623928
 
 @shared_task()
 def check_weather():
-    now = datetime.datetime.now()
+    tz = pytz.timezone('CET')
+    now = datetime.datetime.now(tz)
     next_sunday = get_next_weekday(6, now)
     target_from = next_sunday + datetime.timedelta(hours = 9)
     target_to = next_sunday + datetime.timedelta(hours = 14)

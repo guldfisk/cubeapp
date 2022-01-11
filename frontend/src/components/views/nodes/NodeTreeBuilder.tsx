@@ -76,7 +76,7 @@ export class NodeTreeBuilder extends React.Component<NodeTreeBuilderProps, NodeT
       <Card.Body>
         <table>
           {
-            this.props.node.children.items.filter(([c, m]) => m > 0).map(
+            this.props.node.children.items.map(
               ([child, multiplicity]) => <tr>
                 <td
                   style={{verticalAlign: 'top'}}
@@ -92,10 +92,10 @@ export class NodeTreeBuilder extends React.Component<NodeTreeBuilderProps, NodeT
                           null,
                           new MultiplicityList(
                             this.props.node.children.items.map(
-                              ([_child, _multiplicity]) => (
+                              ([_child, _multiplicity]): [PrintingNode | Printing, number] => (
                                 [_child, child === _child ? parseInt(event.target.value) : _multiplicity]
                               )
-                            )
+                            ).filter(([, m]) => m > 0)
                           ),
                           this.props.node.type,
                         )
@@ -124,7 +124,8 @@ export class NodeTreeBuilder extends React.Component<NodeTreeBuilderProps, NodeT
                               this.props.node.type,
                             )
                           )
-                        }/>
+                        }
+                      />
                   }
                 </td>
               </tr>

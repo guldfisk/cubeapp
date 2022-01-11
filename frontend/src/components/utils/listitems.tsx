@@ -30,7 +30,7 @@ export const DateListItem: React.FunctionComponent<DateListItemProps> = (props: 
     delay={{show: 0, hide: 0}}
     overlay={
       (_props: any) => <Tooltip id='date-item' {..._props}>
-        {props.date.toUTCString()}
+        {props.date.toLocaleString()}
       </Tooltip>
     }
     popperConfig={{

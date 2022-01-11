@@ -30,7 +30,7 @@ export default class UserGroupView extends React.Component<UserGroupViewProps, n
           }
         </ListGroup>
       </Card.Body>
-    </ Card>
+    </Card>
   }
 
 }

@@ -33,6 +33,7 @@ class DraftCoordinator(object):
         infinites: Infinites,
         draft_format: str,
         reverse: bool,
+        time_control: t.Optional[float],
         finished_callback: t.Callable[[Draft], None],
     ) -> t.Tuple[t.Tuple[AbstractUser, Drafter], ...]:
 
@@ -64,6 +65,7 @@ class DraftCoordinator(object):
             pool_specification = pool_specification,
             infinites = infinites,
             draft_format = draft_format,
+            time_control = time_control,
             finished_callback = _finished_callback,
             reverse = reverse,
         )

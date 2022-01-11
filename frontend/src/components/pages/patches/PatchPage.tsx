@@ -313,15 +313,19 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
             : null
         }
         onNodeEdit={
-          !this.canEdit() ? undefined :
+          !this.canEdit() ? null :
             (
               (oldNode, newNode, multiplicity) => {
-                this.handleMultipleUpdatePatch(
-                  [
-                    [oldNode, -multiplicity],
-                    [newNode, multiplicity],
-                  ]
-                )
+                if (newNode.node.children.items.length || true) {
+                  this.handleMultipleUpdatePatch(
+                    [
+                      [oldNode, -multiplicity],
+                      [newNode, multiplicity],
+                    ]
+                  )
+                } else {
+                  this.handleUpdatePatch(oldNode, -multiplicity)
+                }
               }
             )
         }

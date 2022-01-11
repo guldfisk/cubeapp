@@ -7,6 +7,7 @@ def get_next_weekday(weekday: int, now: datetime.datetime) -> datetime.datetime:
         year = now.year,
         month = now.month,
         day = now.day,
+        tzinfo = now.tzinfo,
     ) + datetime.timedelta(
         days = (
             weekday - current_weekday

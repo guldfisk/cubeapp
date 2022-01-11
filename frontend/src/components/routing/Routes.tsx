@@ -50,6 +50,7 @@ const UpdateTokenPage = React.lazy(() => import('../pages/kpd/UpdateTokenPage'))
 const UserPage = React.lazy(() => import('../pages/users/UserPage'));
 const WishListPage = React.lazy(() => import('../pages/wishes/WishListPage'));
 const WishListsPage = React.lazy(() => import('../pages/wishes/WishListsPage'));
+// const LobbiesPage = React.lazy(() => import('../pages/lobbies/LobbiesPage'));
 
 export const routes: [
     string | undefined,
@@ -137,5 +138,6 @@ export const routes: [
   ['/about', AboutPage, false, {}],
   ['/kpd', KPDPage, false, {}],
   ['/update-token', UpdateTokenPage, true, {}],
-  [undefined, NotFoundPage, false, {}],
+  // ['/lobbies', LobbiesPage, true, {}],
+  [null, NotFoundPage, false, {}],
 ];

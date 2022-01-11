@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import datetime
+import random
+import time
 import typing as t
 import threading
 
@@ -85,6 +87,7 @@ class DraftInterface(ABC):
         self._pick_queue = Queue()
         self._out_queue = Queue()
 
+        self._current_booster_lock = threading.Lock()
         self._current_booster: t.Optional[DraftBooster] = None
 
         self._terminating = threading.Event()
@@ -183,6 +186,25 @@ class DraftInterface(ABC):
     def perform_pick(self, pick: Pick) -> bool:
         pass
 
+    @abstractmethod
+    def get_random_pick(self) -> Pick:
+        pass
+
+    def _get_timeout_handler(self, booster: DraftBooster, pick_number: int) -> t.Callable[[], None]:
+        def _handle_timeout() -> None:
+            with self._current_booster_lock:
+                if booster == self._current_booster and booster.pick_number == pick_number:
+                    self._pick_queue.put(self.get_random_pick())
+
+        return _handle_timeout
+
+    def _get_current_time_control(self) -> t.Optional[float]:
+        if self._draft.time_control is None:
+            return self._draft.time_control
+        if self._pick_counter == 0:
+            return self._draft.time_control + 10
+        return self._draft.time_control
+
     def _draft_loop(self) -> None:
         while not self._terminating.is_set():
             try:
@@ -190,9 +212,18 @@ class DraftInterface(ABC):
             except Empty:
                 continue
 
-            self._current_booster = booster
+            with self._current_booster_lock:
+                self._current_booster = booster
 
-            self.send_message('booster', booster = RawStrategy.serialize(self._current_booster))
+            time_control = self._get_current_time_control()
+            self.send_message(
+                'booster',
+                booster = RawStrategy.serialize(self._current_booster),
+                timeout = time_control,
+                began_at = time.time(),
+            )
+            if time_control:
+                threading.Timer(time_control, self._get_timeout_handler(booster, self._current_booster.pick_number)).start()
 
             while not self._terminating.is_set():
                 try:
@@ -244,6 +275,9 @@ class DraftInterface(ABC):
 class SinglePickInterface(DraftInterface):
     pick_type = SinglePickPick
 
+    def get_random_pick(self) -> SinglePickPick:
+        return SinglePickPick(random.choice(list(self._current_booster.cubeables)))
+
     def perform_pick(self, pick: SinglePickPick) -> bool:
         if pick.cubeable not in self._current_booster.cubeables:
             return False
@@ -257,6 +291,12 @@ class SinglePickInterface(DraftInterface):
 
 class BurnInterface(DraftInterface):
     pick_type = BurnPick
+
+    def get_random_pick(self) -> BurnPick:
+        cubeables = list(self._current_booster.cubeables)
+        if len(cubeables) == 1:
+            return BurnPick(cubeables[0], None)
+        return BurnPick(*random.sample(cubeables, 2))
 
     def perform_pick(self, pick: BurnPick) -> bool:
         if len(self._current_booster.cubeables) > 1 and pick.burn is None:
@@ -283,6 +323,7 @@ class Draft(object):
         infinites: Infinites,
         draft_format: str,
         reverse: bool,
+        time_control: t.Optional[None],
         finished_callback: t.Callable[[Draft], None],
     ):
         self._key = key
@@ -292,6 +333,7 @@ class Draft(object):
         self._infinites = infinites
         self._draft_format = draft_format
         self._reverse = reverse
+        self._time_control = time_control
 
         self._finished_callback = finished_callback
 
@@ -322,6 +364,10 @@ class Draft(object):
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
         self._draft_session: t.Optional[DraftSession] = None
+
+    @property
+    def time_control(self) -> t.Optional[float]:
+        return self._time_control
 
     @property
     def drafters(self) -> t.Iterable[Drafter]:
@@ -426,6 +472,7 @@ class Draft(object):
             pool_specification = self._pool_specification,
             infinites = self._infinites,
             reverse = self._reverse,
+            time_control = self._time_control,
         )
 
         self._drafter_interfaces = {

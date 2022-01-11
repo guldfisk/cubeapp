@@ -29,7 +29,7 @@ def check_transactions():
 
     if (
         not session_key.expiration_notified
-        and session_key.valid_until + datetime.timedelta(days = 3) < datetime.datetime.now(datetime.timezone.utc)
+        and session_key.valid_until - datetime.timedelta(days = 3) < datetime.datetime.now(datetime.timezone.utc)
     ):
         mail_me(
             'Bank session expires soon',

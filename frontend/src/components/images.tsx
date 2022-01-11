@@ -1,11 +1,11 @@
 import React from 'react';
 
+import OverlayTrigger from 'react-bootstrap/esm/OverlayTrigger';
+import {flip, preventOverflow} from "@popperjs/core";
 import {LazyImage} from "react-lazy-images";
 
 import {get_cardback_image_url, get_imageable_image_url, get_imageable_image_static_url} from "./utils/utils";
 import {Imageable} from "./models/models";
-import OverlayTrigger from 'react-bootstrap/esm/OverlayTrigger';
-import {flip, preventOverflow} from "@popperjs/core";
 
 
 const imageSizeMap: { [key: string]: [number, number] } = {
@@ -98,23 +98,32 @@ export class ImageableImage extends React.Component<CubeableImageProps> {
       this.props.cropped,
     ) : apiUrl;
 
+    const getPlaceholder = ({imageProps, ref}: any) => (
+      <img
+        ref={ref}
+        src={get_cardback_image_url(this.props.sizeSlug, this.props.cropped)}
+        alt={imageProps.alt}
+        width={width}
+        height={height}
+        style={this.props.style}
+      />
+    )
+
+    const getErrorDiv = () => <div className="image-error" style={{width, height}}>
+      <span>{explanation}</span>
+    </div>
     const image = <LazyImage
       error={
-        () => <div className="image-error" style={{width, height}}>
-          <span>{explanation}</span>
-        </div>
+        () => canUseStatic && _type === 'Printing' ? <LazyImage
+          placeholder={getPlaceholder}
+          src={apiUrl}
+          actual={({imageProps}) => <img style={this.props.style} {...imageProps} />}
+          error={getErrorDiv}
+          alt={explanation}
+        /> : getErrorDiv()
       }
       src={srcUrl}
-      placeholder={({imageProps, ref}) => (
-        <img
-          ref={ref}
-          src={get_cardback_image_url(this.props.sizeSlug, this.props.cropped)}
-          alt={imageProps.alt}
-          width={width}
-          height={height}
-          style={this.props.style}
-        />
-      )}
+      placeholder={getPlaceholder}
       actual={({imageProps}) => <img style={this.props.style} {...imageProps} />}
       alt={explanation}
       {...(this.props.onClick === null ? {} : {onClick: () => this.props.onClick(this.props.imageable)})}

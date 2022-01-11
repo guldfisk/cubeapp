@@ -71,6 +71,8 @@ class DraftGame(Game):
     )
     allow_cheating = metaoptions.BooleanOption(default = False)
     tournament_options = TournamentOptions()
+    use_time_controls = metaoptions.BooleanOption(default = False)
+    time_control = metaoptions.FloatOption(default = 0., max = 60 * 60)
 
     def __init__(
         self,
@@ -91,6 +93,7 @@ class DraftGame(Game):
                 draft_format = self.draft_format,
                 reverse = self.reverse,
                 finished_callback = self._finished_callback_wrapper,
+                time_control = self.time_control if self.use_time_controls else None,
             )
         }
 

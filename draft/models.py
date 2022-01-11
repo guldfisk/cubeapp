@@ -56,6 +56,7 @@ class DraftSession(models.Model):
     ended_at = models.DateTimeField(null = True)
     draft_format = models.CharField(max_length = 127)
     reverse = models.BooleanField()
+    time_control = models.FloatField(null = True)
     state = EnumField(DraftState, default = DraftState.DRAFTING)
     infinites: Infinites = OrpField(model_type = Infinites)
     pool_specification = models.ForeignKey(

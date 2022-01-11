@@ -52,7 +52,32 @@ class IntegerOption(Option[int]):
             _value = int(value)
         except ValueError:
             raise OptionsValidationError('invalid value "{}" for {}'.format(value, self._name))
-        if _value not in range(self._min, self._max):
+        if not self._min <= _value <= self._max:
+            raise OptionsValidationError(
+                'invalid value "{}" for {}: not in allowed range({} - {})'.format(
+                    _value,
+                    self._name,
+                    self._min,
+                    self._max,
+                )
+            )
+        return _value
+
+
+class FloatOption(Option[float]):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._default_value = kwargs.get('default', 0.)
+        self._min = kwargs.get('min', 0.)
+        self._max = kwargs.get('max', 1.)
+
+    def validate(self, value: t.Any) -> float:
+        try:
+            _value = float(value)
+        except ValueError:
+            raise OptionsValidationError('invalid value "{}" for {}'.format(value, self._name))
+        if not self._min <= _value <= self._max:
             raise OptionsValidationError(
                 'invalid value "{}" for {}: not in allowed range({} - {})'.format(
                     _value,

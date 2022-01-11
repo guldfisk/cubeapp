@@ -1,9 +1,8 @@
 import React from 'react';
 
-import {
-  PrintingNode,
-} from "../../models/models";
 import Button from "react-bootstrap/Button";
+
+import {PrintingNode} from "../../models/models";
 import {NodeTreeBuilder} from "./NodeTreeBuilder";
 
 
@@ -39,4 +38,3 @@ export class NodeTreeEditor extends React.Component<NodeTreeEditorProps, NodeTre
   }
 
 }
-

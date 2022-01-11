@@ -1,0 +1,33 @@
+version: '3.3'
+
+services:
+
+  pdb:
+    environment:
+      DEBUG: 1
+
+  nginx:
+    volumes:
+      - ./nginx/test.conf:/etc/nginx/conf.d/additional.conf
+    environment:
+      DEBUG: 1
+
+  web_channels:
+    environment:
+      DEBUG: 1
+
+  celery_worker:
+    environment:
+      DEBUG: 1
+
+  celery_beat:
+    environment:
+      DEBUG: 1
+
+  web:
+    environment:
+      DEBUG: 1
+
+  redis:
+    environment:
+      DEBUG: 1
