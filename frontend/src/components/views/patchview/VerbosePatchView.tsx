@@ -72,6 +72,7 @@ export default class VerbosePatchView extends React.Component<VerbosePatchViewPr
                         change={change}
                         multiplicity={multiplicity}
                         onClick={this.props.onChangeClicked}
+                        key={change.id}
                       />
                     )
                   }

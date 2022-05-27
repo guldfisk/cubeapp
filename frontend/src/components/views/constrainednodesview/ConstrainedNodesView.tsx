@@ -10,6 +10,12 @@ import {NodeListItem} from "../../utils/listitems";
 import {NodeTreeEditor} from "../nodes/NodeTreeEditor";
 
 
+interface NodeMultiplicity {
+  constrainedNode: ConstrainedNode
+  multiplicity: number
+}
+
+
 interface ConstrainedNodesViewProps {
   constrainedNodes: ConstrainedNodes
   onNodeClick?: (node: ConstrainedNode, multiplicity: number) => void
@@ -46,7 +52,7 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         dataField: 'multiplicity',
         text: 'Qty',
         type: 'number',
-        validator: (newValue: string, row: any, column: any): any => {
+        validator: (newValue: string) => {
           if (
             (this.props.negative && /^(-\d+)|(-?0)$/.exec(newValue))
             || (!this.props.negative && /^\d+$/.exec(newValue))
@@ -59,65 +65,46 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
           }
         },
         sort: true,
-        sortFunc: (a: number, b: number, order: string) => {
-          if (order === 'desc') {
-            return b - a;
-          }
-          return a - b;
-        },
-        headerStyle: () => {
-          return {width: '6em', textAlign: 'center'};
-        },
+        headerStyle: () => ({width: '6em', textAlign: 'center'}),
       },
       {
         dataField: 'constrainedNode',
         text: 'Node',
         editable: !this.props.onlyEditQty,
-        formatter: (cell: ConstrainedNode, row: any) => <NodeListItem
+        formatter: (cell: ConstrainedNode, row: NodeMultiplicity) => <NodeListItem
           node={cell.node}
           onClick={
             this.props.onlyEditQty ? () => this.props.onNodeClick(cell, row.multiplicity) : null
           }
           noHover={this.props.noHover}
         />,
-        editorRenderer: (editorProps: any, value: ConstrainedNode, row: any) => <NodeTreeEditor
+        editorRenderer: (editorProps: any, value: ConstrainedNode) => <NodeTreeEditor
           {...editorProps}
           defaultValue={value.node}
         />,
         sort: true,
-        sortFunc: this.sortNodes,
-        filterValue: (cell: ConstrainedNode, row: any) => cell.node.representation(),
+        sortValue: (cell: ConstrainedNode) => cell.node.representation().toLowerCase(),
+        filterValue: (cell: ConstrainedNode) => cell.node.representation(),
       },
       {
         dataField: 'weight',
         text: 'Weight',
         type: 'number',
-        editable: !this.props.onlyEditQty,
-        validator: (newValue: string, row: any, column: any): any => {
-          if (/^\d+$/.exec(newValue)) {
-            return true
-          }
-          return {
-            valid: false,
-            message: 'Invalid number'
-          }
-        },
+        isDummyField: true,
         sort: true,
-        sortFunc: (a: number, b: number, order: string) => {
-          if (order === 'desc') {
-            return b - a;
-          }
-          return a - b;
-        },
-        headerStyle: () => {
-          return {width: '6em', textAlign: 'center'};
-        },
+        editable: !this.props.onlyEditQty,
+        formatter: (cell: any, row: NodeMultiplicity) => row.constrainedNode.value,
+        sortValue: (cell: any, row: NodeMultiplicity) => row.constrainedNode.value,
+        headerStyle: () => ({width: '6em', textAlign: 'center'}),
       },
       {
         dataField: 'groups',
         text: 'Groups',
+        isDummyField: true,
         editable: !this.props.onlyEditQty,
-        validator: (newValue: string, row: any, column: any): any => {
+        formatter: (cell: any, row: NodeMultiplicity) => row.constrainedNode.groups.join(', '),
+        filterValue: (cell: any, row: NodeMultiplicity) => row.constrainedNode.groups.join(', '),
+        validator: (newValue: string) => {
           if (/^(\w+(,\s*)?)*$/.exec(newValue)) {
             return true
           }
@@ -129,26 +116,18 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
       },
     ];
 
-    const data = Array.from(this.props.constrainedNodes.nodes.items()).map(
-      ([constrainedNode, multiplicity]: [ConstrainedNode, number]) => {
-        return {
-          constrainedNode,
-          multiplicity,
-          id: constrainedNode.id,
-          weight: constrainedNode.value,
-          groups: constrainedNode.groups.join(', '),
-        }
-      }
-    ).sort(
-      (a, b) => this.sortNodes(a.constrainedNode, b.constrainedNode)
-    );
-
     const {SearchBar} = Search;
 
     return <div>
       <ToolkitProvider
-        keyField='key'
-        data={data}
+        keyField='id'
+        data={
+          Array.from(this.props.constrainedNodes.nodes.items()).map(
+            ([constrainedNode, multiplicity]) => ({constrainedNode, multiplicity, id: constrainedNode.id})
+          ).sort(
+            (a, b) => this.sortNodes(a.constrainedNode, b.constrainedNode)
+          )
+        }
         columns={columns}
         bootstrap4
         search
@@ -165,7 +144,8 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                 {...props.baseProps}
                 condensed
                 striped
-                remote={{edit: !!this.props.onNodeEdit}}
+                // remote={{edit: !!this.props.onNodeEdit}}
+                remote={{cellEdit: true}}
                 defaultSorted={
                   [
                     {

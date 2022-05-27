@@ -48,7 +48,7 @@ export default class CardboardDetailPage extends React.Component<RatedNodePagePr
           </h3> : <Loading/>
       }
       {
-        this.state.release && <Link to={`/decks/?query=u=${this.state.release.cubeId} p:[n=${cardboardName}]`}>
+        this.state.release && <Link to={`/decks/?query=u=${this.state.release.cubeId} p:[n="${cardboardName}"]`}>
           Decks
         </Link>
       }

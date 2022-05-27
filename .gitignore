@@ -12,3 +12,4 @@ __pycache__/
 /static/bundles/
 /assets/bundles/
 /webpack-stats.json
+TestPage.tsx

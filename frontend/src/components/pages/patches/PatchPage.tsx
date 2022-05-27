@@ -48,7 +48,6 @@ interface PatchPageState {
   locked: boolean
   editingConnection: WebSocket | null
   userGroup: UserGroup
-  awaitingUpdate: boolean
   editHistory: EditEvent[]
   nodeEditMode: boolean
 }
@@ -67,7 +66,6 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
       locked: false,
       editingConnection: null,
       userGroup: new UserGroup(),
-      awaitingUpdate: false,
       editHistory: [],
       nodeEditMode: true,
     };
@@ -129,7 +127,6 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
               VerbosePatch.fromRemote(message.content.update),
             )
           ].concat(this.state.editHistory),
-          awaitingUpdate: false,
         }
       )
 
@@ -177,15 +174,11 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
   }
 
   handleUpdatePatch = (update: Cubeable | ConstrainedNode | string, amount: number) => {
-    this.setState({awaitingUpdate: true});
     ReleasePatch.updateWebsocket(this.state.editingConnection, [[update, amount]]);
   };
 
   handleMultipleUpdatePatch = (updates: [Cubeable | ConstrainedNode | CubeChange | string, number][]) => {
-    this.setState(
-      {awaitingUpdate: true},
-      () => ReleasePatch.updateWebsocket(this.state.editingConnection, updates),
-    );
+    ReleasePatch.updateWebsocket(this.state.editingConnection, updates)
   };
 
   handleCubeableClicked = (cubeable: Cubeable, multiplicity: number): void => {
@@ -235,7 +228,7 @@ class PatchPage extends React.Component<PatchPageProps, PatchPageState> {
   };
 
   canEdit = (): boolean => {
-    return this.state.editing && !this.state.locked && !this.state.awaitingUpdate
+    return this.state.editing && !this.state.locked
   };
 
   undoEditEvent = (event: EditEvent): void => {

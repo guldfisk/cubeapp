@@ -422,11 +422,9 @@ interface CubeChangeListItemProps {
 
 export const CubeChangeListItem: React.FunctionComponent<CubeChangeListItemProps> = (props) => {
   return <ListGroup.Item
-    key={props.change.id}
     className="py-0"
     onClick={
-      !props.onClick ? undefined :
-        () => props.onClick(props.change, props.multiplicity)
+      props.onClick && (() => props.onClick(props.change, props.multiplicity))
     }
   >
     {
