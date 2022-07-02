@@ -56,3 +56,5 @@ scipy
 pyjwt
 pandas
 pytz
+ebooklib==0.17.1
+beautifulsoup4==4.10.0

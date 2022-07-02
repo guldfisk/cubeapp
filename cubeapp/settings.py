@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'webpack_loader',
 
     'api.apps.ApiConfig',
+    'bookmail.apps.BookmailConfig',
     'draft.apps.DraftConfig',
     'frontend.apps.FrontendConfig',
     'imgqty.apps.ImgqtyConfig',

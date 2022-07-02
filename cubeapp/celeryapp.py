@@ -64,5 +64,9 @@ if not settings.DEBUG:
         'task': 'weather.tasks.check_weather',
         'schedule': timedelta(hours = 1),
     }
+    app.conf.beat_schedule['send_book_mails'] = {
+        'task': 'bookmail.tasks.send_book_mails',
+        'schedule': crontab(hour = 5, minute = 0),
+    }
 
 app.autodiscover_tasks()
