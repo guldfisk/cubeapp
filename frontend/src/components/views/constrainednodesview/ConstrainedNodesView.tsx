@@ -90,20 +90,14 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         dataField: 'weight',
         text: 'Weight',
         type: 'number',
-        isDummyField: true,
         sort: true,
         editable: !this.props.onlyEditQty,
-        formatter: (cell: any, row: NodeMultiplicity) => row.constrainedNode.value,
-        sortValue: (cell: any, row: NodeMultiplicity) => row.constrainedNode.value,
         headerStyle: () => ({width: '6em', textAlign: 'center'}),
       },
       {
         dataField: 'groups',
         text: 'Groups',
-        isDummyField: true,
         editable: !this.props.onlyEditQty,
-        formatter: (cell: any, row: NodeMultiplicity) => row.constrainedNode.groups.join(', '),
-        filterValue: (cell: any, row: NodeMultiplicity) => row.constrainedNode.groups.join(', '),
         validator: (newValue: string) => {
           if (/^(\w+(,\s*)?)*$/.exec(newValue)) {
             return true
@@ -123,7 +117,13 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
         keyField='id'
         data={
           Array.from(this.props.constrainedNodes.nodes.items()).map(
-            ([constrainedNode, multiplicity]) => ({constrainedNode, multiplicity, id: constrainedNode.id})
+            ([constrainedNode, multiplicity]) => ({
+              constrainedNode,
+              multiplicity,
+              id: constrainedNode.id,
+              weight: constrainedNode.value,
+              groups: constrainedNode.groups.join(', '),
+            })
           ).sort(
             (a, b) => this.sortNodes(a.constrainedNode, b.constrainedNode)
           )
@@ -144,7 +144,6 @@ export default class ConstrainedNodesView extends React.Component<ConstrainedNod
                 {...props.baseProps}
                 condensed
                 striped
-                // remote={{edit: !!this.props.onNodeEdit}}
                 remote={{cellEdit: true}}
                 defaultSorted={
                   [
