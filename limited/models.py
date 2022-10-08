@@ -16,9 +16,10 @@ from django.db import models, transaction
 from django.db.models import QuerySet, Subquery, OuterRef, Max, F, Count
 from django.db.models.functions import Coalesce
 
+from mtgorp.models.interfaces import Expansion
 from mtgorp.models.collections.deck import Deck
-from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey
-from mtgorp.models.limited.constants import RARE_MYTHIC_SLOT, UNCOMMON_SLOT, COMMON_SLOT
+from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey, KeySlot
+from mtgorp.models.limited.constants import UNCOMMON, RARE, MYTHIC
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
@@ -176,21 +177,29 @@ class AllCardsBoosterSpecification(BoosterSpecification):
     respect_printings = models.BooleanField(null = True)
 
     def get_boosters(self, amount: int) -> t.Iterator[Cube]:
+        min_date = datetime.datetime.now() - datetime.timedelta(days = 365 * 10)
+
+        def _filter_expansion(expansion: Expansion) -> bool:
+            return (
+                expansion.expansion_type != ExpansionType.FUNNY
+                and not (expansion.block and expansion.block.name == 'Core Set')
+                and expansion.release_date
+                and expansion.release_date > min_date
+            )
+
         booster_map = BoosterKey(
-            (RARE_MYTHIC_SLOT,)
-            + (UNCOMMON_SLOT,) * 3
-            + (COMMON_SLOT,) * 11
+            (KeySlot({UNCOMMON: 1, RARE: 1, MYTHIC: 1}),) * 15
         ).get_booster_map(
             [
                 printing
                 for printing in
                 db.printings.values()
-                if printing.cardboard.latest_printing.expansion.expansion_type != ExpansionType.FUNNY
+                if _filter_expansion(printing.cardboard.latest_printing.expansion)
             ] if self.respect_printings else [
                 cardboard.latest_printing
                 for cardboard in
                 db.cardboards.values()
-                if cardboard.latest_printing.expansion.expansion_type != ExpansionType.FUNNY
+                if _filter_expansion(cardboard.latest_printing.expansion)
             ]
         )
         return (
