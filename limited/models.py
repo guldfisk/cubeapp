@@ -16,13 +16,15 @@ from django.db import models, transaction
 from django.db.models import QuerySet, Subquery, OuterRef, Max, F, Count
 from django.db.models.functions import Coalesce
 
-from mtgorp.models.interfaces import Expansion
 from mtgorp.models.collections.deck import Deck
-from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey, KeySlot
-from mtgorp.models.limited.constants import UNCOMMON, RARE, MYTHIC
+from mtgorp.models.interfaces import Expansion
+from mtgorp.models.limited.boostergen import GenerateBoosterException, BoosterKey, KeySlot, Option
+from mtgorp.models.persistent.attributes import typeline
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
+from mtgorp.models.persistent.attributes.rarities import Rarity
 from mtgorp.models.tournaments import tournaments as to
 from mtgorp.models.tournaments.matches import MatchType
+from mtgorp.tools.search.pattern import CriteriaBuilder
 
 from magiccube.collections.cube import Cube
 from magiccube.collections.infinites import Infinites
@@ -188,7 +190,17 @@ class AllCardsBoosterSpecification(BoosterSpecification):
             )
 
         booster_map = BoosterKey(
-            (KeySlot({UNCOMMON: 1, RARE: 1, MYTHIC: 1}),) * 15
+            (
+                KeySlot(
+                    {
+                        Option(
+                            CriteriaBuilder().rarity.contained_in(
+                                frozenset((Rarity.UNCOMMON, Rarity.RARE, Rarity.MYTHIC))
+                            ).type_line.contains.no(typeline.BASIC).all()
+                        ): 1
+                    }
+                ),
+            ) * 15
         ).get_booster_map(
             [
                 printing
