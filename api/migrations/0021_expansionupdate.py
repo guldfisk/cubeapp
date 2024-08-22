@@ -4,22 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0020_versionedcube_forked_from_release'),
+        ("api", "0020_versionedcube_forked_from_release"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ExpansionUpdate',
+            name="ExpansionUpdate",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('expansion_code', models.CharField(max_length=7)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("expansion_code", models.CharField(max_length=7)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

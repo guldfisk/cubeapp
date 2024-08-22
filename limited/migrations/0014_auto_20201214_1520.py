@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0013_auto_20201202_1251'),
+        ("limited", "0013_auto_20201202_1251"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='pooldeck',
-            options={'ordering': ('created_at',)},
+            name="pooldeck",
+            options={"ordering": ("created_at",)},
         ),
     ]

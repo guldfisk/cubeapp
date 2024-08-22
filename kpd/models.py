@@ -4,9 +4,9 @@ from utils.mixins import TimestampedModel
 
 
 class SessionKey(TimestampedModel, models.Model):
-    key = models.CharField(max_length = 255)
+    key = models.CharField(max_length=255)
     valid_until = models.DateTimeField()
-    expiration_notified = models.BooleanField(default = False)
+    expiration_notified = models.BooleanField(default=False)
 
 
 class RangeRequest(TimestampedModel, models.Model):
@@ -15,15 +15,15 @@ class RangeRequest(TimestampedModel, models.Model):
 
 
 class KebabEvent(models.Model):
-    timestamp = models.DateTimeField(unique = True)
+    timestamp = models.DateTimeField(unique=True)
 
 
 class LogPoint(models.Model):
     timestamp = models.DateTimeField()
-    type = models.CharField(max_length = 31)
+    type = models.CharField(max_length=31)
     value_short = models.FloatField()
     value_medium = models.FloatField()
     value_long = models.FloatField()
 
     class Meta:
-        unique_together = ('timestamp', 'type')
+        unique_together = ("timestamp", "type")

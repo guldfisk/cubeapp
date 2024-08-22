@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import copy
 import queue
-import typing as t
-
 import threading
+import typing as t
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
 from evolution.environment import Environment
 from evolution.logging import LogFrame
-from magiccube.laps.traps.distribute.algorithm import TrapDistribution, TrapCollectionIndividual
-from magiccube.laps.traps.distribute.distribute import DistributionWorker, GenerationAmountAutoPause
+from magiccube.laps.traps.distribute.algorithm import (
+    TrapCollectionIndividual,
+    TrapDistribution,
+)
+from magiccube.laps.traps.distribute.distribute import (
+    DistributionWorker,
+    GenerationAmountAutoPause,
+)
 
 
 class DistributionTask(threading.Thread):
-
     def __init__(self, callback: t.Callable[[], None], *, max_generations: int = 0, **kwargs):
         super().__init__(**kwargs)
         self._callback = callback
@@ -32,7 +35,7 @@ class DistributionTask(threading.Thread):
         self._lock = threading.Lock()
         self._is_working = threading.Event()
 
-        self._status: str = 'prerun'
+        self._status: str = "prerun"
         self._frames: t.List[LogFrame] = []
 
         self._subscribers: t.Dict[str, queue.Queue[t.Dict[str, t.Any]]] = {}
@@ -62,8 +65,8 @@ class DistributionTask(threading.Thread):
 
     def get_latest_fittest(self) -> TrapDistribution:
         with self._lock:
-            if self._status != 'paused':
-                raise RuntimeError('Task must be paused to get distribution')
+            if self._status != "paused":
+                raise RuntimeError("Task must be paused to get distribution")
             return self._worker.distributor.fittest()
 
     def subscribe(self, key: str) -> queue.Queue[t.Dict[str, t.Any]]:
@@ -72,9 +75,9 @@ class DistributionTask(threading.Thread):
             self._subscribers[key] = q
             q.put(
                 {
-                    'type': 'previous_messages',
-                    'frames': copy.copy(self._frames),
-                    'status': self._status,
+                    "type": "previous_messages",
+                    "frames": copy.copy(self._frames),
+                    "status": self._status,
                 }
             )
             return q
@@ -99,14 +102,10 @@ class DistributionTask(threading.Thread):
 
         with self._submit_lock:
             self._worker = DistributionWorker(
-                distributor,
-                max_generations=self._max_generations,
-                pause_conditions = (
-                    GenerationAmountAutoPause(5000),
-                )
+                distributor, max_generations=self._max_generations, pause_conditions=(GenerationAmountAutoPause(5000),)
             )
             self._frames = []
-            self._status = 'prerun'
+            self._status = "prerun"
             self._is_working.set()
             self._worker.start()
 
@@ -125,25 +124,21 @@ class DistributionTask(threading.Thread):
         self._worker.resume()
 
     def run(self) -> None:
-        while not (
-            self._terminating.is_set()
-            or self._status == 'stopped'
-            and not self._subscribers
-        ):
+        while not (self._terminating.is_set() or self._status == "stopped" and not self._subscribers):
             if self._worker is None and not self._is_working.wait(2):
                 continue
 
             try:
-                message = self._worker.message_queue.get(timeout = 2)
+                message = self._worker.message_queue.get(timeout=2)
             except queue.Empty:
                 continue
 
             with self._lock:
-                if message['type'] == 'frame':
-                    self._frames.append(message['frame'])
-                if message['type'] == 'status':
-                    self._status = message['status']
-                    if message['status'] == 'stopped':
+                if message["type"] == "frame":
+                    self._frames.append(message["frame"])
+                if message["type"] == "status":
+                    self._status = message["status"]
+                    if message["status"] == "stopped":
                         self._is_working.clear()
 
                 for subscriber in self._subscribers.values():
@@ -153,7 +148,6 @@ class DistributionTask(threading.Thread):
 
 
 class DistributorService(object):
-
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
@@ -164,10 +158,10 @@ class DistributorService(object):
         with self._lock:
             del self._tasks[key]
             async_to_sync(get_channel_layer().group_send)(
-                f'patch_edit_{key}',
+                f"patch_edit_{key}",
                 {
-                    'type': 'patch_lock',
-                    'action': 'release',
+                    "type": "patch_lock",
+                    "action": "release",
                 },
             )
 
@@ -177,14 +171,14 @@ class DistributorService(object):
                 return self._tasks[patch_id]
             except KeyError:
                 async_to_sync(get_channel_layer().group_send)(
-                    f'patch_edit_{patch_id}',
+                    f"patch_edit_{patch_id}",
                     {
-                        'type': 'patch_lock',
-                        'action': 'acquirer',
+                        "type": "patch_lock",
+                        "action": "acquirer",
                     },
                 )
                 distribution_task = DistributionTask(
-                    lambda : self._distribution_task_complete(patch_id),
+                    lambda: self._distribution_task_complete(patch_id),
                 )
                 distribution_task.start()
                 self._tasks[patch_id] = distribution_task

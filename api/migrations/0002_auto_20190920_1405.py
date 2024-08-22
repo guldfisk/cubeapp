@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0001_initial'),
+        ("api", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='distributionpossibility',
-            unique_together={('patch', 'patch_checksum', 'distribution_checksum')},
+            name="distributionpossibility",
+            unique_together={("patch", "patch_checksum", "distribution_checksum")},
         ),
     ]

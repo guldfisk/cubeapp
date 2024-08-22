@@ -4,31 +4,38 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0009_boosterspecification_scale'),
+        ("limited", "0009_boosterspecification_scale"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ChaosBoosterSpecification',
-            fields=[
-            ],
+            name="ChaosBoosterSpecification",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('limited.boosterspecification',),
+            bases=("limited.boosterspecification",),
         ),
         migrations.AddField(
-            model_name='boosterspecification',
-            name='same',
+            model_name="boosterspecification",
+            name="same",
             field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='boosterspecification',
-            name='type',
-            field=models.CharField(choices=[('limited.expansionboosterspecification', 'expansion booster specification'), ('limited.chaosboosterspecification', 'chaos booster specification'), ('limited.allcardsboosterspecification', 'all cards booster specification'), ('limited.cubeboosterspecification', 'cube booster specification')], db_index=True, max_length=255),
+            model_name="boosterspecification",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("limited.expansionboosterspecification", "expansion booster specification"),
+                    ("limited.chaosboosterspecification", "chaos booster specification"),
+                    ("limited.allcardsboosterspecification", "all cards booster specification"),
+                    ("limited.cubeboosterspecification", "cube booster specification"),
+                ],
+                db_index=True,
+                max_length=255,
+            ),
         ),
     ]

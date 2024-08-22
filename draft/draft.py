@@ -2,30 +2,25 @@ from __future__ import annotations
 
 import datetime
 import random
+import threading
 import time
 import typing as t
-import threading
-
 from abc import ABC, abstractmethod
 from queue import Empty
 
-from django.contrib.auth.models import AbstractUser
 from channels.generic.websocket import WebsocketConsumer
-
-from ring import Ring
-
-from mtgorp.models.serilization.serializeable import SerializationException
-from mtgorp.models.limited.boostergen import GenerateBoosterException
-from mtgorp.models.serilization.strategies.raw import RawStrategy
-
+from django.contrib.auth.models import AbstractUser
 from magiccube.collections.cube import Cube
 from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.infinites import Infinites
-
-from mtgdraft.models import DraftBooster, Pick, SinglePickPick, BurnPick
+from mtgdraft.models import BurnPick, DraftBooster, Pick, SinglePickPick
+from mtgorp.models.limited.boostergen import GenerateBoosterException
+from mtgorp.models.serilization.serializeable import SerializationException
+from mtgorp.models.serilization.strategies.raw import RawStrategy
+from ring import Ring
 
 from api.serialization.serializers import UserSerializer
-from draft.models import DraftSession, DraftSeat, DraftPick
+from draft.models import DraftPick, DraftSeat, DraftSession
 from draft.tasks import create_draft_session_related_printings
 from limited.models import PoolSpecification
 from limited.serializers import PoolSpecificationSerializer
@@ -35,7 +30,6 @@ from utils.queue import Queue
 
 
 class Drafter(object):
-
     def __init__(self, user: AbstractUser, key: str):
         self._user = user
         self._key = key
@@ -49,16 +43,13 @@ class Drafter(object):
         return self._key
 
     def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self._key == other._key
-        )
+        return isinstance(other, self.__class__) and self._key == other._key
 
     def __hash__(self) -> int:
         return hash(self._key)
 
     def __repr__(self) -> str:
-        return '{}({}, {})'.format(
+        return "{}({}, {})".format(
             self.__class__.__name__,
             self._user.username,
             self._key,
@@ -92,7 +83,7 @@ class DraftInterface(ABC):
 
         self._terminating = threading.Event()
 
-        self._booster_pusher = threading.Thread(target = self._draft_loop)
+        self._booster_pusher = threading.Thread(target=self._draft_loop)
 
         self._connect_lock = threading.Lock()
         self._consumer: t.Optional[WebsocketConsumer] = None
@@ -108,25 +99,25 @@ class DraftInterface(ABC):
     def connect(self, consumer: WebsocketConsumer) -> None:
         with self._connect_lock:
             if self._consumer is not None:
-                raise self.ConnectionException('already connected')
+                raise self.ConnectionException("already connected")
             self._consumer = consumer
 
     def disconnect(self) -> None:
         with self._connect_lock:
             if self._consumer is None:
-                raise self.ConnectionException('no consumer connected')
+                raise self.ConnectionException("no consumer connected")
             self._consumer = None
 
     def send_message(self, message_type: str, **kwargs) -> None:
         self.out_queue.put(
             {
-                'type': message_type,
+                "type": message_type,
                 **kwargs,
             }
         )
 
     def send_error(self, error_type: str, **kwargs):
-        self.send_message('error', error_type = error_type, **kwargs)
+        self.send_message("error", error_type=error_type, **kwargs)
 
     @property
     def booster_queue(self) -> Queue[DraftBooster]:
@@ -139,9 +130,9 @@ class DraftInterface(ABC):
     def give_booster(self, booster: DraftBooster) -> None:
         self._booster_queue.put(booster)
         self._draft.broadcast_message(
-            'booster_amount_update',
-            drafter = self._drafter.user.pk,
-            queue_size = self.booster_amount,
+            "booster_amount_update",
+            drafter=self._drafter.user.pk,
+            queue_size=self.booster_amount,
         )
 
     @property
@@ -153,28 +144,28 @@ class DraftInterface(ABC):
         return self._out_queue
 
     def receive_message(self, message: t.Any) -> None:
-        message_type = message.get('type')
+        message_type = message.get("type")
 
-        if message_type == 'pick':
-            pick = message.get('pick')
+        if message_type == "pick":
+            pick = message.get("pick")
             if pick is None:
-                self.send_error('empty_pick')
+                self.send_error("empty_pick")
                 return
 
             try:
                 pick = RawStrategy(db).deserialize(self.pick_type, pick)
             except SerializationException:
-                self.send_error('misconstrued_pick')
+                self.send_error("misconstrued_pick")
                 return
 
             self._pick_queue.put(pick)
 
         else:
-            self.send_error('unknown_message_type', message_type = message_type)
+            self.send_error("unknown_message_type", message_type=message_type)
 
     def start(self) -> None:
         self.send_message(
-            'started',
+            "started",
             **self._draft.serialize(),
         )
         self._booster_pusher.start()
@@ -208,7 +199,7 @@ class DraftInterface(ABC):
     def _draft_loop(self) -> None:
         while not self._terminating.is_set():
             try:
-                booster = self._booster_queue.get(timeout = 2)
+                booster = self._booster_queue.get(timeout=2)
             except Empty:
                 continue
 
@@ -217,44 +208,46 @@ class DraftInterface(ABC):
 
             time_control = self._get_current_time_control()
             self.send_message(
-                'booster',
-                booster = RawStrategy.serialize(self._current_booster),
-                timeout = time_control,
-                began_at = time.time(),
+                "booster",
+                booster=RawStrategy.serialize(self._current_booster),
+                timeout=time_control,
+                began_at=time.time(),
             )
             if time_control:
-                threading.Timer(time_control, self._get_timeout_handler(booster, self._current_booster.pick_number)).start()
+                threading.Timer(
+                    time_control, self._get_timeout_handler(booster, self._current_booster.pick_number)
+                ).start()
 
             while not self._terminating.is_set():
                 try:
-                    pick = self._pick_queue.get(timeout = 2)
+                    pick = self._pick_queue.get(timeout=2)
                 except Empty:
                     continue
 
                 if not self.perform_pick(pick):
                     self.send_error(
-                        'invalid_pick',
-                        pick = pick.serialize(),
+                        "invalid_pick",
+                        pick=pick.serialize(),
                     )
                     continue
 
                 self._pick_counter += 1
 
                 self.send_message(
-                    'pick',
-                    pick = pick.serialize(),
-                    booster = RawStrategy.serialize(self._current_booster),
-                    pick_number = self._pick_counter,
+                    "pick",
+                    pick=pick.serialize(),
+                    booster=RawStrategy.serialize(self._current_booster),
+                    pick_number=self._pick_counter,
                 )
 
                 DraftPick.objects.create(
-                    seat = self._draft_seat,
-                    pack_number = self._draft.pack_counter,
-                    pick_number = self._current_booster.pick_number,
-                    global_pick_number = self._pick_counter - 1,
-                    pack = self._current_booster,
-                    pick = pick,
-                    booster_id = self._current_booster.booster_id,
+                    seat=self._draft_seat,
+                    pack_number=self._draft.pack_counter,
+                    pick_number=self._current_booster.pick_number,
+                    global_pick_number=self._pick_counter - 1,
+                    pack=self._current_booster,
+                    pick=pick,
+                    booster_id=self._current_booster.booster_id,
                 )
 
                 self._current_booster.pick_number += 1
@@ -265,9 +258,9 @@ class DraftInterface(ABC):
                     self._draft.booster_empty(self._current_booster)
                 self._current_booster = None
                 self._draft.broadcast_message(
-                    'booster_amount_update',
-                    drafter = self._drafter.user.pk,
-                    queue_size = self.booster_amount,
+                    "booster_amount_update",
+                    drafter=self._drafter.user.pk,
+                    queue_size=self.booster_amount,
                 )
                 break
 
@@ -314,7 +307,6 @@ class BurnInterface(DraftInterface):
 
 
 class Draft(object):
-
     def __init__(
         self,
         key: str,
@@ -344,23 +336,16 @@ class Draft(object):
         self._pack_counter = 0
 
         self._pack_amount = sum(
-            booster_specification.amount
-            for booster_specification in
-            self._pool_specification.specifications.all()
+            booster_specification.amount for booster_specification in self._pool_specification.specifications.all()
         )
 
         try:
             self._boosters = [
-                [
-                    DraftBooster(booster)
-                    for booster in
-                    player_boosters
-                ]
-                for player_boosters in
-                self._pool_specification.get_boosters(len(self._drafters))
+                [DraftBooster(booster) for booster in player_boosters]
+                for player_boosters in self._pool_specification.get_boosters(len(self._drafters))
             ]
         except GenerateBoosterException:
-            raise StartGameException('Cannot generate required boosters')
+            raise StartGameException("Cannot generate required boosters")
 
         self._drafter_interfaces: t.MutableMapping[Drafter, DraftInterface] = {}
         self._draft_session: t.Optional[DraftSession] = None
@@ -391,16 +376,12 @@ class Draft(object):
 
     def serialize(self) -> t.Mapping[str, t.Any]:
         return {
-            'drafters': [
-                UserSerializer(drafter.user).data
-                for drafter in
-                self._drafters.all
-            ],
-            'pack_amount': self._pack_amount,
-            'draft_format': self._draft_format,
-            'pool_specification': PoolSpecificationSerializer(self._pool_specification).data,
-            'infinites': RawStrategy.serialize(self._infinites),
-            'reverse': self._reverse,
+            "drafters": [UserSerializer(drafter.user).data for drafter in self._drafters.all],
+            "pack_amount": self._pack_amount,
+            "draft_format": self._draft_format,
+            "pool_specification": PoolSpecificationSerializer(self._pool_specification).data,
+            "infinites": RawStrategy.serialize(self._infinites),
+            "reverse": self._reverse,
         }
 
     def broadcast_message(self, message_type: str, **kwargs) -> None:
@@ -419,9 +400,7 @@ class Draft(object):
     def _chain_booster_queues(self) -> None:
         for drafter, interface in self._drafter_interfaces.items():
             interface.passing_to = self._drafter_interfaces[
-                self._drafters.before(drafter)
-                if self._clockwise else
-                self._drafters.after(drafter)
+                self._drafters.before(drafter) if self._clockwise else self._drafters.after(drafter)
             ]
 
         self._clockwise = not self._clockwise
@@ -439,10 +418,10 @@ class Draft(object):
 
         for interface, player_boosters in zip(self._drafter_interfaces.values(), self._boosters):
             interface.send_message(
-                'round',
-                round = {
-                    'pack': self._pack_counter,
-                    'clockwise': self._clockwise,
+                "round",
+                round={
+                    "pack": self._pack_counter,
+                    "clockwise": self._clockwise,
                 },
             )
             booster = player_boosters.pop(0)
@@ -452,41 +431,40 @@ class Draft(object):
     def completed(self) -> None:
         self._draft_session.state = DraftSession.DraftState.COMPLETED
         self._draft_session.ended_at = datetime.datetime.now()
-        self._draft_session.save(update_fields = ('state', 'ended_at'))
+        self._draft_session.save(update_fields=("state", "ended_at"))
         create_draft_session_related_printings.delay(self._draft_session.id)
         self._finished_callback(self)
         for interface in self._drafter_interfaces.values():
-            interface.send_message('completed')
+            interface.send_message("completed")
 
     _draft_format_map = {
-        'single_pick': SinglePickInterface,
-        'burn': BurnInterface,
+        "single_pick": SinglePickInterface,
+        "burn": BurnInterface,
     }
 
     def start(self) -> None:
         interface_type = self._draft_format_map[self._draft_format]
 
         self._draft_session = DraftSession.objects.create(
-            key = self._key,
-            draft_format = self._draft_format,
-            pool_specification = self._pool_specification,
-            infinites = self._infinites,
-            reverse = self._reverse,
-            time_control = self._time_control,
+            key=self._key,
+            draft_format=self._draft_format,
+            pool_specification=self._pool_specification,
+            infinites=self._infinites,
+            reverse=self._reverse,
+            time_control=self._time_control,
         )
 
         self._drafter_interfaces = {
             drafter: interface_type(
-                drafter = drafter,
-                draft = self,
-                draft_seat = DraftSeat.objects.create(
-                    user = drafter.user,
-                    session = self._draft_session,
-                    sequence_number = idx,
+                drafter=drafter,
+                draft=self,
+                draft_seat=DraftSeat.objects.create(
+                    user=drafter.user,
+                    session=self._draft_session,
+                    sequence_number=idx,
                 ),
             )
-            for idx, drafter in
-            enumerate(self._drafters.all)
+            for idx, drafter in enumerate(self._drafters.all)
         }
         for interface in self._drafter_interfaces.values():
             interface.start()

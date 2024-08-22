@@ -3,23 +3,20 @@ import itertools
 import logging
 
 from celery import shared_task
-
 from django.db import transaction
-
+from elo.utils import adjust_eloeds, rescale_eloeds
 from magiccube.collections.cubeable import cardboardize
 from magiccube.laps.traps.trap import CardboardTrap, IntentionType
 
-from elo.utils import rescale_eloeds, adjust_eloeds
-
 from api.models import CubeRelease
-from draft.models import DraftSession, DraftPick
+from draft.models import DraftPick, DraftSession
 from limited.models import CubeBoosterSpecification
 from rating import models
 from rating.calc import (
     calculate_cardboard_stats,
+    get_node_rating_components,
     get_previous_ratings_map_by_conversion_rate,
     get_previous_releases_for_release,
-    get_node_rating_components,
 )
 from rating.values import AVERAGE_RATING
 
@@ -27,45 +24,48 @@ from rating.values import AVERAGE_RATING
 @shared_task()
 @transaction.atomic()
 def generate_ratings_map_for_release(release_id: int) -> None:
-    release = CubeRelease.objects.get(pk = release_id)
+    release = CubeRelease.objects.get(pk=release_id)
     if release.rating_maps.exists():
-        logging.info('Rating map already generated for release {}'.format(release_id))
+        logging.info("Rating map already generated for release {}".format(release_id))
         return
 
     cardboard_cube = release.cube.as_cardboards
 
     previous_releases = get_previous_releases_for_release(release)
 
-    previous_rating_map = models.RatingMap.objects.filter(
-        release_id = previous_releases[0][0].id,
-    ).prefetch_related(
-        'ratings',
-    ).order_by('created_at').last() if previous_releases else None
+    previous_rating_map = (
+        models.RatingMap.objects.filter(
+            release_id=previous_releases[0][0].id,
+        )
+        .prefetch_related(
+            "ratings",
+        )
+        .order_by("created_at")
+        .last()
+        if previous_releases
+        else None
+    )
 
     rating_map = models.RatingMap.objects.create(
-        release = release,
-        ratings_for = release,
-        parent = previous_rating_map,
+        release=release,
+        ratings_for=release,
+        parent=previous_rating_map,
     )
-    models.RatingMap.objects.filter(id = rating_map.id).update(created_at = release.created_at)
+    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=release.created_at)
 
     new_ratings = []
 
-    example_map = {
-        cardboardize(cubeable): cubeable
-        for cubeable in
-        release.cube.cubeables.distinct_elements()
-    }
+    example_map = {cardboardize(cubeable): cubeable for cubeable in release.cube.cubeables.distinct_elements()}
 
     if not previous_rating_map:
         for cardboard_cubeable in cardboard_cube.cubeables.distinct_elements():
             new_ratings.append(
                 models.CardboardCubeableRating(
-                    rating_map = rating_map,
-                    cardboard_cubeable = cardboard_cubeable,
-                    cardboard_cubeable_id = cardboard_cubeable.id,
-                    example_cubeable = example_map[cardboard_cubeable],
-                    rating = AVERAGE_RATING,
+                    rating_map=rating_map,
+                    cardboard_cubeable=cardboard_cubeable,
+                    cardboard_cubeable_id=cardboard_cubeable.id,
+                    example_cubeable=example_map[cardboard_cubeable],
+                    rating=AVERAGE_RATING,
                 )
             )
 
@@ -78,22 +78,23 @@ def generate_ratings_map_for_release(release_id: int) -> None:
         for cardboard_cubeable in cardboard_cube.cubeables.distinct_elements():
             rating_seed = previous_rating_map.get(cardboard_cubeable)
             if rating_seed is None:
-                if isinstance(cardboard_cubeable, CardboardTrap) and cardboard_cubeable.intention_type == IntentionType.GARBAGE:
+                if (
+                    isinstance(cardboard_cubeable, CardboardTrap)
+                    and cardboard_cubeable.intention_type == IntentionType.GARBAGE
+                ):
                     rating_seed = int(
                         sum(
-                            rating / 2 ** idx
-                            for idx, rating in
-                            enumerate(
+                            rating / 2**idx
+                            for idx, rating in enumerate(
                                 sorted(
                                     (
                                         previous_ratings_node_map.get(
                                             node,
                                             AVERAGE_RATING / len(cardboard_cubeable.node.children),
                                         )
-                                        for node in
-                                        cardboard_cubeable.node.children
+                                        for node in cardboard_cubeable.node.children
                                     ),
-                                    reverse = True,
+                                    reverse=True,
                                 )
                             )
                         )
@@ -102,18 +103,18 @@ def generate_ratings_map_for_release(release_id: int) -> None:
                     rating_seed = AVERAGE_RATING
             new_ratings.append(
                 models.CardboardCubeableRating(
-                    rating_map = rating_map,
-                    cardboard_cubeable = cardboard_cubeable,
-                    cardboard_cubeable_id = cardboard_cubeable.id,
-                    example_cubeable = example_map[cardboard_cubeable],
-                    rating = rating_seed,
+                    rating_map=rating_map,
+                    cardboard_cubeable=cardboard_cubeable,
+                    cardboard_cubeable_id=cardboard_cubeable.id,
+                    example_cubeable=example_map[cardboard_cubeable],
+                    rating=rating_seed,
                 )
             )
 
         rescale_eloeds(
-            eloeds = new_ratings,
-            average_rating = AVERAGE_RATING,
-            reset_factor = previous_releases[0][1],
+            eloeds=new_ratings,
+            average_rating=AVERAGE_RATING,
+            reset_factor=previous_releases[0][1],
         )
 
         models.NodeRatingComponent.objects.bulk_create(
@@ -130,41 +131,46 @@ def generate_ratings_map_for_release(release_id: int) -> None:
 @shared_task()
 @transaction.atomic()
 def generate_ratings_map_for_draft(draft_session_id: int) -> None:
-    draft_session = DraftSession.objects.get(id = draft_session_id)
+    draft_session = DraftSession.objects.get(id=draft_session_id)
     if draft_session.rating_maps.exists():
-        logging.info('Rating map already generated for draft_session {}'.format(draft_session_id))
+        logging.info("Rating map already generated for draft_session {}".format(draft_session_id))
         return
 
     booster_specification = draft_session.pool_specification.specifications.get()
 
     if not isinstance(booster_specification, CubeBoosterSpecification):
-        raise ValueError('Can only generate rating maps for cube booster drafts')
+        raise ValueError("Can only generate rating maps for cube booster drafts")
 
-    previous_rating_map = models.RatingMap.objects.filter(
-        release_id = booster_specification.release_id,
-    ).prefetch_related(
-        'ratings',
-    ).order_by('created_at').last()
+    previous_rating_map = (
+        models.RatingMap.objects.filter(
+            release_id=booster_specification.release_id,
+        )
+        .prefetch_related(
+            "ratings",
+        )
+        .order_by("created_at")
+        .last()
+    )
 
     rating_map = models.RatingMap.objects.create(
-        release = booster_specification.release,
-        ratings_for = draft_session,
-        parent_id = previous_rating_map.id,
+        release=booster_specification.release,
+        ratings_for=draft_session,
+        parent_id=previous_rating_map.id,
     )
-    models.RatingMap.objects.filter(id = rating_map.id).update(created_at = draft_session.ended_at)
+    models.RatingMap.objects.filter(id=rating_map.id).update(created_at=draft_session.ended_at)
 
     new_ratings = {
         rating.cardboard_cubeable: models.CardboardCubeableRating(
-            rating_map = rating_map,
-            cardboard_cubeable = rating.cardboard_cubeable,
-            cardboard_cubeable_id = rating.cardboard_cubeable.id,
-            example_cubeable = rating.example_cubeable,
-            rating = rating.rating,
-        ) for rating in
-        previous_rating_map.ratings.all()
+            rating_map=rating_map,
+            cardboard_cubeable=rating.cardboard_cubeable,
+            cardboard_cubeable_id=rating.cardboard_cubeable.id,
+            example_cubeable=rating.example_cubeable,
+            rating=rating.rating,
+        )
+        for rating in previous_rating_map.ratings.all()
     }
 
-    for draft_pick in DraftPick.objects.filter(seat__session_id = draft_session.id).order_by('created_at'):
+    for draft_pick in DraftPick.objects.filter(seat__session_id=draft_session.id).order_by("created_at"):
         for picked, not_picked in itertools.product(
             (cardboardize(picked) for picked in draft_pick.pick.picked if picked is not None),
             draft_pick.pack.cubeables.as_cardboards,
@@ -172,13 +178,14 @@ def generate_ratings_map_for_draft(draft_session_id: int) -> None:
             adjust_eloeds(
                 new_ratings[picked],
                 new_ratings[not_picked],
-                k = int(32 / len(draft_pick.pack.cubeables)),
+                k=int(32 / len(draft_pick.pack.cubeables)),
             )
 
     models.CardboardCubeableRating.objects.bulk_create(new_ratings.values())
 
     _, previous_ratings_node_map = get_previous_ratings_map_by_conversion_rate(
-        [(booster_specification.release, 0.)] + list(get_previous_releases_for_release(booster_specification.release)),
+        [(booster_specification.release, 0.0)]
+        + list(get_previous_releases_for_release(booster_specification.release)),
         previous_rating_map,
     )
 
@@ -196,14 +203,16 @@ def check_new_rating_events():
     for rating_event in sorted(
         itertools.chain(
             CubeRelease.objects.filter(
-                rating_maps__isnull = True,
-                versioned_cube__active = True,
-            ).only('created_at'),
-            DraftSession.objects.competitive_drafts().filter(
-                rating_maps__isnull = True,
-            ).only('started_at'),
+                rating_maps__isnull=True,
+                versioned_cube__active=True,
+            ).only("created_at"),
+            DraftSession.objects.competitive_drafts()
+            .filter(
+                rating_maps__isnull=True,
+            )
+            .only("started_at"),
         ),
-        key = lambda e: e.created_at if isinstance(e, CubeRelease) else e.started_at,
+        key=lambda e: e.created_at if isinstance(e, CubeRelease) else e.started_at,
     ):
         if isinstance(rating_event, CubeRelease):
             generate_ratings_map_for_release.delay(rating_event.id)
@@ -213,31 +222,33 @@ def check_new_rating_events():
 
 @shared_task()
 def generate_stats_for_map(rating_map_id):
-    release = CubeRelease.objects.get(all_rating_maps__id = rating_map_id)
+    release = CubeRelease.objects.get(all_rating_maps__id=rating_map_id)
 
-    stats = calculate_cardboard_stats(
-        [(release, 0.)] + list(get_previous_releases_for_release(release))
-    )
+    stats = calculate_cardboard_stats([(release, 0.0)] + list(get_previous_releases_for_release(release)))
     with transaction.atomic():
         models.CardboardStat.objects.bulk_create(
             (
                 models.CardboardStat(
-                    rating_map_id = rating_map_id,
-                    cardboard = cardboard,
-                    stat = field.name,
-                    value = getattr(stats, field.name)[cardboard],
+                    rating_map_id=rating_map_id,
+                    cardboard=cardboard,
+                    stat=field.name,
+                    value=getattr(stats, field.name)[cardboard],
                 )
-                for cardboard in
-                set(release.cube.as_cardboards.all_cardboards)
-                for field in
-                dataclasses.fields(stats)
+                for cardboard in set(release.cube.as_cardboards.all_cardboards)
+                for field in dataclasses.fields(stats)
             )
         )
 
 
 @shared_task()
 def update_stats():
-    for rating_map_id in models.RatingMap.objects.filter(
-        cardboard_statistics__isnull = True,
-    ).order_by('created_at', ).values_list('id', flat = True):
+    for rating_map_id in (
+        models.RatingMap.objects.filter(
+            cardboard_statistics__isnull=True,
+        )
+        .order_by(
+            "created_at",
+        )
+        .values_list("id", flat=True)
+    ):
         generate_stats_for_map.delay(rating_map_id)

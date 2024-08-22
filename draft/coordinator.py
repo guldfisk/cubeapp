@@ -5,17 +5,14 @@ import typing as t
 import uuid
 
 from django.contrib.auth.models import AbstractUser
-
-from ring import Ring
-
 from magiccube.collections.infinites import Infinites
+from ring import Ring
 
 from draft.draft import Draft, Drafter, DraftInterface
 from limited.models import PoolSpecification
 
 
 class DraftCoordinator(object):
-
     def __init__(self):
         self._drafts: t.MutableSet[Draft] = set()
         self._drafters: t.MutableMapping[str, DraftInterface] = {}
@@ -36,7 +33,6 @@ class DraftCoordinator(object):
         time_control: t.Optional[float],
         finished_callback: t.Callable[[Draft], None],
     ) -> t.Tuple[t.Tuple[AbstractUser, Drafter], ...]:
-
         drafters = tuple(
             (
                 user,
@@ -45,29 +41,24 @@ class DraftCoordinator(object):
                     str(uuid.uuid4()),
                 ),
             )
-            for user in
-            users
+            for user in users
         )
 
-        drafters_ring = Ring(
-            drafter
-            for _, drafter in
-            drafters
-        )
+        drafters_ring = Ring(drafter for _, drafter in drafters)
 
         def _finished_callback(_draft: Draft):
             self.draft_complete(_draft)
             finished_callback(_draft)
 
         draft = Draft(
-            key = str(uuid.uuid4()),
-            drafters = drafters_ring,
-            pool_specification = pool_specification,
-            infinites = infinites,
-            draft_format = draft_format,
-            time_control = time_control,
-            finished_callback = _finished_callback,
-            reverse = reverse,
+            key=str(uuid.uuid4()),
+            drafters=drafters_ring,
+            pool_specification=pool_specification,
+            infinites=infinites,
+            draft_format=draft_format,
+            time_control=time_control,
+            finished_callback=_finished_callback,
+            reverse=reverse,
         )
 
         draft.start()

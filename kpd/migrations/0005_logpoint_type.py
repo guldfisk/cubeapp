@@ -4,16 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kpd', '0004_auto_20210928_1313'),
+        ("kpd", "0004_auto_20210928_1313"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='logpoint',
-            name='type',
-            field=models.CharField(default='kebab', max_length=31),
+            model_name="logpoint",
+            name="type",
+            field=models.CharField(default="kebab", max_length=31),
             preserve_default=False,
         ),
     ]

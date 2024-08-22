@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0019_pooldeck_latest'),
-        ('league', '0002_auto_20210225_1025'),
+        ("limited", "0019_pooldeck_latest"),
+        ("league", "0002_auto_20210225_1025"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='ParticipantRating',
-            new_name='DeckRating',
+            old_name="ParticipantRating",
+            new_name="DeckRating",
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('draft', '0008_draftpick_global_pick_number'),
+        ("draft", "0008_draftpick_global_pick_number"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='draftpick',
-            name='global_pick_number',
+            model_name="draftpick",
+            name="global_pick_number",
             field=models.PositiveSmallIntegerField(default=1),
             preserve_default=False,
         ),

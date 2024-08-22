@@ -8,40 +8,33 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models import Count, QuerySet
-
-from typedmodels.models import TypedModel
-
-from mtgorp.models.formats.format import LimitedSideboard
-
 from magiccube.collections.cubeable import Cubeable
 from magiccube.collections.infinites import Infinites
-
 from mtgdraft.models import DraftBooster, Pick
+from mtgorp.models.formats.format import LimitedSideboard
 
 from api.fields.orp import OrpField
-from limited.models import PoolSpecification, LimitedSession, CubeBoosterSpecification
+from limited.models import CubeBoosterSpecification, LimitedSession, PoolSpecification
 from utils.fields import EnumField
-from utils.mixins import TimestampedModel
 
 
 class DraftSessionQueryset(QuerySet):
-
     def competitive_drafts(self) -> QuerySet:
         return self.annotate(
-            specifications_count = Count(
-                'pool_specification__specifications',
-                distinct = True,
+            specifications_count=Count(
+                "pool_specification__specifications",
+                distinct=True,
             ),
-            seat_count = Count('seats', distinct = True),
+            seat_count=Count("seats", distinct=True),
         ).filter(
-            state = DraftSession.DraftState.COMPLETED,
-            specifications_count = 1,
-            seat_count__gt = 1,
-            limited_session__format = LimitedSideboard.name,
-            pool_specification__specifications__type = CubeBoosterSpecification._typedmodels_type,
-            pool_specification__specifications__release__versioned_cube__active = True,
-            pool_specification__specifications__allow_intersection = False,
-            pool_specification__specifications__allow_repeat = False,
+            state=DraftSession.DraftState.COMPLETED,
+            specifications_count=1,
+            seat_count__gt=1,
+            limited_session__format=LimitedSideboard.name,
+            pool_specification__specifications__type=CubeBoosterSpecification._typedmodels_type,
+            pool_specification__specifications__release__versioned_cube__active=True,
+            pool_specification__specifications__allow_intersection=False,
+            pool_specification__specifications__allow_repeat=False,
         )
 
 
@@ -51,29 +44,29 @@ class DraftSession(models.Model):
         COMPLETED = 1
         ABANDONED = 2
 
-    started_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
-    key = models.CharField(max_length = 255)
-    ended_at = models.DateTimeField(null = True)
-    draft_format = models.CharField(max_length = 127)
+    started_at = models.DateTimeField(editable=False, blank=False, auto_now_add=True)
+    key = models.CharField(max_length=255)
+    ended_at = models.DateTimeField(null=True)
+    draft_format = models.CharField(max_length=127)
     reverse = models.BooleanField()
-    time_control = models.FloatField(null = True)
-    state = EnumField(DraftState, default = DraftState.DRAFTING)
-    infinites: Infinites = OrpField(model_type = Infinites)
+    time_control = models.FloatField(null=True)
+    state = EnumField(DraftState, default=DraftState.DRAFTING)
+    infinites: Infinites = OrpField(model_type=Infinites)
     pool_specification = models.ForeignKey(
         PoolSpecification,
-        on_delete = models.CASCADE,
-        related_name = 'draft_sessions',
+        on_delete=models.CASCADE,
+        related_name="draft_sessions",
     )
     limited_session = models.ForeignKey(
         LimitedSession,
-        on_delete = models.CASCADE,
-        related_name = 'draft_session',
-        null = True,
+        on_delete=models.CASCADE,
+        related_name="draft_session",
+        null=True,
     )
     rating_maps = GenericRelation(
-        'rating.RatingMap',
-        'ratings_for_object_id',
-        'ratings_for_content_type',
+        "rating.RatingMap",
+        "ratings_for_object_id",
+        "ratings_for_content_type",
     )
 
     objects = DraftSessionQueryset.as_manager()
@@ -83,32 +76,32 @@ class DraftSession(models.Model):
         return (seat.user for seat in self.seats.all())
 
     def get_absolute_url(self) -> str:
-        return f'/drafts/{self.id}'
+        return f"/drafts/{self.id}"
 
 
 class DraftSeat(models.Model):
     sequence_number = models.PositiveSmallIntegerField()
-    user = models.ForeignKey(get_user_model(), on_delete = models.PROTECT, related_name = 'seats')
-    session = models.ForeignKey(DraftSession, on_delete = models.CASCADE, related_name = 'seats')
+    user = models.ForeignKey(get_user_model(), on_delete=models.PROTECT, related_name="seats")
+    session = models.ForeignKey(DraftSession, on_delete=models.CASCADE, related_name="seats")
 
     class Meta:
-        ordering = ['sequence_number']
+        ordering = ["sequence_number"]
 
 
 class DraftPick(models.Model):
-    created_at = models.DateTimeField(editable = False, blank = False, auto_now_add = True)
-    seat = models.ForeignKey(DraftSeat, on_delete = models.CASCADE, related_name = 'picks')
+    created_at = models.DateTimeField(editable=False, blank=False, auto_now_add=True)
+    seat = models.ForeignKey(DraftSeat, on_delete=models.CASCADE, related_name="picks")
     global_pick_number = models.PositiveSmallIntegerField()
     pack_number = models.PositiveSmallIntegerField()
     pick_number = models.PositiveSmallIntegerField()
     pack: DraftBooster = OrpField(DraftBooster)
     pick: Pick = OrpField(Pick)
-    booster_id = models.CharField(max_length = 36)
+    booster_id = models.CharField(max_length=36)
 
     printings = GenericRelation(
-        'api.RelatedPrinting',
-        'related_object_id',
-        'related_content_type',
+        "api.RelatedPrinting",
+        "related_object_id",
+        "related_content_type",
     )
 
     @property
@@ -117,7 +110,7 @@ class DraftPick(models.Model):
 
     class Meta:
         unique_together = (
-            ('seat', 'global_pick_number'),
-            ('seat', 'pack_number', 'pick_number'),
-            ('booster_id', 'pick_number'),
+            ("seat", "global_pick_number"),
+            ("seat", "pack_number", "pick_number"),
+            ("booster_id", "pick_number"),
         )

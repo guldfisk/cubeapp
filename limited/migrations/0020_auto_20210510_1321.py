@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0019_pooldeck_latest'),
+        ("limited", "0019_pooldeck_latest"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='matchresult',
-            name='session',
+            model_name="matchresult",
+            name="session",
         ),
         migrations.DeleteModel(
-            name='MatchPlayer',
+            name="MatchPlayer",
         ),
         migrations.DeleteModel(
-            name='MatchResult',
+            name="MatchResult",
         ),
     ]

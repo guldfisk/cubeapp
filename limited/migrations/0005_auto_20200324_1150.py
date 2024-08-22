@@ -5,15 +5,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('limited', '0004_matchplayer_matchresult'),
+        ("limited", "0004_matchplayer_matchresult"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='matchplayer',
-            unique_together={('user', 'match_result')},
+            name="matchplayer",
+            unique_together={("user", "match_result")},
         ),
     ]

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import typing as t
-
 from abc import abstractmethod
 
 from django.contrib.auth.models import AbstractUser

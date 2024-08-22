@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0018_auto_20201220_1724'),
+        ("limited", "0018_auto_20201220_1724"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='pooldeck',
-            name='latest',
+            model_name="pooldeck",
+            name="latest",
             field=models.BooleanField(default=True),
         ),
     ]

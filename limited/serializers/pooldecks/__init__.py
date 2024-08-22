@@ -1,2 +1,2 @@
-from .minimal import *
-from .full import *
+# from .full import *
+# from .minimal import *

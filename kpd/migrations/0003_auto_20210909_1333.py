@@ -4,34 +4,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kpd', '0002_auto_20210616_0829'),
+        ("kpd", "0002_auto_20210616_0829"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SessionKey',
+            name="SessionKey",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('key', models.CharField(max_length=255)),
-                ('valid_until', models.DateTimeField()),
-                ('expiration_notified', models.BooleanField(default=False)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("key", models.CharField(max_length=255)),
+                ("valid_until", models.DateTimeField()),
+                ("expiration_notified", models.BooleanField(default=False)),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AlterField(
-            model_name='kebabevent',
-            name='timestamp',
+            model_name="kebabevent",
+            name="timestamp",
             field=models.DateTimeField(unique=True),
         ),
         migrations.AlterField(
-            model_name='kebabpoint',
-            name='timestamp',
+            model_name="kebabpoint",
+            name="timestamp",
             field=models.DateTimeField(unique=True),
         ),
     ]

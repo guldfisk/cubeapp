@@ -1,16 +1,16 @@
 from django.contrib.contenttypes.models import ContentType
-
+from magiccube.laps.traps.tree.printingtree import CardboardNodeChild, PrintingNodeChild
+from mtgorp.models.interfaces import Cardboard, Printing
+from mtgorp.models.serilization.serializeable import compacted_model
 from rest_framework import serializers
 from rest_framework.fields import SerializerMethodField
 
-from mtgorp.models.interfaces import Cardboard, Printing
-from mtgorp.models.serilization.serializeable import compacted_model
-
-from magiccube.laps.traps.tree.printingtree import PrintingNodeChild, CardboardNodeChild
-
 from api.models import CubeRelease
 from api.serialization import orpserialize
-from api.serialization.orpserialize import CardboardCubeableSerializer, CubeableSerializer
+from api.serialization.orpserialize import (
+    CardboardCubeableSerializer,
+    CubeableSerializer,
+)
 from api.serialization.serializers import NameCubeReleaseSerializer, OrpSerializerField
 from draft.models import DraftSession
 from rating import models
@@ -18,7 +18,6 @@ from utils.values import JAVASCRIPT_DATETIME_FORMAT
 
 
 class PrintingNodeChildSerializer(orpserialize.ModelSerializer[PrintingNodeChild]):
-
     @classmethod
     def serialize(cls, serializeable: PrintingNodeChild) -> compacted_model:
         if isinstance(serializeable, Printing):
@@ -27,7 +26,6 @@ class PrintingNodeChildSerializer(orpserialize.ModelSerializer[PrintingNodeChild
 
 
 class CardboardNodeChildSerializer(orpserialize.ModelSerializer[CardboardNodeChild]):
-
     @classmethod
     def serialize(cls, serializeable: CardboardNodeChild) -> compacted_model:
         if isinstance(serializeable, Cardboard):
@@ -36,37 +34,37 @@ class CardboardNodeChildSerializer(orpserialize.ModelSerializer[CardboardNodeChi
 
 
 class NodeRatingComponentSerializer(serializers.ModelSerializer):
-    node = OrpSerializerField(model_serializer = CardboardNodeChildSerializer)
-    example_node = OrpSerializerField(model_serializer = PrintingNodeChildSerializer)
+    node = OrpSerializerField(model_serializer=CardboardNodeChildSerializer)
+    example_node = OrpSerializerField(model_serializer=PrintingNodeChildSerializer)
 
     class Meta:
         model = models.NodeRatingComponent
-        fields = ('id', 'node', 'node_id', 'example_node', 'rating_component', 'weight')
+        fields = ("id", "node", "node_id", "example_node", "rating_component", "weight")
 
 
 class CardboardCubeableRatingSerializer(serializers.ModelSerializer):
-    cardboard_cubeable = OrpSerializerField(model_serializer = CardboardCubeableSerializer)
-    example_cubeable = OrpSerializerField(model_serializer = CubeableSerializer)
+    cardboard_cubeable = OrpSerializerField(model_serializer=CardboardCubeableSerializer)
+    example_cubeable = OrpSerializerField(model_serializer=CubeableSerializer)
 
     class Meta:
         model = models.CardboardCubeableRating
-        fields = ('id', 'cardboard_cubeable', 'cardboard_cubeable_id', 'rating', 'example_cubeable')
+        fields = ("id", "cardboard_cubeable", "cardboard_cubeable_id", "rating", "example_cubeable")
 
 
 _CONTENT_TYPE_RATING_MAP = {
-    ContentType.objects.get_for_model(CubeRelease).id: 'release',
-    ContentType.objects.get_for_model(DraftSession).id: 'draft',
+    ContentType.objects.get_for_model(CubeRelease).id: "release",
+    ContentType.objects.get_for_model(DraftSession).id: "draft",
 }
 
 
 class MinimalRatingMapSerializer(serializers.ModelSerializer):
     release = NameCubeReleaseSerializer()
-    created_at = serializers.DateTimeField(read_only = True, format = JAVASCRIPT_DATETIME_FORMAT)
+    created_at = serializers.DateTimeField(read_only=True, format=JAVASCRIPT_DATETIME_FORMAT)
     event_type = SerializerMethodField()
 
     class Meta:
         model = models.RatingMap
-        fields = ('id', 'created_at', 'release', 'event_type')
+        fields = ("id", "created_at", "release", "event_type")
 
     @classmethod
     def get_event_type(cls, instance: models.RatingMap) -> str:
@@ -78,7 +76,7 @@ class DatedCardboardCubeableRatingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CardboardCubeableRating
-        fields = ('id', 'rating', 'rating_map')
+        fields = ("id", "rating", "rating_map")
 
 
 class DatedNodeRatingComponentSerializer(serializers.ModelSerializer):
@@ -86,15 +84,24 @@ class DatedNodeRatingComponentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.NodeRatingComponent
-        fields = ('id', 'rating_component', 'weight', 'rating_map')
+        fields = ("id", "rating_component", "weight", "rating_map")
 
 
 class RatingMapSerializer(MinimalRatingMapSerializer):
-    ratings = CardboardCubeableRatingSerializer(many = True)
-    node_rating_components = NodeRatingComponentSerializer(many = True)
+    ratings = CardboardCubeableRatingSerializer(many=True)
+    node_rating_components = NodeRatingComponentSerializer(many=True)
     parent = MinimalRatingMapSerializer()
-    children = MinimalRatingMapSerializer(many = True)
+    children = MinimalRatingMapSerializer(many=True)
 
     class Meta:
         model = models.RatingMap
-        fields = ('id', 'release', 'created_at', 'ratings', 'node_rating_components', 'parent', 'children', 'event_type')
+        fields = (
+            "id",
+            "release",
+            "created_at",
+            "ratings",
+            "node_rating_components",
+            "parent",
+            "children",
+            "event_type",
+        )

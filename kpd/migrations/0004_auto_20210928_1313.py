@@ -4,11 +4,10 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kpd', '0003_auto_20210909_1333'),
+        ("kpd", "0003_auto_20210909_1333"),
     ]
 
     operations = [
-        migrations.RenameModel('KebabPoint', 'LogPoint'),
+        migrations.RenameModel("KebabPoint", "LogPoint"),
     ]

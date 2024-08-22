@@ -3,10 +3,26 @@ from mtgorp.tools.parsing.exceptions import ParseException
 from mtgorp.tools.parsing.search.parse import SearchParser as CardSearchParser
 from mtgorp.tools.search.extraction import PrintingStrategy
 
-
 from limited.search.dto import (
-    NotNode, OrNode, AndNode, PrintingNode, NameNode, CreatorNode, WinNode, LossNode, DrawNode, EXACT, CONTAINS,
-    EQUALS, LESS_THAN, LESS_THAN_EQUALS, GREATER_THAN, GREATER_THAN_EQUALS, ParenthesisNode, DeckSearchDTO, CubeNode
+    CONTAINS,
+    EQUALS,
+    EXACT,
+    GREATER_THAN,
+    GREATER_THAN_EQUALS,
+    LESS_THAN,
+    LESS_THAN_EQUALS,
+    AndNode,
+    CreatorNode,
+    CubeNode,
+    DeckSearchDTO,
+    DrawNode,
+    LossNode,
+    NameNode,
+    NotNode,
+    OrNode,
+    ParenthesisNode,
+    PrintingNode,
+    WinNode,
 )
 from limited.search.gen.search_grammarParser import search_grammarParser
 from limited.search.gen.search_grammarVisitor import search_grammarVisitor
@@ -17,7 +33,6 @@ class TypeParseException(ParseException):
 
 
 class SearchVisitor(search_grammarVisitor):
-
     def __init__(self, db: CardDatabase):
         self._db = db
         self._card_parser = CardSearchParser(self._db)

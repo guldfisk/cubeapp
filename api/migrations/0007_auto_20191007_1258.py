@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0006_auto_20191007_1249'),
+        ("api", "0006_auto_20191007_1249"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='constrainednodes',
-            old_name='constrained_nodes_content',
-            new_name='constrained_nodes',
+            model_name="constrainednodes",
+            old_name="constrained_nodes_content",
+            new_name="constrained_nodes",
         ),
         migrations.RenameField(
-            model_name='constrainednodes',
-            old_name='group_map_content',
-            new_name='group_map',
+            model_name="constrainednodes",
+            old_name="group_map_content",
+            new_name="group_map",
         ),
     ]

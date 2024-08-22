@@ -5,27 +5,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ForecastSliceSnapShot',
+            name="ForecastSliceSnapShot",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('from_time', models.DateTimeField()),
-                ('end_time', models.DateTimeField()),
-                ('average_temperature', models.FloatField()),
-                ('total_precipitation', models.FloatField()),
-                ('precipitation_types', django.contrib.postgres.fields.ArrayField(base_field=models.TextField(), size=None)),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("from_time", models.DateTimeField()),
+                ("end_time", models.DateTimeField()),
+                ("average_temperature", models.FloatField()),
+                ("total_precipitation", models.FloatField()),
+                (
+                    "precipitation_types",
+                    django.contrib.postgres.fields.ArrayField(base_field=models.TextField(), size=None),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

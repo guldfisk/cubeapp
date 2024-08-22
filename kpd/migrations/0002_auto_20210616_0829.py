@@ -4,25 +4,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('kpd', '0001_initial'),
+        ("kpd", "0001_initial"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='kebabpoint',
-            old_name='value_28',
-            new_name='value_long',
+            model_name="kebabpoint",
+            old_name="value_28",
+            new_name="value_long",
         ),
         migrations.RenameField(
-            model_name='kebabpoint',
-            old_name='value_14',
-            new_name='value_medium',
+            model_name="kebabpoint",
+            old_name="value_14",
+            new_name="value_medium",
         ),
         migrations.RenameField(
-            model_name='kebabpoint',
-            old_name='value_7',
-            new_name='value_short',
+            model_name="kebabpoint",
+            old_name="value_7",
+            new_name="value_short",
         ),
     ]

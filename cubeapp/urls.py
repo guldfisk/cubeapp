@@ -1,27 +1,25 @@
 from django.conf import settings
-from django.urls import path, include, re_path
+from django.urls import include, path, re_path
 
 
 urlpatterns = [
-    path('api/', include('api.urls')),
-    path('api/auth/', include('knox.urls')),
-    path('api/limited/', include('limited.urls')),
-    path('api/draft/', include('draft.urls')),
-    path('api/wishlist/', include('wishlist.urls')),
-    path('api/tournaments/', include('tournaments.urls')),
-    path('api/leagues/', include('league.urls')),
-    path('api/ratings/', include('rating.urls')),
-    path('api/image-qty-records/', include('imgqty.urls')),
-    path('api/kpd/', include('kpd.urls')),
+    path("api/", include("api.urls")),
+    path("api/auth/", include("knox.urls")),
+    path("api/limited/", include("limited.urls")),
+    path("api/draft/", include("draft.urls")),
+    path("api/wishlist/", include("wishlist.urls")),
+    path("api/tournaments/", include("tournaments.urls")),
+    path("api/leagues/", include("league.urls")),
+    path("api/ratings/", include("rating.urls")),
+    path("api/image-qty-records/", include("imgqty.urls")),
+    path("api/kpd/", include("kpd.urls")),
 ]
 
 if settings.DEBUG:
     import debug_toolbar
 
     urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
+        path("__debug__/", include(debug_toolbar.urls)),
     ] + urlpatterns
 
-urlpatterns = urlpatterns + [
-    re_path('.*', include('frontend.urls'))
-]
+urlpatterns = urlpatterns + [re_path(".*", include("frontend.urls"))]

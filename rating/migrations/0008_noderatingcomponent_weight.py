@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rating', '0007_auto_20210319_1318'),
+        ("rating", "0007_auto_20210319_1318"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='noderatingcomponent',
-            name='weight',
+            model_name="noderatingcomponent",
+            name="weight",
             field=models.DecimalField(decimal_places=2, default=1, max_digits=8),
             preserve_default=False,
         ),

@@ -1,7 +1,7 @@
 import threading
 import typing as t
-
-from queue import Queue as _Queue, Full
+from queue import Full
+from queue import Queue as _Queue
 from time import time
 
 

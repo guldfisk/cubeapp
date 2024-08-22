@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0001_initial'),
+        ("limited", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='boosterspecification',
-            name='amount',
+            model_name="boosterspecification",
+            name="amount",
             field=models.PositiveSmallIntegerField(default=1),
         ),
         migrations.AlterField(
-            model_name='boosterspecification',
-            name='sequence_number',
+            model_name="boosterspecification",
+            name="sequence_number",
             field=models.IntegerField(default=0),
         ),
     ]

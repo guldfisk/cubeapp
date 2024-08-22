@@ -4,16 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('draft', '0009_auto_20210601_0913'),
+        ("draft", "0009_auto_20210601_0913"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='draftpick',
-            name='booster_id',
-            field=models.CharField(default='', max_length=36),
+            model_name="draftpick",
+            name="booster_id",
+            field=models.CharField(default="", max_length=36),
             preserve_default=False,
         ),
     ]

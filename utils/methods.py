@@ -2,7 +2,7 @@ from mocknames.generate import NameGenerator
 
 
 def import_path(path: str):
-    components = path.split('.')
+    components = path.split(".")
     mod = __import__(components[0])
     for comp in components[1:]:
         mod = getattr(mod, comp)
@@ -15,5 +15,5 @@ def get_random_name():
 
 def remove_prefix(s: str, prefix: str) -> str:
     if s.startswith(prefix):
-        return s[len(prefix):]
+        return s[len(prefix) :]
     return s

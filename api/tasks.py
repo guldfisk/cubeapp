@@ -10,29 +10,29 @@ from collections import defaultdict
 from contextlib import ExitStack
 from urllib.parse import urljoin
 
-from botocore.client import BaseClient
 from asgiref.sync import async_to_sync
+from botocore.client import BaseClient
 from celery import shared_task
 from channels.layers import get_channel_layer
-
 from django.template.loader import get_template
-
-from proxypdf.streamwriter import StreamProxyWriter
-
+from magiccube.collections.laps import TrapCollection
+from mtgimg.interface import ImageRequest, SizeSlug
+from mtgimg.pipeline import ImageableProcessor, get_pipeline
 from mtgorp.db.create import update_pickle_database
-from mtgorp.managejson.paths import LOG_PATH, APP_DATA_PATH
-from mtgorp.managejson.update import MTG_JSON_DATETIME_FORMAT, get_last_db_update, check_and_update, get_update_db
+from mtgorp.managejson.paths import APP_DATA_PATH, LOG_PATH
+from mtgorp.managejson.update import (
+    MTG_JSON_DATETIME_FORMAT,
+    check_and_update,
+    get_last_db_update,
+    get_update_db,
+)
 from mtgorp.models.persistent.attributes.expansiontype import ExpansionType
 from mtgorp.models.persistent.cardboard import Cardboard
 from mtgorp.models.persistent.printing import Printing
-
-from mtgimg.interface import SizeSlug, ImageRequest
-from mtgimg.pipeline import ImageableProcessor, get_pipeline
-
-from magiccube.collections.laps import TrapCollection
+from proxypdf.streamwriter import StreamProxyWriter
 
 from api import models
-from api.boto import get_boto_client, SPACES_ENDPOINT
+from api.boto import SPACES_ENDPOINT, get_boto_client
 from api.mail import mail_me
 from cubeapp import settings
 from resources.staticimageloader import image_loader
@@ -42,7 +42,7 @@ from utils.boto import MultipartUpload
 def inject_boto_client(f: t.Callable) -> t.Callable:
     @functools.wraps(f)
     def wrapper(*args, **kwargs) -> t.Any:
-        kwargs['client'] = get_boto_client()
+        kwargs["client"] = get_boto_client()
         return f(*args, **kwargs)
 
     return wrapper
@@ -52,45 +52,47 @@ def inject_boto_client(f: t.Callable) -> t.Callable:
 def check_mtg_json():
     update_db = get_update_db()
     updated, dbs = check_and_update(
-        update_db = update_db,
-        updaters = (
-            functools.partial(update_pickle_database, db_path = os.path.join(APP_DATA_PATH, 'staging')),
-        ),
+        update_db=update_db,
+        updaters=(functools.partial(update_pickle_database, db_path=os.path.join(APP_DATA_PATH, "staging")),),
     )
     if not updated:
         return
 
     last_set_with_printings = max(
         filter(
-            lambda e: (
-                e.expansion_type == ExpansionType.SET
-                and e.printings
-            ),
+            lambda e: (e.expansion_type == ExpansionType.SET and e.printings),
             dbs[0].expansions.values(),
         ),
-        key = lambda e: e.release_date,
+        key=lambda e: e.release_date,
     )
 
-    if last_set_with_printings.code != models.ExpansionUpdate.objects.order_by(
-        'created_at',
-    ).values_list('expansion_code', flat = True).last():
-        models.ExpansionUpdate.objects.create(expansion_code = last_set_with_printings.code)
-        with open(LOG_PATH, 'r') as log_file:
+    if (
+        last_set_with_printings.code
+        != models.ExpansionUpdate.objects.order_by(
+            "created_at",
+        )
+        .values_list("expansion_code", flat=True)
+        .last()
+    ):
+        models.ExpansionUpdate.objects.create(expansion_code=last_set_with_printings.code)
+        with open(LOG_PATH, "r") as log_file:
             mail_me(
-                f'new mtg set in db [{last_set_with_printings.code}]',
-                get_template('db_updated_mail.html').render(
+                f"new mtg set in db [{last_set_with_printings.code}]",
+                get_template("db_updated_mail.html").render(
                     {
-                        'mtgjson_timestamp': get_last_db_update(update_db = update_db).strftime(MTG_JSON_DATETIME_FORMAT),
-                        'expansion': last_set_with_printings,
+                        "mtgjson_timestamp": get_last_db_update(update_db=update_db).strftime(
+                            MTG_JSON_DATETIME_FORMAT
+                        ),
+                        "expansion": last_set_with_printings,
                     }
                 ),
-                (('log.txt', log_file.read()),),
+                (("log.txt", log_file.read()),),
             )
 
 
 @shared_task()
 def generate_release_images(cube_release_id: int):
-    release = models.CubeRelease.objects.get(pk = cube_release_id)
+    release = models.CubeRelease.objects.get(pk=cube_release_id)
 
     for cubeable, size_slug in itertools.product(
         set(
@@ -101,7 +103,7 @@ def generate_release_images(cube_release_id: int):
         ),
         SizeSlug,
     ):
-        image_request = ImageRequest(cubeable, size_slug = size_slug, cache_only = True)
+        image_request = ImageRequest(cubeable, size_slug=size_slug, cache_only=True)
         get_pipeline(image_request).get_image(image_request, image_loader)
 
 
@@ -115,60 +117,55 @@ def generate_distribution_pdf(
     *,
     client: BaseClient = None,
 ):
-    possibility = models.DistributionPossibility.objects.get(pk = possibility_id)
+    possibility = models.DistributionPossibility.objects.get(pk=possibility_id)
 
     original_trap_collection = TrapCollection(possibility.release.cube.garbage_traps)
 
-    pdfs = (
-        ('all', possibility.trap_collection, 'pdf_url'),
-    )
+    pdfs = (("all", possibility.trap_collection, "pdf_url"),)
 
     if include_changes_pdf:
         pdfs += (
-            ('added', possibility.trap_collection - original_trap_collection, 'added_pdf_url'),
-            ('removed', original_trap_collection - possibility.trap_collection, 'removed_pdf_url'),
+            ("added", possibility.trap_collection - original_trap_collection, "added_pdf_url"),
+            ("removed", original_trap_collection - possibility.trap_collection, "removed_pdf_url"),
         )
 
     with ExitStack() as context_stack:
         storage_keys = [
-            f'distributions/{possibility.trap_collection.persistent_hash()}_{name}.pdf'
-            for name, _, _ in
-            pdfs
+            f"distributions/{possibility.trap_collection.persistent_hash()}_{name}.pdf" for name, _, _ in pdfs
         ]
         uploaders = [
             context_stack.enter_context(
                 MultipartUpload(
                     client,
-                    bucket = 'phdk',
-                    key = key,
-                    acl = 'public-read',
+                    bucket="phdk",
+                    key=key,
+                    acl="public-read",
                 )
-            ) for key in
-            storage_keys
+            )
+            for key in storage_keys
         ]
 
         writers = [
             context_stack.enter_context(
                 StreamProxyWriter(
                     uploader,
-                    close_stream = False,
+                    close_stream=False,
                 )
-            ) for uploader in
-            uploaders
+            )
+            for uploader in uploaders
         ]
 
         for trap in (
-            possibility.trap_collection.traps.distinct_elements()
-            | original_trap_collection.traps.distinct_elements()
+            possibility.trap_collection.traps.distinct_elements() | original_trap_collection.traps.distinct_elements()
         ):
-            image = ImageableProcessor.get_image(ImageRequest(trap, size_slug = size_slug, save = False), image_loader)
+            image = ImageableProcessor.get_image(ImageRequest(trap, size_slug=size_slug, save=False), image_loader)
             for writer, (_, pdf_trap_collection, _) in zip(writers, pdfs):
                 writer.add_proxy(image, pdf_trap_collection.traps.elements().get(trap, 0))
 
     urls = {}
 
     for storage_key, (name, _, url_attribute_name) in zip(storage_keys, pdfs):
-        pdf_url = urljoin(SPACES_ENDPOINT, 'phdk/' + storage_key)
+        pdf_url = urljoin(SPACES_ENDPOINT, "phdk/" + storage_key)
 
         urls[url_attribute_name] = pdf_url
 
@@ -178,17 +175,17 @@ def generate_distribution_pdf(
             pdf_url,
         )
 
-    possibility.save(update_fields = [url_attribute_name for _, _, url_attribute_name in pdfs])
+    possibility.save(update_fields=[url_attribute_name for _, _, url_attribute_name in pdfs])
 
     content = {
-        'type': 'distribution_pdf_update',
-        'possibility_id': possibility_id,
+        "type": "distribution_pdf_update",
+        "possibility_id": possibility_id,
     }
 
     content.update(urls)
 
     async_to_sync(get_channel_layer().group_send)(
-        f'distributor_{patch_id}',
+        f"distributor_{patch_id}",
         content,
     )
 
@@ -196,8 +193,8 @@ def generate_distribution_pdf(
 @shared_task()
 def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
     try:
-        from_release = models.CubeRelease.objects.get(pk = from_release_id)
-        to_release = models.CubeRelease.objects.get(pk = to_release_id)
+        from_release = models.CubeRelease.objects.get(pk=from_release_id)
+        to_release = models.CubeRelease.objects.get(pk=to_release_id)
     except models.CubeRelease.DoesNotExist:
         return
 
@@ -207,37 +204,37 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
 
     with MultipartUpload(
         client,
-        bucket = 'phdk',
-        key = f'distributions/{delta.persistent_hash()}.pdf',
-        acl = 'public-read',
+        bucket="phdk",
+        key=f"distributions/{delta.persistent_hash()}.pdf",
+        acl="public-read",
     ) as uploader:
         with StreamProxyWriter(
             uploader,
-            margin_size = .5,
-            close_stream = False,
+            margin_size=0.5,
+            close_stream=False,
         ) as writer:
             for lap, multiplicity in delta.laps.items():
                 writer.add_proxy(
                     ImageableProcessor.get_image(
-                        ImageRequest(lap, size_slug = SizeSlug.ORIGINAL, save = False),
+                        ImageRequest(lap, size_slug=SizeSlug.ORIGINAL, save=False),
                         image_loader,
                     ),
                     multiplicity,
                 )
 
-    pdf_url = urljoin(SPACES_ENDPOINT, f'phdk/distributions/{delta.persistent_hash()}.pdf')
+    pdf_url = urljoin(SPACES_ENDPOINT, f"phdk/distributions/{delta.persistent_hash()}.pdf")
 
     models.LapChangePdf.objects.create(
-        pdf_url = pdf_url,
-        original_release_id = from_release_id,
-        resulting_release_id = to_release_id,
+        pdf_url=pdf_url,
+        original_release_id=from_release_id,
+        resulting_release_id=to_release_id,
     )
 
     async_to_sync(get_channel_layer().group_send)(
-        f'pdf_delta_generate_{from_release_id}_{to_release_id}',
+        f"pdf_delta_generate_{from_release_id}_{to_release_id}",
         {
-            'type': 'delta_pdf_update',
-            'pdf_url': pdf_url,
+            "type": "delta_pdf_update",
+            "pdf_url": pdf_url,
         },
     )
 
@@ -245,22 +242,22 @@ def generate_release_lap_delta_pdf(from_release_id: int, to_release_id: int):
 @shared_task()
 def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: bool = False):
     try:
-        release: models.CubeRelease = models.CubeRelease.objects.get(pk = release_id)
+        release: models.CubeRelease = models.CubeRelease.objects.get(pk=release_id)
     except models.CubeRelease.DoesNotExist:
         return
 
     if models.ReleaseImageBundle.objects.filter(
-        release_id = release_id,
-        target = models.ReleaseImageBundle.Target.COCKATRICE,
+        release_id=release_id,
+        target=models.ReleaseImageBundle.Target.COCKATRICE,
     ).exists():
-        raise ValueError('Bundle already exists')
+        raise ValueError("Bundle already exists")
 
     client = get_boto_client()
 
     comparator = max if prefer_latest_printing else min
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        zip_file_name = os.path.join(tmpdir, 'bundle.zip')
+        zip_file_name = os.path.join(tmpdir, "bundle.zip")
 
         with zipfile.ZipFile(zip_file_name, "w") as f:
             cardboard_printing_map: t.MutableMapping[Cardboard, t.List[Printing]] = defaultdict(list)
@@ -273,21 +270,21 @@ def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: b
                     ImageRequest(
                         comparator(
                             printings,
-                            key = lambda p: p.expansion.release_date,
+                            key=lambda p: p.expansion.release_date,
                         ),
                     ).path,
-                    ''.join(card.name for card in cardboard.front_cards) + '.png',
+                    "".join(card.name for card in cardboard.front_cards) + ".png",
                     zipfile.ZIP_STORED,
                 )
 
-        key = f'image_bundles/{release.cube.persistent_hash()}_{models.ReleaseImageBundle.Target.COCKATRICE.value}.zip'
+        key = f"image_bundles/{release.cube.persistent_hash()}_{models.ReleaseImageBundle.Target.COCKATRICE.value}.zip"
 
         with MultipartUpload(
             client,
-            bucket = 'phdk',
-            key = key,
-            acl = 'public-read',
-        ) as uploader, open(zip_file_name, 'rb') as zip_file:
+            bucket="phdk",
+            key=key,
+            acl="public-read",
+        ) as uploader, open(zip_file_name, "rb") as zip_file:
             while True:
                 chunk = zip_file.read(1024 * 1024)
                 if not chunk:
@@ -295,33 +292,33 @@ def generate_cockatrice_images_bundle(release_id: int, prefer_latest_printing: b
                 uploader.write(chunk)
 
         models.ReleaseImageBundle.objects.create(
-            release = release,
-            url = urljoin(SPACES_ENDPOINT, 'phdk/' + key),
-            target = models.ReleaseImageBundle.Target.COCKATRICE,
+            release=release,
+            url=urljoin(SPACES_ENDPOINT, "phdk/" + key),
+            target=models.ReleaseImageBundle.Target.COCKATRICE,
         )
 
 
 @shared_task()
 def backup_db():
     with MultipartUpload(
-        client = get_boto_client(),
-        bucket = 'phdk',
-        key = f'db-backups/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.dmp',
+        client=get_boto_client(),
+        bucket="phdk",
+        key=f'db-backups/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.dmp',
     ) as out_file:
         s = subprocess.Popen(
             [
-                'pg_dump',
-                '--dbname=postgresql://{}:{}@{}:{}/{}'.format(
+                "pg_dump",
+                "--dbname=postgresql://{}:{}@{}:{}/{}".format(
                     settings.DATABASE_USER,
                     settings.DATABASE_PASSWORD,
                     settings.DATABASE_HOST,
                     settings.DATABASE_PORT,
                     settings.DATABASE_NAME,
                 ),
-                '-Fc',
+                "-Fc",
             ],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         while True:
             chunk = s.stdout.read(1024)
@@ -331,8 +328,8 @@ def backup_db():
 
         if s.poll() != 0:
             try:
-                error_message = s.stderr.read().decode('utf8')
+                error_message = s.stderr.read().decode("utf8")
             except Exception as e:
                 error_message = str(e)
-            mail_me('DB backup failed :(', 'error: ' + error_message)
-            raise Exception('pg_dump failed')
+            mail_me("DB backup failed :(", "error: " + error_message)
+            raise Exception("pg_dump failed")

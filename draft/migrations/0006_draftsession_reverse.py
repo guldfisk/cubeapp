@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('draft', '0005_auto_20200406_1253'),
+        ("draft", "0005_auto_20200406_1253"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='draftsession',
-            name='reverse',
+            model_name="draftsession",
+            name="reverse",
             field=models.BooleanField(default=False),
             preserve_default=False,
         ),

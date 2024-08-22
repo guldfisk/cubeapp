@@ -8,23 +8,21 @@ from django.db import models
 
 
 class EnumField(models.Field):
-
     def __init__(self, enum_type: t.Type[Enum], **kwargs):
         self._enum_type = enum_type
         super().__init__(**kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs['enum_type'] = (
+        kwargs["enum_type"] = (
             self._enum_type
-            if isinstance(self._enum_type, str) else
-            f'{self._enum_type.__module__}.{self._enum_type.__name__}'
-
+            if isinstance(self._enum_type, str)
+            else f"{self._enum_type.__module__}.{self._enum_type.__name__}"
         )
         return name, path, args, kwargs
 
     def db_type(self, connection) -> str:
-        return 'INTEGER'
+        return "INTEGER"
 
     def from_db_value(self, value, expression, connection) -> Enum:
         if value is None:
@@ -46,15 +44,14 @@ class EnumField(models.Field):
 
 
 class StringMapField(models.CharField):
-
     def __init__(self, mapping: t.Mapping[str, t.Any], **kwargs):
         self._mapping = bidict(mapping)
-        kwargs.setdefault('max_length', 255)
+        kwargs.setdefault("max_length", 255)
         super().__init__(**kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs['mapping'] = self._mapping
+        kwargs["mapping"] = self._mapping
         return name, path, args, kwargs
 
     def from_db_value(self, value: str, expression, connection) -> t.Any:
@@ -77,23 +74,19 @@ class StringMapField(models.CharField):
 
 
 class SerializeableField(models.Field):
-
     def __init__(self, klass: t.Type, **kwargs):
         self._klass = klass
         super().__init__(**kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
-        kwargs['klass'] = (
-            self._klass
-            if isinstance(self._klass, str) else
-            f'{self._klass.__module__}.{self._klass.__name__}'
-
+        kwargs["klass"] = (
+            self._klass if isinstance(self._klass, str) else f"{self._klass.__module__}.{self._klass.__name__}"
         )
         return name, path, args, kwargs
 
     def db_type(self, connection) -> str:
-        return 'TEXT'
+        return "TEXT"
 
     def from_db_value(self, value: t.Optional[str], expression, connection) -> t.Any:
         if value is None:
@@ -115,9 +108,8 @@ class SerializeableField(models.Field):
 
 
 class TimeDeltaField(models.Field):
-
     def db_type(self, connection) -> str:
-        return 'FLOAT'
+        return "FLOAT"
 
     def from_db_value(self, value: t.Optional[datetime.timedelta], expression, connection) -> t.Any:
         if value is None:
@@ -127,7 +119,7 @@ class TimeDeltaField(models.Field):
     def get_prep_value(self, value: t.Any) -> t.Optional[datetime.timedelta]:
         if value is None:
             return None
-        return datetime.timedelta(seconds = value)
+        return datetime.timedelta(seconds=value)
 
     def value_to_string(self, obj):
         return str(self.value_from_object(obj).total_seconds())

@@ -1,11 +1,19 @@
-FROM python:3.11
+FROM python:3.9
 ENV PYTHONUNBUFFERED 1
+ENV POETRY_VIRTUALENVS_CREATE false
+ENV POETRY_NO_INTERACTION 1
+ENV POETRY_CACHE_DIR '/var/cache/pypoetry'
+ENV POETRY_HOME '/usr/local'
 
 RUN mkdir -p /code
-COPY . /code
-RUN pip3 install --upgrade pip
-RUN pip3 install -r /code/frozen-requirements.txt --use-deprecated=legacy-resolver
 WORKDIR /code
+COPY poetry.lock pyproject.toml /code/
+RUN curl -sSL https://install.python-poetry.org | python3 -
+#RUN pip install poetry
+RUN poetry install
+COPY . /code
+#RUN pip3 install --upgrade pip
+#RUN pip3 install -r /code/frozen-requirements.txt --use-deprecated=legacy-resolver --default-timeout=100
 
 COPY ./appdirs/ /root/.local/share/
 

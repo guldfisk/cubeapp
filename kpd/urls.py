@@ -4,7 +4,7 @@ from kpd import views
 
 
 urlpatterns = [
-    path('points/<str:query>/', views.PointList.as_view()),
-    path('get-authentication-link/', views.GetAuthenticationLink.as_view()),
-    path('create-session/<str:code>/', views.CreateSession.as_view()),
+    path("points/<str:query>/", views.PointList.as_view()),
+    path("get-authentication-link/", views.GetAuthenticationLink.as_view()),
+    path("create-session/<str:code>/", views.CreateSession.as_view()),
 ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('draft', '0011_auto_20210913_1341'),
+        ("draft", "0011_auto_20210913_1341"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='draftsession',
-            name='time_control',
+            model_name="draftsession",
+            name="time_control",
             field=models.FloatField(null=True),
         ),
     ]

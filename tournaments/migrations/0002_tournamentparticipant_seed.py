@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tournaments', '0001_initial'),
+        ("tournaments", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tournamentparticipant',
-            name='seed',
+            model_name="tournamentparticipant",
+            name="seed",
             field=models.FloatField(default=0.0),
         ),
     ]

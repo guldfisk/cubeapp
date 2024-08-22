@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('weather', '0001_initial'),
+        ("weather", "0001_initial"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='forecastslicesnapshot',
-            old_name='from_time',
-            new_name='start_time',
+            model_name="forecastslicesnapshot",
+            old_name="from_time",
+            new_name="start_time",
         ),
     ]

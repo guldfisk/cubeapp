@@ -13,3 +13,4 @@ __pycache__/
 /assets/bundles/
 /webpack-stats.json
 TestPage.tsx
+/venv/

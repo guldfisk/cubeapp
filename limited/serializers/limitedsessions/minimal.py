@@ -7,5 +7,6 @@ class LimitedSessionNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.LimitedSession
         fields = (
-            'id', 'name',
+            "id",
+            "name",
         )

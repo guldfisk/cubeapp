@@ -1,0 +1,68 @@
+[project]
+name = "cubeapp"
+
+[tool.isort]
+profile = "black"
+lines_after_imports = 2
+honor_noqa = true
+
+[tool.black]
+line-length = 119
+
+[tool.poetry]
+name = "cubeapp"
+version = "0.1.0"
+description = ""
+authors = ["None"]
+
+[tool.poetry.dependencies]
+python = "~3.9"
+Django = "~3.2"
+djangorestframework = "~3.14"
+botocore = "~1.29"
+boto3 = "~1.26"
+asgiref = "~3.6"
+requests = "^2.31.0"
+channels = "~2.4"
+redis = "~3.5"
+channels-redis = "~3.2"
+celery = "~5.0"
+django-rest-knox = "~4.2"
+beautifulsoup4 = "~4.10"
+EbookLib = "~0.17"
+numpy = "~1.26"
+scipy = "~1.10"
+PyJWT = "~2.6"
+pandas = "~1.5"
+psycopg2-binary = "~2.9"
+antlr4-python3-runtime = "4.9"
+sqlalchemy = "~2.0"
+bidict = "^0.23.0"
+django-extensions = "~3.2"
+gunicorn = "~20.0"
+django-celery-beat = "2.1.0"
+django-debug-panel = "~0.8"
+django-debug-toolbar = "~3.2"
+ipython = "~8.11"
+mtgorp = { git = "https://github.com/guldfisk/mtgorp.git" }
+mtgdraft = { git = "https://github.com/guldfisk/mtgdraft.git" }
+magiccube = { git = "https://github.com/guldfisk/magiccube.git" }
+mtgimg = { git = "https://github.com/guldfisk/mtgimg.git" }
+evolution = { git = "https://github.com/guldfisk/evolution.git" }
+mocknames = { git = "https://github.com/guldfisk/mocknames.git" }
+proxypdf = { git = "https://github.com/guldfisk/proxypdf.git" }
+secretresources = { git = "https://github.com/guldfisk/secretresources.git" }
+ring = { git = "https://github.com/guldfisk/ring.git" }
+elo = { git = "https://github.com/guldfisk/elo.git" }
+orp = { git = "https://github.com/guldfisk/orp.git" }
+django-typed-models = { git = "https://github.com/guldfisk/django-typed-models.git" }
+hardcandy = { git = "https://github.com/guldfisk/hardcandy.git" }
+dmiclient = { git = "https://github.com/guldfisk/dmiclient.git" }
+django-webpack-loader = { git = "https://github.com/guldfisk/django-webpack-loader.git" }
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.6.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

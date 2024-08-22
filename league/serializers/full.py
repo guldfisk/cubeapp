@@ -3,7 +3,7 @@ from rest_framework import serializers
 from api.serialization.serializers import MinimalVersionedCubeSerializer
 from league import models
 from league.serializers.minimal import MinimalLeagueSerializer, MinimalSeasonSerializer
-from limited.serializers import MinimalPoolDeckSerializer
+from limited.serializers.pooldecks.minimal import MinimalPoolDeckSerializer
 from tournaments.serializers import TournamentSerializer
 from utils.serialization.fields import LambdaSerializer
 
@@ -16,9 +16,18 @@ class LeagueSerializer(MinimalLeagueSerializer):
     class Meta:
         model = models.HOFLeague
         fields = (
-            'id', 'name', 'versioned_cube', 'previous_n_releases', 'season_size', 'top_n_from_previous_season',
-            'low_participation_prioritization_amount', 'tournament_type', 'tournament_config', 'match_type', 'created_at',
-            'rating_change',
+            "id",
+            "name",
+            "versioned_cube",
+            "previous_n_releases",
+            "season_size",
+            "top_n_from_previous_season",
+            "low_participation_prioritization_amount",
+            "tournament_type",
+            "tournament_config",
+            "match_type",
+            "created_at",
+            "rating_change",
         )
 
 
@@ -28,7 +37,7 @@ class SeasonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Season
-        fields = ('id', 'league', 'tournament', 'created_at')
+        fields = ("id", "league", "tournament", "created_at")
 
 
 class QuickMatchSerializer(serializers.ModelSerializer):
@@ -37,29 +46,38 @@ class QuickMatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.QuickMatch
-        fields = ('id', 'league', 'tournament', 'rated', 'created_at')
+        fields = ("id", "league", "tournament", "rated", "created_at")
 
 
 class CreateQuickMatchSerializer(serializers.Serializer):
     rated = serializers.BooleanField()
-    deck_ids = serializers.ListField(child = serializers.IntegerField(), required = False)
+    deck_ids = serializers.ListField(child=serializers.IntegerField(), required=False)
 
     def update(self, instance, validated_data):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def create(self, validated_data):
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class FullLeagueSerializer(LeagueSerializer):
-    seasons = MinimalSeasonSerializer(many = True, read_only = True)
+    seasons = MinimalSeasonSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.HOFLeague
         fields = (
-            'id', 'name', 'versioned_cube', 'previous_n_releases', 'season_size', 'top_n_from_previous_season',
-            'low_participation_prioritization_amount', 'tournament_type', 'tournament_config', 'match_type', 'created_at',
-            'seasons',
+            "id",
+            "name",
+            "versioned_cube",
+            "previous_n_releases",
+            "season_size",
+            "top_n_from_previous_season",
+            "low_participation_prioritization_amount",
+            "tournament_type",
+            "tournament_config",
+            "match_type",
+            "created_at",
+            "seasons",
         )
 
 
@@ -71,4 +89,4 @@ class PoolDeckScoreSerializer(MinimalPoolDeckSerializer):
 
     class Meta:
         model = models.PoolDeck
-        fields = ('id', 'name', 'created_at', 'pool_id', 'user', 'wins', 'seasons', 'average_placement', 'rating')
+        fields = ("id", "name", "created_at", "pool_id", "user", "wins", "seasons", "average_placement", "rating")

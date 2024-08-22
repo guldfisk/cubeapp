@@ -7,7 +7,7 @@ from botocore.client import BaseClient
 
 
 class MultipartUpload(t.IO[bytes], t.ContextManager):
-    MIN_PART_SIZE = int(5 * 2 ** 20)
+    MIN_PART_SIZE = int(5 * 2**20)
 
     def __init__(
         self,
@@ -17,12 +17,12 @@ class MultipartUpload(t.IO[bytes], t.ContextManager):
         bucket: t.Optional[str] = None,
         key: t.Optional[str] = None,
         part_size: int = MIN_PART_SIZE,
-        acl: str = 'private',
+        acl: str = "private",
     ):
         if file_ref:
-            self._bucket, self._key = file_ref.split('/', 1)
+            self._bucket, self._key = file_ref.split("/", 1)
         elif bucket is None or key is None:
-            raise ValueError('Must specify bucket/key')
+            raise ValueError("Must specify bucket/key")
         else:
             self._bucket = bucket
             self._key = key
@@ -41,34 +41,34 @@ class MultipartUpload(t.IO[bytes], t.ContextManager):
 
     def open(self) -> None:
         self._multipart_upload_id = self._client.create_multipart_upload(
-            Bucket = self._bucket,
-            Key = self._key,
-            ACL = self._acl,
-        )['UploadId']
+            Bucket=self._bucket,
+            Key=self._key,
+            ACL=self._acl,
+        )["UploadId"]
 
     def fileno(self) -> int:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def flush(self) -> None:
         pass
 
     def isatty(self) -> bool:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def read(self, n: int = ...) -> bytes:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def readable(self) -> bool:
         return False
 
     def readline(self, limit: int = ...) -> bytes:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def readlines(self, hint: int = ...) -> t.List[bytes]:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def seek(self, offset: int, whence: int = ...) -> int:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def seekable(self) -> bool:
         return False
@@ -77,29 +77,29 @@ class MultipartUpload(t.IO[bytes], t.ContextManager):
         return self._head
 
     def truncate(self, size: t.Optional[int] = ...) -> int:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def writable(self) -> bool:
         return True
 
     def writelines(self, lines: t.Iterable[bytes]) -> None:
         for ln in lines:
-            self.write(ln + b'\n')
+            self.write(ln + b"\n")
 
     def __next__(self) -> bytes:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def __iter__(self) -> t.Iterator[bytes]:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def closed(self) -> bool:
         return self._closed
 
     def abort(self) -> None:
         self._client.abort_multipart_upload(
-            Bucket = self._bucket,
-            Key = self._key,
-            UploadId = self._multipart_upload_id,
+            Bucket=self._bucket,
+            Key=self._key,
+            UploadId=self._multipart_upload_id,
         )
         self._closed = True
 
@@ -113,11 +113,11 @@ class MultipartUpload(t.IO[bytes], t.ContextManager):
 
         self._buffer.seek(0)
         part = self._client.upload_part(
-            Body = self._buffer.read(self._part_size),
-            Bucket = self._bucket,
-            Key = self._key,
-            UploadId = self._multipart_upload_id,
-            PartNumber = len(self._parts) + 1,
+            Body=self._buffer.read(self._part_size),
+            Bucket=self._bucket,
+            Key=self._key,
+            UploadId=self._multipart_upload_id,
+            PartNumber=len(self._parts) + 1,
         )
         self._buffer = io.BytesIO()
         self._parts.append(
@@ -140,10 +140,10 @@ class MultipartUpload(t.IO[bytes], t.ContextManager):
     def close(self):
         self._flush_to_part()
         self._client.complete_multipart_upload(
-            Bucket = self._bucket,
-            Key = self._key,
-            UploadId = self._multipart_upload_id,
-            MultipartUpload = {"Parts": self._parts}
+            Bucket=self._bucket,
+            Key=self._key,
+            UploadId=self._multipart_upload_id,
+            MultipartUpload={"Parts": self._parts},
         )
         self._closed = True
 

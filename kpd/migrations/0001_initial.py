@@ -4,41 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='KebabEvent',
+            name="KebabEvent",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField()),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("timestamp", models.DateTimeField()),
             ],
         ),
         migrations.CreateModel(
-            name='KebabPoint',
+            name="KebabPoint",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField()),
-                ('value_7', models.FloatField()),
-                ('value_14', models.FloatField()),
-                ('value_28', models.FloatField()),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("timestamp", models.DateTimeField()),
+                ("value_7", models.FloatField()),
+                ("value_14", models.FloatField()),
+                ("value_28", models.FloatField()),
             ],
         ),
         migrations.CreateModel(
-            name='RangeRequest',
+            name="RangeRequest",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('requested_from', models.DateField()),
-                ('requested_to', models.DateField()),
+                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("requested_from", models.DateField()),
+                ("requested_to", models.DateField()),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

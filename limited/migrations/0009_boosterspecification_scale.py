@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('limited', '0008_limitedsession_infinites'),
+        ("limited", "0008_limitedsession_infinites"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='boosterspecification',
-            name='scale',
+            model_name="boosterspecification",
+            name="scale",
             field=models.BooleanField(default=False, null=True),
         ),
     ]

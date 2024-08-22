@@ -1,17 +1,16 @@
 from django.db.models import Prefetch
-
 from rest_framework import generics
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
-from api.models import VersionedCube, CubeRelease
+from api.models import CubeRelease, VersionedCube
 from imgqty import models, serializers
 from imgqty.service import ImageQtyProbabilityManager
 
 
 class RecordPackDetail(generics.RetrieveAPIView):
     serializer_class = serializers.ImageQtyRecordPackSerializer
-    queryset = models.ImageQtyRecordPack.objects.all().select_related('pick')
+    queryset = models.ImageQtyRecordPack.objects.all().select_related("pick")
 
 
 class ReleaseImageDistribution(generics.RetrieveAPIView):
@@ -19,24 +18,22 @@ class ReleaseImageDistribution(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        manager = ImageQtyProbabilityManager(instance.cube, kwargs['pack_size'])
+        manager = ImageQtyProbabilityManager(instance.cube, kwargs["pack_size"])
         return Response(
             {
-                'probability_distribution_points': [
+                "probability_distribution_points": [
                     [
                         image_amount,
                         manager.image_sum_quantity_probability(image_amount),
                     ]
-                    for image_amount in
-                    manager.qty_range
+                    for image_amount in manager.qty_range
                 ],
-                'cumulative_points': [
+                "cumulative_points": [
                     [
                         image_amount,
                         manager.probability_at_least_images(image_amount),
                     ]
-                    for image_amount in
-                    manager.qty_range
+                    for image_amount in manager.qty_range
                 ],
             }
         )
@@ -44,7 +41,7 @@ class ReleaseImageDistribution(generics.RetrieveAPIView):
 
 class RecordsForVersionedCube(generics.ListAPIView):
     serializer_class = serializers.ImageQtyRecordPackSerializer
-    queryset = VersionedCube.objects.all().only('id')
+    queryset = VersionedCube.objects.all().only("id")
 
     def get_object(self):
         queryset = self.queryset.all()
@@ -60,15 +57,20 @@ class RecordsForVersionedCube(generics.ListAPIView):
 
     def get_queryset(self):
         versioned_cube: VersionedCube = self.get_object()
-        return models.ImageQtyRecordPack.objects.filter(
-            release__versioned_cube_id = versioned_cube.id,
-        ).order_by('-pick__created_at').select_related('pick').prefetch_related(
-            'pick__seat__user',
-            Prefetch(
-                'release',
-                queryset = CubeRelease.objects.all().only(
-                    'id',
-                    'name',
+        return (
+            models.ImageQtyRecordPack.objects.filter(
+                release__versioned_cube_id=versioned_cube.id,
+            )
+            .order_by("-pick__created_at")
+            .select_related("pick")
+            .prefetch_related(
+                "pick__seat__user",
+                Prefetch(
+                    "release",
+                    queryset=CubeRelease.objects.all().only(
+                        "id",
+                        "name",
+                    ),
                 ),
-            ),
+            )
         )
