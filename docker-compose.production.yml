@@ -18,7 +18,7 @@ services:
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
       - /home/ftper/ftp/files:/opt/services/cubeapp/files
       - ./certbot/www:/var/www/certbot/:ro
-      - ./certbot/data:/etc/letsencrypt/live/prohunterdogkeeper.dk/
+      - ./certbot/data:/etc/letsencrypt/
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/media
     depends_on:
