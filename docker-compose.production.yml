@@ -17,8 +17,7 @@ services:
       - ~/.local/share/mtgorp:/opt/services/cubeapp/mtgorp
       - ~/.local/share/mtgimg:/opt/services/cubeapp/mtgimg
       - /home/ftper/ftp/files:/opt/services/cubeapp/files
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
+      - ./certbot/www:/var/www/certbot/:ro
       - static_volume:/opt/services/cubeapp/static
       - media_volume:/opt/services/cubeapp/media
     depends_on:
