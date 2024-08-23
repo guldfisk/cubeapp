@@ -6,3 +6,5 @@ services:
     image: certbot/certbot:latest
     volumes:
       - ./certbot/www/:/var/www/certbot/:rw
+      - ./certbot/data:/etc/letsencrypt/live/prohunterdogkeeper.dk/
+
