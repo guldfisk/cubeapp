@@ -70,6 +70,7 @@ def send_record_notification_mail(record: models.ImageQtyRecordPack, users: t.Se
         content=get_template("new_record_mail.html").render(
             {
                 "record": record,
+                "host": settings.HOST,
             }
         ),
         recipients=[user.email for user in users],
