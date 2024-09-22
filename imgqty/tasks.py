@@ -72,5 +72,5 @@ def send_record_notification_mail(record: models.ImageQtyRecordPack, users: t.Se
                 "record": record,
             }
         ),
-        recipients=[user.email for user in users],
+        blindrecipients=[user.email for user in users],
     )

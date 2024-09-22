@@ -7,7 +7,8 @@ from django.conf import settings
 def send_mail(
     subject: str,
     content: str,
-    recipients: t.List[str],
+    recipients: t.List[str] = ["mail@{}".format(settings.MAILGUN_DOMAIN)],
+    blindrecipients: t.List[str] = [],
     attachments: t.Sequence[t.Tuple[str, str]] = (),
 ):
     return requests.post(
@@ -16,6 +17,7 @@ def send_mail(
         data={
             "from": "mail@{}".format(settings.MAILGUN_DOMAIN),
             "to": recipients,
+            "bcc": blindrecipients,
             "subject": subject,
             "html": content,
         },
