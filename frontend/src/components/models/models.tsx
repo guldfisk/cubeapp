@@ -812,13 +812,14 @@ export class Cube extends MinimalCube {
     )
   }
 
-  static all = (offset: number = 0, limit: number = 50): Promise<PaginatedResponse<Cube>> => {
+  static all = (offset: number = 0, limit: number = 50, featuredOnly: boolean = true): Promise<PaginatedResponse<Cube>> => {
     return axios.get(
       apiPath + 'versioned-cubes/',
       {
         params: {
           offset,
           limit,
+          featured_only: featuredOnly
         }
       },
     ).then(

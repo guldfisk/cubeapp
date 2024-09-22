@@ -533,9 +533,16 @@ class VersionedCubesList(generics.ListCreateAPIView):
         .order_by("created_at")
     )
     serializer_class = serializers.VersionedCubeSerializer
-    permission_classes = [
-        permissions.IsAuthenticatedOrReadOnly,
-    ]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def filter_queryset(self, queryset):
+        return (
+            super()
+            .filter_queryset(queryset)
+            .filter(
+                **({"featured": True} if strtobool(self.request.query_params.get("featured_only", "false")) else {})
+            )
+        )
 
     def perform_create(self, serializer):
         with transaction.atomic():

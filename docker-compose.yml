@@ -10,8 +10,8 @@ services:
       POSTGRES_USER: 'phdk'
       POSTGRES_PASSWORD: "${DB_PASSWORD}"
       POSTGRES_ROOT_PASSWORD: "${DB_PASSWORD}"
-#    volumes:
-#      - database-data:/var/lib/postgresql/data/
+    volumes:
+      - database-data:/var/lib/postgresql/data/
     networks:
       - database_network
 
@@ -92,6 +92,6 @@ networks:
     driver: bridge
 
 volumes:
-  db:
+  database-data:
   static_volume:
   media_volume:

@@ -38,6 +38,7 @@ class VersionedCube(mixins.SoftDeletionModel, models.Model):
         get_user_model(),
         on_delete=models.CASCADE,
     )
+    featured = models.BooleanField(default=True)
     forked_from = models.ForeignKey(
         "VersionedCube",
         related_name="forks",
