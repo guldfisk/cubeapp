@@ -11,7 +11,7 @@ def send_mail(
     blind: bool = None,
     attachments: t.Sequence[t.Tuple[str, str]] = (),
 ):
-    if blind == None:
+    if not isinstance(blind, bool):
         blind = len(recipients) > 1
     return requests.post(
         "https://api.eu.mailgun.net/v3/{}/messages".format(settings.MAILGUN_DOMAIN),
