@@ -10,7 +10,7 @@ register = template.Library()
 
 @register.simple_tag
 def cubeable_image_link(cubeable: Cubeable, size_slug: SizeSlug = SizeSlug.MEDIUM) -> str:
-    return "https://{}/images/{}{}{}.png".format(
+    return "{}/images/{}{}{}.png".format(
         settings.HOST,
         "_cube_traps/" if isinstance(cubeable, Trap) else "",
         cubeable.id,
