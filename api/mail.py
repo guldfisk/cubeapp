@@ -7,17 +7,19 @@ from django.conf import settings
 def send_mail(
     subject: str,
     content: str,
-    recipients: t.List[str] = ["mail@{}".format(settings.MAILGUN_DOMAIN)],
-    blindrecipients: t.List[str] = [],
+    recipients: t.List[str],
+    blind: bool = None,
     attachments: t.Sequence[t.Tuple[str, str]] = (),
 ):
+    if blind == None:
+        blind = len(recipients) > 1
     return requests.post(
         "https://api.eu.mailgun.net/v3/{}/messages".format(settings.MAILGUN_DOMAIN),
         auth=("api", settings.MAILGUN_KEY),
         data={
             "from": "mail@{}".format(settings.MAILGUN_DOMAIN),
-            "to": recipients,
-            "bcc": blindrecipients,
+            "to": "mail@{}".format(settings.MAILGUN_DOMAIN) if blind else recipients,
+            "bcc": recipients * blind,
             "subject": subject,
             "html": content,
         },
