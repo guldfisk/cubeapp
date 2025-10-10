@@ -310,7 +310,7 @@ class ExpansionUpdate(TimestampedModel, models.Model):
 
 
 class RelatedPrinting(models.Model):
-    printing_id = models.PositiveIntegerField()
+    printing_id = models.BigIntegerField()
     related_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     related_object_id = models.PositiveIntegerField()
     related = GenericForeignKey("related_content_type", "related_object_id")

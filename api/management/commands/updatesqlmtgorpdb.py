@@ -14,12 +14,8 @@ class Command(BaseCommand):
         logging.basicConfig(format="%(levelname)s %(message)s", level=logging.INFO)
 
         SqlContext.init()
+        session = SqlContext.scoped_session()
         check_and_update(
             force=True,
-            updaters=(
-                get_sql_database_updater(
-                    SqlContext.scoped_session,
-                    SqlContext.engine,
-                ),
-            ),
+            updaters=(get_sql_database_updater(lambda: session, SqlContext.engine),),
         )
