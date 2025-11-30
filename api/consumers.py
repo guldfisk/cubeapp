@@ -334,6 +334,7 @@ class DistributorConsumer(AuthenticatedConsumer):
                     cube=finale_cube,
                     versioned_cube=versioned_cube,
                     infinites=self._updater.new_infinites,
+                    intended_size=len(finale_cube),
                 )
 
                 models.ConstrainedNodes.objects.create(
