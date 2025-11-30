@@ -2103,7 +2103,7 @@ sqlalchemy = "~2.0"
 type = "git"
 url = "https://github.com/guldfisk/mtgorp.git"
 reference = "HEAD"
-resolved_reference = "cc04695b7e30d9dd944d1380578092266ce4b5bc"
+resolved_reference = "b62033e4660f99550aa1a5f7f7bd863f5b55e85e"
 
 [[package]]
 name = "multiset"
