@@ -8,9 +8,12 @@ ENV POETRY_HOME '/usr/local'
 RUN mkdir -p /code
 WORKDIR /code
 COPY poetry.lock pyproject.toml /code/
-RUN curl -sSL https://install.python-poetry.org | python3 -
-#RUN pip install poetry
-RUN poetry install
+
+RUN python3 -m venv penv
+RUN penv/bin/pip install -U pip setuptools
+RUN penv/bin/pip install poetry
+
+RUN penv/bin/python -m poetry install
 COPY . /code
 #RUN pip3 install --upgrade pip
 #RUN pip3 install -r /code/frozen-requirements.txt --use-deprecated=legacy-resolver --default-timeout=100

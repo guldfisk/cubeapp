@@ -2072,7 +2072,7 @@ yeetlong = {git = "https://github.com/guldfisk/yeetlong.git"}
 type = "git"
 url = "https://github.com/guldfisk/mtgimg.git"
 reference = "HEAD"
-resolved_reference = "af40840eb1b8ddb05b60f2b8e92ad0fea4294cfd"
+resolved_reference = "f718a6444774377321b9fa91585bdf83483f2e59"
 
 [[package]]
 name = "mtgorp"
